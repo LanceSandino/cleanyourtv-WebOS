@@ -40,6 +40,8 @@ document.addEventListener('wheel', function (e) {
 }); /* the Magic Remote wheel */
 /* opened with {"open":"wallpapers"} (the launcher's Customise > Wallpapers): straight to that screen; {"open":"photofeed"} (Customise >
    Screensaver > Photo feed...): straight to the QR code that opens the phone page on its Photo feed tab */
+/* opened with {"open":"wallpapers"} or {"open":"cards"} (the launcher's Customise menu): straight to that screen */
+var cardsFromHome = false;
 function wantView() {
   var p = {};
   try {
@@ -47,6 +49,10 @@ function wantView() {
   } catch (e) {}
   if (p && p.open === 'wallpapers') openWallpapers();
   if (p && p.open === 'photofeed') openWallPair('feed');
+  if (p && p.open === 'cards') {
+    cardsFromHome = true;
+    openCardsPair();
+  }
 }
 document.addEventListener('webOSRelaunch', function () {
   view = 'main';

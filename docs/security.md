@@ -14,6 +14,7 @@ local network on request, and an optional notification endpoint and the Sonos vo
 | 8769 | Voice setup page | Ten minutes, at a random 128-bit address, closed after saving |
 | 8791 | Wallpapers page | While the QR screen is open in the manager app: a 6-digit code shown on the TV, at most an hour; see [Wallpapers](wallpapers.md) |
 | One the system picks | Sonos volume events | Only while **Sonos volume on screen** is on: takes `NOTIFY` from the chosen speaker's address on a random path, nothing else; see [Sonos volume on screen](sonos.md) |
+| 8792 | Cards page | The same, for the options of the cards on Home; see [Cards](launcher.md#cards) |
 
 What the setup changes on the TV is listed in [What it changes on the TV](tv-changes.md).
 

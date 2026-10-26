@@ -31,6 +31,7 @@
 | `lgvolume.js` | Hides LG's own volume bar while the Sonos volume shows: `volumeOSD` false through `lgconfig.js`. Only where `tvprofile.js` says `lgVolumeBar: 'configd'` (webOS 25). |
 | `lgpreload.js` | The debloat group "Stop LG pre-loading apps": the preload manager's own `setPreloadPolicy` (`isEnabled` false) for every app it would pre-load but Home and the Homebrew Channel's, only for apps already allowed (the call marks an app allowed in LG's saved list); held in its memory, done again a few seconds after the service starts, on every change of the debloat (`debloat.onChange`) and every two minutes; switched back for exactly those apps. Only where `tvprofile.js` says `lgPreload: 'api'`. |
 | `wallpapers.js` | Wallpapers: the photo library (uploads and Immich, apart on disk, with an index), the phone page on port 8791 and the Immich sync. |
+| `cards.js` | Cards: the shape check of the cards the launcher saves, and the phone page on port 8792 where their options are typed. |
 | `theme.js`, `themeschema.js` | Themes: `themeschema.js` holds every setting a theme can make, the checks and how a theme becomes CSS variables; `theme.js` reads themes from GitHub and keeps them on the TV. |
 | `voice.js`, `answers.js` | Voice: the microphone, the recogniser, the phone setup page; `answers.js` asks Home Assistant, a language model or your server. |
 | `selfupdate.js`, `sharelog.js` | Programs the manager runs when the service is not running. |
