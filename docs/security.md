@@ -72,7 +72,9 @@ the package and launcher names the updater already expects.
 - Any app on the TV can already run root commands through the Homebrew Channel; apps are not a security boundary on a rooted TV.
 - `/media/developer` is world-writable on webOS. The setup removes group and other write access from this project's files and
   keeps the playlist and settings files owner-only, but the parent folder remains writable.
-- The service API refuses requests from web pages (any `http(s)` origin); local apps and scripts are accepted.
+- The service API refuses requests from web pages (any `http(s)` origin) and requests addressed to any name but `127.0.0.1` or
+  `localhost` (DNS rebinding); local apps and scripts are accepted. A page that hides its origin (a sandboxed frame sends `null`, as
+  our own apps do) is not told apart yet.
 
 !!! tip "Move from telnet to SSH"
     A rooted TV often has an unauthenticated telnet server open on the local network. Turn telnet off and SSH on in the

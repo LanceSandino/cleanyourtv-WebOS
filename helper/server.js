@@ -1,12 +1,15 @@
 // The service's HTTP server on 127.0.0.1. Each feature answers the paths it lists (feature.paths, exact) or the paths that begin
 // with its prefix (feature.prefix); a feature's handle(req, res, path, body) may be async, and an error in it becomes a 500 reply.
 // Who may call: our own apps (local files; their requests carry Origin "null", or "file://<app id>-webos" on webOS 6) and programs
-// on the TV (curl, scripts: no Origin). A web page opened in the TV's browser has an http(s) origin and is refused, so it cannot
-// drive this root service.
+// on the TV (curl, scripts: no Origin). A web page opened in the TV's browser has an http(s) origin and is refused, and so is a request
+// whose Host is not the loopback address (DNS rebinding). A sandboxed frame sends origin null like our apps; that is not told apart yet.
 const http = require('http');
 const web = require('./web');
 
 const OUR_APPS = /^file:\/\/(com\.webos\.app\.home|com\.cleanyourtv\.(manager|picker|notify|live))-webos$/;
+// DNS rebinding: a web page whose own name was made to point at 127.0.0.1 still sends that name as Host. Only requests addressed to
+// the loopback address or localhost are answered; a request without Host comes from a program on the TV.
+const LOOPBACK_HOST = /^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/i;
 
 function create(opts) {
   const features = opts.features; // a function returning the loaded features, in order
@@ -18,6 +21,11 @@ function create(opts) {
     return null;
   };
   return http.createServer(async (req, res) => {
+    const host = req.headers.host;
+    if (host !== undefined && !LOOPBACK_HOST.test(host)) {
+      console.log('refused host ' + String(host).slice(0, 60) + ' ' + req.method + ' ' + req.url.slice(0, 60));
+      return web.json(res, { error: 'host not allowed' }, 403);
+    }
     let origin = req.headers.origin;
     const rawOrigin = origin;
     if (OUR_APPS.test(origin || '')) origin = 'null';

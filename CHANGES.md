@@ -32,3 +32,18 @@ commit_ref: "feature/fork-release-source (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T04:45:47Z"
 ```
+
+```yaml
+id: CU-20261027-5
+type: fix
+title: "The root API answers only requests addressed to 127.0.0.1 or localhost"
+description: "helper/server.js refuses (403) a request whose Host header names anything else, so a web page that rebinds its own
+  DNS name to 127.0.0.1 can no longer read the API (for example the notification token or playlist addresses). Audit finding F1,
+  rebinding half; a sandboxed frame's origin null is still accepted like our own apps (needs a per-install token, not done yet)."
+impact: medium
+affected_modules: ["helper/server.js", "docs/security.md"]
+related_tests: ["tools/test/server.test.js", "tools/test/api.test.js"]
+commit_ref: "feature/api-host-check (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:05:32Z"
+```
