@@ -23,11 +23,44 @@
    "preview": "compact/preview.jpg"
   },
   {
+   "id": "independence-day",
+   "name": "Fourth of July",
+   "author": "CleanYourTV",
+   "description": "Red, white and blue, with stars twinkling. Applied by itself from 1 to 4 July with Holiday themes on.",
+   "preview": "independence-day/preview.jpg",
+   "holiday": {
+    "from": "07-01",
+    "to": "07-04"
+   }
+  },
+  {
    "id": "glass",
    "name": "Glass",
    "author": "CleanYourTV",
    "description": "Five columns of wide cards, the dock on a dark band with the app's name above it, a light clock with a greeting, and a glass plate that glides to the focused app.",
    "preview": "glass/preview.jpg"
+  },
+  {
+   "id": "halloween",
+   "name": "Halloween",
+   "author": "CleanYourTV",
+   "description": "Pumpkin orange on a night purple, with a few bats flying past. Applied by itself from 15 to 31 October with Holiday themes on.",
+   "preview": "halloween/preview.jpg",
+   "holiday": {
+    "from": "10-15",
+    "to": "10-31"
+   }
+  },
+  {
+   "id": "harvest",
+   "name": "Harvest",
+   "author": "CleanYourTV",
+   "description": "Warm amber and brown, with autumn leaves drifting down, for Thanksgiving. Applied by itself from 20 to 30 November with Holiday themes on.",
+   "preview": "harvest/preview.jpg",
+   "holiday": {
+    "from": "11-20",
+    "to": "11-30"
+   }
   },
   {
    "id": "horizon",
@@ -58,6 +91,17 @@
    "preview": "midnight/preview.jpg"
   },
   {
+   "id": "new-year",
+   "name": "New Year",
+   "author": "CleanYourTV",
+   "description": "Gold on midnight blue, with confetti. Applied by itself from 27 December to 2 January with Holiday themes on.",
+   "preview": "new-year/preview.jpg",
+   "holiday": {
+    "from": "12-27",
+    "to": "01-02"
+   }
+  },
+  {
    "id": "oled",
    "name": "OLED black",
    "author": "CleanYourTV",
@@ -79,11 +123,33 @@
    "preview": "still/preview.jpg"
   },
   {
+   "id": "valentines",
+   "name": "Valentine's",
+   "author": "CleanYourTV",
+   "description": "Rose pink on deep red, with hearts rising. Applied by itself from 7 to 14 February with Holiday themes on.",
+   "preview": "valentines/preview.jpg",
+   "holiday": {
+    "from": "02-07",
+    "to": "02-14"
+   }
+  },
+  {
    "id": "warm",
    "name": "Warm",
    "author": "CleanYourTV",
    "description": "Brown and amber with the glow in the accent colour.",
    "preview": "warm/preview.jpg"
+  },
+  {
+   "id": "winter-holidays",
+   "name": "Winter holidays",
+   "author": "CleanYourTV",
+   "description": "Pine green and berry red, with snow falling. Applied by itself from 1 to 26 December with Holiday themes on.",
+   "preview": "winter-holidays/preview.jpg",
+   "holiday": {
+    "from": "12-01",
+    "to": "12-26"
+   }
   }
  ]
 }

@@ -1,0 +1,20 @@
+{
+ "name": "Valentine's",
+ "author": "CleanYourTV",
+ "description": "Rose pink on deep red, with hearts rising. Applied by itself from 7 to 14 February with Holiday themes on.",
+ "holiday": {
+  "from": "02-07",
+  "to": "02-14"
+ },
+ "colors": {
+  "night": "#12060b",
+  "panel": "#241019",
+  "ink": "#fff0f5",
+  "accent": "#ff5c8a"
+ },
+ "effects": {
+  "glowColor": "accent",
+  "glow": 0.85,
+  "particles": "hearts"
+ }
+}

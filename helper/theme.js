@@ -32,6 +32,7 @@ const {
   fontType,
   getPath,
   hex,
+  holidayOf,
   imageOk,
   imageType,
   normalize,
@@ -68,7 +69,9 @@ function load() {
     const baseId = typeof raw.extends === 'string' && ID.test(raw.extends) ? raw.extends : '',
       base = baseId ? build(baseId, stack.concat(id)) : null;
     if (baseId && !base) return null; // its base is missing: not usable
-    return (out[id] = normalize(raw, id, base ? base.v : null));
+    const t = normalize(raw, id, base ? base.v : null);
+    if (t) t.raw = raw; // a holiday theme is applied over the chosen theme from its own file (holiday())
+    return (out[id] = t);
   };
   for (const id of Object.keys(raws)) build(id, []);
   for (const id of Object.keys(out)) if (!out[id]) delete out[id];
@@ -115,6 +118,7 @@ const rmrf = d => {
 };
 
 function create(ctx) {
+  const now = () => (ctx.now ? ctx.now() : new Date()); // the date, from the tests when they set one
   // the repository and branch the themes come from: this project's main branch, unless D/source names another (to try a theme)
   const slug = () => (ctx.slug && ctx.slug()) || require('./updates').repo();
   const ref = () => {
@@ -136,14 +140,61 @@ function create(ctx) {
       prev: c.prev && all[c.prev.id] ? { id: c.prev.id, accent: hex(c.prev.accent) || '' } : null,
     };
   };
-  const resolved = () => {
-    const c = cur();
-    return resolve(load()[c.id], c.accent);
+  // ---- holiday themes: with Holiday themes on, a theme whose dates (its "holiday": {from, to}, MM-DD) include today is applied over
+  // the chosen theme: its colours and effects on the chosen layout and wallpaper. The chosen theme stays saved; it is back after the
+  // holiday. The holiday theme is downloaded a few days before its dates (ensureHoliday), so Home has it on the day.
+  const holidaysOn = () => (conf().theme || {}).holidays === true;
+  const md = d => ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  const inDates = (h, d) => {
+    if (!h) return false;
+    const x = md(d);
+    return h.from <= h.to ? x >= h.from && x <= h.to : x >= h.from || x <= h.to;
   };
+  // the downloaded holiday theme for that day (the shortest range when two overlap)
+  function holiday(d) {
+    if (!holidaysOn()) return null;
+    const all = load();
+    const ids = Object.keys(all).filter(id => all[id].holiday && all[id].raw && inDates(all[id].holiday, d || now()));
+    const span = id => {
+      const h = all[id].holiday,
+        a = +h.from.replace('-', ''),
+        b = +h.to.replace('-', '');
+      return b >= a ? b - a : b + 1231 - a;
+    };
+    ids.sort((a, b) => span(a) - span(b));
+    return ids[0] || null;
+  }
+  const resolved = () => {
+    const c = cur(),
+      all = load(),
+      h = holiday();
+    if (h && h !== c.id) {
+      const t = normalize(all[h].raw, h, all[c.id].v);
+      if (t) return resolve(t, '');
+    }
+    return resolve(all[c.id], c.accent);
+  };
+  // the chosen theme, kept with the Holiday themes switch
   const save = o =>
     ctx.config.update('theme', c => {
+      const was = c.theme || {};
       c.theme = o;
+      if (was.holidays === true && o.holidays === undefined) c.theme.holidays = true;
     });
+  // downloads the holiday theme for today or the next 3 days when it is not on the TV (and a newer copy of one that is)
+  async function ensureHoliday() {
+    if (!holidaysOn()) return;
+    const c = await refreshCatalogue(false),
+      today = now(),
+      soon = [0, 1, 2, 3].map(n => new Date(today.getTime() + n * 86400000));
+    for (const t of c.themes)
+      if (t.holiday && soon.some(d => inDates(t.holiday, d)) && !load()[t.id])
+        try {
+          await install(t.id);
+        } catch (e) {
+          console.log('theme: holiday theme ' + t.id + ' could not be downloaded: ' + e.message);
+        }
+  }
 
   // the catalogue: themes/index.json from GitHub, kept in memory for ten minutes
   let cat = { at: 0, themes: [], error: '' },
@@ -164,6 +215,7 @@ function create(ctx) {
             author: String(t.author || '').slice(0, 60),
             description: String(t.description || '').slice(0, 160),
             preview: pm && pm[1] === t.id ? t.preview : '',
+            holiday: holidayOf(t.holiday),
           });
         }
         cat = { at: Date.now(), themes: out, error: '' };
@@ -266,8 +318,10 @@ function create(ctx) {
     for (const t of cat.themes) add(t.id, t);
     for (const id of Object.keys(all))
       add(id, { name: all[id].name, author: all[id].author, description: all[id].description, preview: '' });
+    const h = holiday();
     return {
       current: { id: c.id, accent: c.accent },
+      holidays: { on: holidaysOn(), active: h, name: h ? all[h].name : '' },
       previous: c.prev,
       accents: ACCENTS.map(x => ({ name: x[0], hex: x[1] })),
       themes,
@@ -355,6 +409,14 @@ function create(ctx) {
       if (id !== c.id || accent !== c.accent) save({ id, accent, prev: { id: c.id, accent: c.accent } });
       return json(await list());
     }
+    // Holiday themes on or off (Customise > Theme); on: the holiday theme for today is downloaded now when it is not on the TV
+    if (act === 'holidays') {
+      ctx.config.update('theme', cf => {
+        cf.theme = Object.assign({}, cf.theme, { holidays: b.on === true });
+      });
+      if (b.on === true) await ensureHoliday();
+      return json(await list());
+    }
     if (act === 'revert') {
       if (!c.prev) return json({ error: 'nothing to go back to' }, 400);
       save({ id: c.prev.id, accent: c.prev.accent, prev: { id: c.id, accent: c.accent } });
@@ -372,11 +434,14 @@ function create(ctx) {
   const startup = () => {
     const c = conf().theme || {};
     if (c.id && c.id !== DEFAULT_ID && ID.test(c.id) && !load()[c.id]) install(c.id).catch(() => {});
+    ensureHoliday().catch(() => {});
   };
   if (!ctx.noStartup) {
     const t = setTimeout(startup, 8000);
     if (t.unref) t.unref();
+    const i = setInterval(() => ensureHoliday().catch(() => {}), 6 * 3600 * 1000); // a holiday can begin while the TV stays on
+    if (i.unref) i.unref();
   }
-  return { name: 'theme', prefix: '/api/theme/', handle, resolved, list, install, refreshCatalogue, preview };
+  return { name: 'theme', prefix: '/api/theme/', handle, resolved, list, install, refreshCatalogue, preview, holiday, ensureHoliday };
 }
-module.exports = { create, normalize, SCHEMA, DEFAULTS, imageOk, fontOk, ID, resolve };
+module.exports = { create, normalize, SCHEMA, DEFAULTS, imageOk, fontOk, ID, resolve, holidayOf };

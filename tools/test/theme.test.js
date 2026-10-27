@@ -16,6 +16,7 @@ run(async () => {
     for (const k of Object.keys(o)) {
       const key = pre ? pre + '.' + k : k;
       if (key === 'slots') continue; // a list, checked by themeschema.slots
+      if (key === 'holiday' && themeMod.holidayOf(o[k])) continue; // a holiday theme's dates (MM-DD), checked by holidayOf
       if (o[k] && typeof o[k] === 'object') walk(o[k], key);
       else if (!known.has(key) && ['name', 'author', 'description', 'extends'].indexOf(key) < 0) unknownKeys.push(key);
     }
@@ -399,6 +400,49 @@ run(async () => {
   );
   r = await tcall('revert');
   ok(r.j.current.id === 'bloom' || r.j.current.id === 'kid', 'revert goes back to the previous theme');
+  // holiday themes: off unless switched on; on, the theme whose dates include today is downloaded and applied over the chosen theme
+  // (its colours and effects on the chosen layout and wallpaper), and the chosen theme comes back after the dates
+  let today = new Date(2026, 9, 20); // 20 October: Halloween's dates
+  await tcall('set', { id: 'bloom' });
+  const hcfg = memoryConfig({ theme: { id: 'bloom', accent: '' } });
+  const th2 = themeMod.create({ config: hcfg, noStartup: true, now: () => today });
+  const bloomRv = th2.resolved();
+  ok(bloomRv.id === 'bloom' && th2.holiday() === null, 'Holiday themes are off unless switched on');
+  r = await call(th2, '/api/theme/holidays', 'POST', { on: true });
+  const hv = th2.resolved();
+  ok(
+    r.j.holidays.on === true &&
+      r.j.holidays.active === 'halloween' &&
+      fs.existsSync(path.join(tlocal, 'halloween', 'theme.json')) &&
+      hv.id === 'halloween' &&
+      hv.attrs.particles === 'bats' &&
+      hv.vars['--acc'] === '#ff7a18',
+    "switched on in Halloween's dates: its theme is downloaded and applied, with its bats and colours"
+  );
+  ok(
+    hv.vars['--cols'] === bloomRv.vars['--cols'] &&
+      hv.vars['--tile-h'] === bloomRv.vars['--tile-h'] &&
+      JSON.stringify(hv.wallpaper && hv.wallpaper.id) === JSON.stringify(bloomRv.wallpaper && bloomRv.wallpaper.id) &&
+      hcfg.get().theme.id === 'bloom',
+    'over the chosen theme: its layout and wallpaper stay, and it stays the saved theme'
+  );
+  await call(th2, '/api/theme/set', 'POST', { id: 'classic' });
+  ok(hcfg.get().theme.holidays === true, 'choosing another theme keeps Holiday themes on');
+  today = new Date(2026, 10, 5); // 5 November: no holiday
+  ok(th2.holiday() === null && th2.resolved().id === 'classic', 'after the dates the chosen theme is back');
+  today = new Date(2026, 11, 30); // 30 December: New Year's dates run over the new year
+  await th2.ensureHoliday();
+  ok(
+    th2.holiday() === 'new-year' && th2.holiday(new Date(2027, 0, 2)) === 'new-year' && th2.holiday(new Date(2027, 0, 3)) === null,
+    'a date range over the new year (27 December to 2 January) holds on both sides'
+  );
+  r = await call(th2, '/api/theme/holidays', 'POST', { on: false });
+  ok(r.j.holidays.on === false && th2.resolved().id === 'classic', 'switched off: the chosen theme only');
+  ok(
+    JSON.parse(fs.readFileSync(path.join(tdir, 'index.json'), 'utf8')).themes.filter(t => t.holiday).length === 6,
+    'the catalogue names the six holiday themes with their dates'
+  );
+
   ghUp = false;
   await th.refreshCatalogue(true);
   r = await tcall('list', null, 'GET');

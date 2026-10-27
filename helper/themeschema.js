@@ -201,6 +201,13 @@ const SCHEMA = [
   ],
   ['effects.speed', 'num', [0, 2], 1, 'Animation speed multiplier; 0 switches the animations off.'],
   [
+    'effects.particles',
+    'enum',
+    ['none', 'snow', 'leaves', 'bats', 'confetti', 'hearts', 'stars'],
+    'none',
+    'A few light shapes drifting over the background (behind the apps), for a season or a holiday; off when `effects.speed` is 0.',
+  ],
+  [
     'effects.wallpaper',
     'file',
     null,
@@ -289,7 +296,10 @@ function normalize(raw, id, base, wallDir) {
   if (typeof w === 'string' && FILE.test(w)) {
     try {
       const b = fs.readFileSync(path.join(wallDir || path.join(dir(), id), w));
-      if (imageOk(b, w, MAX_WALLPAPER)) v['effects.wallpaper'] = w;
+      if (imageOk(b, w, MAX_WALLPAPER)) {
+        v['effects.wallpaper'] = w;
+        v.wallTheme = id; // the folder that holds it, also for a theme built on this one (a holiday theme over the chosen theme)
+      }
     } catch (_) {}
   } else if (w === '') v['effects.wallpaper'] = '';
   // a typeface: kept with the id of the theme whose folder holds it, so a theme that extends this one uses the same file
@@ -309,8 +319,14 @@ function normalize(raw, id, base, wallDir) {
     name: String(raw.name || id).slice(0, 40),
     author: String(raw.author || '').slice(0, 60),
     description: String(raw.description || '').slice(0, 160),
+    holiday: holidayOf(raw.holiday),
     v,
   };
+}
+// a holiday theme's dates, {from, to} as MM-DD (a range may run over the new year, e.g. 12-27 to 01-02); null for any other theme
+const MD = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+function holidayOf(h) {
+  return h && typeof h === 'object' && MD.test(String(h.from)) && MD.test(String(h.to)) ? { from: h.from, to: h.to } : null;
 }
 
 // Slots: where cards (small widgets, helper/cards.js) can go in this theme. "slots" is a list of
@@ -482,6 +498,7 @@ function resolve(t, accent) {
   if (v['grid.header'] === 'fade') attrs.hdr = 'fade';
   if (v['tile.focus'] === 'glass') attrs.focus = 'glass';
   if (v['effects.glowShape'] === 'center') attrs.glow = 'center';
+  if (v['effects.particles'] !== 'none' && v['effects.speed'] > 0) attrs.particles = v['effects.particles'];
   const w = v['effects.wallpaper'];
   const out = {
     id: t.id,
@@ -499,7 +516,7 @@ function resolve(t, accent) {
     overlayH: v['grid.overlayH'],
     glowRgb: v['effects.glowColor'] === 'accent' ? rgb(A).join(',') : '',
     nightRgb: night.join(','),
-    wallpaper: w ? { id: t.id, file: w, dim: v['effects.wallpaperDim'] } : null,
+    wallpaper: w ? { id: v.wallTheme || t.id, file: w, dim: v['effects.wallpaperDim'] } : null,
   };
   // only a theme with slots has this key (the same reason)
   if (v.slots && v.slots.length)
@@ -536,6 +553,7 @@ module.exports = {
   fontType,
   getPath,
   hex,
+  holidayOf,
   imageOk,
   imageType,
   lum,

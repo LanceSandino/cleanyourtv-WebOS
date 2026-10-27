@@ -9,13 +9,16 @@ function build() {
   const items = ids.map(id => {
     const t = JSON.parse(fs.readFileSync(path.join(ROOT, id, 'theme.json'), 'utf8'));
     const pv = ['jpg', 'png', 'webp'].find(x => fs.existsSync(path.join(ROOT, id, 'preview.' + x)));
-    return {
+    const e = {
       id,
       name: String(t.name || id),
       author: String(t.author || ''),
       description: String(t.description || ''),
       preview: pv ? id + '/preview.' + pv : '',
     };
+    // a holiday theme's dates, so a TV with Holiday themes on knows which one to download before the day
+    if (t.holiday) e.holiday = { from: String(t.holiday.from), to: String(t.holiday.to) };
+    return e;
   });
   items.sort((a, b) => (a.id === 'classic' ? -1 : b.id === 'classic' ? 1 : a.name.localeCompare(b.name)));
   return JSON.stringify({ v: 1, themes: items }, null, 1) + '\n';

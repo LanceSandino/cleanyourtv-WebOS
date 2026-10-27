@@ -737,3 +737,25 @@ commit_ref: "feature/wallpaper-fit (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T19:36:23Z"
 ```
+
+```yaml
+id: CU-20261027-35
+type: feature
+title: "Holiday themes, applied by themselves over the chosen theme, with light seasonal effects"
+description: "The owner asked for holiday themes. themeschema.js: a theme may name its dates (holiday {from, to}, MM-DD, over the new
+  year too; holidayOf) and an effect, effects.particles (none, snow, leaves, bats, confetti, hearts, stars; sent as attrs.particles
+  unless effects.speed is 0); a wallpaper remembers the theme folder that holds it (v.wallTheme), so a theme built on another keeps
+  its base's wallpaper (also for extends). theme.js: with theme.holidays on (POST /api/theme/holidays {on}, off by default), the
+  installed theme whose dates hold today (the shortest range first) is normalized over the chosen theme's values and resolved with its
+  own accent; list() reports holidays {on, active, name}; ensureHoliday() downloads the catalogue's holiday theme for today or the
+  next 3 days, at start, every 6 hours and when switched on; saving a theme keeps the switch. tools/theme-index.js adds the dates to
+  index.json. Six themes: Halloween (bats), Harvest (leaves), Winter holidays (snow), New Year (confetti), Valentine's (hearts),
+  Fourth of July (stars), with screenshots. Launcher: particles.js and particles.css draw 4 to 18 elements per effect between the
+  background and the clock (transform and opacity only); Customise > Theme > Holiday themes switches them."
+impact: medium
+affected_modules: ["helper/themeschema.js", "helper/theme.js", "tools/theme-index.js", "themes/", "app/src/js/particles.js", "app/src/css/particles.css", "app/src/js/theme.js", "app/src/js/menus.js", "docs/themes.md", "themes/README.md", "DECISIONS.md"]
+related_tests: ["tools/test/theme.test.js", "tools/oldchrome.js (holiday effect: the Halloween theme's bats layer behind the clock, not catching the pointer)"]
+commit_ref: "feature/wallpaper-fit (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T19:49:01Z"
+```

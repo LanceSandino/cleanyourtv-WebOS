@@ -1094,6 +1094,20 @@ function themeMenu() {
               },
             };
           });
+        /* Holiday themes (the service's holiday themes: Halloween, Thanksgiving, the winter holidays...): during a holiday's dates its
+           colours and effects go over the chosen theme, which comes back after */
+        var hol = r.holidays || {};
+        items.push({ sep: true });
+        items.push({
+          label: t('Holiday themes'),
+          sub: hol.on ? (hol.active ? t('On, %s now').replace('%s', hol.name) : t('On')) : t('Off'),
+          desc: t("A holiday's colours and effect go over your theme during its dates; yours comes back after."),
+          stay: true,
+          fn: function () {
+            if (!hol.on) toast(t('Getting the holiday theme...'));
+            themeCall('/api/theme/holidays', { on: !hol.on }, update);
+          },
+        });
         if (r.previous && r.previous.id) {
           items.push({ sep: true });
           items.push({

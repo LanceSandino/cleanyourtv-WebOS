@@ -1,0 +1,20 @@
+{
+ "name": "Harvest",
+ "author": "CleanYourTV",
+ "description": "Warm amber and brown, with autumn leaves drifting down, for Thanksgiving. Applied by itself from 20 to 30 November with Holiday themes on.",
+ "holiday": {
+  "from": "11-20",
+  "to": "11-30"
+ },
+ "colors": {
+  "night": "#120c07",
+  "panel": "#23170e",
+  "ink": "#fff4e8",
+  "accent": "#e8913a"
+ },
+ "effects": {
+  "glowColor": "accent",
+  "glow": 0.8,
+  "particles": "leaves"
+ }
+}

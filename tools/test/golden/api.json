@@ -758,6 +758,11 @@
         "accent": "",
         "id": "classic"
       },
+      "holidays": {
+        "active": null,
+        "name": "",
+        "on": false
+      },
       "previous": null,
       "themes": [
         {

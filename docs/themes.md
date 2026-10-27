@@ -10,6 +10,25 @@ the focus ring and of the highlighted button or menu row, on top of any theme. T
 screenshot and description. The Inputs picker and the Live TV banner and guide follow the theme's colours, accent and typeface too.
 Your own photos can replace a theme's background: see [Wallpapers](wallpapers.md).
 
+## Holiday themes
+
+**Customise** > **Theme** > **Holiday themes** switches them on (off unless you do). During a holiday's dates its colours and a light
+effect go over your theme: your layout, wallpaper and photos stay, and your theme stays chosen and comes back after the dates. The TV
+downloads a holiday theme a few days before it begins.
+
+| Theme | Dates | Effect |
+|---|---|---|
+| Valentine's | 7 to 14 February | hearts rising |
+| Fourth of July | 1 to 4 July | stars twinkling |
+| Halloween | 15 to 31 October | bats flying past |
+| Harvest (Thanksgiving) | 20 to 30 November | autumn leaves falling |
+| Winter holidays | 1 to 26 December | snow falling |
+| New Year | 27 December to 2 January | confetti |
+
+They can also be chosen like any other theme. A theme becomes a holiday theme with `"holiday": {"from": "MM-DD", "to": "MM-DD"}` in its
+`theme.json` (a range may run over the new year); the effect is `effects.particles`. The effects are a few shapes moved with transform
+and opacity only, behind the clock, the buttons and the apps, and are off when a theme's `effects.speed` is 0.
+
 ## Where the themes come from
 
 Themes are not part of the service. They are read from the [`themes/`](https://github.com/LanceSandino/cleanyourtv-WebOS/tree/main/themes)
@@ -238,6 +257,7 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `effects.glowColor` | `app`, `accent` | `app` | `app`: taken from the focused icon; `accent`: the accent colour. |
 | `effects.glowShape` | `top`, `center` | `top` | `top`: a wash of colour from the top edge; `center`: a large soft circle of colour around the dock. |
 | `effects.speed` | 0 to 2 | `1` | Animation speed multiplier; 0 switches the animations off. |
+| `effects.particles` | `none`, `snow`, `leaves`, `bats`, `confetti`, `hearts`, `stars` | `none` | A few light shapes drifting over the background (behind the apps), for a season or a holiday; off when `effects.speed` is 0. |
 | `effects.wallpaper` | a file name | none | A file name in `themes/wallpapers/`: `.jpg`, `.png` or `.webp`, at most 1.5 MB; drawn at 1920 x 1080. |
 | `effects.wallpaperDim` | 0 to 0.9 | `0.4` | How far the wallpaper is darkened with the background colour. |
 <!-- schema:end -->

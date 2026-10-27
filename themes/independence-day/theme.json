@@ -1,0 +1,21 @@
+{
+ "name": "Fourth of July",
+ "author": "CleanYourTV",
+ "description": "Red, white and blue, with stars twinkling. Applied by itself from 1 to 4 July with Holiday themes on.",
+ "holiday": {
+  "from": "07-01",
+  "to": "07-04"
+ },
+ "colors": {
+  "night": "#060a18",
+  "panel": "#101a33",
+  "ink": "#ffffff",
+  "accent": "#ff4d5a",
+  "focus": "#ffffff"
+ },
+ "effects": {
+  "glowColor": "accent",
+  "glow": 0.8,
+  "particles": "stars"
+ }
+}
