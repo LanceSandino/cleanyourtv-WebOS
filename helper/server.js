@@ -7,7 +7,10 @@
 const http = require('http');
 const web = require('./web');
 
-const OUR_APPS = /^file:\/\/(com\.webos\.app\.home|com\.cleanyourtv\.(manager|picker|notify))-webos$/;
+// Who may call: our own apps (local files; their requests carry Origin "null", "file://<app id>-webos" on webOS 6, or a bare
+// "file://" on webOS 4, whose Chromium 53 names no app, so it is no more specific than "null"; the API token still has to match)
+// and programs
+const OUR_APPS = /^file:\/\/((com\.webos\.app\.home|com\.cleanyourtv\.(manager|picker|notify))-webos)?$/;
 // DNS rebinding: a web page whose own name was made to point at 127.0.0.1 still sends that name as Host. Only requests addressed to
 // the loopback address or localhost are answered; a request without Host comes from a program on the TV.
 const LOOPBACK_HOST = /^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/i;
@@ -36,7 +39,7 @@ function create(opts) {
       return web.json(res, { error: 'origin not allowed' }, 403);
     }
     // Chromium 79 (webOS 6) compares the answer with its own serialisation of a file origin, so for those origins echoing fails
-    // CORS: answer * there. Only origins accepted above get this far.
+    // CORS: answer * there, and to the bare "file://" of Chromium 53 (webOS 4) too. Only origins accepted above get this far.
     if (origin === 'null') {
       res.setHeader('Access-Control-Allow-Origin', rawOrigin === 'null' ? 'null' : '*');
       res.setHeader('Vary', 'Origin');
