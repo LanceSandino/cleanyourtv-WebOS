@@ -68,15 +68,29 @@ Putting the dock, buttons, hidden apps, order and clock back to the defaults is 
 
 ## Continue watching
 
-The first row of the app grid holds picture cards of what to go back to, in this order: what Telemachus is playing (with a bar for
-how far it got), what Telemachus plays next, the apps and inputs LG's recents list names (the ones opened last), then the rest of
-Telemachus's plan. OK opens a card where it is: Telemachus at that episode or film (once its app takes the `play` launch option; until
-then it opens Telemachus), an app or an input as it is. Your apps start on the row below. **Customise** > **Continue watching** switches
-the row off.
+The first row of the app grid holds picture cards of things you started and did not finish, never app shortcuts (your apps are on
+Home already). In this order: what Telemachus is playing, or the episode each show is in the middle of (one card per show, with a bar
+for how far it got); what Plex and Stremio have partly watched (once linked, below); then one card for what Telemachus's channel plays
+next, marked **Up next on Telemachus**. The focused card names where it comes from in its corner. OK opens a card where it is: Telemachus at
+that episode or film (once its app takes the `play` launch option; until then it opens Telemachus), or the Plex or Stremio app (at its
+own Home, where its Continue Watching row has the same item first). Your apps start on the row below.
 
-The service reads Telemachus on the TV itself (`127.0.0.1:8770`, which answers programs on the TV and refuses web pages) and LG's
-recents list; the pictures are fetched by the service from TMDB's image server and served from memory, so the Home page contacts no
-other site. Nothing is shown when Telemachus is not installed.
+Holding OK on a card offers **Resume** (or **Play**), **Open** the app it comes from, **Remove from Continue watching** (the whole show
+or film, so its next episode does not come back), **Hide everything from** that app, and the settings below.
+
+**Customise** > **Continue watching**:
+
+- **Show on Home** switches the row off (nothing is then read).
+- **Show removed cards again** (when you removed some) brings them all back.
+- **Link Plex...** shows a 4-character code: open `plex.tv/link` on a phone or a computer, signed in to Plex, and enter it. The TV
+  then reads Continue Watching from your own Plex server, by its address on your network.
+- **Link Stremio...** shows a link: open it on a phone or a computer and sign in to Stremio there. The TV then reads your Stremio
+  library and shows what you started and did not finish, newest first.
+- A linked service shows its name; OK on it offers **Unlink**. A code is valid for ten minutes.
+
+No password is typed on the TV. The service reads Telemachus on the TV itself (`127.0.0.1:8770`, which answers programs on the TV and
+refuses web pages) and the linked services; it fetches the pictures and serves them from memory, so the Home page
+contacts no other site. Nothing is shown from Telemachus when it is not installed.
 
 ## Uninstalling apps
 

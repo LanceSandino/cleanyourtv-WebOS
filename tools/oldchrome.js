@@ -155,6 +155,26 @@ const WATCH_KEYS =
   'key(37);key(37);key(37);var f=document.querySelector(".f");var onCard=!!f&&f.classList.contains("wcard");key(13);setTimeout(function(){var l=launched[0]||[];' +
   'var ok=newRow&&onCard&&l[0]==="com.telemachus.screen"&&l[1]&&l[1].play&&l[1].play.episode===6;' +
   'document.body.setAttribute("data-watch",ok?"ok":"bad newRow="+newRow+" onCard="+onCard+" launched="+JSON.stringify(launched))},800)},800)},300)})()</script>';
+// holding OK: on an app tile in the dock its options (Hide app), on a Continue watching card its own (Remove from Continue watching, which takes
+// that show off the row and keeps it in the settings)
+const HOLD_OK =
+  '<script>(function(){function ev(t,c){var e=document.createEvent("Event");e.initEvent(t,true,true);Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)}' +
+  'function key(c){ev("keydown",c);ev("keyup",c)}function ov(){var o=document.getElementById("ov");return o?o.textContent:""}' +
+  'function hold(cb){ev("keydown",13);setTimeout(function(){ev("keyup",13);setTimeout(cb,300)},1000)}' +
+  'var go=setInterval(function(){if(document.querySelectorAll(".wcard").length<2)return;clearInterval(go);setTimeout(function(){' +
+  'hold(function(){var app=/Hide app/.test(ov());key(461);setTimeout(function(){key(40);key(37);key(37);key(37);var f=document.querySelector(".f");' +
+  'var onCard=!!f&&f.classList.contains("wcard");hold(function(){var card=/Resume/.test(ov())&&/Open Telemachus/.test(ov())&&/Remove from Continue watching/.test(ov())&&/Hide everything from Telemachus/.test(ov());key(40);key(40);key(13);setTimeout(function(){' +
+  'var left=document.querySelectorAll(".wcard").length,saved=cfg.watch&&cfg.watch.hide&&cfg.watch.hide.join();' +
+  'var ok=app&&onCard&&card&&left===1&&saved==="tm:Show A";' +
+  'document.body.setAttribute("data-hold",ok?"ok":"bad app="+app+" onCard="+onCard+" card="+card+" left="+left+" saved="+saved+" menu="+ov().slice(0,120))},800)})},600)})},800)},300)})()</script>';
+// linking Plex (Customise > Continue watching): Down to Link Plex..., OK; the menu shows the code for plex.tv/link, then, once the
+// stand-in says the code was entered, the server it is linked to
+const WATCH_LINK =
+  '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}function ov(){var o=document.getElementById("ov");return o?o.textContent:""}' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);watchMenu();setTimeout(function(){key(40);key(13);' +
+  'var n=0,code=false,w=setInterval(function(){if(/plex\\.tv\\/link and enter AB12/.test(ov()))code=true;if(++n<60&&!/Linked to Home server/.test(ov()))return;clearInterval(w);' +
+  'var ok=code&&/Linked to Home server/.test(ov());document.body.setAttribute("data-link",ok?"ok":"bad code="+code+" menu="+ov().slice(0,200))},250)},800)},300)})()</script>';
 // [name, file, what it draws, how many at least, milliseconds of page time to wait]
 const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
@@ -168,8 +188,12 @@ const PAGES = [
   ['saver over an app', 'app/index.html', /data-over="ok"/g, 1, 30000, SAVER_OVER],
   ['home key', 'app/index.html', /data-home="ok"/g, 1, 15000, HOME_KEY],
   ['continue watching', 'app/index.html', /data-watch="ok"/g, 1, 15000, WATCH_KEYS],
+  ['linking plex', 'app/index.html', /data-link="ok"/g, 1, 20000, WATCH_LINK],
+  ['hold ok', 'app/index.html', /data-hold="ok"/g, 1, 20000, HOLD_OK],
 ];
-let famN = 0;
+let famN = 0,
+  plexState = 'idle',
+  plexAsks = 0;
 // a stand-in photo from the feed: a landscape picture with the photo's name on it
 const photo = u =>
   '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000"><rect width="1600" height="1000" fill="#3a6e8f"/>' +
@@ -191,11 +215,14 @@ function serve() {
     // the API token (apitoken.js): served next to the pages as on the TV, and every API call of a page must carry it
     if (u === '/cytv-token.js')
       return r.writeHead(200, { 'content-type': 'text/javascript' }), r.end("var CYTV_TOKEN = '" + TOKEN + "';\n");
-    if (/^\/api\/(apps|inputs|manager\/status|photofeed\/next|watch\/rows|log)$/.test(u) && q.headers['x-cytv-token'] !== TOKEN) {
+    if (
+      /^\/api\/(apps|inputs|manager\/status|photofeed\/next|watch\/(rows|accounts|link)|log)$/.test(u) &&
+      q.headers['x-cytv-token'] !== TOKEN
+    ) {
       noToken.push(u);
       return r.writeHead(403, { 'content-type': 'application/json' }), r.end('{"error":"token required"}');
     }
-    if (p) return (famN = 0), r.writeHead(200, { 'content-type': 'text/html' }), r.end(page(p[1], p[5])); // each page starts at p1
+    if (p) return (famN = 0), (plexState = 'idle'), r.writeHead(200, { 'content-type': 'text/html' }), r.end(page(p[1], p[5])); // each page starts at p1
     if (u === '/qrcode.js')
       return (
         r.writeHead(200, { 'content-type': 'text/javascript' }),
@@ -227,6 +254,7 @@ function serve() {
         items: [
           {
             key: 'tm-a',
+            group: 'tm:Show A',
             source: 'telemachus',
             title: 'Show A',
             sub: 'S2 E6',
@@ -235,16 +263,29 @@ function serve() {
             launch: { id: 'com.telemachus.screen', params: { play: { show: 'Show A', season: 2, episode: 6 } } },
           },
           {
-            key: 'app-netflix',
-            source: 'recent',
-            title: 'Netflix',
-            sub: '',
-            img: '',
-            progress: null,
-            launch: { id: 'netflix', params: {} },
+            key: 'plex-7',
+            group: 'plex:7',
+            source: 'plex',
+            title: 'Film B',
+            sub: '2001',
+            img: '/api/watch/img/bbbbbbbbbbbbbbbb',
+            progress: 0.5,
+            launch: { id: 'cdp-30', params: {} },
           },
         ],
       });
+    // Plex's TV sign-in: a code, entered (says the stand-in) by the second time the menu asks
+    if (u === '/api/watch/link') return (plexState = 'waiting'), (plexAsks = 0), json({ code: 'AB12', url: 'plex.tv/link' });
+    if (u === '/api/watch/accounts') {
+      if (plexState === 'waiting' && ++plexAsks >= 2) plexState = 'linked';
+      return json({
+        plex: Object.assign(
+          { linked: plexState === 'linked', server: plexState === 'linked' ? 'Home server' : '', state: plexState },
+          plexState === 'waiting' ? { code: 'AB12', url: 'plex.tv/link' } : {}
+        ),
+        stremio: { linked: false, state: 'idle' },
+      });
+    }
     if (/^\/api\/watch\/img\/[0-9a-f]{16}$/.test(u)) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(photo(u));
     if (u === '/api/foreground') return json({ returnValue: true, appId: 'com.telemachus.screen' }); // another app in front
     // three Wallpapers photos for the chooser (wallpick.js)
@@ -329,7 +370,9 @@ function run(bin, url, extra, budget) {
             ' expected)' +
             (n >= p[3]
               ? ''
-              : '\n  page: ' +
+              : '\n  check: ' +
+                ((/data-[a-z]+="(bad[^"]*)"/.exec(dom) || [])[1] || '(no outcome)') +
+                '\n  page: ' +
                 dom.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, '').slice(0, 600) +
                 '\n  browser: ' +
                 (r.stderr || '').slice(-600))

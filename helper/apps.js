@@ -222,8 +222,14 @@ function create(ctx) {
         clock: s.clock !== false,
       };
     }
-    // Continue watching on Home (watch.js): on unless switched off
-    if (b.watch && typeof b.watch === 'object') out.watch = { on: b.watch.on !== false };
+    // Continue watching on Home (watch.js): on unless switched off; the shows and films removed from it (hold OK > Remove)
+    if (b.watch && typeof b.watch === 'object') {
+      out.watch = { on: b.watch.on !== false };
+      const hide = (Array.isArray(b.watch.hide) ? b.watch.hide : []).filter(
+        (g, i, a) => typeof g === 'string' && /^[a-z]+:[^\u0000-\u001f]{1,160}$/.test(g) && a.indexOf(g) === i
+      );
+      if (hide.length) out.watch.hide = hide.slice(-100);
+    }
     // the cards in the theme's slots (Customise > Cards), checked for shape only (cards.js)
     const cards = cardsShape.sanitize(b.cards);
     if (cards) out.cards = cards;
@@ -252,6 +258,7 @@ function create(ctx) {
     delete c.theme;
     delete c.wallpapers; // holds the Immich key; the launcher gets only a stamp that changes with the set of photos
     delete c.photoFeed; // holds the photo feed's token; the launcher gets only whether there are photos
+    delete c.watchAccounts; // Plex's and Stremio's keys (plex.js, stremio.js); the launcher gets the cards only
     const theme = ctx.feature('theme'),
       wp = ctx.feature('wallpapers'),
       feed = ctx.feature('photofeed');

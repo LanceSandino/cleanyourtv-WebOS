@@ -32,7 +32,8 @@ function hit(e) {
   });
 }
 function options(e) {
-  if (e._a && !e._a.sys) appMenu(e._a);
+  if (e._a && e._a.watch) watchCardMenu(e._a.watch);
+  else if (e._a && !e._a.sys) appMenu(e._a);
   else if (e._o && !e._o.fixed) barMenu(e._o);
 }
 

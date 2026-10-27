@@ -27,7 +27,14 @@ run(async () => {
       };
     return { returnValue: true };
   };
-  const config = memoryConfig({ dock: ['a.one'], wallpapers: { immich: { url: 'http://immich', key: 'secret-immich-key' } } });
+  const config = memoryConfig({
+    dock: ['a.one'],
+    wallpapers: { immich: { url: 'http://immich', key: 'secret-immich-key' } },
+    watchAccounts: {
+      plex: { token: 'secret-plex-token', server: { token: 'secret-server-token' } },
+      stremio: { authKey: 'secret-stremio-key' },
+    },
+  });
   const wpStub = { stamp: () => '3:abcd' };
   const apps = req('apps').create({ config, luna, version: '1.6.0', feature: n => (n === 'wallpapers' ? wpStub : null) });
   let r = await call(apps, '/api/apps');
@@ -35,6 +42,7 @@ run(async () => {
     r.out.indexOf('secret-immich-key') < 0 && r.j.config.wallpapers.stamp === '3:abcd',
     'the launcher gets a stamp of the Wallpapers photos, never the Immich key'
   );
+  ok(r.out.indexOf('secret-') < 0 && !r.j.config.watchAccounts, "the launcher never gets Plex's or Stremio's keys");
   ok(
     asked === 1 && r.j.apps.length === 1 && r.j.apps[0].title === 'One' && r.j.config.dock[0] === 'a.one',
     'the first list is asked from the app manager, without LG Home'
@@ -82,6 +90,13 @@ run(async () => {
   ok(
     savedCards === JSON.stringify({ greeting: { type: 'greeting', name: 'Sam' } }) && config.get().cards === undefined,
     'the launcher saves its cards (checked) with its other settings, and a save without them removes them'
+  );
+  await call(apps, '/api/config', 'POST', {
+    watch: { on: true, hide: ['tm:The Show', 'plex:12', 'tm:The Show', 'nope', 'x:\n', 7] },
+  });
+  ok(
+    JSON.stringify(config.get().watch) === '{"on":true,"hide":["tm:The Show","plex:12"]}',
+    'Continue watching keeps the removed shows (checked, once each) with its switch'
   );
   await call(apps, '/api/config', 'POST', { wall: { on: true, secs: 10 } });
   const w10 = config.get().wall;

@@ -1,5 +1,5 @@
 /* Continue watching (watch.js): picture cards in the grid's first row, the title and the episode over a dark fade at the bottom, a
-   thin bar for how far it got. Apps opened last show their icon. */
+   thin bar for how far it got, and where it comes from in the corner of the focused one. */
 .wcard {
   overflow: hidden;
   border-radius: var(--tile-r);
@@ -11,10 +11,6 @@
   right: 0;
   bottom: 0;
   background: #1a1c22 center / cover no-repeat;
-}
-.wcard.wicon .wimg {
-  background-size: 34%;
-  background-position: center 34%;
 }
 .wcard .wtx {
   position: absolute;
@@ -64,6 +60,32 @@
   background: var(--acc);
   transform-origin: left center;
 }
+.wcard .wsrc {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.62);
+  font-size: calc(14px * var(--fs));
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(var(--c));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+/* where a card comes from shows on the focused one only */
+.wcard.f .wsrc {
+  opacity: 1;
+}
+.wcard .wsrc:empty {
+  display: none;
+}
 [dir="rtl"] .wcard .wtx {
   text-align: right;
+}
+[dir="rtl"] .wcard .wsrc {
+  left: auto;
+  right: 12px;
 }

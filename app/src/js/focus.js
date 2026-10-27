@@ -141,7 +141,7 @@ function decorate(e, first) {
     if (on) glideTo(on, g.x - on._sz[0] / 2, g.y - on._sz[1] / 2, first);
   }
   if (TH.label) {
-    if (inGrid) {
+    if (inGrid && !(e._a && e._a.watch)) {
       var t = e._a ? e._a.title : '';
       if (deco.cap.textContent !== t) deco.cap.textContent = t;
       glideTo(deco.cap, g.x, g.b, first);

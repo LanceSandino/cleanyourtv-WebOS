@@ -45,10 +45,24 @@ the service or given to the launcher. At most 30 photos (40 MB) are kept on the 
 
 ## Continue watching
 
-Home's first grid row reads Telemachus on the TV itself (`127.0.0.1:8770`, no key from the TV) and LG's recents list (luna). The show and
+Home's first grid row reads Telemachus on the TV itself (`127.0.0.1:8770`, no key from the TV). The show and
 film pictures it names come from `image.tmdb.org` (HTTPS only, no redirects, at most 1 MB each): the service fetches them when Home
 shows them and keeps at most 40 in memory, never on disk; the Home page only ever sees an id. Switch the row off in **Customise** >
-**Continue watching** and nothing is read.
+**Continue watching** > **Show on Home** and nothing is read.
+
+Plex and Stremio are read only once you link them there, with their own TV sign-in (no password on the TV):
+
+- **Plex:** the service asks `plex.tv` for a code (HTTPS), then every 3 s for at most ten minutes whether it was entered. It keeps the
+  account's key and your server's own key in `config.json` (readable by root only), and asks `plex.tv` once for the server's address,
+  preferring its local one. After that it reads only your Plex server (`/hubs/continueWatching/items`), at that address: often plain
+  `http://` on your network, so the server's key is visible on your network, as it is for the Plex app. Pictures come from the
+  server's picture route with that key; the key is added by the service and never reaches the Home page.
+- **Stremio:** the service asks `link.stremio.com` for a link (HTTPS), then every 3 s for at most ten minutes whether it was used. It
+  keeps the key it gets in `config.json` and reads your library from `api.strem.io` (HTTPS); pictures come from
+  `images.metahub.space` (HTTPS only, Stremio's image server).
+- The keys are never returned by the service: not in `/api/apps`, not in `/api/watch/accounts` (linked or not, and the server's name).
+  **Unlink** forgets them; the access stays listed in your Plex account (Authorized Devices) or Stremio account until you remove it
+  there.
 
 ## Voice
 

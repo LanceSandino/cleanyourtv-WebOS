@@ -530,11 +530,7 @@ function customizeMenu() {
         label: t('Continue watching'),
         sub: cfg.watch && cfg.watch.on === false ? t('Off') : t('On'),
         stay: true,
-        fn: function () {
-          cfg.watch = { on: !!(cfg.watch && cfg.watch.on === false) };
-          saveCfg();
-          WATCH.refresh();
-        },
+        fn: watchMenu,
       },
       {
         label: t('App order'),
@@ -741,6 +737,176 @@ function saverMenu() {
       return it;
     });
   });
+}
+/* hold OK on a Continue watching card: open it or its app, remove its show (or film), or every card of its source */
+function watchCardMenu(it) {
+  var from = SOURCE_NAMES[it.source] || '',
+    gone = function (g) {
+      WATCH.remove(g);
+      toast(t('Removed. Customise > Continue watching shows it again.'));
+    };
+  openMenu(
+    it.title,
+    [
+      {
+        label: it.next ? t('Play') : t('Resume'),
+        sub: it.sub || '',
+        fn: function () {
+          launch(it.launch.id, it.launch.params);
+        },
+      },
+      SOURCE_APPS[it.source]
+        ? {
+            label: t('Open %s').replace('%s', from),
+            fn: function () {
+              launch(SOURCE_APPS[it.source]);
+            },
+          }
+        : null,
+      {
+        label: t('Remove from Continue watching'),
+        sub: it.group && it.group.indexOf(':film:') < 0 && it.sub ? t('the whole show') : '',
+        fn: function () {
+          gone(it.group);
+        },
+      },
+      from
+        ? {
+            label: t('Hide everything from %s').replace('%s', from),
+            fn: function () {
+              gone('src:' + it.source);
+            },
+          }
+        : null,
+      {
+        label: t('Continue watching settings...'),
+        stay: true,
+        fn: watchMenu,
+      },
+    ].filter(function (x) {
+      return x;
+    })
+  );
+}
+/* Continue watching (watch.js): shown on Home or not, and Plex and Stremio linked with their own TV sign-in: a code entered on a phone
+   (plex.tv/link) or a link opened there (Stremio), never a password on the TV. The service keeps the keys; this menu sees only whether
+   a service is linked, and asks again every 3 s while a code waits. */
+function watchMenu() {
+  var acc = {},
+    timer = 0,
+    NAMES = { plex: 'Plex', stremio: 'Stremio' },
+    build = function () {
+      var on = WATCH.on(),
+        gone = WATCH.removed().length,
+        items = [
+          {
+            label: t('Show on Home'),
+            sub: on ? t('On') : t('Off'),
+            stay: true,
+            fn: function () {
+              WATCH.setOn(!on);
+            },
+          },
+        ];
+      if (gone)
+        items.push({
+          label: t('Show removed cards again'),
+          sub: String(gone),
+          stay: true,
+          fn: WATCH.restore,
+        });
+      items.push({ head: t('Accounts') });
+      ['plex', 'stremio'].forEach(function (k) {
+        var a = acc[k] || {},
+          n = NAMES[k];
+        if (a.linked)
+          items.push({
+            label: n,
+            sub: a.server ? t('Linked to %s').replace('%s', a.server) : t('Linked'),
+            stay: true,
+            fn: function () {
+              openMenu(t('Unlink %s?').replace('%s', n), [
+                { label: t('Cancel'), fn: backMenu, stay: true },
+                {
+                  label: t('Unlink'),
+                  sub: t('its cards leave Home; linking again needs a new code'),
+                  stay: true,
+                  fn: function () {
+                    backMenu();
+                    call('/api/watch/unlink', k);
+                  },
+                },
+              ]);
+            },
+          });
+        else if (a.state === 'waiting') {
+          items.push({
+            label: n,
+            sub: t('Waiting for the code...'),
+            stay: true,
+            fn: function () {
+              call('/api/watch/link', k); /* a new code */
+            },
+          });
+          items.push({
+            note:
+              k === 'plex'
+                ? t('On a phone or a computer, open plex.tv/link and enter %s').replace('%s', a.code)
+                : t('On a phone or a computer, open %s and sign in to Stremio').replace('%s', a.url),
+          });
+        } else
+          items.push({
+            label: t('Link %s...').replace('%s', n),
+            sub:
+              a.state === 'expired'
+                ? t('The code expired: try again')
+                : a.state === 'error'
+                  ? t('Could not link: try again')
+                  : k === 'plex'
+                    ? t('a code for plex.tv/link')
+                    : t('a link to open on a phone'),
+            stay: true,
+            fn: function () {
+              call('/api/watch/link', k);
+            },
+          });
+      });
+      items.push({
+        note: t('Telemachus on this TV is read when it is installed. Hold OK on a card to remove it. The keys stay on the TV.'),
+      });
+      return items;
+    },
+    shown = function () {
+      return stack.length && stack[stack.length - 1].build === build;
+    },
+    load = function () {
+      clearTimeout(timer);
+      api('/api/watch/accounts').then(
+        function (r) {
+          var was = JSON.stringify(acc);
+          acc = r || {};
+          if (shown() && JSON.stringify(acc) !== was) {
+            refreshMenu();
+            WATCH.refresh();
+          }
+          /* asked again only while this menu is open and a code waits */
+          if (shown() && ((acc.plex && acc.plex.state === 'waiting') || (acc.stremio && acc.stremio.state === 'waiting')))
+            timer = setTimeout(load, 3000);
+        },
+        function () {}
+      );
+    },
+    call = function (p, k) {
+      api(p, { service: k }).then(
+        function (r) {
+          if (r && r.error) toast(t('Could not link: try again'), true);
+          load();
+        },
+        function () {}
+      );
+    };
+  openBuilt(t('Continue watching'), build);
+  load();
 }
 /* the apps that can go in the dock or on a button: not hidden, not Live TV, A to Z */
 function pickApp(heading, skip, cb) {
