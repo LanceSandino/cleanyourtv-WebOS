@@ -3,14 +3,14 @@
 # release package (an .ipk), checks its SHA-256 and installs it. The setup itself (replacing LG's Home, the Input key,
 # the debloat) is done afterwards in the CleanYourTV app on the TV: open it and choose "Set up now".
 #
-#   ssh root@<tv-ip> 'curl -fsSL https://raw.githubusercontent.com/lasharor/cleanyourtv-WebOS/main/install.sh | sh'
+#   ssh root@<tv-ip> 'curl -fsSL https://raw.githubusercontent.com/LanceSandino/cleanyourtv-WebOS/main/install.sh | sh'
 #
-# Environment: CYTV_REPO=owner/name (default lasharor/cleanyourtv-WebOS)  CYTV_IPK=/path/to/package.ipk (use a local package)
+# Environment: CYTV_REPO=owner/name (default LanceSandino/cleanyourtv-WebOS)  CYTV_IPK=/path/to/package.ipk (use a local package)
 #   CYTV_CHANNEL=dev  install the dev build (the pre-release dev, rebuilt on every change) and keep following it; the manager app
 #   can switch back to the stable releases (Update channel). CYTV_BRANCH=<anything>, from before the dev builds, means the same.
 
 main() {
-  REPO="${CYTV_REPO:-lasharor/cleanyourtv-WebOS}"
+  REPO="${CYTV_REPO:-LanceSandino/cleanyourtv-WebOS}"
   ID=com.cleanyourtv.manager
   export PATH=/usr/bin:/usr/sbin:/bin:/sbin:$PATH
   say() { echo "[cleanyourtv] $*"; }
