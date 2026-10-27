@@ -1,5 +1,5 @@
-// Continue watching (watch.js): Telemachus on the TV (a stand-in here) gives Home's first grid row what is playing (with how far it
-// got), the episode each other show is in the middle of, and one card for what its channel plays next; never app shortcuts.
+// Continue watching (watch.js): Telemachus on the TV (a stand-in here) gives the cards its app shows on Home: what is playing (with how
+// far it got), the episode each other show is in the middle of, then what its channel plays next; never app shortcuts.
 // Episode titles that are file names are cleaned; pictures only from TMDB, by an id, never by address.
 const http = require('http');
 const { ok, call, req, run, memoryConfig } = require('./lib');
@@ -55,8 +55,8 @@ run(async () => {
   const items = (await call(w, '/api/watch/rows')).j.items;
   const keys = items.map(i => i.key);
   ok(
-    keys.join() === 'tm-Show A-2-5,tm-Show C-1-3,tm-film-tmdb:42',
-    'what is playing, the episode another show is in the middle of, then one next: a card per show (' + keys.join() + ')'
+    keys.join() === 'tm-Show A-2-5,tm-Show C-1-3,tm-Show A-2-6,tm-Show C-1-4,tm-film-tmdb:42,tm-Show B-1-1',
+    'what is playing, the episode another show is in the middle of, then the next four in the lineup without those (' + keys.join() + ')'
   );
   const now = items[0];
   ok(
@@ -70,8 +70,12 @@ run(async () => {
     "another show's started episode: the latest one, how far it got, it opens in Telemachus there"
   );
   ok(
-    items[2].next && items[2].launch.params.play.film === 'A Film' && items[2].launch.params.play.tmdb_id === 'tmdb:42',
-    "the channel's next (here a film) is marked next and opens by its title and TMDB id"
+    items[2].next &&
+      JSON.stringify(items[2].launch.params) === '{"play":{"show":"Show A","season":2,"episode":6}}' &&
+      items[4].next &&
+      items[4].launch.params.play.film === 'A Film' &&
+      items[4].launch.params.play.tmdb_id === 'tmdb:42',
+    "the channel's next are marked next; an episode opens at that episode, a film by its title and TMDB id"
   );
   ok(
     /^\/api\/watch\/img\/[0-9a-f]{16}$/.test(now.img) && JSON.stringify(items).indexOf('tmdb.org') < 0,

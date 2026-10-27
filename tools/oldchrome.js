@@ -79,8 +79,13 @@ function engine(rev, sums) {
 
 // ---- the stand-in service: a few made-up apps, two inputs, the replies recorded in tools/test/golden/api.json ----
 const golden = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'test', 'golden', 'api.json'), 'utf8').replace(/<version>/g, '9.9.9'));
-const NAMES = ['Streaming', 'Video', 'Music', 'Photos', 'Games', 'Browser', 'News', 'Weather', 'Sports', 'Movies', 'Kids', 'Radio'];
-const apps = NAMES.map((n, i) => ({ id: 'app.' + i, title: n, hue: (i * 47) % 360 }));
+const NAMES = ['Streaming', 'Video', 'Plex', 'Photos', 'Games', 'Browser', 'Telemachus', 'Weather', 'Sports', 'Movies', 'Kids', 'Radio'];
+// two of them are apps with Continue watching cards: Plex in the dock, Telemachus in the grid
+const apps = NAMES.map((n, i) => ({
+  id: i === 2 ? 'cdp-30' : i === 6 ? 'com.telemachus.screen' : 'app.' + i,
+  title: n,
+  hue: (i * 47) % 360,
+}));
 const icon = a =>
   '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="hsl(' +
   a.hue +
@@ -144,29 +149,31 @@ const HOME_KEY =
   'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);customizeMenu();var menu=!!document.getElementById("ov");home();' +
   'var menuClosed=menu&&!document.getElementById("ov")&&!stack.length;WALLPICK.start();var w=setInterval(function(){if(!WALLPICK.open())return;clearInterval(w);home();' +
   'var ok=menuClosed&&!WALLPICK.open();document.body.setAttribute("data-home",ok?"ok":"bad menu="+menu+" menuClosed="+menuClosed+" chooser="+WALLPICK.open())},300)},500)})()</script>';
-// Continue watching (watch.js): two cards in the grid's first row, the apps from the next row; Down into that row, Left to its first
-// card, OK opens
-// Telemachus at that episode
+// Continue watching (watch.js): no cards until an app that has some is highlighted. Plex in the dock: its row opens under the dock,
+// Down goes into it, OK opens Plex; Right along the dock closes it. Telemachus in the grid: its row opens under its row, OK on the card
+// opens Telemachus at that episode.
 const WATCH_KEYS =
   '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
   'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}var launched=[],L=window.launch;window.launch=function(id,p){launched.push([id,p]);return L(id,p)};' +
-  'var go=setInterval(function(){if(document.querySelectorAll(".wcard").length<2)return;clearInterval(go);' +
-  'var first=document.querySelector("#grid .tile:not(.wcard)");var newRow=!!first&&first.style.gridColumnStart==="1";key(40);setTimeout(function(){' +
-  'key(37);key(37);key(37);var f=document.querySelector(".f");var onCard=!!f&&f.classList.contains("wcard");key(13);setTimeout(function(){var l=launched[0]||[];' +
-  'var ok=newRow&&onCard&&l[0]==="com.telemachus.screen"&&l[1]&&l[1].play&&l[1].play.episode===6;' +
-  'document.body.setAttribute("data-watch",ok?"ok":"bad newRow="+newRow+" onCard="+onCard+" launched="+JSON.stringify(launched))},800)},800)},300)})()</script>';
-// holding OK: on an app tile in the dock its options (Hide app), on a Continue watching card its own (Remove from Continue watching, which takes
-// that show off the row and keeps it in the settings)
+  'function n(){return document.querySelectorAll("#grid .wcard").length}function f(){return document.querySelector(".f")}' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile")||!WATCH.refresh)return;clearInterval(go);setTimeout(function(){var none=n()===0;' +
+  'key(39);key(39);var onPlex=f()&&f()._a&&f()._a.id==="cdp-30";setTimeout(function(){var plexRow=n()===1;key(40);var inRow=f()&&f().classList.contains("wcard");key(13);' +
+  'setTimeout(function(){key(38);key(39);setTimeout(function(){var closed=n()===0;var p=posOf(tiles["com.telemachus.screen"]);setFocus(p[0],p[1]);setTimeout(function(){' +
+  'var under=posOf(document.querySelector("#grid .wcard"));var tmRow=!!under&&under[0]===p[0]+1;key(40);key(37);key(37);key(37);key(13);setTimeout(function(){' +
+  'var l0=launched[0]||[],l1=launched[1]||[];var ok=none&&onPlex&&plexRow&&inRow&&l0[0]==="cdp-30"&&closed&&tmRow&&l1[0]==="com.telemachus.screen"&&l1[1]&&l1[1].play&&l1[1].play.episode===6;' +
+  'document.body.setAttribute("data-watch",ok?"ok":"bad none="+none+" onPlex="+onPlex+" plexRow="+plexRow+" inRow="+inRow+" closed="+closed+" tmRow="+tmRow+" launched="+JSON.stringify(launched))},800)},1000)},800)},800)},1000)},2500)},300)})()</script>';
+// holding OK: on an app tile in the dock its options (Hide app); on a card under Plex its own (Resume, Open Plex, Remove from Continue
+// watching, Hide everything from Plex); Remove takes that show off and keeps it in the settings
 const HOLD_OK =
   '<script>(function(){function ev(t,c){var e=document.createEvent("Event");e.initEvent(t,true,true);Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)}' +
   'function key(c){ev("keydown",c);ev("keyup",c)}function ov(){var o=document.getElementById("ov");return o?o.textContent:""}' +
   'function hold(cb){ev("keydown",13);setTimeout(function(){ev("keyup",13);setTimeout(cb,300)},1000)}' +
-  'var go=setInterval(function(){if(document.querySelectorAll(".wcard").length<2)return;clearInterval(go);setTimeout(function(){' +
-  'hold(function(){var app=/Hide app/.test(ov());key(461);setTimeout(function(){key(40);key(37);key(37);key(37);var f=document.querySelector(".f");' +
-  'var onCard=!!f&&f.classList.contains("wcard");hold(function(){var card=/Resume/.test(ov())&&/Open Telemachus/.test(ov())&&/Remove from Continue watching/.test(ov())&&/Hide everything from Telemachus/.test(ov());key(40);key(40);key(13);setTimeout(function(){' +
-  'var left=document.querySelectorAll(".wcard").length,saved=cfg.watch&&cfg.watch.hide&&cfg.watch.hide.join();' +
-  'var ok=app&&onCard&&card&&left===1&&saved==="tm:Show A";' +
-  'document.body.setAttribute("data-hold",ok?"ok":"bad app="+app+" onCard="+onCard+" card="+card+" left="+left+" saved="+saved+" menu="+ov().slice(0,120))},800)})},600)})},800)},300)})()</script>';
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);setTimeout(function(){' +
+  'hold(function(){var app=/Hide app/.test(ov());key(461);setTimeout(function(){key(39);key(39);setTimeout(function(){key(40);var f=document.querySelector(".f");' +
+  'var onCard=!!f&&f.classList.contains("wcard");hold(function(){var m=ov(),card=/Resume/.test(m)&&/Open Plex/.test(m)&&/Remove from Continue watching/.test(m)&&/Hide everything from Plex/.test(m);key(40);key(40);key(13);setTimeout(function(){' +
+  'var left=document.querySelectorAll("#grid .wcard").length,saved=cfg.watch&&cfg.watch.hide&&cfg.watch.hide.join();' +
+  'var ok=app&&onCard&&card&&left===0&&saved==="plex:7";' +
+  'document.body.setAttribute("data-hold",ok?"ok":"bad app="+app+" onCard="+onCard+" card="+card+" left="+left+" saved="+saved+" menu="+ov().slice(0,160))},800)})},1000)},600)})},2500)},300)})()</script>';
 // linking Plex (Customise > Continue watching): Down to Link Plex..., OK; the menu shows the code for plex.tv/link, then, once the
 // stand-in says the code was entered, the server it is linked to
 const WATCH_LINK =
@@ -298,8 +305,8 @@ function serve() {
       marks.push(decodeURIComponent(q.url.split('m=')[1] || ''));
       return json({});
     }
-    const m = /^\/icon\/(app\.\d+)$/.exec(u);
-    if (m) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(icon(apps[+m[1].split('.')[1]]));
+    const ia = apps.filter(a => '/icon/' + a.id === u)[0];
+    if (ia) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(icon(ia));
     json({ returnValue: true });
   });
   return new Promise((res, rej) => {

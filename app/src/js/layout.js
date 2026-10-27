@@ -29,18 +29,28 @@ function rebuild() {
     fit(t, true);
     return t;
   });
-  /* Continue watching (watch.js) is the grid's first row; the apps begin on the next one */
-  var w = WATCH.cards();
-  w.forEach(function (t) {
-    gd.appendChild(t);
-  });
+  /* Continue watching (watch.js): the highlighted app's cards, a row of their own under that app's row (the grid's first row when
+     the app is in the dock); the apps go on in the row after them */
+  var w = WATCH.cards(),
+    own = WATCH.owner(),
+    oi = own ? rest.indexOf(by[own]) : -1,
+    at = !w.length ? -1 : di.indexOf(own) >= 0 ? 0 : oi >= 0 ? Math.floor(oi / TH.cols) + 1 : -1;
+  if (at < 0) w = [];
+  var put = function () {
+    w.forEach(function (t, i) {
+      t.style.gridColumnStart = i === 0 ? '1' : '';
+      gd.appendChild(t);
+    });
+  };
   var g = rest.map(function (a, i) {
+    if (w.length && i === at * TH.cols) put();
     var t = tile(a);
-    t.style.gridColumnStart = i === 0 && w.length % TH.cols ? '1' : '';
+    t.style.gridColumnStart = w.length && i === at * TH.cols && w.length % TH.cols ? '1' : '';
     gd.appendChild(t);
     fit(t, TH.wide);
     return t;
   });
+  if (w.length && at * TH.cols >= rest.length) put();
   var tb = shownBar()
     .concat([{ label: 'Customise', icon: 'edit', action: 'customize', fixed: true }])
     .map(function (o) {
@@ -54,8 +64,11 @@ function rebuild() {
       return p;
     });
   rows = [tb, d.length ? d : tb];
-  if (w.length) rows.push(w);
-  for (var i = 0; i < g.length; i += TH.cols) rows.push(g.slice(i, i + TH.cols));
+  for (var i = 0; i < g.length; i += TH.cols) {
+    if (w.length && i === at * TH.cols) rows.push(w);
+    rows.push(g.slice(i, i + TH.cols));
+  }
+  if (w.length && at * TH.cols >= g.length) rows.push(w);
   decoRebuild();
   var nr = Math.min(r, rows.length - 1),
     nc = c;

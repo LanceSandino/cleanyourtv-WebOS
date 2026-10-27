@@ -118,6 +118,7 @@ function setFocus(nr, nc, first) {
   var a = e._a,
     nm = a ? a.title : e._o ? barLabel(e._o) : '';
   showName(nm);
+  WATCH.focused(e);
   decorate(e, first);
   if (TH.hdr) document.body.classList.toggle('ing', r >= 2);
   if (first) glowNow(e);

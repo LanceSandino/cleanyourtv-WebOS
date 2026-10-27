@@ -436,3 +436,22 @@ commit_ref: "feature/plex-stremio (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T11:46:39Z"
 ```
+
+```yaml
+id: CU-20261027-26
+type: feature
+title: "Continue watching opens under the highlighted app instead of a standing row"
+description: "The owner asked for the episodes only when their app is highlighted, with several to choose from. app/src/js/watch.js
+  keeps the cards and an owner: setFocus calls WATCH.focused, which opens the owner's row 400 ms after an app with cards is
+  highlighted (Telemachus; Plex for cdp-30 and com.beb.plxnative; Stremio), and closes it when the focus moves along the owner's
+  row or above it (below keeps it). layout.js puts that row under the owner's row (the grid's first row for a dock app) and starts
+  the next app on a new row. Plex and Stremio cards open the app they are under; hold OK's Open names that app. watch.js (service)
+  returns up to four of Telemachus's next (its lineup, without the episodes already shown). The page checks use Plex in the dock and
+  Telemachus in the grid of the stand-in."
+impact: medium
+affected_modules: ["app/src/js/watch.js", "app/src/js/layout.js", "app/src/js/theme.js", "app/src/js/menus.js", "helper/watch.js", "tools/oldchrome.js", "docs/launcher.md", "DECISIONS.md"]
+related_tests: ["tools/test/watch.test.js", "tools/oldchrome.js (continue watching: no row until Plex is highlighted, Down and OK open Plex, Right closes it, Telemachus's row under its row opens the episode; hold ok; Chromium 68 and 79)"]
+commit_ref: "feature/plex-stremio (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T11:58:41Z"
+```

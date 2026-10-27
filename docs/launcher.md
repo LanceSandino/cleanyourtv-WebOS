@@ -68,19 +68,19 @@ Putting the dock, buttons, hidden apps, order and clock back to the defaults is 
 
 ## Continue watching
 
-The first row of the app grid holds picture cards of things you started and did not finish, never app shortcuts (your apps are on
-Home already). In this order: what Telemachus is playing, or the episode each show is in the middle of (one card per show, with a bar
-for how far it got); what Plex and Stremio have partly watched (once linked, below); then one card for what Telemachus's channel plays
-next, marked **Up next on Telemachus**. The focused card names where it comes from in its corner. OK opens a card where it is: Telemachus at
-that episode or film (once its app takes the `play` launch option; until then it opens Telemachus), or the Plex or Stremio app (at its
-own Home, where its Continue Watching row has the same item first). Your apps start on the row below.
+Highlight Telemachus, Plex (or PLX) or Stremio on Home and, a moment later, a row of its episodes and films opens under that app's row:
+things you started and did not finish, with a bar for how far you got, and for Telemachus what its channel plays next (marked **Up
+next on Telemachus**). Down goes into the row; OK opens the episode in that app: Telemachus at that episode or film (once its app takes
+the `play` launch option; until then it opens Telemachus), Plex, PLX or Stremio at their own Home, where their Continue Watching row
+has the same item first. The row closes when you move on along that app's row or above it; going down past it keeps it. Nothing is
+shown for apps without episodes, and there are no app shortcuts (your apps are on Home already).
 
-Holding OK on a card offers **Resume** (or **Play**), **Open** the app it comes from, **Remove from Continue watching** (the whole show
-or film, so its next episode does not come back), **Hide everything from** that app, and the settings below.
+Holding OK on an episode offers **Resume** (or **Play**), **Open** the app, **Remove from Continue watching** (the whole show or film,
+so its next episode does not come back), **Hide everything from** that app, and the settings below.
 
 **Customise** > **Continue watching**:
 
-- **Show on Home** switches the row off (nothing is then read).
+- **Show on Home** switches the rows off (nothing is then read).
 - **Show removed cards again** (when you removed some) brings them all back.
 - **Link Plex...** shows a 4-character code: open `plex.tv/link` on a phone or a computer, signed in to Plex, and enter it. The TV
   then reads Continue Watching from your own Plex server, by its address on your network.

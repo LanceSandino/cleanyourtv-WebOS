@@ -1,6 +1,6 @@
-// Continue watching: the cards of Home's first grid row, things started and not finished, never app shortcuts (the apps are on Home
-// already). From Telemachus on this TV (what is playing, or the episode each show is in the middle of, and one card for what its
-// channel plays next), and Plex and Stremio once linked (plex.js, stremio.js: what is partly watched). Read here, by the root service:
+// Continue watching: the episodes and films a highlighted app on Home shows in a row under it (app/src/js/watch.js), things started
+// and not finished, never app shortcuts. From Telemachus on this TV (what is playing, or the episode each show is in the middle of,
+// then what its channel plays next), and Plex and Stremio once linked (plex.js, stremio.js: what is partly watched). Read here, by the root service:
 // Telemachus answers programs on the TV but refuses web pages, and the pictures are fetched here and served from memory, so the Home
 // page never contacts another site.
 //   GET /api/watch/rows        {items: [{key, group, title, sub, img, progress, next, launch: {id, params}, source}]}
@@ -17,7 +17,8 @@ const TELEMACHUS = process.env.CYTV_TELEMACHUS || 'http://127.0.0.1:8770', // an
   ROWS_MS = 20 * 1000,
   SHOWS_MS = 10 * 60 * 1000,
   IMG_MAX = 40,
-  IMG_BYTES = 1024 * 1024;
+  IMG_BYTES = 1024 * 1024,
+  NEXT_MAX = 4; // Telemachus's next episodes and films
 // pictures only from TMDB's image host, in a TV-sized width
 const TMDB = /^https:\/\/image\.tmdb\.org\/t\/p\/[a-z0-9]+\/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$/,
   METAHUB = /^https:\/\/images\.metahub\.space\/[a-z]+\/[a-z]+\/tt\d+\/img$/;
@@ -141,9 +142,18 @@ function create(ctx) {
       );
       seen[sh.show] = 1;
     }
-    // one card for what the channel plays next, when it is not a show already here
-    const p = plan.filter(x => x && (x.film || (x.show && !seen[x.show])))[0];
-    if (p && p.film) {
+    // what the channel plays next (its lineup, in its order), without the episodes already here
+    const here = {};
+    for (const o of out) here[o.key] = 1;
+    let nx = 0;
+    for (const p of plan) {
+      if (!p || nx >= NEXT_MAX) break;
+      if (!p.film && (!p.show || here['tm-' + p.show + '-' + p.season + '-' + p.episode])) continue;
+      nx++;
+      if (!p.film) {
+        out.push(card(p.show, p.season, p.episode, p.title, p.poster, 0, { show: p.show, season: p.season, episode: p.episode }, true));
+        continue;
+      }
       const name = p.film_title || p.title || p.show;
       out.push({
         key: 'tm-film-' + (p.tmdb_id || name),
@@ -156,8 +166,7 @@ function create(ctx) {
         next: true,
         launch: { id: TELEMACHUS_APP, params: { play: { film: name, year: p.year || null, tmdb_id: p.tmdb_id || null } } },
       });
-    } else if (p)
-      out.push(card(p.show, p.season, p.episode, p.title, p.poster, 0, { show: p.show, season: p.season, episode: p.episode }, true));
+    }
     return out;
   }
 

@@ -755,11 +755,11 @@ function watchCardMenu(it) {
           launch(it.launch.id, it.launch.params);
         },
       },
-      SOURCE_APPS[it.source]
+      it.owner
         ? {
-            label: t('Open %s').replace('%s', from),
+            label: t('Open %s').replace('%s', title(it.owner)),
             fn: function () {
-              launch(SOURCE_APPS[it.source]);
+              launch(it.owner);
             },
           }
         : null,
@@ -872,7 +872,7 @@ function watchMenu() {
           });
       });
       items.push({
-        note: t('Telemachus on this TV is read when it is installed. Hold OK on a card to remove it. The keys stay on the TV.'),
+        note: t('Highlight an app on Home to see its episodes under it. Hold OK on one to remove it. The keys stay on the TV.'),
       });
       return items;
     },
