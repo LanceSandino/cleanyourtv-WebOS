@@ -1,0 +1,104 @@
+{
+ "name": "Glass",
+ "author": "CleanYourTV",
+ "description": "Five columns of wide cards, the dock on a dark band with the app's name above it, a light clock with a greeting, and a glass plate that glides to the focused app.",
+ "colors": {
+  "night": "#050507",
+  "panel": "#17171b",
+  "ink": "#ffffff",
+  "accent": "#ffffff",
+  "focus": "#ffffff",
+  "dockPanel": "#141417"
+ },
+ "surface": {
+  "pillAlpha": 0.1,
+  "pillRing": 0.22,
+  "pillGloss": 0.12,
+  "pillRadius": 40
+ },
+ "clock": {
+  "layout": "inline",
+  "anchor": "top",
+  "align": "left",
+  "x": 112,
+  "y": 96,
+  "scale": 1.8,
+  "weight": 300,
+  "dateScale": 0.95,
+  "dateCaps": true,
+  "divider": true,
+  "ampm": "small"
+ },
+ "bar": {
+  "style": "pill",
+  "anchor": "top",
+  "align": "right",
+  "x": 112,
+  "y": 80,
+  "size": 76,
+  "gap": 20
+ },
+ "shelf": {
+  "show": true,
+  "align": "left",
+  "x": 120,
+  "y": 510,
+  "scale": 1.04,
+  "weight": 300,
+  "motion": "slide"
+ },
+ "dock": {
+  "anchor": "top",
+  "align": "center",
+  "x": 96,
+  "y": 650,
+  "count": 5,
+  "w": 326,
+  "h": 184,
+  "gap": 24,
+  "radius": 30,
+  "panel": 0.92,
+  "panelPad": 26,
+  "lift": 0,
+  "focusScale": 1.06
+ },
+ "grid": {
+  "mode": "push",
+  "dockUp": 96,
+  "clipTop": 0,
+  "header": "fade",
+  "cols": 5,
+  "tileH": 184,
+  "gapX": 24,
+  "gapY": 64,
+  "radius": 30,
+  "x": 96,
+  "width": 1728,
+  "focusScale": 1.06,
+  "label": "focus",
+  "overlayDim": 0.45
+ },
+ "tile": {
+  "focus": "glass",
+  "border": 0.08,
+  "ringWidth": 3,
+  "ringOffset": 6
+ },
+ "effects": {
+  "glow": 1,
+  "glowColor": "app",
+  "glowShape": "center"
+ },
+ "slots": [
+  {
+   "id": "greeting",
+   "anchor": "top",
+   "align": "left",
+   "x": 120,
+   "y": 52,
+   "w": 900,
+   "h": 30,
+   "card": "greeting"
+  }
+ ]
+}

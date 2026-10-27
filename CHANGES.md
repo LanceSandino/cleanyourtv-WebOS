@@ -131,3 +131,21 @@ commit_ref: "feature/ui-polish (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T05:24:50Z"
 ```
+
+```yaml
+id: CU-20261027-15
+type: feature
+title: "Glass theme: wide cards, a dark dock band, a light clock and a gliding glass focus"
+description: "A data-only theme built from the new settings: five columns of 16:9 cards, the dock on a dark band with the focused
+  app's name sliding above it, a light clock with AM/PM set small, a divider and the date in capitals, the greeting card above it, a
+  centred glow of the app's colour, pills with a sheen, and the glass plate that glides between apps. Down moves the dock up (push), the
+  header steps aside and the name shows under the focused card. The idea follows the launcher of Razdva122/clean-your-tv-lg-webos
+  (MIT, credited in docs/credits.md); no file of it is used. Preview rendered with tools/theme-preview.mjs; docs/themes.md has its row
+  and a screenshot (docs/screenshots/themes-6.jpg)."
+impact: low
+affected_modules: ["themes/glass/theme.json", "themes/glass/preview.jpg", "themes/index.json", "docs/themes.md", "docs/screenshots/themes-6.jpg"]
+related_tests: ["tools/test/theme.test.js"]
+commit_ref: "feature/ui-polish (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:25:45Z"
+```

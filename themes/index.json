@@ -23,6 +23,13 @@
    "preview": "compact/preview.jpg"
   },
   {
+   "id": "glass",
+   "name": "Glass",
+   "author": "CleanYourTV",
+   "description": "Five columns of wide cards, the dock on a dark band with the app's name above it, a light clock with a greeting, and a glass plate that glides to the focused app.",
+   "preview": "glass/preview.jpg"
+  },
+  {
    "id": "horizon",
    "name": "Horizon",
    "author": "CleanYourTV",

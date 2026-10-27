@@ -38,6 +38,7 @@ folder of the GitHub repository (the `main` branch):
 | Horizon | A row of seven square apps along the bottom of a dusk landscape, the clock on the left and the buttons on the right at the top. Down moves the row up and shows all apps below it. |
 | Pixel | Pixel art: a blocky typeface, square tiles and buttons, a yellow focus box and a sunset over a lake drawn in big pixels. Moves without animation, like an old console. |
 | Lock Screen | A phone-style lock screen: a greeting and a big clock top left, and a small, translucent dock low in the corner over a calm blue landscape, so the picture fills the screen. Down moves the dock up and shows all apps below it. Turn Wallpapers on for your own photos. It has slots for cards (Customise > Cards): the greeting is one. |
+| Glass | Five columns of wide cards, the dock on a dark band with the focused app's name above it, a light clock with a divider and a greeting, and a soft glow of the app's colour around the dock. The focus is a glass plate that glides from app to app. Down moves the dock up, the clock and buttons step aside, and the name of the focused app shows under its card. |
 
 ![Classic, Compact, Large print and Midnight](screenshots/themes-1.jpg)
 
@@ -48,6 +49,8 @@ folder of the GitHub repository (the `main` branch):
 ![Horizon: the home screen and all apps shown with Down](screenshots/themes-4.jpg)
 
 ![Pixel: the home screen and the Customise menu](screenshots/themes-5.jpg)
+
+![Glass: the home screen and the app grid opened with Down](screenshots/themes-6.jpg)
 
 The pictures are the launcher page rendered in a browser with each theme.
 
@@ -266,7 +269,7 @@ like the rest of the screen.
 
 ### Focus, names and motion
 
-These settings are off unless a theme sets them, so a theme that does not use them looks as it always did.
+These settings are off unless a theme sets them, so a theme that does not use them looks as it always did. Glass uses all of them.
 
 - `tile.focus: "glass"` replaces the focus ring with a lit glass plate behind the focused tile. It glides from tile to tile (one plate
   in the dock, one in the grid), with its rim in the focus colour and as wide as `tile.ringWidth`, `tile.ringOffset` away from the tile.
