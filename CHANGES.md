@@ -18,3 +18,17 @@ commit_ref: "feature/fork-release-source (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T04:37:17Z"
 ```
+
+```yaml
+id: CU-20261027-2
+type: fix
+title: "No scheduled release in the fork"
+description: "release.yml loses its daily schedule (workflow_dispatch only). Upstream's cron would bump the version, move main to dev
+  and publish a release every night once Actions are enabled on the fork, which would ship whatever is on dev without review."
+impact: low
+affected_modules: [".github/workflows/release.yml"]
+related_tests: ["tools/test/forksource.test.js"]
+commit_ref: "feature/fork-release-source (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T04:45:47Z"
+```

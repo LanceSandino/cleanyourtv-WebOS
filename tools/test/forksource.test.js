@@ -24,4 +24,5 @@ run(async () => {
     shipped.every(f => read(f).indexOf("'lasharor/") < 0 && read(f).indexOf('=lasharor/') < 0 && read(f).indexOf('-lasharor/') < 0),
     'no shipped default names the upstream repository'
   );
+  ok(!/^\s*schedule:/m.test(read('.github/workflows/release.yml')), 'the fork has no scheduled release that could publish unreviewed code');
 });

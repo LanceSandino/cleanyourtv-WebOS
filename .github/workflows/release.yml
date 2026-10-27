@@ -2,10 +2,10 @@
 # version numbers, commits that to dev and moves main to dev; this workflow then checks, builds and publishes the release v<version>.
 # Run it by hand (Actions > Release > Run workflow) for an urgent fix; it releases what is on dev then.
 # Skip the scheduled runs for a while: set the repository variable RELEASE_HOLD to 1 (Settings > Secrets and variables > Actions).
+# This fork has no scheduled run: its releases are built locally from reviewed source (DECISIONS.md D-20261027-2), so only a run
+# started by hand releases anything.
 name: Release
 on:
-  schedule:
-    - cron: "0 2,3 * * *"   # 02:00 and 03:00 UTC: one of them is 04:00 in Amsterdam, summer or winter
   workflow_dispatch:
 concurrency:
   group: release
