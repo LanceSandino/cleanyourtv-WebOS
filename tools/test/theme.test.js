@@ -179,6 +179,15 @@ run(async () => {
     !untouched.length && !LATER_VARS.some(k => k in plain.vars) && !LATER_ATTRS.some(k => k in plain.attrs),
     'the themes that do not use the new settings resolve without them (their look and reply are unchanged)' +
       (untouched.length ? ': ' + untouched.join(', ') : '')
+  // dock.tileFrost and dock.tileFrostColor: a tint over the resting tiles, its colour resolved to an rgb triple
+  const frost = themeMod.resolve(themeMod.normalize({ dock: { tileFrost: 0.4, tileFrostColor: '#ffffff' } }, 'frost'));
+  ok(
+    frost.vars['--dock-tile-frost'] === '0.4' && frost.vars['--dock-frost-rgb'] === '255,255,255',
+    'dock.tileFrost sets the frost and dock.tileFrostColor becomes its rgb tint'
+  );
+  ok(
+    plain.vars['--dock-tile-frost'] === '0' && plain.vars['--dock-frost-rgb'] === '255,255,255',
+    'by default there is no dock-tile frost'
   );
   // slots for cards: checked and clamped, placed like the clock, kept by a theme that extends it, and only in replies of themes with slots
   const slotted = themeMod.normalize(
