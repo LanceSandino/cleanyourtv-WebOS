@@ -5566,6 +5566,15 @@ function wantInputs() {
     LIVE.enter(!!p.guide);
   }
 }
+/* the Home key: webOS 6 to 24 relaunch Home with launchType homeKey (or activateType home); webOS 25 with plain {keepAlive: true}
+   and nothing else (the relaunch right after a Live TV launch with the same parameters is handled before, by guarded()) */
+function homeKey(p) {
+  if (!p) return false;
+  if (p.launchType === 'homeKey' || p.activateType === 'home') return true;
+  if (p.keepAlive !== true) return false;
+  for (var k in p) if (k !== 'keepAlive') return false;
+  return true;
+}
 document.addEventListener('webOSRelaunch', function () {
   var p = {};
   try {
@@ -5574,7 +5583,7 @@ document.addEventListener('webOSRelaunch', function () {
   logLine('launcher relaunch ' + JSON.stringify(p).slice(0, 120) + (LIVE.on ? ' (live on)' : ''));
   /* the Home key: Home itself, whatever was left open over it (Customise, the Inputs list, the photo chooser); it used to reload the
      apps under an open menu, so Home looked like it did nothing. Coming back from an app with Back keeps the menu, as before. */
-  if (p && (p.launchType === 'homeKey' || p.activateType === 'home')) {
+  if (homeKey(p) && !(guarded() && liveBlip)) {
     if (stack.length) closeMenus();
     WALLPICK.close();
   }

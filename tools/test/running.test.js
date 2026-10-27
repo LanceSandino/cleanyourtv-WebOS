@@ -27,6 +27,37 @@ run(async () => {
   );
   ok(listed[1].title === 'YouTube', 'with the title the launcher shows');
 
+  // LG's preload manager starts LG Channels, Netflix and YouTube in the background: only a process that was on the screen is open
+  const lgApps = apps.concat([{ id: 'com.webos.app.lgchannels', title: 'LG Channels' }]);
+  const now = [
+    { id: 'com.webos.app.lgchannels', processid: '5178' },
+    { id: 'netflix', processid: '5245' },
+    { id: 'youtube.leanback.v4', processid: '5829' },
+  ];
+  ok(
+    running
+      .pick(now, lgApps, { 'youtube.leanback.v4': '5829', netflix: '1000' })
+      .map(a => a.id)
+      .join() === 'youtube.leanback.v4',
+    'apps started in the background, or started again after they were on the screen, are not listed as open'
+  );
+  ok(running.pick(now, lgApps, null).length === 3, 'without that record every running app is listed, as before');
+
+  // apps.js records the process an app had when it was on the screen, and keeps it in RAM for a restart of the service
+  const fs = require('fs');
+  const appsMod = req('apps').create({
+    config: req('config').memory({}),
+    luna: async uri => (/running$/.test(uri) ? { returnValue: true, running: now } : { returnValue: true }),
+    version: '1.0.0',
+    feature: () => null,
+  });
+  await appsMod.foreground('netflix');
+  await new Promise(res => setTimeout(res, 50));
+  ok(
+    appsMod.onScreen().netflix === '5245' && JSON.parse(fs.readFileSync(process.env.CYTV_ONSCREEN, 'utf8')).netflix === '5245',
+    'an app on the screen is recorded with its process, in RAM (/tmp)'
+  );
+
   let runningNow = [{ id: 'netflix' }, { id: 'youtube.leanback.v4' }, { id: 'com.cleanyourtv.picker' }],
     calls = [],
     closeByAppIdWorks = true;

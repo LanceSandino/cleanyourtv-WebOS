@@ -29,6 +29,7 @@ module.exports = {
   SETUP_LOG: '/media/developer/cytv-setup.log',
   SERVICE_LOG: '/tmp/cleanyourtv-helper.log',
   RUNFILE: env.CYTV_RUNFILE || '/tmp/cytv-run.json',
+  ONSCREEN: env.CYTV_ONSCREEN || '/tmp/cytv-onscreen.json', // the apps that were on the screen, with their process (apps.js, running.js)
   HOOK_CFG: '/home/root/.config/lginputhook',
   HOOK_LOG: '/tmp/lginput-hook-lginput2.log',
   LASTAPP: '/var/luna/preferences/bootd_last_foreground_app_id.json',

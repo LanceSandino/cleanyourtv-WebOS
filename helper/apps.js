@@ -157,11 +157,33 @@ function create(ctx) {
       } catch (_) {}
     }, 15000);
   }
+  // the apps that were on the screen, each with the process it had then (running.js lists only those as open: LG's preload manager
+  // starts some apps in the background, e.g. LG Channels, Netflix and YouTube, and those were never opened). Kept in /tmp (RAM), so
+  // a restart of the service keeps it and a restart of the TV, which ends every app, clears it.
+  const SEEN = P.ONSCREEN;
+  let onScreen = {};
+  try {
+    onScreen = JSON.parse(fs.readFileSync(SEEN, 'utf8')) || {};
+  } catch (_) {}
+  let lastFg = '';
+  async function seenOnScreen(id) {
+    if (!id || id === lastFg) return;
+    lastFg = id;
+    const r = await luna('luna://com.webos.applicationManager/running', {});
+    const me = (Array.isArray(r && r.running) ? r.running : []).filter(x => x && x.id === id)[0];
+    if (!me || !me.processid) return;
+    onScreen[id] = String(me.processid);
+    try {
+      fs.writeFileSync(SEEN + '.tmp', JSON.stringify(onScreen));
+      fs.renameSync(SEEN + '.tmp', SEEN);
+    } catch (_) {}
+  }
   // an app counts as used once it stayed in the foreground for two polls in a row; going back to Home arms it again
   let cand = null,
     streak = 0,
     counted = null;
   async function onForeground(id) {
+    seenOnScreen(id).catch(() => {});
     if (id === HOME) {
       counted = null;
       cand = id;
@@ -302,6 +324,8 @@ function create(ctx) {
     handle,
     start: () => setInterval(pollForeground, 4000),
     apps,
+    onScreen: () => onScreen,
+    foreground: onForeground, // the poll's handler, for the tests
   };
 }
 

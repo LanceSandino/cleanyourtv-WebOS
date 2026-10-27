@@ -11,8 +11,10 @@ const HOME = 'com.webos.app.home',
   OWN = /^com\.cleanyourtv\./,
   AM = 'luna://com.webos.applicationManager/';
 
-// running: the list of applicationManager/running; apps: the launcher's apps ({id, title})
-function pick(running, apps) {
+// running: the list of applicationManager/running; apps: the launcher's apps ({id, title}); onScreen: app id -> the process it had
+// when it was on the screen (apps.js). An app whose running process never was on the screen was started in the background by
+// LG's preload manager (LG Channels, Netflix, YouTube), not opened, and is left out, as LG's own panel does.
+function pick(running, apps, onScreen) {
   const title = {},
     seen = {},
     out = [];
@@ -22,6 +24,7 @@ function pick(running, apps) {
   (running || []).forEach(r => {
     const id = r && (r.id || r.appId);
     if (!id || seen[id] || id === HOME || OWN.test(id) || !Object.prototype.hasOwnProperty.call(title, id)) return;
+    if (onScreen && onScreen[id] !== String(r.processid)) return;
     seen[id] = true;
     out.push({ id, title: title[id] });
   });
@@ -37,7 +40,8 @@ function create(ctx) {
   async function list() {
     const r = await luna(AM + 'running', {});
     if (!Array.isArray(r.running)) return { apps: [], error: r.errorText || 'the app manager did not answer' };
-    return { apps: pick(r.running, await apps()) };
+    const a = ctx.feature('apps');
+    return { apps: pick(r.running, await apps(), a && a.onScreen ? a.onScreen() : null) };
   }
   // closeByAppId is the call that works on webOS 6, plain close the fallback (as for the picker in inputkey.js)
   async function close(id) {

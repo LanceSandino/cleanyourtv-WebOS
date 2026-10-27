@@ -40,7 +40,8 @@ Back on the home screen lists the apps that are open, as LG's Home does with its
 **Close all** closes every app in the list, and Back leaves it. Closing an app also removes it from LG's recent apps.
 
 It lists the apps the launcher knows, including the ones you hid from the grid; Home itself, CleanYourTV's own apps and the TV's
-system apps are never in it. The list is read when it opens and closes when you leave Home. Suggested and first built by
+system apps are never in it. LG's preload manager starts some apps in the background so they open faster (on webOS 25: LG Channels,
+Netflix, YouTube); an app is listed only if that copy of it was on the screen, so those are not shown as open. The list is read when it opens and closes when you leave Home. Suggested and first built by
 [Steefzar](https://github.com/lasharor/cleanyourtv-WebOS/issues/16).
 
 ![Running apps](screenshots/running.jpg)

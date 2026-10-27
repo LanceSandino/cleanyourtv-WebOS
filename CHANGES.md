@@ -588,3 +588,23 @@ commit_ref: "feature/hide-lg-volume (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T13:39:23Z"
 ```
+
+```yaml
+id: CU-20261027-32
+type: fix
+title: "Home key closes menus on webOS 25; Running apps leaves out apps LG pre-started"
+description: "Two reports from the owner (v1.6.19). (1) Home did nothing over Customise and other menus: with handleScreenRemoteKey
+  the TV relaunches Home with plain {keepAlive: true} on webOS 25 (one such relaunch in the log, no homeKey), and input.js closed
+  menus only for launchType homeKey / activateType home. homeKey(p) now also takes a relaunch whose only parameter is keepAlive:
+  true, except right after a Live TV launch (guarded() and liveBlip, as before). (2) Back listed LG Channels, Netflix and YouTube
+  as open after a visit to the manager: LG's preload manager starts them in the background (getPreloadPolicy: preloadType
+  periodic; their processes started seconds before). apps.js now records, from its 4-second foreground poll, the process an app
+  had when it was on the screen (getForegroundAppInfo has no processId, so it is read from applicationManager/running), kept in
+  /tmp/cytv-onscreen.json; running.js lists an app only when its running process is the one that was on the screen."
+impact: medium
+affected_modules: ["app/src/js/input.js", "helper/apps.js", "helper/running.js", "helper/paths.js", "tools/oldchrome.js", "tools/test/lib.js", "docs/launcher.md"]
+related_tests: ["tools/oldchrome.js (home key: homeKey over a menu, plain keepAlive over the photo chooser; fails without the fix)", "tools/test/running.test.js"]
+commit_ref: "feature/home-key-rows (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T14:22:12Z"
+```

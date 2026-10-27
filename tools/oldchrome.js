@@ -152,9 +152,10 @@ const SAVER_OVER =
   'var declined=calls.some(function(c){return /responseScreenSaverRequest/.test(c)&&/"ack":false/.test(c)&&/"timestamp":42/.test(c)});' +
   'var ok=declined&&up&&!SAVER.active()&&launched.join()==="com.webos.app.home,com.telemachus.screen";' +
   'document.body.setAttribute("data-over",ok?"ok":"bad declined="+declined+" up="+up+" launched="+launched.join())},100)},100)},500)})()</script>';
-// the remote's Home key over a menu and over the photo chooser: the TV relaunches Home with launchType homeKey; both close
+// the remote's Home key over a menu and over the photo chooser: the TV relaunches Home with launchType homeKey (webOS 6 to 24), or
+// with plain {keepAlive: true} (webOS 25, over the chooser here); both close
 const HOME_KEY =
-  '<script>(function(){function home(){webOSSystem.launchParams=JSON.stringify({activateType:"home",keepAlive:true,launchType:"homeKey"});' +
+  '<script>(function(){var n=0;function home(){webOSSystem.launchParams=JSON.stringify(n++?{keepAlive:true}:{activateType:"home",keepAlive:true,launchType:"homeKey"});' +
   'var e=document.createEvent("Event");e.initEvent("webOSRelaunch",true,true);document.dispatchEvent(e)}' +
   'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);customizeMenu();var menu=!!document.getElementById("ov");home();' +
   'var menuClosed=menu&&!document.getElementById("ov")&&!stack.length;WALLPICK.start();var w=setInterval(function(){if(!WALLPICK.open())return;clearInterval(w);home();' +
