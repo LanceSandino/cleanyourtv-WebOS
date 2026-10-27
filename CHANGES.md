@@ -322,3 +322,18 @@ commit_ref: "fix/token-home-overlay (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T06:57:23Z"
 ```
+
+```yaml
+id: CU-20261027-20
+type: fix
+title: "No app-coloured glow over a wallpaper photo"
+description: "Seen on the owner's TV: with a photo as the wallpaper, moving the focus across apps tinted the photo red and blue. The
+  themes' glow (a radial wash in the focused app's colour, up to 45 %, over the top of Home) sits above the wallpaper layers; it was
+  made for a plain background. home.css: body.wpon .glow.on has opacity 0, so the photo is the backdrop."
+impact: low
+affected_modules: ["app/src/css/home.css", "docs/wallpapers.md"]
+related_tests: ["tools/oldchrome.js (wallpaper chooser: the glow's final opacity is 0 over the chosen photo, Chromium 68 and 79)"]
+commit_ref: "fix/glow-over-wallpaper (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T07:10:00Z"
+```

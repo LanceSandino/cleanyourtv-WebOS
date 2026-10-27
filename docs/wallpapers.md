@@ -15,7 +15,8 @@ In the launcher, **Customise** > **Wallpapers**:
 | Choose a photo... | Browse the photos on the screen, one at a time and whole: **Left** and **Right** to browse, **OK** to use the one on the screen as your wallpaper, **Back** to leave. With the Magic Remote, the left and right thirds of the screen browse and the middle chooses. |
 | Add photos... | Opens the manager app on its Wallpapers screen. |
 
-The photo is chosen at random and darkened like a theme's wallpaper (the theme's own darkening, or 40 % when it has none). With
+The photo is chosen at random and darkened like a theme's wallpaper (the theme's own darkening, or 40 % when it has none). While a
+photo shows, the theme's glow in the colour of the focused app is off, so the photo is not tinted as the focus moves. With
 no photos in the library, Home looks as before. The theme **Still** switches the cross-fade off along with the other animations.
 
 ## Adding photos

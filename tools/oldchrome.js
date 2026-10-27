@@ -114,11 +114,14 @@ const SAVER_KEYS =
 const WALLPICK_KEYS =
   '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
   'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}' +
+  'function bg(){return [].map.call(document.querySelectorAll(".wp.on"),function(x){return x.style.backgroundImage}).join()}' +
+  // the glow's final opacity, without its fade (headless Chromium 68 does not always run a fade on in virtual time)
+  'function done(){var glow=[].every.call(document.querySelectorAll(".glow"),function(g){g.style.transition="none";return getComputedStyle(g).opacity==="0"});' +
+  'var ok=cfg.wall&&cfg.wall.pick==="u/0000000000000002"&&!WALLPICK.open()&&bg().indexOf("u/0000000000000002")>=0&&glow;' +
+  'document.body.setAttribute("data-pick",ok?"ok":"bad pick="+(cfg.wall&&cfg.wall.pick)+" open="+WALLPICK.open()+" glow-off="+glow+" bg="+bg())}' +
   'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);WALLPICK.start();' +
-  'var w=setInterval(function(){if(!WALLPICK.open())return;clearInterval(w);key(39);setTimeout(function(){key(13);setTimeout(function(){' +
-  'var bg=[].map.call(document.querySelectorAll(".wp.on"),function(x){return x.style.backgroundImage}).join();' +
-  'var ok=cfg.wall&&cfg.wall.pick==="u/0000000000000002"&&!WALLPICK.open()&&bg.indexOf("u/0000000000000002")>=0;' +
-  'document.body.setAttribute("data-pick",ok?"ok":"bad pick="+(cfg.wall&&cfg.wall.pick)+" open="+WALLPICK.open()+" bg="+bg)},2500)},800)},300)},500)})()</script>';
+  'var w=setInterval(function(){if(!WALLPICK.open())return;clearInterval(w);key(39);setTimeout(function(){key(13);var n=0,shown=setInterval(function(){' +
+  'if(++n<40&&!(document.body.classList.contains("wpon")&&bg().indexOf("u/0000000000000002")>=0))return;clearInterval(shown);setTimeout(done,1500)},200)},800)},300)},500)})()</script>';
 // LG's screensaver while another app is in front (photos everywhere): a stand-in for the TV's service bus, Home hidden behind
 // com.telemachus.screen; LG asks, the launcher declines, brings Home forward, shows the photos, and a key goes back to that app.
 const SAVER_OVER =

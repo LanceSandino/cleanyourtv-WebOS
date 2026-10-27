@@ -598,6 +598,10 @@ body:not([data-galign="center"]) #grid {
 body.wpon {
   background-image: none;
 }
+/* over a photo the glow in the focused app's colour only tints it red or blue as the focus moves: the photo is the backdrop then */
+body.wpon .glow.on {
+  opacity: 0;
+}
 /* cards: small widgets in the theme's slots (app/src/js/cards.js); placed like the clock, from the slot's edges */
 #cards {
   position: absolute;
