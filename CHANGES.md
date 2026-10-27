@@ -250,3 +250,20 @@ commit_ref: "feature/fork-next (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T05:46:47Z"
 ```
+
+```yaml
+id: CU-20261027-16
+type: doc
+title: "The documentation and the README are this fork's, with the credit to upstream"
+description: "zensical.toml, the README badges and every self-link (documentation site, releases, install.sh, files in the repository)
+  name LanceSandino/cleanyourtv-WebOS and lancesandino.github.io; links to upstream's numbered issues and pull requests stay upstream.
+  A fork notice in the README and the documentation home, a new About this fork page (docs/fork.md, in the navigation) and a line in
+  Credits say it is a fork of lasharor/cleanyourtv-WebOS, credit lasharor and its contributors, Gathin23's design and Razdva122's
+  ideas, and list what the fork adds."
+impact: none
+affected_modules: ["README.md", "zensical.toml", "docs/fork.md", "docs/index.md", "docs/credits.md", "docs/development/index.md", "docs/homebrew-channel.html"]
+related_tests: []
+commit_ref: "feature/fork-next (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:55:09Z"
+```

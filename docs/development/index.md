@@ -1,6 +1,6 @@
 # Contributing
 
-The code is on [GitHub](https://github.com/lasharor/cleanyourtv-WebOS). Issues and pull requests are welcome, especially
+The code is on [GitHub](https://github.com/LanceSandino/cleanyourtv-WebOS), a fork of [lasharor/cleanyourtv-WebOS](https://github.com/lasharor/cleanyourtv-WebOS) ([About this fork](../fork.md)). Issues and pull requests are welcome, especially
 reports from TVs that are not in the [tested list](../tested-tvs.md).
 
 ## Layout
@@ -38,7 +38,7 @@ when they differ). Run `node tools/build-pages.js` after changing a page's sourc
 
 The screens are written in English and translated from `i18n/<language>.json` (English text as the key); `tools/build-pages.js`
 puts what each page uses into it, and `node tools/i18n.js` shows how complete each language is. See
-[`i18n/README.md`](https://github.com/lasharor/cleanyourtv-WebOS/blob/dev/i18n/README.md) for adding a language or a text.
+[`i18n/README.md`](https://github.com/LanceSandino/cleanyourtv-WebOS/blob/dev/i18n/README.md) for adding a language or a text.
 
 ## Branches and releases
 
@@ -48,12 +48,12 @@ puts what each page uses into it, and `node tools/i18n.js` shows how complete ea
 | `main` | The last release. Only the release workflow moves it. |
 | any other | Your own work in progress. Pushes run the checks but publish nothing; merge into `dev` to let people try it. |
 
-The release workflow (`.github/workflows/release.yml`) runs every day at 04:00 Amsterdam time. When the files that go into the
+The release workflow (`.github/workflows/release.yml`) runs when it is started by hand (Actions > Release > Run workflow); this fork
+has no daily schedule, so nothing is released without a person deciding it. When the files that go into the
 package changed on `dev` since the last release, `tools/release.sh` raises the patch version of the service (and of the launcher
 when `app/` changed), commits that to `dev` and moves `main` to it; the workflow then builds and publishes `v<version>` with the
-commit subjects as release notes. Raise a minor or major version by hand on `dev` and the script keeps it. For an urgent fix, run
-the workflow by hand (Actions > Release > Run workflow). To skip the daily release for a while, set the repository variable
-`RELEASE_HOLD` to `1`. `CYTV_DRY=1 sh tools/release.sh` shows what the next release would contain.
+commit subjects as release notes. Raise a minor or major version by hand on `dev` and the script keeps it.
+`CYTV_DRY=1 sh tools/release.sh` shows what the next release would contain.
 
 Using an AI assistant to find or fix a bug is welcome: see [Working on problems with an AI assistant](../ai.md) and `AGENTS.md` in the
 repository root.

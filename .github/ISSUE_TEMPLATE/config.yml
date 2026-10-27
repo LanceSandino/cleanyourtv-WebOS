@@ -1,8 +1,11 @@
 blank_issues_enabled: true
 contact_links:
   - name: Documentation
-    url: https://lasharor.github.io/cleanyourtv-WebOS/
+    url: https://lancesandino.github.io/cleanyourtv-WebOS/
     about: Installing, troubleshooting, and working on problems with an AI assistant
-  - name: Discord
+  - name: Upstream CleanYourTV (lasharor/cleanyourtv-WebOS)
+    url: https://github.com/lasharor/cleanyourtv-WebOS
+    about: The project this fork is based on; for problems that are not about the fork's own features
+  - name: Upstream Discord
     url: https://discord.gg/9hHAmCfqB
-    about: Questions, ideas and help from other users
+    about: Questions, ideas and help from other CleanYourTV users

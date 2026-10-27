@@ -32,22 +32,22 @@ Add CleanYourTV's repository to the Homebrew Channel once: open the Homebrew Cha
 enter
 
 ```text
-https://github.com/lasharor/cleanyourtv-WebOS/releases/latest/download/apps.json
+https://github.com/LanceSandino/cleanyourtv-WebOS/releases/latest/download/apps.json
 ```
 
 **CleanYourTV** then shows in the channel's list: open it and choose **Install**. A new release shows there as an update. The
-package is the same file as in [Releases](https://github.com/lasharor/cleanyourtv-WebOS/releases), checked against its SHA-256.
+package is the same file as in [Releases](https://github.com/LanceSandino/cleanyourtv-WebOS/releases), checked against its SHA-256.
 
 #### From your computer
 
 With your TV's IP address:
 
 ```sh
-ssh root@192.168.1.50 'curl -fsSL https://raw.githubusercontent.com/lasharor/cleanyourtv-WebOS/main/install.sh | sh'
+ssh root@192.168.1.50 'curl -fsSL https://raw.githubusercontent.com/LanceSandino/cleanyourtv-WebOS/main/install.sh | sh'
 ```
 
 The script downloads the latest release package, checks its SHA-256 and installs it. Nothing else on the TV changes in this
-step. The package can also be downloaded from [Releases](https://github.com/lasharor/cleanyourtv-WebOS/releases) and installed
+step. The package can also be downloaded from [Releases](https://github.com/LanceSandino/cleanyourtv-WebOS/releases) and installed
 with the Homebrew Channel or `ares-install`.
 
 ### 2. Set up, on the TV
@@ -78,7 +78,7 @@ Its log is `/media/developer/cytv-setup.log`, kept across the restart, with the 
 
 ## Unlisted firmware
 
-The setup matches the TV's firmware against [`compat.json`](https://github.com/lasharor/cleanyourtv-WebOS/blob/main/compat.json)
+The setup matches the TV's firmware against [`compat.json`](https://github.com/LanceSandino/cleanyourtv-WebOS/blob/main/compat.json)
 (it fetches the newest copy from the repository and falls back to the one in the package). A listed firmware is set up directly.
 For an unlisted firmware the setup continues when LG's Home app is the flutter or web kind, and otherwise stops and offers
 **Set up anyway**. On a TV whose Home is LG's native program (webOS 5 to 23) the launcher becomes Home through a stand-in, see

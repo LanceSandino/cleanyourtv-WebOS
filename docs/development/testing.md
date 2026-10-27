@@ -81,7 +81,7 @@ only a rough comparison: a TV is slower.
 | Workflow | When | What |
 |---|---|---|
 | `dev-build.yml` | Every push to `dev`, and after each release | Runs `tools/check.sh --chromium`, builds the package with the commit in a `BUILD` file and publishes it as the pre-release `dev` |
-| `release.yml` | Daily at 04:00 Amsterdam time, or by hand | When the package changed since the last release: checks, raises the version (`tools/release.sh`), moves `main` to `dev`, publishes `v<version>` |
+| `release.yml` | By hand (no schedule in this fork) | When the package changed since the last release: checks, raises the version (`tools/release.sh`), moves `main` to `dev`, publishes `v<version>` |
 | `checks.yml` | Pull requests and pushes to any branch but `dev` | Runs `tools/check.sh --chromium` and builds the package |
 | `docs.yml` | Pushes that touch the documentation, and after a release that changed it | Builds this site; deploys it to GitHub Pages from `main` |
 

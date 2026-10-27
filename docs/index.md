@@ -6,6 +6,10 @@ on-device voice recognition, and an optional debloat of LG's ads and telemetry.
 
 ![Home screen](screenshots/home.jpg)
 
+!!! note "A fork"
+    This is a fork of [lasharor/cleanyourtv-WebOS](https://github.com/lasharor/cleanyourtv-WebOS), with a photo screensaver, a Glass
+    theme and security hardening on top. [About this fork](fork.md) says what it adds and gives the credit.
+
 ## What it does
 
 - **Launcher.** A dock of four apps, a top shelf with the focused app's name and an ambient glow, an app grid sorted by how often
@@ -55,7 +59,7 @@ services you choose (update checks go to GitHub). See [What it changes on the TV
 3. Check the [tested TVs](tested-tvs.md) and report yours if it is not listed.
 
 Questions and ideas are welcome on the [CleanYourTV Discord](https://discord.gg/9hHAmCfqB); bugs go in the
-[issues](https://github.com/lasharor/cleanyourtv-WebOS/issues).
+[issues](https://github.com/LanceSandino/cleanyourtv-WebOS/issues).
 
 ## Disclaimer
 

@@ -115,5 +115,5 @@ Settings are stored on the TV in `/media/developer/cleanyourtv/config.json`:
 | `clock` | `auto`, `12` or `24`. |
 | `runDots` | `true` shows a green dot on open apps (off by default). |
 
-See [`config.example.json`](https://github.com/lasharor/cleanyourtv-WebOS/blob/main/config.example.json). Change settings in
+See [`config.example.json`](https://github.com/LanceSandino/cleanyourtv-WebOS/blob/main/config.example.json). Change settings in
 the launcher; the file is read and written by the service.

@@ -56,7 +56,7 @@ details are in [Internals](development/internals.md#older-webos-versions).
 
 ## What differs between webOS versions
 
-All per-TV decisions are made in one place, [`helper/tvprofile.js`](https://github.com/lasharor/cleanyourtv-WebOS/blob/main/helper/tvprofile.js),
+All per-TV decisions are made in one place, [`helper/tvprofile.js`](https://github.com/LanceSandino/cleanyourtv-WebOS/blob/main/helper/tvprofile.js),
 from the SDK version and the kind of LG's Home app as it came with the TV. **Share log** and `GET /api/tv` show what was decided.
 
 | | webOS 5 and 6 (SDK 5, 6) | webOS 22 and 23 (SDK 7, 8) | webOS 24 to 26 (SDK 9 to 11) |

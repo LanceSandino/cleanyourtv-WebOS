@@ -1,7 +1,7 @@
 # CleanYourTV for LG webOS: briefing for AI assistants
 
 Read this first when you help someone with this project, either to find out what is wrong on their TV or to fix a bug in the code.
-The full documentation is in `docs/` (published at https://lasharor.github.io/cleanyourtv-WebOS/); the page for you is `docs/ai.md`.
+The full documentation is in `docs/` (published at https://lancesandino.github.io/cleanyourtv-WebOS/); the page for you is `docs/ai.md`.
 
 ## What it is
 
@@ -68,7 +68,8 @@ disk, and a reboot without the boot scripts brings LG's Home back.
 6. **Licence:** the project is MIT. Do not copy code from GPL projects; describe behaviour and write your own.
 7. **Do not release, tag, force-push or change repository settings.** The maintainer does that. Work on a branch and open the pull request
    against `dev`; once merged, every push to `dev` publishes the dev build (the pre-release `dev`), which people can install from the
-   manager app (Update channel > Dev builds). A release goes out from `dev` once a day.
+   manager app (Update channel > Dev builds). In this fork a release goes out from `dev` when the maintainer runs the Release
+   workflow by hand (there is no daily schedule).
 
 ## Commands
 
