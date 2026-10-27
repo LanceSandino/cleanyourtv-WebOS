@@ -20,6 +20,7 @@ same on every supported webOS version.
 | Action | How |
 |---|---|
 | Open an app | OK |
+| Move between the rows | Up and Down go to the app or button above or below; the opposite key right after goes straight back to where the focus was |
 | App options (dock, hide) | Hold OK on an app |
 | Move or remove a top button | Hold OK on it |
 | Customise | The **Customise** button |

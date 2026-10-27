@@ -63,3 +63,20 @@ commit_ref: "feature/ui-polish (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T04:55:45Z"
 ```
+
+```yaml
+id: CU-20261027-11
+type: feature
+title: "Up and Down land on what is above or below, and straight back where they came from"
+description: "Up and Down between the top buttons, the dock and the grid spread the columns proportionally (mapCol), so a round trip
+  drifted (grid column 8, Up, Down: column 9) and Up from the second tile of a short last row jumped to column 5. They now land on the
+  item whose centre is nearest on the screen (centres read once per rebuild with getBoundingClientRect, so a centred dock and a
+  right-to-left layout are measured as drawn), and the opposite key pressed right after goes back to the exact item the focus came
+  from. Back from an overlay or push grid uses the same rule. A row that is not drawn (no top buttons) keeps the proportional columns."
+impact: medium
+affected_modules: ["app/src/js/focus.js", "app/src/js/input.js", "app/src/js/layout.js", "app/src/index.html", "app/index.html", "docs/launcher.md"]
+related_tests: ["tools/test/launcher.test.js"]
+commit_ref: "feature/ui-polish (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:02:00Z"
+```

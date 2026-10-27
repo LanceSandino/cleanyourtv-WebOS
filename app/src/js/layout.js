@@ -1,5 +1,6 @@
 /* ---------- layout ---------- */
 function rebuild() {
+  geoReset();
   var by = {};
   apps.forEach(function (a) {
     by[a.id] = a;
