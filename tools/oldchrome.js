@@ -138,10 +138,12 @@ const SAVER_OVER =
   'function vis(h){H=h;var e=document.createEvent("Event");e.initEvent("visibilitychange",true,true);document.dispatchEvent(e)}' +
   'function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}' +
   'var go=setInterval(function(){if(!reg||!document.querySelector(".tile"))return;clearInterval(go);vis(true);' +
-  'reg.onservicecallback(JSON.stringify({timestamp:42}));setTimeout(function(){vis(false);setTimeout(function(){var up=SAVER.active();key(40);' +
+  // Home comes forward only once the launcher asked which app is in front: wait for that launch, then for the photos (a slow runner)
+  'reg.onservicecallback(JSON.stringify({timestamp:42}));var n=0,fw=setInterval(function(){if(++n<60&&!launched.length)return;clearInterval(fw);vis(false);' +
+  'var m=0,sv=setInterval(function(){if(++m<40&&!SAVER.active())return;clearInterval(sv);var up=SAVER.active();key(40);' +
   'var declined=calls.some(function(c){return /responseScreenSaverRequest/.test(c)&&/"ack":false/.test(c)&&/"timestamp":42/.test(c)});' +
   'var ok=declined&&up&&!SAVER.active()&&launched.join()==="com.webos.app.home,com.telemachus.screen";' +
-  'document.body.setAttribute("data-over",ok?"ok":"bad declined="+declined+" up="+up+" launched="+launched.join())},1500)},1000)},500)})()</script>';
+  'document.body.setAttribute("data-over",ok?"ok":"bad declined="+declined+" up="+up+" launched="+launched.join())},100)},100)},500)})()</script>';
 // the remote's Home key over a menu and over the photo chooser: the TV relaunches Home with launchType homeKey; both close
 const HOME_KEY =
   '<script>(function(){function home(){webOSSystem.launchParams=JSON.stringify({activateType:"home",keepAlive:true,launchType:"homeKey"});' +
