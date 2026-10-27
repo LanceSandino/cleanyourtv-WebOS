@@ -13,7 +13,7 @@ About a minute after every boot, the debloat:
 | **Viewing tracking (LivePlus)** | Prevents `acr2` from starting: it recognises what is on screen and reports it. |
 | **Telemetry logs** | Stops the systemd services `remotelogger` and `service-logger`. |
 | **Suggestions and nudges** | Stops `contentminer` and `nudge`, and prevents `sportsalarm` from starting. |
-| **Stop LG pre-loading apps** | webOS 25 only. LG's preload manager starts apps such as LG Channels, Netflix and YouTube in the background so they open faster, and they then take memory and show up as running. This gives it LG's own list with every app switched off except Home (the launcher, so Home stays quick) and anything of the Homebrew Channel's, and restarts it (`preload-manager.service`) so it reads that list. See below. |
+| **Stop LG pre-loading apps** | webOS 25 only. LG's preload manager starts apps such as LG Channels, Netflix and YouTube in the background so they open faster, and they then take memory and show up as running. This switches its pre-loading off for every app except Home (the launcher, so Home stays quick) and anything of the Homebrew Channel's, with its own call, until it restarts; the service does it again after every start. See below. |
 
 A program is prevented from starting by mounting a do-nothing stub over it (in RAM; the real files are not changed). Where
 `/etc/hosts` is on the read-only system partition, a copy with the ad lines is kept in RAM (`/tmp/cleanyourtv-hosts`) and mounted
@@ -25,25 +25,23 @@ switching back to LG's Home lifts the debloat first.
 
 ### LG's pre-loading
 
-The preload manager takes its list from one of LG's settings, `com.webos.service.preloadmanager.supportAppList` in LG's configuration
-service (configd), and reads it only when it starts. About a minute after the service starts (so after every start of the TV), and
-whenever the group is switched on, the service:
+The preload manager (`com.webos.service.preloadmanager`) has its own call to switch one app's pre-loading off or on,
+`setPreloadPolicy {"application": {"id": ..., "isEnabled": false}}`. That lasts until the preload manager restarts (with the TV) and is
+not saved. A few seconds after the service starts, whenever the group is switched on, and every two minutes, the service asks the
+preload manager which apps it would pre-load (`getPreloadPolicy`: enabled and allowed) and switches those off, except
+`com.webos.app.home` (the launcher, so Home stays quick) and anything of the Homebrew Channel's (`org.webosbrew.*`). The apps it switched
+off are kept in `/tmp/cleanyourtv-lgpreload.json`. Switching the group or the debloat off switches exactly those apps on again.
 
-1. reads the current list from configd, switches every app off in it except `com.webos.app.home` and `org.webosbrew.*`, and writes it
-   as `com.webos.service.preloadmanager.json` into each country folder of configd's layer in RAM, `/var/run/tvconfig/rmm/<country>/`
-   (the same way as [Hide LG's volume bar](sonos.md#lgs-own-volume-bar); it never replaces or removes a file it did not write);
-2. asks configd to read its settings again (`luna://com.webos.service.config/reconfigure`) and checks that configd now gives that list;
-   if it does not, it takes the file away again and leaves the preload manager alone until the setting is changed;
-3. restarts the preload manager: `systemctl restart preload-manager.service`.
+Nothing is restarted and no file of LG's changes: on webOS 25 that call also marks an app as allowed in LG's saved list
+(`/var/preferences/webos-preload-manager-conf.json`), so it is only made for apps that are allowed already. Apps the preload manager
+started before stay until they are closed or the TV restarts. It does nothing while LG's Home is chosen.
 
-After the restart it asks the preload manager for its own view (`getPreloadPolicy`). If it still has apps switched on that the list
-switches off, the setting is taken away again and nothing more is restarted until the group is switched again. **On the TV this was
-tried on (webOS 25) that is what happens:** the preload manager keeps LG's own list after the restart and decides with its saved
-`allowedApps` (`/var/preferences/webos-preload-manager-conf.json`), so this group does not stop pre-loading there yet.
+By hand, from a shell on the TV:
 
-It looks every ten minutes whether the setting is still there and still followed, and puts it back (with a restart) if it was lost. Switching the group or
-the debloat off removes the file, asks configd to read again and restarts the preload manager once more, so LG's list is back. A
-restart of the TV clears the file; apps that were already started stay until they are closed. It does nothing while LG's Home is chosen.
+```sh
+luna-send -n 1 -f luna://com.webos.service.preloadmanager/getPreloadPolicy '{}' </dev/null   # isEnabled per app
+luna-send -n 1 -f luna://com.webos.service.preloadmanager/setPreloadPolicy '{"application":{"id":"netflix","isEnabled":true}}' </dev/null
+```
 
 ## Turning it off
 

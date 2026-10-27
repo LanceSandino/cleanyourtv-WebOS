@@ -72,7 +72,7 @@ run(async () => {
     "hiding LG's volume bar: webOS 25 only"
   );
   ok(
-    tv.decide({ sdk: '10.2.2' }).lgPreload === 'configd' && ['6.5.0', '11.2.0', ''].every(v => tv.decide({ sdk: v }).lgPreload === ''),
+    tv.decide({ sdk: '10.2.2' }).lgPreload === 'api' && ['6.5.0', '11.2.0', ''].every(v => tv.decide({ sdk: v }).lgPreload === ''),
     "stopping LG's pre-loading: webOS 25 only"
   );
   // the setup script asks the same rules from the shell

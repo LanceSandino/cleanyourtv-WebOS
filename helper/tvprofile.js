@@ -20,9 +20,8 @@
 //   lgVolumeBar    how LG's own volume bar can be hidden while the Sonos volume shows (helper/lgvolume.js): 'configd' (LG's surface manager
 //                  follows the configd setting com.webos.surfacemanager.volumeOSD) on webOS 25 (SDK 10), where that was read in LG's files;
 //                  '' elsewhere (the option says it is not available). The service also checks that the runtime layer folder exists.
-//   lgPreload      how LG's app pre-loading can be stopped (helper/lgpreload.js): 'configd' (the preload manager's app list is the configd
-//                  setting com.webos.service.preloadmanager.supportAppList, read when it starts) on webOS 25 (SDK 10), where that was read
-//                  in LG's files; '' elsewhere.
+//   lgPreload      how LG's app pre-loading can be stopped (helper/lgpreload.js): 'api' (the preload manager's own setPreloadPolicy
+//                  switches one app's pre-loading off until it restarts) on webOS 25 (SDK 10), where that was tried; '' elsewhere.
 //   homeTakeover   how the launcher becomes Home. 'mount': its folder is mounted over LG's Home app and the app manager is restarted
 //                  to read it (flutter and web Home). 'standin' where LG's Home is the native program: a small script is mounted over
 //                  that program and asks webapp-mgr to open the launcher as com.webos.app.home, so LG's Home manifest stays and the
@@ -78,7 +77,7 @@ function decide(facts, compat) {
           : '',
     homeTakeover: /^com\.webos\.app\.home native$/.test(homeKind) ? 'standin' : 'mount',
     lgVolumeBar: major === 10 ? 'configd' : '',
-    lgPreload: major === 10 ? 'configd' : '',
+    lgPreload: major === 10 ? 'api' : '',
   };
 }
 const readJson = (file, d) => {

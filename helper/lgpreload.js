@@ -1,100 +1,96 @@
 // LG's app pre-loading, stopped (Debloat > "Stop LG pre-loading apps": a debloat group, on with the debloat unless switched off). LG's
-// preload manager (webos-preload-manager, preload-manager.service) starts apps such as LG Channels, Netflix and YouTube in the
-// background so they open faster. It takes its list from the configd setting com.webos.service.preloadmanager.supportAppList and reads
-// it only when it starts. While this is on, that setting is LG's own list with every app switched off except com.webos.app.home (our
-// launcher: its preload keeps Home quick), set through lgconfig.js (in RAM), and the preload manager is restarted to read it: once
-// switched on, after every start of the TV (the setting lives in RAM) and when the setting was lost. Switching off removes it and
-// restarts the preload manager again, so LG's list comes back. Apps it already started stay until closed or until the TV restarts.
-// Not while LG's Home is chosen (DISABLE), like the rest of the debloat at boot. Only where tvprofile.js says lgPreload: 'configd'.
+// preload manager (com.webos.service.preloadmanager) starts apps such as LG Channels, Netflix and YouTube in the background so they open
+// faster. Its own call setPreloadPolicy {"application": {"id", "isEnabled"}} switches one app's pre-loading off or on; that lasts until the
+// preload manager restarts (with the TV), and is not saved. While this is on, every app it would pre-load (isEnabled and isAllowed in
+// getPreloadPolicy) is switched off except com.webos.app.home (our launcher: its preload keeps Home quick) and anything of the Homebrew
+// Channel's; shortly after the service starts and every two minutes it switches off what came back. Switching off switches those apps on
+// again (only the ones this switched off). Apps it already started stay until closed or until the TV restarts.
+// Found on webOS 25: setPreloadPolicy also marks every app it is called for as allowed, which the preload manager saves in
+// /var/preferences/webos-preload-manager-conf.json, so it is only called for apps that are allowed already (the file stays as it is). The
+// app list in configd (supportAppList) is not what it follows while it runs: it keeps its own state.
+// Not while LG's Home is chosen (DISABLE), like the rest of the debloat at boot. Only where tvprofile.js says lgPreload: 'api'.
 const fs = require('fs');
-const P = require('./paths'),
-  exec = require('./exec');
+const P = require('./paths');
 
-const NS = 'com.webos.service.preloadmanager',
-  KEY = NS + '.supportAppList',
+const SVC = 'luna://com.webos.service.preloadmanager/',
   HOME = 'com.webos.app.home',
   GROUP = 'preload'; // its name in options.debloatOff
+const RECORD = process.env.CYTV_LGPRELOAD_RECORD || '/tmp/cleanyourtv-lgpreload.json'; // the apps switched off, while the TV runs
 
-// apps whose pre-loading is never switched off: Home (our launcher) and anything of the Homebrew Channel's, should LG ever list it
+// apps whose pre-loading is never switched off: Home (our launcher) and anything of the Homebrew Channel's
 const KEEP = id => id === HOME || /^org\.webosbrew\./.test(String(id || ''));
-// LG's list with every app off but those (as LG has them); nothing is added to it
-function homeOnly(list) {
-  return list.map(a => Object.assign({}, a, { isEnabled: a && KEEP(a.id) ? a.isEnabled !== false : false }));
-}
+// the apps the preload manager would pre-load now and that are switched off here
+const toStop = apps => apps.filter(a => a && a.id && a.isEnabled === true && a.isAllowed === true && !KEEP(a.id)).map(a => a.id);
 
-// ctx: {config, luna, profile}; o: {dir, record, startMs, checkMs, restart} (tests)
+// ctx: {config, luna, profile}; o: {record, startMs, checkMs} (tests)
 function create(ctx, opts) {
-  const o = Object.assign(
-    {
-      startMs: 60000, // after the service starts, like the debloat at boot: the TV settles first
-      checkMs: 10 * 60 * 1000, // how often it looks whether the setting is still there
-      restart: () => exec.sh('systemctl restart preload-manager.service', 30000),
-      settleMs: 1500, // the preload manager's start, before its policy is asked
-      tries: 8,
-    },
-    opts
-  );
-  const layer = require('./lgconfig').create(ctx, { dir: o.dir, record: o.record });
+  const o = Object.assign({ record: RECORD, startMs: 5000, checkMs: 2 * 60 * 1000 }, opts);
+  const luna = ctx.luna;
   const supported = () => {
     const p = ctx.profile && ctx.profile.get ? ctx.profile.get() : {};
-    return p.lgPreload === 'configd' && layer.supported();
+    return p.lgPreload === 'api';
   };
   const wanted = () => {
     const op = ctx.config.options();
     return op.debloat !== false && (op.debloatOff || []).indexOf(GROUP) < 0 && !fs.existsSync(P.DISABLE) && supported();
   };
+  const readRec = () => {
+    try {
+      const r = JSON.parse(fs.readFileSync(o.record, 'utf8'));
+      return Array.isArray(r) ? r.filter(x => typeof x === 'string') : [];
+    } catch (_) {
+      return [];
+    }
+  };
+  const writeRec = list => {
+    if (!list.length) {
+      try {
+        fs.unlinkSync(o.record);
+      } catch (_) {}
+      return;
+    }
+    fs.writeFileSync(o.record + '.tmp', JSON.stringify(list));
+    fs.renameSync(o.record + '.tmp', o.record);
+  };
   let busy = false,
     again = false,
-    broken = false, // configd did not take the list on this TV: not tried again until the settings change
     last = '';
   const note = m => {
     last = m;
     console.log('lgpreload: ' + m);
   };
-  async function restart(why) {
-    const r = await o.restart();
-    note(why + (r && r.ok === false ? '; restarting preload-manager failed: ' + (r.error || r.err || '') : '; preload-manager restarted'));
-  }
-  // the preload manager's own view (getPreloadPolicy): true when every app it knows that the list switches off is off there, false when
-  // it kept apps on, null when it does not answer. On the owner's TV (webOS 25) it kept LG's own list after the restart: it does not
-  // take isEnabled from configd at runtime, so the setting is taken away again there and nothing more is restarted.
-  async function taken(list) {
-    const off = {};
-    list.forEach(a => {
-      if (a && !KEEP(a.id)) off[a.id] = 1;
-    });
-    for (let i = 0; i < o.tries; i++) {
-      await new Promise(r => setTimeout(r, i ? o.settleMs : 0));
-      const r = await ctx.luna('luna://com.webos.service.preloadmanager/getPreloadPolicy', {});
-      const apps = r && Array.isArray(r.applications) ? r.applications : null;
-      if (!apps) continue;
-      return apps.every(a => !a || !off[a.id] || a.isEnabled === false);
+  const policy = async () => {
+    const r = await luna(SVC + 'getPreloadPolicy', {});
+    return r && Array.isArray(r.applications) ? r.applications : null;
+  };
+  const setApp = (id, on) => luna(SVC + 'setPreloadPolicy', { application: { id, isEnabled: on } });
+
+  async function stop() {
+    const apps = await policy();
+    if (!apps) return; // the preload manager does not answer (yet)
+    const ids = toStop(apps);
+    if (!ids.length) return;
+    const rec = readRec();
+    for (const id of ids) {
+      const r = await setApp(id, false);
+      if (r && r.returnValue !== false && rec.indexOf(id) < 0) rec.push(id);
     }
-    return null;
+    writeRec(rec);
+    const left = toStop((await policy()) || []).filter(id => ids.indexOf(id) >= 0);
+    note(
+      left.length
+        ? 'the preload manager kept pre-loading ' + left.join(', ')
+        : 'LG pre-loading stopped for ' + ids.join(', ') + ' (Home kept)'
+    );
   }
-  async function giveUp(why) {
-    broken = true;
-    await layer.clear(NS);
-    note(why + '; taken away again, nothing more is restarted until the setting is changed');
-  }
-  async function apply() {
-    const now = (await layer.get([KEY]))[KEY];
-    if (!Array.isArray(now) || !now.length) return note('configd gave no app list; nothing changed');
-    const list = homeOnly(now);
-    await layer.set(NS, { supportAppList: list });
-    // only restart when configd really gives the new list (the layer works on this TV)
-    const after = (await layer.get([KEY]))[KEY];
-    if (!Array.isArray(after) || after.length !== list.length || !after.every(a => a && (KEEP(a.id) || a.isEnabled === false)))
-      return giveUp('configd did not take the list');
-    const off = list.filter(a => !KEEP(a.id)).length;
-    await restart('list set (' + off + ' apps off, Home kept)');
-    if ((await taken(list)) === false) return giveUp('the preload manager kept its own list after the restart');
-    note('LG pre-loading stopped (' + off + ' apps off, Home kept)');
-  }
-  // still in place and still followed (a check every few minutes)
-  async function check() {
-    const list = ((await layer.get([KEY]))[KEY] || []).filter(Boolean);
-    if ((await taken(list)) === false) await giveUp('the preload manager does not follow the list');
+  async function restore() {
+    const rec = readRec();
+    if (!rec.length) return;
+    const apps = (await policy()) || [];
+    const back = rec.filter(id => apps.some(a => a && a.id === id && a.isEnabled === false));
+    for (const id of back) await setApp(id, true);
+    writeRec([]);
+    if (back.length) note("LG's pre-loading back for " + back.join(', '));
   }
   // make it match the settings; one at a time, a change meanwhile looks again
   async function sync() {
@@ -103,28 +99,26 @@ function create(ctx, opts) {
     try {
       do {
         again = false;
-        if (wanted()) {
-          if (broken) continue;
-          if (!layer.owned(NS)) await apply();
-          else await check();
-        } else if (await layer.clear(NS)) await restart("LG's pre-loading back");
+        if (wanted()) await stop();
+        else await restore();
       } while (again);
     } catch (e) {
       note('failed: ' + ((e && e.message) || e));
     }
     busy = false;
   }
-  const status = () => ({ supported: supported(), on: wanted(), set: layer.owned(NS), last });
+  const status = () => ({ supported: supported(), on: wanted(), stopped: readRec(), last });
   function start() {
+    // the earlier way (a configd list the preload manager does not follow) may have left its file: removed, only if it is that one
+    require('./lgconfig')
+      .create(ctx)
+      .clear('com.webos.service.preloadmanager')
+      .catch(() => {});
     setTimeout(sync, o.startMs);
     setInterval(sync, o.checkMs);
-    // the manager switched the debloat or a group: try again, also where configd did not take it before
-    require('./debloat').onChange(() => {
-      broken = false;
-      sync();
-    });
+    require('./debloat').onChange(sync); // the manager switched the debloat or a group
   }
   return { name: 'lgpreload', start, sync, status };
 }
 
-module.exports = { create, homeOnly, NS, KEY, HOME, GROUP };
+module.exports = { create, toStop, KEEP, HOME, GROUP };

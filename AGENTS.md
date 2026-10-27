@@ -31,7 +31,7 @@ disk, and a reboot without the boot scripts brings LG's Home back.
 | Wallpapers | `helper/wallpapers.js` (library, phone page, Immich sync), `app/src/js/wall.js` (rotation on Home), `docs/wallpapers.md` |
 | Continue watching (Home's first grid row) | `helper/watch.js` (Telemachus on 127.0.0.1:8770, pictures by id), `helper/plex.js` and `helper/stremio.js` (linked with a code), `helper/lgrows.js` (LG's own app rows from its content miner, no ads), `app/src/js/watch.js`, `docs/launcher.md` |
 | Screensaver, photo feed | `app/src/js/saver.js` (idle, LG's screensaver request, Left/Right), `helper/photofeed.js` (a server's read-only photo feed, small cache, saved round), `docs/screensaver.md` (with the feed contract) |
-| LG's settings changed in RAM (configd layer `/var/run/tvconfig/rmm`), LG's app pre-loading stopped | `helper/lgconfig.js`, `helper/lgpreload.js` (a debloat group; restarts `preload-manager.service`), `docs/debloat.md` |
+| LG's settings changed in RAM (configd layer `/var/run/tvconfig/rmm`), LG's app pre-loading stopped | `helper/lgconfig.js`, `helper/lgpreload.js` (a debloat group; the preload manager's own setPreloadPolicy, in its memory), `docs/debloat.md` |
 | The report people attach to issues | `helper/sharelog.js` (`node sharelog.js --print` prints it) |
 | Node 8 compatibility helpers, diagnostics | `helper/netcompat.js`, `helper/diag.js` |
 | Build and checks | `ipk/build.py`, `tools/build-pages.js`, `tools/check.sh`, the tests in `tools/test/` |

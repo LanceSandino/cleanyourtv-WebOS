@@ -668,3 +668,23 @@ commit_ref: "feature/lg-config (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T14:47:45Z"
 ```
+
+```yaml
+id: CU-20261027-45
+type: fix
+title: "Stop LG pre-loading apps with the preload manager's own call"
+description: "Tried on the owner's TV with Lance's go-ahead: setPreloadPolicy {application: {id, isAllowed: false}} switched
+  com.webos.app.browser's isEnabled off (the earlier try looked at isAllowed, which it never clears). On an app that is not installed
+  (vudu) every call set isAllowed true, and the preload manager saved that in /var/preferences/webos-preload-manager-conf.json (restored
+  from a backup with a restart of preload-manager); isEnabled takes the value passed (false when left out) and is not saved.
+  lgpreload.js now calls setPreloadPolicy isEnabled false for every app getPreloadPolicy lists as enabled and allowed, except
+  com.webos.app.home and org.webosbrew.*, records them in /tmp/cleanyourtv-lgpreload.json, checks the result, and switches exactly
+  those on again when the group or the debloat goes off; 5 s after the service starts, on every debloat change, every 2 min. No
+  configd file, no restart; a leftover configd preload file of the previous way is removed once. tvprofile lgPreload is 'api'."
+impact: medium
+affected_modules: ["helper/lgpreload.js", "helper/tvprofile.js", "docs/debloat.md", "docs/security.md", "docs/tv-changes.md", "docs/development/internals.md", "AGENTS.md", "DECISIONS.md"]
+related_tests: ["tools/test/lgpreload.test.js (a stand-in preload manager as on webOS 25: only enabled and allowed apps but Home and the Homebrew Channel switched off, LG's saved allowed list unchanged, recorded, nothing more while off, off again after it restarts, back for exactly those apps when switched off, nothing with the debloat off, on an untried TV or with LG's Home, a preload manager that ignores it is reported, applied at once on a debloat change, only get/setPreloadPolicy called)", "tools/test/lgconfig.test.js", "tools/test/tvprofile.test.js"]
+commit_ref: "feature/lg-config (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T15:15:43Z"
+```

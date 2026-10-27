@@ -53,18 +53,16 @@ Optional and off by default. It only reads, and only on the local network: no ac
 
 ## LG's settings changed in RAM
 
-Two options change LG's own settings, both through LG's configuration service (configd) and only in RAM (`helper/lgconfig.js`):
-**Hide LG's volume bar** (above) and the debloat group **Stop LG pre-loading apps**. Each writes one small JSON file per setting into
-the country folders of configd's layer `/var/run/tvconfig/rmm/` (in RAM; configd reads it above LG's built-in settings), keeps a record
-of what it wrote in `/tmp/cleanyourtv-lgconfig.json`, and only ever replaces or removes a file that holds exactly what it wrote, so
-LG's own files are never touched. After each change it asks configd to read its settings again (`reconfigure`). A restart of the TV
-clears all of it.
+**Hide LG's volume bar** changes one of LG's settings through LG's configuration service (configd), in RAM only
+(`helper/lgconfig.js`): it writes one small JSON file into the country folders of configd's layer `/var/run/tvconfig/rmm/` (in RAM;
+configd reads it above LG's built-in settings), keeps a record of what it wrote in `/tmp/cleanyourtv-lgconfig.json`, and only ever
+replaces or removes a file that holds exactly what it wrote, so LG's own files are never touched. After each change it asks configd to
+read its settings again (`reconfigure`). A restart of the TV clears it.
 
-**Stop LG pre-loading apps** also restarts one of LG's services, `preload-manager.service` (`systemctl restart`), because that
-service reads its app list only when it starts: once when the group is switched on or off, about a minute after every start of the
-TV, and when the setting was lost. Its list keeps Home (the launcher) and anything of the Homebrew Channel's switched on. If configd
-does not take the list on a TV, or the preload manager keeps its own list after the restart (as on the webOS 25 TV it was tried on),
-the file is taken away again and nothing more is restarted. See [Debloat](debloat.md#lgs-pre-loading).
+The debloat group **Stop LG pre-loading apps** uses the preload manager's own call (`setPreloadPolicy`, `isEnabled` false) for the apps
+it would pre-load, except Home and anything of the Homebrew Channel's. That is kept in the preload manager's memory only; nothing is
+restarted, and the call is made only for apps LG already allows, so LG's saved list does not change. See
+[Debloat](debloat.md#lgs-pre-loading).
 
 ## Themes
 
