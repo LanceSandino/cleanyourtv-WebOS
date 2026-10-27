@@ -177,6 +177,9 @@ function create(ctx) {
     for (const p of plan) {
       if (!p || nx >= NEXT_MAX) break;
       if (!p.film && (!p.show || here['tm-' + p.show + '-' + p.season + '-' + p.episode])) continue;
+      // an episode queued without its show (one_off) cannot be started by show and episode (Telemachus refuses it: not in the
+      // catalogue); only what is playing can be resumed, so such an episode is left out
+      if (!p.film && p.one_off === true) continue;
       nx++;
       if (!p.film) {
         out.push(card(p.show, p.season, p.episode, p.title, p.poster, 0, { show: p.show, season: p.season, episode: p.episode }, true));

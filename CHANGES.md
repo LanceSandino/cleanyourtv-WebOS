@@ -553,3 +553,18 @@ commit_ref: "feature/sonos-volume (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T12:59:01Z"
 ```
+
+```yaml
+id: CU-20261027-31
+type: fix
+title: "Telemachus's one-off episodes are not offered as up next"
+description: "The Telemachus session reported that {play: {show, season, episode}} goes through skip --to, which only takes shows in
+  its catalogue; a plan entry with one_off: true (an episode queued without its show) is refused and the app only opens. watch.js
+  leaves such episodes out of the next cards (what is playing still resumes with {play: {resume: true}})."
+impact: low
+affected_modules: ["helper/watch.js"]
+related_tests: ["tools/test/watch.test.js"]
+commit_ref: "feature/telemachus-oneoff (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T13:34:47Z"
+```

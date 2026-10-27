@@ -85,6 +85,10 @@ run(async () => {
     'no app shortcuts: the apps are on Home already'
   );
   ok((await call(w, '/api/watch/img/0000000000000000')).code === 404, 'an unknown picture id is not fetched');
+  brief.state.plan.unshift({ show: 'Guest Show', season: 1, episode: 1, title: 'Once', one_off: true });
+  const oneOff = (await call(make(), '/api/watch/rows')).j.items.filter(i => i.title === 'Guest Show');
+  ok(!oneOff.length, 'an episode queued without its show (one_off) is not offered: Telemachus cannot start it by episode');
+  brief.state.plan.shift();
   brief.state.plan.splice(3, 0, { film: true, film_title: 'Old Film', year: 'soon', tmdb_id: 'imdb:9' });
   const film = (await call(make(), '/api/watch/rows')).j.items.filter(i => i.title === 'Old Film')[0];
   ok(
