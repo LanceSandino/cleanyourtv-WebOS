@@ -47,8 +47,16 @@ the service or given to the launcher. At most 30 photos (40 MB) are kept on the 
 
 Home's first grid row reads Telemachus on the TV itself (`127.0.0.1:8770`, no key from the TV). The show and
 film pictures it names come from `image.tmdb.org` (HTTPS only, no redirects, at most 1 MB each): the service fetches them when Home
-shows them and keeps at most 40 in memory, never on disk; the Home page only ever sees an id. Switch the row off in **Customise** >
+shows them and keeps at most 12 MB of pictures in memory, never on disk; the Home page only ever sees an id. Switch the row off in **Customise** >
 **Continue watching** > **Show on Home** and nothing is read.
+
+For the other apps, the service reads the rows LG's own Home shows (YouTube, Disney+, Apple TV and the like) from LG's content miner
+on the TV: its database, which only that LG service may read, is read as that service (`luna-send -a com.webos.service.contentminer`,
+a read, nothing written). LG's advertisements in those rows come from another LG service (`com.webos.service.admanager`), which is
+never called; items marked as promoted are dropped. The pictures named there are fetched by the service over HTTPS from the app's
+own image server, or from LG's (`aic.imagesvc.lgtvcommon.com`, `ngfts.lge.com`, plain HTTP as LG uses them), images only, at most
+1 MB each and 12 MB in memory all together, never on disk; **Customise** > **Continue watching** > **Rows from LG for other apps**
+switches this off.
 
 Plex and Stremio are read only once you link them there, with their own TV sign-in (no password on the TV):
 

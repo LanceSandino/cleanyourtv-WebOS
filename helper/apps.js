@@ -225,6 +225,7 @@ function create(ctx) {
     // Continue watching on Home (watch.js): on unless switched off; the shows and films removed from it (hold OK > Remove)
     if (b.watch && typeof b.watch === 'object') {
       out.watch = { on: b.watch.on !== false };
+      if (b.watch.lg === false) out.watch.lg = false; // LG's rows of the other apps (lgrows.js)
       const hide = (Array.isArray(b.watch.hide) ? b.watch.hide : []).filter(
         (g, i, a) => typeof g === 'string' && /^[a-z]+:[^\u0000-\u001f]{1,160}$/.test(g) && a.indexOf(g) === i
       );

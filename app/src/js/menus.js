@@ -738,18 +738,17 @@ function saverMenu() {
     });
   });
 }
-/* hold OK on a Continue watching card: open it or its app, remove its show (or film), or every card of its source */
+/* hold OK on a card under an app: open it or the app, remove it (a whole show for Telemachus), or hide that app's row */
 function watchCardMenu(it) {
-  var from = SOURCE_NAMES[it.source] || '',
-    gone = function (g) {
-      WATCH.remove(g);
-      toast(t('Removed. Customise > Continue watching shows it again.'));
-    };
+  var gone = function (g) {
+    WATCH.remove(g);
+    toast(t('Removed. Customise > Continue watching shows it again.'));
+  };
   openMenu(
     it.title,
     [
       {
-        label: it.next ? t('Play') : t('Resume'),
+        label: it.progress > 0 || (it.source !== 'lg' && !it.next) ? t('Resume') : t('Play'),
         sub: it.sub || '',
         fn: function () {
           launch(it.launch.id, it.launch.params);
@@ -764,17 +763,17 @@ function watchCardMenu(it) {
           }
         : null,
       {
-        label: t('Remove from Continue watching'),
-        sub: it.group && it.group.indexOf(':film:') < 0 && it.sub ? t('the whole show') : '',
+        label: t('Remove from this row'),
+        sub: it.source === 'telemachus' && it.group.indexOf(':film:') < 0 ? t('the whole show') : '',
         fn: function () {
           gone(it.group);
         },
       },
-      from
+      it.owner
         ? {
-            label: t('Hide everything from %s').replace('%s', from),
+            label: t('Hide the row of %s').replace('%s', title(it.owner)),
             fn: function () {
-              gone('src:' + it.source);
+              gone('app:' + it.owner);
             },
           }
         : null,
@@ -805,6 +804,14 @@ function watchMenu() {
             stay: true,
             fn: function () {
               WATCH.setOn(!on);
+            },
+          },
+          {
+            label: t('Rows from LG for other apps'),
+            sub: WATCH.lgOn() ? t('On') : t('Off'),
+            stay: true,
+            fn: function () {
+              WATCH.setLg(!WATCH.lgOn());
             },
           },
         ];

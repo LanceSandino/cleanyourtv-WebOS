@@ -1,6 +1,7 @@
 // Continue watching: the episodes and films a highlighted app on Home shows in a row under it (app/src/js/watch.js), things started
 // and not finished, never app shortcuts. From Telemachus on this TV (what is playing, or the episode each show is in the middle of,
-// then what its channel plays next), and Plex and Stremio once linked (plex.js, stremio.js: what is partly watched). Read here, by the root service:
+// then what its channel plays next), Plex and Stremio once linked (plex.js, stremio.js: what is partly watched), and for the other apps
+// the row LG's own Home shows under them (lgrows.js, without LG's advertisements). Read here, by the root service:
 // Telemachus answers programs on the TV but refuses web pages, and the pictures are fetched here and served from memory, so the Home
 // page never contacts another site.
 //   GET /api/watch/rows        {items: [{key, group, title, sub, img, progress, next, launch: {id, params}, source}]}
@@ -16,12 +17,14 @@ const TELEMACHUS = process.env.CYTV_TELEMACHUS || 'http://127.0.0.1:8770', // an
   TELEMACHUS_APP = 'com.telemachus.screen',
   ROWS_MS = 20 * 1000,
   SHOWS_MS = 10 * 60 * 1000,
-  IMG_MAX = 40,
-  IMG_BYTES = 1024 * 1024,
+  IMG_MAX = 200, // pictures named (an address each)
+  IMG_BYTES = 1024 * 1024, // one picture at most
+  IMG_TOTAL = 12 * 1024 * 1024, // the pictures kept in memory at most (the oldest are dropped, fetched again when shown)
   NEXT_MAX = 4; // Telemachus's next episodes and films
 // pictures only from TMDB's image host, in a TV-sized width
 const TMDB = /^https:\/\/image\.tmdb\.org\/t\/p\/[a-z0-9]+\/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$/,
-  METAHUB = /^https:\/\/images\.metahub\.space\/[a-z]+\/[a-z]+\/tt\d+\/img$/;
+  METAHUB = /^https:\/\/images\.metahub\.space\/[a-z]+\/[a-z]+\/tt\d+\/img$/,
+  LG_IMG = /^https?:\/\/(aic\.imagesvc\.lgtvcommon\.com|ngfts\.lge\.com)\//;
 // "S8 E9 · The Simple Intimacy of the Near Touch"; Telemachus's titles can be file names ("The Vampire Diaries S08E09 - The Simple...")
 const esc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function ep(show, s, e, t) {
@@ -52,6 +55,13 @@ function create(ctx) {
     return TMDB.test(u) ? remember(u) : '';
   };
   const metahubPic = url => (typeof url === 'string' && METAHUB.test(url) ? remember(url) : '');
+  // LG's rows: the app's own picture (HTTPS), else LG's copy from its image servers
+  const lgPic = (url, url4k) =>
+    typeof url === 'string' && /^https:\/\/[A-Za-z0-9.-]+\//.test(url) && url.length < 2048
+      ? remember(url)
+      : typeof url4k === 'string' && LG_IMG.test(url4k) && url4k.length < 2048
+        ? remember(url4k)
+        : '';
   const plexPic = url => (typeof url === 'string' && /^https?:\/\//.test(url) ? remember(url) : '');
   // a newly linked account shows on the next read, not after the 20 s cache
   const sub = Object.assign({}, ctx, {
@@ -60,15 +70,25 @@ function create(ctx) {
     },
   });
   const plex = require('./plex').create(sub),
-    stremio = require('./stremio').create(sub);
+    stremio = require('./stremio').create(sub),
+    lg = require('./lgrows').create(sub);
   async function sendImg(res, id) {
     const im = imgs[id];
     if (!im) return web.notFound(res);
     if (!im.buf) {
       try {
         const r = await fetch.read(im.url, { allowHttp: !/^https:/.test(im.url), totalMs: 20000, maxBytes: IMG_BYTES, redirects: 0 });
+        const type = String(r.headers['content-type'] || 'image/jpeg');
+        if (!/^image\/(jpeg|png|webp|gif)/.test(type)) return web.notFound(res); // pictures only
         im.buf = r.body;
-        im.type = String(r.headers['content-type'] || 'image/jpeg');
+        im.type = type;
+        let total = 0;
+        for (let i = imgOrder.length - 1; i >= 0; i--) {
+          const x = imgs[imgOrder[i]];
+          if (!x || !x.buf) continue;
+          total += x.buf.length;
+          if (total > IMG_TOTAL && x !== im) x.buf = null;
+        }
       } catch (e) {
         return web.notFound(res);
       }
@@ -172,14 +192,21 @@ function create(ctx) {
 
   async function rows() {
     if (cache && Date.now() - cacheAt < ROWS_MS) return cache;
-    const [t, px, st] = await Promise.all([telemachus(), plex.items(plexPic).catch(() => []), stremio.items(metahubPic).catch(() => [])]);
-    // what Telemachus has started, what Plex and Stremio have partly watched, then what Telemachus's channel plays next
+    const lgOn = !((ctx.config.get().watch || {}).lg === false);
+    const [t, px, st, l] = await Promise.all([
+      telemachus(),
+      plex.items(plexPic).catch(() => []),
+      stremio.items(metahubPic).catch(() => []),
+      lgOn ? lg.items(lgPic).catch(() => []) : [],
+    ]);
+    // what Telemachus has started, what Plex and Stremio have partly watched, Telemachus's next, then LG's rows of the other apps
     cache = {
       items: /** @type {any[]} */ ([]).concat(
         t.filter(i => !i.next),
         px,
         st,
-        t.filter(i => i.next)
+        t.filter(i => i.next),
+        l
       ),
     };
     cacheAt = Date.now();

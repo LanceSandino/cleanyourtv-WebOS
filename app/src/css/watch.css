@@ -1,8 +1,19 @@
-/* Continue watching (watch.js): picture cards in the grid's first row, the title and the episode over a dark fade at the bottom, a
-   thin bar for how far it got, and where it comes from in the corner of the focused one. */
+/* the cards under a highlighted app (watch.js): a picture, the title and the episode over a dark fade at the bottom, a thin bar for how
+   far it got, and where it comes from in the corner of the focused one. A row that opens brings its cards in one after the other
+   (transform and opacity only); the focused card's picture comes a little closer. */
 .wcard {
   overflow: hidden;
   border-radius: var(--tile-r);
+  background: linear-gradient(135deg, rgba(var(--c), 0.42), rgba(20, 22, 27, 0.96) 70%);
+}
+.wcard.win {
+  animation: win calc(0.34s * var(--spd)) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@keyframes win {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
 }
 .wcard .wimg {
   position: absolute;
@@ -10,15 +21,19 @@
   top: 0;
   right: 0;
   bottom: 0;
-  background: #1a1c22 center / cover no-repeat;
+  background: transparent center / cover no-repeat;
+  transition: transform calc(0.5s * var(--spd)) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.wcard.f .wimg {
+  transform: scale(1.05);
 }
 .wcard .wtx {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 26px 16px 12px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0));
+  padding: 34px 16px 13px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.5) 55%, rgba(0, 0, 0, 0));
   text-align: left;
 }
 .wcard.wtext .wtx {
@@ -36,6 +51,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
 }
 .wcard .ws {
   margin-top: 2px;
@@ -51,8 +67,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.25);
+  height: 6px;
+  background: rgba(255, 255, 255, 0.22);
 }
 .wcard .wpg i {
   display: block;

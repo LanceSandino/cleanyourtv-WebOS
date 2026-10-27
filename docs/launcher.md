@@ -68,19 +68,24 @@ Putting the dock, buttons, hidden apps, order and clock back to the defaults is 
 
 ## Continue watching
 
-Highlight Telemachus, Plex (or PLX) or Stremio on Home and, a moment later, a row of its episodes and films opens under that app's row:
-things you started and did not finish, with a bar for how far you got, and for Telemachus what its channel plays next (marked **Up
-next on Telemachus**). Down goes into the row; OK opens the episode in that app: Telemachus at that episode or film (once its app takes
-the `play` launch option; until then it opens Telemachus), Plex, PLX or Stremio at their own Home, where their Continue Watching row
-has the same item first. The row closes when you move on along that app's row or above it; going down past it keeps it. Nothing is
+Highlight an app on Home and, a moment later, a row of its episodes, films or videos opens under that app's row:
+
+- **Telemachus, Plex (or PLX), Stremio:** what you started and did not finish, with a bar for how far you got, and for Telemachus
+  what its channel plays next (marked **Up next on Telemachus**).
+- **The other apps** (YouTube, Disney+, Apple TV and the like): the row LG's own Home shows for that app, as LG keeps it on the TV,
+  without LG's advertisements. Which apps have one is LG's choice; an app LG has nothing for shows no row.
+ Down goes into the row; OK opens it in that app: Telemachus at that episode or film (once its app takes the
+`play` launch option; until then it opens Telemachus), Plex, PLX or Stremio at their own Home, where their Continue Watching row has
+the same item first, and the other apps at that video or film, as LG's Home opens it. The row closes when you move on along that app's row or above it; going down past it keeps it. Nothing is
 shown for apps without episodes, and there are no app shortcuts (your apps are on Home already).
 
-Holding OK on an episode offers **Resume** (or **Play**), **Open** the app, **Remove from Continue watching** (the whole show or film,
-so its next episode does not come back), **Hide everything from** that app, and the settings below.
+Holding OK on a card offers **Resume** (or **Play**), **Open** the app, **Remove from this row** (for Telemachus the whole show, so its
+next episode does not come back), **Hide the row of** that app, and the settings below.
 
 **Customise** > **Continue watching**:
 
 - **Show on Home** switches the rows off (nothing is then read).
+- **Rows from LG for other apps** switches LG's rows off, keeping Telemachus, Plex and Stremio.
 - **Show removed cards again** (when you removed some) brings them all back.
 - **Link Plex...** shows a 4-character code: open `plex.tv/link` on a phone or a computer, signed in to Plex, and enter it. The TV
   then reads Continue Watching from your own Plex server, by its address on your network.

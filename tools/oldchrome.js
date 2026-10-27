@@ -162,26 +162,34 @@ const WATCH_KEYS =
   'var under=posOf(document.querySelector("#grid .wcard"));var tmRow=!!under&&under[0]===p[0]+1;key(40);key(37);key(37);key(37);key(13);setTimeout(function(){' +
   'var l0=launched[0]||[],l1=launched[1]||[];var ok=none&&onPlex&&plexRow&&inRow&&l0[0]==="cdp-30"&&closed&&tmRow&&l1[0]==="com.telemachus.screen"&&l1[1]&&l1[1].play&&l1[1].play.episode===6;' +
   'document.body.setAttribute("data-watch",ok?"ok":"bad none="+none+" onPlex="+onPlex+" plexRow="+plexRow+" inRow="+inRow+" closed="+closed+" tmRow="+tmRow+" launched="+JSON.stringify(launched))},800)},1000)},800)},800)},1000)},2500)},300)})()</script>';
-// holding OK: on an app tile in the dock its options (Hide app); on a card under Plex its own (Resume, Open Plex, Remove from Continue
-// watching, Hide everything from Plex); Remove takes that show off and keeps it in the settings
+// holding OK: on an app tile in the dock its options (Hide app); on a card under Plex its own (Resume, Open Plex, Remove from this row,
+// Hide the row of Plex); Remove takes that show off and keeps it in the settings
 const HOLD_OK =
   '<script>(function(){function ev(t,c){var e=document.createEvent("Event");e.initEvent(t,true,true);Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)}' +
   'function key(c){ev("keydown",c);ev("keyup",c)}function ov(){var o=document.getElementById("ov");return o?o.textContent:""}' +
   'function hold(cb){ev("keydown",13);setTimeout(function(){ev("keyup",13);setTimeout(cb,300)},1000)}' +
   'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);setTimeout(function(){' +
   'hold(function(){var app=/Hide app/.test(ov());key(461);setTimeout(function(){key(39);key(39);setTimeout(function(){key(40);var f=document.querySelector(".f");' +
-  'var onCard=!!f&&f.classList.contains("wcard");hold(function(){var m=ov(),card=/Resume/.test(m)&&/Open Plex/.test(m)&&/Remove from Continue watching/.test(m)&&/Hide everything from Plex/.test(m);key(40);key(40);key(13);setTimeout(function(){' +
+  'var onCard=!!f&&f.classList.contains("wcard");hold(function(){var m=ov(),card=/Resume/.test(m)&&/Open Plex/.test(m)&&/Remove from this row/.test(m)&&/Hide the row of Plex/.test(m);key(40);key(40);key(13);setTimeout(function(){' +
   'var left=document.querySelectorAll("#grid .wcard").length,saved=cfg.watch&&cfg.watch.hide&&cfg.watch.hide.join();' +
   'var ok=app&&onCard&&card&&left===0&&saved==="plex:7";' +
   'document.body.setAttribute("data-hold",ok?"ok":"bad app="+app+" onCard="+onCard+" card="+card+" left="+left+" saved="+saved+" menu="+ov().slice(0,160))},800)})},1000)},600)})},2500)},300)})()</script>';
-// linking Plex (Customise > Continue watching): Down to Link Plex..., OK; the menu shows the code for plex.tv/link, then, once the
+// linking Plex (Customise > Continue watching): Down twice to Link Plex..., OK; the menu shows the code for plex.tv/link, then, once the
 // stand-in says the code was entered, the server it is linked to
 const WATCH_LINK =
   '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
   'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}function ov(){var o=document.getElementById("ov");return o?o.textContent:""}' +
-  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);watchMenu();setTimeout(function(){key(40);key(13);' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);watchMenu();setTimeout(function(){key(40);key(40);key(13);' +
   'var n=0,code=false,w=setInterval(function(){if(/plex\\.tv\\/link and enter AB12/.test(ov()))code=true;if(++n<60&&!/Linked to Home server/.test(ov()))return;clearInterval(w);' +
   'var ok=code&&/Linked to Home server/.test(ov());document.body.setAttribute("data-link",ok?"ok":"bad code="+code+" menu="+ov().slice(0,200))},250)},800)},300)})()</script>';
+// LG's row of another app (lgrows.js): highlighting the second dock app opens its row; OK opens the video the way LG's Home does
+const LG_ROW =
+  '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}var launched=[],L=window.launch;window.launch=function(id,p){launched.push([id,p]);return L(id,p)};' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);setTimeout(function(){key(39);setTimeout(function(){' +
+  'var cards=document.querySelectorAll("#grid .wcard"),badge=cards[0]&&cards[0].querySelector(".wsrc").textContent;key(40);key(13);setTimeout(function(){var l=launched[0]||[];' +
+  'var ok=cards.length===1&&badge===""&&l[0]==="app.1"&&l[1]&&l[1].contentTarget==="v=1";' +
+  'document.body.setAttribute("data-lg",ok?"ok":"bad cards="+cards.length+" badge="+badge+" launched="+JSON.stringify(launched))},800)},1000)},2500)},300)})()</script>';
 // [name, file, what it draws, how many at least, milliseconds of page time to wait]
 const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
@@ -197,6 +205,7 @@ const PAGES = [
   ['continue watching', 'app/index.html', /data-watch="ok"/g, 1, 15000, WATCH_KEYS],
   ['linking plex', 'app/index.html', /data-link="ok"/g, 1, 20000, WATCH_LINK],
   ['hold ok', 'app/index.html', /data-hold="ok"/g, 1, 20000, HOLD_OK],
+  ['lg row', 'app/index.html', /data-lg="ok"/g, 1, 15000, LG_ROW],
 ];
 let famN = 0,
   plexState = 'idle',
@@ -268,6 +277,17 @@ function serve() {
             img: '/api/watch/img/aaaaaaaaaaaaaaaa',
             progress: 0.3,
             launch: { id: 'com.telemachus.screen', params: { play: { show: 'Show A', season: 2, episode: 6 } } },
+          },
+          {
+            key: 'lg-app.1-x',
+            group: 'lg:app.1:x',
+            app: 'app.1',
+            source: 'lg',
+            title: 'A video',
+            sub: '',
+            img: '/api/watch/img/cccccccccccccccc',
+            progress: null,
+            launch: { id: 'app.1', params: { contentTarget: 'v=1' } },
           },
           {
             key: 'plex-7',

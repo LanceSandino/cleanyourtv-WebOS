@@ -97,5 +97,92 @@ run(async () => {
   );
   up = false;
   ok((await call(make(), '/api/watch/rows')).j.items.length === 0, 'without Telemachus (and nothing linked) the row is empty');
+
+  // LG's rows of the other apps (lgrows.js): read from LG's content miner as that service, without the row's title entry or anything
+  // promoted, opened the way LG's Home does (contentTarget), pictures by id: the app's own over HTTPS, else LG's copy
+  let asked = null;
+  const content = (id, title, extra) =>
+    Object.assign(
+      {
+        _id: id,
+        type: 'content',
+        titleText: title,
+        category: '',
+        promotionId: '',
+        onClick: { contentId: 'v=' + id, launchParam: null, targetAppId: 'youtube.leanback.v4' },
+        image: { url: 'https://i.ytimg.com/vi/' + id + '/hq.jpg' },
+        image_4k: { url: 'http://aic.imagesvc.lgtvcommon.com/homeprv/' + id + '.jpg' },
+      },
+      extra || {}
+    );
+  const minerLuna = async (uri, payload, opts) => {
+    if (/db\/find$/.test(uri) && opts && opts.as === 'com.webos.service.contentminer') {
+      asked = payload;
+      return {
+        returnValue: true,
+        results: [
+          {
+            appId: 'youtube.leanback.v4',
+            contents: [
+              { _id: 't', type: 'title', titleText: '', onClick: { targetAppId: 'youtube.leanback.v4' } },
+              content('a1', 'First video'),
+              content('a2', 'Sponsored thing', { promotionId: 'p9' }),
+              content('a3', 'An ad', { category: 'Sponsored' }),
+              content('a4', 'No HTTPS picture', { image: { url: 'http://evil.example/x.jpg' } }),
+              content('a5', 'Nothing to show', {
+                image: { url: 'http://evil.example/x.jpg' },
+                image_4k: { url: 'http://evil.example/y.jpg' },
+              }),
+            ],
+          },
+          {
+            appId: 'com.disney.disneyplus-prod',
+            contents: [content('d1', 'A Film', { onClick: { contentId: 'page=play&id=d1', targetAppId: 'com.disney.disneyplus-prod' } })],
+          },
+        ],
+      };
+    }
+    return { returnValue: true };
+  };
+  const lgw = W.create({ config, luna: minerLuna, feature: () => null });
+  const lgItems = (await call(lgw, '/api/watch/rows')).j.items.filter(i => i.source === 'lg');
+  ok(
+    asked &&
+      asked.query.from === 'com.webos.service.contentminer.contents:1' &&
+      lgItems.map(i => i.title).join() === 'First video,No HTTPS picture,Nothing to show,A Film',
+    "LG's rows are read as its content miner, without the title entry, promoted items or ads (" + lgItems.map(i => i.title).join() + ')'
+  );
+  const yt = lgItems[0],
+    dis = lgItems[3];
+  ok(
+    yt.app === 'youtube.leanback.v4' &&
+      yt.launch.id === 'youtube.leanback.v4' &&
+      yt.launch.params.contentTarget === 'v=a1' &&
+      dis.app === 'com.disney.disneyplus-prod' &&
+      dis.launch.params.contentTarget === 'page=play&id=d1',
+    "each belongs to its app and opens the way LG's Home opens it (contentTarget)"
+  );
+  ok(
+    /^\/api\/watch\/img\/[0-9a-f]{16}$/.test(yt.img) &&
+      /^\/api\/watch\/img\//.test(lgItems[1].img) &&
+      lgItems[2].img === '' &&
+      JSON.stringify(lgItems).indexOf('ytimg') < 0,
+    "pictures by id: the app's own over HTTPS, else LG's copy from its image servers, else none"
+  );
+  config.update('test', c => {
+    c.watch = { on: true, lg: false };
+  });
+  ok(
+    (await call(W.create({ config, luna: minerLuna, feature: () => null }), '/api/watch/rows')).j.items.every(i => i.source !== 'lg'),
+    "with LG's rows switched off they are not read"
+  );
+  ok(
+    / -a "\$3" /.test(req('luna').script(5000, 'com.webos.service.contentminer')) && req('luna').script(5000, '').indexOf('-a') < 0,
+    'luna-send gets -a only when a call is sent as another service, the name as an argument'
+  );
+  ok(
+    (await req('luna')('luna://x/y', {}, { as: 'bad name; rm -rf /' })).errorText === 'bad service name',
+    'a service name that is not one is refused before anything runs'
+  );
   tm.close();
 });
