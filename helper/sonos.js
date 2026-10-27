@@ -5,14 +5,17 @@
 // (UPnP RenderingControl on port 1400 of the speaker, local, no account). Changes arrive as UPnP events (SUBSCRIBE) on a port the
 // system picks, open only while the option is on, answered only for the chosen speaker's address and a random path; when no events
 // arrive there it reads the volume once a second instead. Nothing here can change the volume, mute or any setting of the speaker.
-// API (loopback only): GET /api/sonos/status, POST /api/sonos/find (search the network), POST /api/sonos/set {enabled, speaker, position}
+// While it is on, LG's own volume bar (which shows no number for a soundbar) can be hidden too: lgvolume.js, option hideLg.
+// API (loopback only): GET /api/sonos/status, POST /api/sonos/find (search the network), POST /api/sonos/set {enabled, speaker, position,
+// hideLg}
 const http = require('http'),
   dgram = require('dgram'),
   os = require('os'),
   crypto = require('crypto');
 const web = require('./web');
 
-const DEFAULTS = { enabled: false, speaker: null, position: 'top-left' }; // speaker null: found automatically
+// speaker null: found automatically; hideLg: LG's volume bar is hidden while this is on and the sound goes to the soundbar
+const DEFAULTS = { enabled: false, speaker: null, position: 'top-left', hideLg: true };
 const POSITIONS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
 const ST = 'urn:schemas-upnp-org:device:ZonePlayer:1';
 const RC = 'urn:schemas-upnp-org:service:RenderingControl:1';
@@ -124,6 +127,8 @@ function create(ctx, opts) {
       retryMs: 15000, // the first wait after a failure; it doubles up to five minutes
       screenMs: 3000, // how long the TV's power state and sound output are trusted
       subSeconds: 1800, // how long a subscription is asked for; renewed at half
+      outputMs: 20000, // how often the TV's sound output is looked at while LG's bar may be hidden
+      lgDir: '', // configd's runtime layer for lgvolume.js (tests)
       ssdp: { address: '239.255.255.250', port: 1900 },
       selfOk: false, // the tests' stand-in speaker runs on this computer
     },
@@ -488,6 +493,34 @@ function create(ctx, opts) {
     }, o.pollMs);
   }
 
+  // LG's own volume bar (lgvolume.js): hidden while this option and hideLg are on and the sound goes to the soundbar (HDMI ARC or
+  // optical); back as soon as one of them is no longer so, also when the sound moves to the TV's speakers or headphones. Looked at
+  // after every change of the settings and every 20 s while it may apply. Only ever one look at a time; a change during one looks again.
+  const lg = ctx.lgvolume || require('./lgvolume').create(ctx, o.lgDir);
+  /** @type {any} */ let lgTimer = null;
+  let lgBusy = false,
+    lgAgain = false;
+  async function lgSync() {
+    if (lgBusy) return void (lgAgain = true);
+    lgBusy = true;
+    try {
+      do {
+        lgAgain = false;
+        const c = cfg();
+        let want = false;
+        if (c.enabled && c.hideLg && lg.supported()) {
+          const out = await luna('luna://com.webos.service.audio/getSoundOutput', {});
+          want = /^external_(arc|optical)/.test(String((out && out.soundOutput) || ''));
+        }
+        if (want && !lg.hidden()) await lg.hide();
+        else if (!want && lg.hidden()) await lg.show();
+      } while (lgAgain);
+    } catch (e) {
+      console.error("sonos: LG's volume bar: " + ((e && e.message) || e));
+    }
+    lgBusy = false;
+  }
+
   // make the running work match the settings: at start and after every change
   function sync() {
     const c = cfg();
@@ -495,6 +528,9 @@ function create(ctx, opts) {
     clearTimers();
     unsubscribe();
     wait = 0;
+    if (lgTimer) clearInterval(lgTimer);
+    lgTimer = c.enabled && c.hideLg ? setInterval(lgSync, o.outputMs) : null;
+    lgSync();
     if (!c.enabled) {
       closePort();
       speaker = null;
@@ -511,6 +547,8 @@ function create(ctx, opts) {
       speaker: c.speaker ? pub(c.speaker) : null, // null: found automatically
       using: c.enabled && speaker ? pub(speaker) : null,
       position: c.position,
+      hideLg: !!c.hideLg,
+      lgBar: !lg.supported() ? 'unsupported' : lg.hidden() ? 'hidden' : 'shown', // LG's own volume bar
       state: st.state,
       mode: st.mode,
       volume: st.volume,
@@ -527,6 +565,7 @@ function create(ctx, opts) {
       else return { error: 'unknown speaker: search again' };
     }
     if (POSITIONS.indexOf(b.position) >= 0) n.position = b.position;
+    if (typeof b.hideLg === 'boolean') n.hideLg = b.hideLg;
     save(n);
     sync();
     return status();
@@ -544,7 +583,18 @@ function create(ctx, opts) {
     web.notFound(res);
   }
 
-  return { name: 'sonos', prefix: '/api/sonos/', handle, start: sync, sync, status, set, find, stop: () => set({ enabled: false }) };
+  return {
+    name: 'sonos',
+    prefix: '/api/sonos/',
+    handle,
+    start: sync,
+    sync,
+    status,
+    set,
+    find,
+    lgSync,
+    stop: () => set({ enabled: false }),
+  };
 }
 
 module.exports = { create, parseEvent, parseDescription, READ_ONLY, POSITIONS };

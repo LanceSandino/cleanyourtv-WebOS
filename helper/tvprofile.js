@@ -17,6 +17,9 @@
 //                  On webOS 26 (SDK 11) with the flutter or web Home, HDMI ARC to a soundbar stayed silent after the restart until
 //                  arccontroller was restarted (issue 21, OLED65C35LA): that one is restarted there. webOS 25 (SDK 10) keeps eARC.
 //                  scripts/after-sam.sh restarts only services that exist and are active.
+//   lgVolumeBar    how LG's own volume bar can be hidden while the Sonos volume shows (helper/lgvolume.js): 'configd' (LG's surface manager
+//                  follows the configd setting com.webos.surfacemanager.volumeOSD) on webOS 25 (SDK 10), where that was read in LG's files;
+//                  '' elsewhere (the option says it is not available). The service also checks that the runtime layer folder exists.
 //   homeTakeover   how the launcher becomes Home. 'mount': its folder is mounted over LG's Home app and the app manager is restarted
 //                  to read it (flutter and web Home). 'standin' where LG's Home is the native program: a small script is mounted over
 //                  that program and asks webapp-mgr to open the launcher as com.webos.app.home, so LG's Home manifest stays and the
@@ -71,6 +74,7 @@ function decide(facts, compat) {
           ? 'arccontroller'
           : '',
     homeTakeover: /^com\.webos\.app\.home native$/.test(homeKind) ? 'standin' : 'mount',
+    lgVolumeBar: major === 10 ? 'configd' : '',
   };
 }
 const readJson = (file, d) => {

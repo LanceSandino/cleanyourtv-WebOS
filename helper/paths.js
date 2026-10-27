@@ -36,6 +36,8 @@ module.exports = {
   HOME_APP: '/usr/palm/applications/com.webos.app.home',
   FULLHOME_APP: '/usr/palm/applications/com.webos.app.fullhome',
   STANDIN: env.CYTV_STANDIN || '/tmp/cleanyourtv-home-standin', // LG's Home program while scripts/home-standin.sh is mounted over it
+  // configd's runtime layer (RAM, LG's highest priority): where lgvolume.js puts its one setting to hide LG's volume bar
+  LGVOL_DIR: env.CYTV_LGVOL_DIR || '/var/run/tvconfig/remote',
   // child processes find the system tools first, as in a login shell on the TV
   ENV: Object.assign({}, env, { PATH: '/usr/bin:/usr/sbin:/bin:/sbin:' + (env.PATH || '') }),
 };

@@ -25,7 +25,7 @@ disk, and a reboot without the boot scripts brings LG's Home back.
 | Home takeover at boot, rollback, undo | `scripts/10-cleanyourtv-home`, `scripts/stage-home.sh`, `scripts/undo-home.sh`, `scripts/bootstrap.sh` |
 | Live TV: playlist, guide, favourites | `helper/live.js` and `app/src/js/live.js` |
 | Picture notifications | `notify/app/`, `helper/notify.js`, `helper/notifyapi.js` |
-| Sonos soundbar volume on screen (read only) | `helper/sonos.js` (SSDP search, UPnP volume events), the volume bar in `notify/app/`, `manager/src/js/sonos.js`, `docs/sonos.md` |
+| Sonos soundbar volume on screen (read only) | `helper/sonos.js` (SSDP search, UPnP volume events), the volume bar in `notify/app/`, `helper/lgvolume.js` (hides LG's own volume bar meanwhile: configd `volumeOSD` in RAM), `manager/src/js/sonos.js`, `docs/sonos.md` |
 | Voice (Moonshine, OpenRouter, Home Assistant) | `helper/voice.js` (microphone, recogniser), `helper/answers.js` (Assist, OpenRouter, your server), `voice/` |
 | Themes | `helper/themeschema.js` (the schema), `helper/theme.js` (downloads), `themes/` (read from GitHub), `docs/themes.md` |
 | Wallpapers | `helper/wallpapers.js` (library, phone page, Immich sync), `app/src/js/wall.js` (rotation on Home), `docs/wallpapers.md` |

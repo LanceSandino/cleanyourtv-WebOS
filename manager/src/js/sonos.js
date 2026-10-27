@@ -1,5 +1,6 @@
 /* More > Sonos volume on screen (helper/sonos.js): on or off, the speaker (found automatically or chosen from a search), the place
-   on screen and what it reads now. The speaker is only ever read: nothing here can change its volume. */
+   on screen, whether LG's own volume bar is hidden meanwhile, and what it reads now. The speaker is only ever read: nothing here can
+   change its volume. */
 var so = null, // the service's /api/sonos/status
   spk = [], // the speakers the last search found
   soT = 0;
@@ -138,6 +139,21 @@ function sonosRows() {
     fn: function () {
       sonosSet({ position: SONOS_PLACES[(SONOS_PLACES.indexOf(place) + 1) % SONOS_PLACES.length].id });
     },
+  });
+  /* LG's own bar (helper/lgvolume.js): hidden only while ours is on and the sound goes to the soundbar; webOS 25 only */
+  rows.push({
+    label: 'Hide LG\u2019s volume bar',
+    sub:
+      s.lgBar === 'unsupported'
+        ? 'not available on this TV'
+        : onoff(s.hideLg) + (s.hideLg ? ' \u00B7 while the sound goes to the soundbar' : ''),
+    dim: s.lgBar === 'unsupported',
+    fn:
+      s.lgBar === 'unsupported'
+        ? null
+        : function () {
+            sonosSet({ hideLg: !s.hideLg });
+          },
   });
   rows.push({ label: 'Now', sub: sonosState(s), fn: null });
   rows.push({ sep: true });

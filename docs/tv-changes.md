@@ -47,6 +47,13 @@ uninstall. Optional features contact other services only when you switch them on
 
 Either bind mount lives in RAM. A reboot without the boot scripts, or the Homebrew Channel's failsafe mode, leaves LG's Home as it was.
 
+## While it runs
+
+With **Sonos volume on screen** and **Hide LG's volume bar** on (webOS 25), while the sound goes to the soundbar the service keeps one
+file in RAM, `/var/run/tvconfig/remote/com.webos.surfacemanager.json` (`{"volumeOSD": false}`), and asks LG's configuration service to
+read its settings again; LG's volume bar stays away while it is there. It is removed when that no longer applies, and a restart
+clears it. See [Sonos volume on screen](sonos.md#lgs-own-volume-bar).
+
 ## Processes and ports
 
 | What | Port |

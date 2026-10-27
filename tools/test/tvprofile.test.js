@@ -65,6 +65,12 @@ run(async () => {
   for (const change of [{ sdk: '10.2.2' }, { sdk: '' }, { home: '' }]) {
     ok(tv.decide(Object.assign({}, arc, change)).afterSam === '', 'not on webOS 25 or an unknown TV ' + JSON.stringify(change));
   }
+  // LG's volume bar can be hidden only where its switch was read in LG's files (webOS 25)
+  ok(
+    tv.decide({ sdk: '10.2.2' }).lgVolumeBar === 'configd' &&
+      ['6.5.0', '11.2.0', '', '5.4.3'].every(v => tv.decide({ sdk: v }).lgVolumeBar === ''),
+    "hiding LG's volume bar: webOS 25 only"
+  );
   // the setup script asks the same rules from the shell
   const cli = args => cp.spawnSync(process.execPath, [path.join(helper, 'tvprofile.js')].concat(args), { encoding: 'utf8' }).stdout.trim();
   ok(

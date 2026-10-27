@@ -409,6 +409,90 @@ run(async () => {
   one.server.close();
   moved.server.close();
 
+  // ---- LG's own volume bar (lgvolume.js): a one-setting file in configd's runtime layer, only while it applies
+  const layer = path.join(tmp, 'tvconfig-remote');
+  fs.mkdirSync(layer);
+  const lgFile = path.join(layer, 'com.webos.surfacemanager.json');
+  let out2 = 'external_arc',
+    prof = { lgVolumeBar: 'configd' };
+  const lcalls = [];
+  const ctx2 = {
+    config: memoryConfig({}),
+    profile: { get: () => prof },
+    luna: async uri => {
+      lcalls.push(uri.replace('luna://', ''));
+      if (/getSoundOutput/.test(uri)) return { returnValue: true, soundOutput: out2 };
+      if (/getPowerState/.test(uri)) return { returnValue: true, state: 'Active' };
+      return { returnValue: true };
+    },
+    notify: { show: async () => {} },
+  };
+  const son2 = S.create(
+    ctx2,
+    Object.assign({}, opts, { outputMs: 60, lgDir: layer, findMs: 50, retryMs: 5000, ssdp: { address: '127.0.0.1', port: 9 } })
+  );
+  const reconf = () => lcalls.filter(u => u === 'com.webos.service.config/reconfigure').length;
+  const lgText = () => (fs.existsSync(lgFile) ? fs.readFileSync(lgFile, 'utf8') : null);
+  son2.start();
+  await sleep(100);
+  ok(
+    lgText() === null && son2.status().lgBar === 'shown' && son2.status().hideLg === true,
+    "off: LG's bar is left alone (hideLg is on by default)"
+  );
+  son2.set({ enabled: true });
+  ok(await until(() => lgText() !== null), "on, with the sound on HDMI ARC: LG's bar is hidden");
+  ok(lgText() === '{"volumeOSD": false}\n' && reconf() === 1, 'by one setting in the runtime layer, then configd reads its layers again');
+  ok(son2.status().lgBar === 'hidden', 'the status says so');
+  out2 = 'tv_speaker';
+  ok(await until(() => lgText() === null), "the sound moves to the TV's speakers: LG's bar comes back");
+  ok(reconf() === 2, 'and configd reads its layers again');
+  out2 = 'external_optical';
+  ok(await until(() => lgText() !== null), 'optical: hidden again');
+  out2 = 'bt_soundbar';
+  ok(await until(() => lgText() === null), 'any other output (a Bluetooth speaker, headphones): shown');
+  out2 = 'external_arc';
+  await until(() => lgText() !== null);
+  fs.unlinkSync(lgFile); // the TV's RAM was reset under it (a snapshot resume)
+  ok(await until(() => lgText() !== null), 'a setting that disappeared is put back');
+  son2.set({ hideLg: false });
+  ok((await until(() => lgText() === null)) && son2.status().hideLg === false, "Hide LG's volume bar switched off: shown");
+  son2.set({ hideLg: true });
+  ok(await until(() => lgText() !== null), 'and on again: hidden');
+  son2.set({ enabled: false });
+  ok((await until(() => lgText() === null)) && son2.status().lgBar === 'shown', "Sonos volume switched off: LG's bar is back");
+  const n2 = reconf();
+  fs.writeFileSync(lgFile, '{"volumeOSD": true, "other": 1}\n'); // someone else's file of that name
+  son2.set({ enabled: true });
+  await sleep(250);
+  ok(lgText() === '{"volumeOSD": true, "other": 1}\n' && reconf() === n2, 'a file that is not ours is neither replaced');
+  son2.set({ enabled: false });
+  await sleep(150);
+  ok(lgText() === '{"volumeOSD": true, "other": 1}\n', 'nor removed');
+  fs.unlinkSync(lgFile);
+  prof = { lgVolumeBar: '' };
+  son2.set({ enabled: true });
+  await sleep(250);
+  ok(lgText() === null && son2.status().lgBar === 'unsupported' && reconf() === n2, 'a TV where it was not tried: nothing is written');
+  prof = { lgVolumeBar: 'configd' };
+  const gone = req('lgvolume').create(ctx2, path.join(tmp, 'no-such-layer'));
+  ok(
+    !gone.supported() && (await gone.hide()) === false && !fs.existsSync(path.join(tmp, 'no-such-layer')),
+    'without the layer folder: nothing, and the folder is not made'
+  );
+  son2.set({ enabled: false });
+  await sleep(100);
+  const lgUris = {};
+  lcalls.forEach(u => (lgUris[u] = 1));
+  ok(
+    Object.keys(lgUris).every(u =>
+      /^(com\.webos\.service\.audio\/getSoundOutput|com\.webos\.service\.tvpower\/power\/getPowerState|com\.webos\.service\.config\/reconfigure)$/.test(
+        u
+      )
+    ),
+    'the TV is only asked for its sound output and power state, and configd to read its layers: never its volume or mute: ' +
+      Object.keys(lgUris).join(', ')
+  );
+
   // ---- notify.js: the volume bar is for the service's own parts only
   const notify = req('notify');
   await notify.show({ kind: 'volume', volume: 140, muted: 1, position: 'middle-center', seconds: 99 }, true);

@@ -46,6 +46,10 @@ Optional and off by default. It only reads, and only on the local network: no ac
   on the address it came from), never at another address or the TV itself.
 - The speaker's address, id and room are kept in `config.json` (readable by root only); the service's replies give the room and
   model, not the address.
+- **Hide LG's volume bar** (on by default while the option is on) changes one of LG's settings in RAM only: it writes
+  `{"volumeOSD": false}` to `/var/run/tvconfig/remote/com.webos.surfacemanager.json` and asks LG's configuration service to read its
+  settings again, only while the sound goes to HDMI ARC/eARC or optical, and removes the file otherwise. It never removes or replaces
+  a file of that name that it did not write. See [Sonos volume on screen](sonos.md#lgs-own-volume-bar).
 
 ## Themes
 

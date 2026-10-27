@@ -716,5 +716,8 @@
  "no Sonos speaker found on the network": "no Sonos speaker found on the network",
  "several speakers: choose one": "several speakers: choose one",
  "unknown speaker: search again": "unknown speaker: search again",
- "the chosen speaker was not found on the network": "the chosen speaker was not found on the network"
+ "the chosen speaker was not found on the network": "the chosen speaker was not found on the network",
+ "Hide LG’s volume bar": "Hide LG’s volume bar",
+ "while the sound goes to the soundbar": "while the sound goes to the soundbar",
+ "not available on this TV": "not available on this TV"
 }

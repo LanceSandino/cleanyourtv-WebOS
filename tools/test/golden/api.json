@@ -659,6 +659,8 @@
     "body": {
       "enabled": false,
       "error": "",
+      "hideLg": true,
+      "lgBar": "unsupported",
       "mode": "",
       "muted": null,
       "position": "top-left",

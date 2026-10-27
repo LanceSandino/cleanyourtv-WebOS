@@ -14,7 +14,7 @@ you can call it from a shell on the TV (for example over SSH).
 | `GET /api/inputs` | HDMI inputs and their state |
 | `GET /api/running`, `POST /api/running/close` `{id}` or `{all: true}` | The running apps the launcher can close, and closing them (only listed apps; never Home or CleanYourTV's own apps) |
 | `POST /api/notify` | Picture notification (on the network: `POST :8767/notify` with the token) |
-| `GET /api/sonos/status`, `POST /api/sonos/find`, `/set` `{enabled, speaker, position}` | The Sonos soundbar's volume on screen (read only); see [Sonos volume on screen](sonos.md) |
+| `GET /api/sonos/status`, `POST /api/sonos/find`, `/set` `{enabled, speaker, position, hideLg}` | The Sonos soundbar's volume on screen (read only); see [Sonos volume on screen](sonos.md) |
 | `GET /api/voice/status`, `POST /api/voice/install`, `/uninstall`, `/set`, `/listen`, `/ask`, `/forget`, `/ha-test`, `/ha-agents` | Optional voice function and AI chat |
 | `GET /api/theme/list`, `POST /api/theme/set`, `/revert` | Themes for the home screen; see [Themes](themes.md) |
 | `GET /api/wallpapers/status`, `/list`, `/photo/<u\|i>/<id>`; `POST /api/wallpapers/set` `{size}`, `/pair`, `/sync`, `/remove-uploads`, `/disconnect` | Wallpapers: the photo library, the phone page and the Immich sync; see [Wallpapers](wallpapers.md) |
