@@ -74,8 +74,8 @@ Highlight an app on Home and, a moment later, a row of its episodes, films or vi
   what its channel plays next (marked **Up next on Telemachus**).
 - **The other apps** (YouTube, Disney+, Apple TV and the like): the row LG's own Home shows for that app, as LG keeps it on the TV,
   without LG's advertisements. Which apps have one is LG's choice; an app LG has nothing for shows no row.
- Down goes into the row; OK opens it in that app: Telemachus at that episode or film (once its app takes the
-`play` launch option; until then it opens Telemachus), Plex, PLX or Stremio at their own Home, where their Continue Watching row has
+ Down goes into the row; OK opens it in that app: Telemachus at that episode or film (an older Telemachus app
+without the `play` launch option just opens), Plex, PLX or Stremio at their own Home, where their Continue Watching row has
 the same item first, and the other apps at that video or film, as LG's Home opens it. The row closes when you move on along that app's row or above it; going down past it keeps it. Nothing is
 shown for apps without episodes, and there are no app shortcuts (your apps are on Home already).
 

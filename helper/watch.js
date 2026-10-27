@@ -34,6 +34,14 @@ function ep(show, s, e, t) {
   return 'S' + s + ' E' + e + (name ? ' \u00B7 ' + name : '');
 }
 
+// Telemachus's film launch: year and tmdb_id only when they are what it takes (it opens normally on anything else)
+function filmPlay(name, year, tmdb) {
+  const play = /** @type {any} */ ({ film: String(name) });
+  if (Number.isInteger(year) && year >= 1870 && year <= 2100) play.year = year;
+  if (typeof tmdb === 'string' && /^tmdb:\d+$/.test(tmdb)) play.tmdb_id = tmdb;
+  return play;
+}
+
 function create(ctx) {
   const imgs = {}, // id -> {url, buf, type, at}
     imgOrder = [];
@@ -184,7 +192,7 @@ function create(ctx) {
         img: pic(p.poster, 'w342'),
         progress: null,
         next: true,
-        launch: { id: TELEMACHUS_APP, params: { play: { film: name, year: p.year || null, tmdb_id: p.tmdb_id || null } } },
+        launch: { id: TELEMACHUS_APP, params: { play: filmPlay(name, p.year, p.tmdb_id) } },
       });
     }
     return out;

@@ -73,8 +73,7 @@ run(async () => {
     items[2].next &&
       JSON.stringify(items[2].launch.params) === '{"play":{"show":"Show A","season":2,"episode":6}}' &&
       items[4].next &&
-      items[4].launch.params.play.film === 'A Film' &&
-      items[4].launch.params.play.tmdb_id === 'tmdb:42',
+      JSON.stringify(items[4].launch.params) === '{"play":{"film":"A Film","year":1999,"tmdb_id":"tmdb:42"}}',
     "the channel's next are marked next; an episode opens at that episode, a film by its title and TMDB id"
   );
   ok(
@@ -86,6 +85,13 @@ run(async () => {
     'no app shortcuts: the apps are on Home already'
   );
   ok((await call(w, '/api/watch/img/0000000000000000')).code === 404, 'an unknown picture id is not fetched');
+  brief.state.plan.splice(3, 0, { film: true, film_title: 'Old Film', year: 'soon', tmdb_id: 'imdb:9' });
+  const film = (await call(make(), '/api/watch/rows')).j.items.filter(i => i.title === 'Old Film')[0];
+  ok(
+    film && JSON.stringify(film.launch.params) === '{"play":{"film":"Old Film"}}',
+    'a film with no usable year or TMDB id leaves them out (Telemachus opens normally on anything else)'
+  );
+  brief.state.plan.splice(3, 1);
   // nothing playing, nothing started: the next on the channel, with a picture from another site left out
   brief.state.now_playing = null;
   brief.state.shows = [];

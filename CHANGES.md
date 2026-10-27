@@ -477,3 +477,19 @@ commit_ref: "feature/plex-stremio (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T12:13:55Z"
 ```
+
+```yaml
+id: CU-20261027-28
+type: fix
+title: "Telemachus film cards send only the launch keys it takes"
+description: "The Telemachus session confirmed its launch option (deployed on the TV, PR #2 commit 89c59c5): {play: {film, year,
+  tmdb_id}} takes year as an integer 1870-2100 and tmdb_id as tmdb:<n>, either may be left out, and anything else opens the app
+  normally. watch.js sent year: null / tmdb_id: null for a film without them, so such a card only opened Telemachus; filmPlay() now
+  leaves out what is missing or malformed."
+impact: low
+affected_modules: ["helper/watch.js", "docs/launcher.md"]
+related_tests: ["tools/test/watch.test.js"]
+commit_ref: "feature/plex-stremio (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T12:17:40Z"
+```
