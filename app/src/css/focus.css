@@ -203,3 +203,37 @@
     transform: translateX(-32px);
   }
 }
+
+/* the glow on the focused app (focus.js): a soft light in the app's own colour under its tile, gliding with the focus. It shows over a
+   wallpaper photo, where the theme's glow over the screen is off (that one tinted the photo). Only transform and opacity animate. */
+.halo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(closest-side, rgba(var(--c), 0.75), rgba(var(--c), 0.32) 52%, rgba(var(--c), 0) 100%);
+  transition:
+    transform calc(0.3s * var(--spd)) cubic-bezier(0.3, 1.1, 0.45, 1),
+    opacity calc(0.25s * var(--spd)) linear;
+  will-change: transform, opacity;
+}
+#dock > .halo {
+  margin: var(--dock-lift) 0 0;
+  width: calc(var(--dock-w) * var(--dock-fs) * 1.7);
+  height: calc(var(--dock-h) * var(--dock-fs) * 2.1);
+}
+#grid > .halo {
+  width: calc(var(--tile-w) * var(--grid-fs) * 1.7);
+  height: calc(var(--tile-h) * var(--grid-fs) * 2.1);
+}
+body.wpon .halo.on {
+  opacity: 1;
+}
+.halo.jump {
+  transition: opacity calc(0.25s * var(--spd)) linear;
+}
+.snap .halo {
+  transition: none;
+}

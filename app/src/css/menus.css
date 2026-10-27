@@ -1,4 +1,5 @@
 /* menus */
+/* a panel on the right; Home stays in view on the left under a lighter shade, so a change shows at once */
 #ov {
   position: absolute;
   left: 0;
@@ -6,10 +7,42 @@
   width: 1920px;
   height: 1080px;
   z-index: 30;
-  background: var(--menu-bg);
+  background: linear-gradient(
+    to left,
+    var(--menu-bg) 0,
+    var(--menu-bg) 960px,
+    rgba(var(--night-rgb), 0.55) 1240px,
+    rgba(var(--night-rgb), 0.35) 100%
+  );
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  padding-right: 120px;
+}
+/* the first menu over Home slides in (menus.js); only transform and opacity animate */
+@keyframes ov-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes ov-in {
+  from {
+    opacity: 0;
+    transform: translateX(56px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+#ov.enter {
+  animation: ov-fade calc(0.18s * var(--spd)) linear;
+}
+#ov.enter .panel {
+  animation: ov-in calc(0.24s * var(--spd)) cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 #ov .panel {
   width: 760px;
@@ -31,7 +64,7 @@
 .row {
   display: flex;
   align-items: center;
-  height: 84px;
+  height: 74px;
   padding: 0 34px;
   border-radius: var(--row-r);
   font-size: calc(30px * var(--fs));
@@ -90,6 +123,7 @@
 #ov.ws {
   justify-content: flex-end;
   padding-right: 150px;
+  background: var(--menu-bg);
 }
 #ovside {
   position: absolute;
@@ -134,4 +168,13 @@
   line-height: 1.35;
   color: var(--ink2);
   white-space: normal;
+}
+/* a heading in a menu (Customise: Home, Look, Photos, More): text only, the focus skips it */
+#ov .mhead {
+  padding: 16px 34px 0;
+  font-size: calc(20px * var(--fs));
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink2);
 }

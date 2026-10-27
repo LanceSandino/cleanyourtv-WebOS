@@ -112,6 +112,7 @@ var WALLPICK = (function () {
   );
   return {
     start: start,
+    close: close,
     open: function () {
       return open;
     },

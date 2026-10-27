@@ -45,7 +45,7 @@ function vMove(to) {
 /* ---------- tile.focus glass and grid.label focus: a lit plate behind the focused tile, gliding from tile to tile, and the name of the
    focused grid tile under it. One plate lives in the dock and one in the grid, so each moves with its row (scrolling, a centred dock);
    they move with transform only. The places of the tiles are read once per rebuild. ---------- */
-var deco = { gd: null, gg: null, cap: null },
+var deco = { gd: null, gg: null, cap: null, hd: null, hg: null },
   geoGen = 0;
 function decoEl(cls) {
   var d = document.createElement('div');
@@ -54,9 +54,10 @@ function decoEl(cls) {
 }
 /* after a theme is applied: make or drop the elements the theme uses */
 function decoTheme() {
-  var want = { gd: TH.glass, gg: TH.glass, cap: TH.label };
+  /* the halo (the glow on the focused app) is in every theme; the CSS shows it where the theme's glow over the screen is off */
+  var want = { gd: TH.glass, gg: TH.glass, cap: TH.label, hd: true, hg: true };
   for (var k in want) {
-    if (want[k] && !deco[k]) deco[k] = decoEl(k === 'cap' ? 'cap' : 'glass');
+    if (want[k] && !deco[k]) deco[k] = decoEl(k === 'cap' ? 'cap' : k === 'hd' || k === 'hg' ? 'halo' : 'glass');
     else if (!want[k] && deco[k]) {
       deco[k].remove();
       deco[k] = null;
@@ -78,6 +79,8 @@ function decoTheme() {
 /* a rebuild emptied the dock and the grid: put the plates and the caption back, and read the places again */
 function decoRebuild() {
   geoGen++;
+  if (deco.hd) $('dock').appendChild(deco.hd);
+  if (deco.hg) $('grid').appendChild(deco.hg);
   if (deco.gd) $('dock').appendChild(deco.gd);
   if (deco.gg) $('grid').appendChild(deco.gg);
   if (deco.cap) $('grid').appendChild(deco.cap);
@@ -118,11 +121,19 @@ function hide(el) {
   }
 }
 function decorate(e, first) {
-  if (!TH.glass && !TH.label) return;
   var tile = e.classList.contains('tile') ? e.parentNode : null,
     inDock = !!tile && tile.id === 'dock',
     inGrid = !!tile && tile.id === 'grid',
     g = tile ? geo(e) : null;
+  /* the glow on the focused app, in its own colour, under the tile */
+  var h = inDock ? deco.hd : inGrid ? deco.hg : null;
+  hide(inDock ? deco.hg : deco.hd);
+  if (!inDock && !inGrid) hide(deco.hg);
+  if (h && h._sz) {
+    h.style.setProperty('--c', e.style.getPropertyValue('--c') || '255,255,255');
+    glideTo(h, g.x - h._sz[0] / 2, g.y - h._sz[1] / 2, first);
+  }
+  if (!TH.glass && !TH.label) return;
   if (TH.glass) {
     var on = inDock ? deco.gd : inGrid ? deco.gg : null;
     hide(inDock ? deco.gg : deco.gd);

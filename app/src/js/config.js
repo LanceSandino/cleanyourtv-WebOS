@@ -16,12 +16,21 @@ function dockIds() {
   apps.forEach(function (a) {
     by[a.id] = a;
   });
-  var ids = cfg.dock && cfg.dock.length ? cfg.dock : DEFAULTS.dock;
-  return ids
-    .filter(function (i) {
-      return by[i] && !isHidden(i);
-    })
-    .slice(0, TH.dockN);
+  var ids = (cfg.dock && cfg.dock.length ? cfg.dock : DEFAULTS.dock).filter(function (i) {
+    return by[i] && !isHidden(i);
+  });
+  /* a theme with room for more apps than the saved dock: the most used apps fill the rest (the saved dock is not changed) */
+  if (ids.length < TH.dockN)
+    apps
+      .filter(function (a) {
+        return !a.input && a.id.indexOf('__') !== 0 && !isHidden(a.id) && ids.indexOf(a.id) < 0;
+      })
+      .sort(byOrder)
+      .slice(0, TH.dockN - ids.length)
+      .forEach(function (a) {
+        ids.push(a.id);
+      });
+  return ids.slice(0, TH.dockN);
 }
 function setDock(ids) {
   cfg.dock = ids.slice(0, TH.dockN);

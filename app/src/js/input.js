@@ -188,6 +188,12 @@ document.addEventListener('webOSRelaunch', function () {
     p = JSON.parse(webOSSystem.launchParams || '{}');
   } catch (e) {}
   logLine('launcher relaunch ' + JSON.stringify(p).slice(0, 120) + (LIVE.on ? ' (live on)' : ''));
+  /* the Home key: Home itself, whatever was left open over it (Customise, the Inputs list, the photo chooser); it used to reload the
+     apps under an open menu, so Home looked like it did nothing. Coming back from an app with Back keeps the menu, as before. */
+  if (p && (p.launchType === 'homeKey' || p.activateType === 'home')) {
+    if (stack.length) closeMenus();
+    WALLPICK.close();
+  }
   if (LIVE.on && p && p.guide && liveOn()) {
     LIVE.toggleGuide();
     return;

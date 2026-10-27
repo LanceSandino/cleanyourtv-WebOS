@@ -28,6 +28,7 @@ same on every supported webOS version.
 | Switch input | The **Inputs** button |
 | Put an input on Home | Hold OK on it in the Inputs list |
 | Close running apps | Back on the home screen |
+| Back to Home | The remote's **Home** key closes whatever is open over Home (Customise, the Inputs list, the photo chooser); coming back from an app with Back keeps the menu you left |
 
 The Magic Remote pointer works too: pointing and clicking, and holding the button on an app for its options.
 
@@ -48,7 +49,8 @@ system apps are never in it. The list is read when it opens and closes when you 
 
 ![Customise menu](screenshots/customise.jpg)
 
-**Customise** holds how Home looks:
+**Customise** holds how Home looks, in four groups (**Home**, **Look**, **Photos**, **More**). Menus open as a panel on the right,
+with Home still in view on the left, so a change shows at once:
 
 - the **dock**: each app in it can be replaced (an app already in the dock swaps places), moved or removed, and **Add an app...**
   fills a free place. Holding OK on an app gives **Add to dock**, **Move left**, **Move right**, **Remove from dock** and **Hide app**;
@@ -107,7 +109,7 @@ Settings are stored on the TV in `/media/developer/cleanyourtv/config.json`:
 
 | Key | Meaning |
 |---|---|
-| `dock` | App ids in the dock (up to four). |
+| `dock` | App ids in the dock (as many as the theme's dock holds). When the theme has room for more, your most used other apps fill the free places, until you change the dock yourself. |
 | `topbar` | The buttons at the top. |
 | `hidden` | App ids you hid. |
 | `pinnedInputs` | The inputs on Home: `{id, label, port}`, `id` being the input's app (for example `com.webos.app.hdmi2`). |

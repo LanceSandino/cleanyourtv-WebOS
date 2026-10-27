@@ -151,4 +151,19 @@ run(async () => {
       !/[^(]\b0?\.\d+s\b(?! \*)/.test(fcss.replace(/calc\([^)]*\)/g, '')),
     'every duration follows the theme speed (effects.speed)'
   );
+
+  // ---- the dock (config.js): a theme with room for more apps than the saved dock fills it with the most used ones ----
+  const D = load(
+    'config.js',
+    ['dockIds', 'byOrder', 'isHidden'],
+    "var cfg = { dock: ['a', 'b', 'c', 'd'], hidden: ['h'] }, TH = { dockN: 5 }, DEFAULTS = { dock: [] }," +
+      ' usage = { e: 9, h: 50, f: 3, g: 1 },' +
+      " apps = [{ id: 'a', title: 'A' }, { id: 'b', title: 'B' }, { id: 'c', title: 'C' }, { id: 'd', title: 'D' }, { id: 'e', title: 'E' }," +
+      " { id: 'f', title: 'F' }, { id: 'g', title: 'G' }, { id: 'h', title: 'H' }, { id: 'HDMI_1', title: 'PS5', input: 'hdmi' }," +
+      " { id: '__live', title: 'Live TV' }];"
+  );
+  ok(
+    D.dockIds().join() === 'a,b,c,d,e',
+    'four saved dock apps in a five-app dock: the most used other app fills the fifth (not hidden, an input or Live TV)'
+  );
 });

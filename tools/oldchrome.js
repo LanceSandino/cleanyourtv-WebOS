@@ -117,8 +117,9 @@ const WALLPICK_KEYS =
   'function bg(){return [].map.call(document.querySelectorAll(".wp.on"),function(x){return x.style.backgroundImage}).join()}' +
   // the glow's final opacity, without its fade (headless Chromium 68 does not always run a fade on in virtual time)
   'function done(){var glow=[].every.call(document.querySelectorAll(".glow"),function(g){g.style.transition="none";return getComputedStyle(g).opacity==="0"});' +
-  'var ok=cfg.wall&&cfg.wall.pick==="u/0000000000000002"&&!WALLPICK.open()&&bg().indexOf("u/0000000000000002")>=0&&glow;' +
-  'document.body.setAttribute("data-pick",ok?"ok":"bad pick="+(cfg.wall&&cfg.wall.pick)+" open="+WALLPICK.open()+" glow-off="+glow+" bg="+bg())}' +
+  'var h=document.querySelector(".halo.on");if(h)h.style.transition="none";var halo=!!h&&getComputedStyle(h).opacity==="1";' +
+  'var ok=cfg.wall&&cfg.wall.pick==="u/0000000000000002"&&!WALLPICK.open()&&bg().indexOf("u/0000000000000002")>=0&&glow&&halo;' +
+  'document.body.setAttribute("data-pick",ok?"ok":"bad pick="+(cfg.wall&&cfg.wall.pick)+" open="+WALLPICK.open()+" glow-off="+glow+" halo="+halo+" bg="+bg())}' +
   'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);WALLPICK.start();' +
   'var w=setInterval(function(){if(!WALLPICK.open())return;clearInterval(w);key(39);setTimeout(function(){key(13);var n=0,shown=setInterval(function(){' +
   'if(++n<40&&!(document.body.classList.contains("wpon")&&bg().indexOf("u/0000000000000002")>=0))return;clearInterval(shown);setTimeout(done,1500)},200)},800)},300)},500)})()</script>';
@@ -136,6 +137,13 @@ const SAVER_OVER =
   'var declined=calls.some(function(c){return /responseScreenSaverRequest/.test(c)&&/"ack":false/.test(c)&&/"timestamp":42/.test(c)});' +
   'var ok=declined&&up&&!SAVER.active()&&launched.join()==="com.webos.app.home,com.telemachus.screen";' +
   'document.body.setAttribute("data-over",ok?"ok":"bad declined="+declined+" up="+up+" launched="+launched.join())},1500)},1000)},500)})()</script>';
+// the remote's Home key over a menu and over the photo chooser: the TV relaunches Home with launchType homeKey; both close
+const HOME_KEY =
+  '<script>(function(){function home(){webOSSystem.launchParams=JSON.stringify({activateType:"home",keepAlive:true,launchType:"homeKey"});' +
+  'var e=document.createEvent("Event");e.initEvent("webOSRelaunch",true,true);document.dispatchEvent(e)}' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);customizeMenu();var menu=!!document.getElementById("ov");home();' +
+  'var menuClosed=menu&&!document.getElementById("ov")&&!stack.length;WALLPICK.start();var w=setInterval(function(){if(!WALLPICK.open())return;clearInterval(w);home();' +
+  'var ok=menuClosed&&!WALLPICK.open();document.body.setAttribute("data-home",ok?"ok":"bad menu="+menu+" menuClosed="+menuClosed+" chooser="+WALLPICK.open())},300)},500)})()</script>';
 // [name, file, what it draws, how many at least, milliseconds of page time to wait]
 const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
@@ -147,6 +155,7 @@ const PAGES = [
   ['saver keys', 'app/index.html', /data-keys="ok"/g, 1, 90000, SAVER_KEYS],
   ['wallpaper chooser', 'app/index.html', /data-pick="ok"/g, 1, 20000, WALLPICK_KEYS],
   ['saver over an app', 'app/index.html', /data-over="ok"/g, 1, 30000, SAVER_OVER],
+  ['home key', 'app/index.html', /data-home="ok"/g, 1, 15000, HOME_KEY],
 ];
 let famN = 0;
 // a stand-in photo from the feed: a landscape picture with the photo's name on it

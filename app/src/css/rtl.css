@@ -126,3 +126,18 @@
     transform: translateX(32px);
   }
 }
+/* the menu panel is on the left, Home in view on the right */
+[dir="rtl"] #ov {
+  justify-content: flex-start;
+  padding: 0 0 0 120px;
+  background: linear-gradient(
+    to right,
+    var(--menu-bg) 0,
+    var(--menu-bg) 960px,
+    rgba(var(--night-rgb), 0.55) 1240px,
+    rgba(var(--night-rgb), 0.35) 100%
+  );
+}
+[dir="rtl"] #ov.ws {
+  background: var(--menu-bg);
+}

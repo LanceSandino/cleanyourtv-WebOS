@@ -19,7 +19,10 @@ function setHtml(el, h) {
 }
 /* A menu can be built by a function (build): after a row with stay changes something, the menu is built again and stays open with the
    new values, and the menu below is built again when Back returns to it. A note row is text only: the focus skips it. */
+/* the first menu over Home slides in (drawMenu); the ones after it, and redraws, do not */
+var ovEnter = false;
 function openMenu(title, items, idx, build) {
+  if (!stack.length) ovEnter = true;
   var m = { title: title, items: build ? build() : items, idx: idx || 0, build: build || null };
   m.idx = usable(m, m.idx);
   stack.push(m);
@@ -29,7 +32,7 @@ function openBuilt(title, build, idx) {
   openMenu(title, null, idx, build);
 }
 function skip(it) {
-  return !it || it.sep || it.note !== undefined;
+  return !it || it.sep || it.note !== undefined || it.head !== undefined;
 }
 /* the row at i, or the nearest one after (then before) it that can take the focus */
 function usable(m, i) {
@@ -99,7 +102,7 @@ function backMenu() {
 }
 function drawMenu() {
   var m = stack[stack.length - 1],
-    N = 8,
+    N = 10,
     start = Math.max(0, Math.min(m.idx - 3, m.items.length - N));
   if (!ovEl) {
     ovEl = document.createElement('div');
@@ -115,6 +118,10 @@ function drawMenu() {
     }
     if (it.note !== undefined) {
       h += '<div class="mnote" data-n="' + i + '"></div>';
+      continue;
+    }
+    if (it.head !== undefined) {
+      h += '<div class="mhead" data-n="' + i + '"></div>';
       continue;
     }
     h +=
@@ -134,11 +141,15 @@ function drawMenu() {
   var side = m.items.some(function (x) {
     return x.desc !== undefined;
   });
-  ovEl.className = side ? 'ws' : '';
+  ovEl.className = (side ? 'ws' : '') + (ovEnter && !OLDGPU ? ' enter' : '');
+  ovEnter = false;
   drawSide(side && !skip(m.items[m.idx]) ? m.items[m.idx] : null);
   ovEl.querySelector('h2').textContent = m.title;
   [].forEach.call(ovEl.querySelectorAll('.mnote'), function (el) {
     el.textContent = m.items[+el.getAttribute('data-n')].note;
+  });
+  [].forEach.call(ovEl.querySelectorAll('.mhead'), function (el) {
+    el.textContent = m.items[+el.getAttribute('data-n')].head;
   });
   [].forEach.call(ovEl.querySelectorAll('.row'), function (row) {
     var it = m.items[+row.getAttribute('data-i')];
@@ -486,6 +497,7 @@ function customizeMenu() {
   openBuilt(t('Customise'), function () {
     var nh = hiddenIds().length;
     return [
+      { head: t('Home') },
       { label: t('Dock'), stay: true, fn: dockMenu },
       { label: t('Top buttons'), stay: true, fn: topButtonsMenu },
       { label: t('Hidden apps'), sub: nh ? String(nh) : '', stay: true, fn: hiddenMenu },
@@ -508,6 +520,11 @@ function customizeMenu() {
           saveCfg();
         },
       },
+      { head: t('Look') },
+      { label: t('Theme'), stay: true, fn: themeMenu },
+      /* only where the theme has slots for cards */
+      (TH.slots || []).length ? { label: t('Cards'), stay: true, fn: cardsMenu } : null,
+      { label: t('Accent colour'), stay: true, fn: accentMenu },
       {
         label: t('Clock'),
         sub: cfg.clock === '24' ? t('24-hour') : cfg.clock === '12' ? t('12-hour') : t('Automatic'),
@@ -518,10 +535,7 @@ function customizeMenu() {
           tick();
         },
       },
-      { sep: true },
-      { label: t('Theme'), stay: true, fn: themeMenu },
-      /* only where the theme has slots for cards */
-      (TH.slots || []).length ? { label: t('Cards'), stay: true, fn: cardsMenu } : null,
+      { head: t('Photos') },
       {
         label: t('Wallpapers'),
         sub: cfg.wall && cfg.wall.on ? t('On') : t('Off'),
@@ -534,8 +548,7 @@ function customizeMenu() {
         stay: true,
         fn: saverMenu,
       },
-      { label: t('Accent colour'), stay: true, fn: accentMenu },
-      { sep: true },
+      { head: t('More') },
       {
         label: t('More settings...'),
         sub: t('Home, Live TV, Debloat, updates'),
