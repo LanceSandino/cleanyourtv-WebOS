@@ -146,8 +146,10 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `colors.accent` | `#rrggbb` | `#f5f6f8` | Highlight: the focused button and menu row and, unless `colors.focus` is set, the focus ring. |
 | `colors.focus` | `#rrggbb` or empty | empty | Focus ring colour; empty uses the accent. |
 | `colors.pill` | `#rrggbb` | `#ffffff` | Colour of the translucent top buttons, with `surface.pillAlpha`. |
+| `colors.dockPanel` | `#rrggbb` or empty | empty | Colour of the panel behind the dock (`dock.panel`); empty: white. |
 | **surface** | | | |
 | `surface.pillAlpha` | 0 to 0.6 | `0.09` | Opacity of the top buttons. |
+| `surface.pillGloss` | 0 to 0.5 | `0` | A sheen of the button colour from the top edge of the top buttons; 0 for none. |
 | `surface.pillRing` | 0 to 0.8 | `0.1` | Opacity of the thin outline of the top buttons. |
 | `surface.pillRadius` | 0 to 60 | `32` | Corner radius of the top buttons (pill style only). |
 | `surface.menuAlpha` | 0.5 to 1 | `0.97` | Opacity of the dark layer behind menus. |
@@ -159,14 +161,18 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | **clock** | | | |
 | `clock.show` | `true` or `false` | `true` | Show the clock. |
 | `clock.date` | `true` or `false` | `true` | Show the date beside or under the time. |
-| `clock.greeting` | `true` or `false` | `false` | Show a greeting (Good morning / afternoon / evening, in the language) in capitals above the time. Needs the stacked layout. |
+| `clock.greeting` | `true` or `false` | `false` | Show a greeting (Good morning / afternoon / evening / night, in the language) in capitals above the time. Needs the stacked layout. |
 | `clock.layout` | `inline`, `stack` | `inline` | `inline`: the date beside the time; `stack`: under it. |
 | `clock.anchor` | `top`, `bottom` | `top` | Which screen edge `clock.y` counts from. |
 | `clock.align` | `left`, `center`, `right` | `left` | Which side `clock.x` counts from; `center` centres it. |
 | `clock.x` | 0 to 900 | `96` | Distance from that side, in px (on a 1920 x 1080 canvas). Not used when centred. |
 | `clock.y` | 0 to 900 | `54` | Distance from the top or bottom edge, in px. |
 | `clock.scale` | 0.6 to 2.5 | `1` | Scale of the time. |
+| `clock.weight` | 100 to 900 | `600` | Weight of the time: 300 light, 400 regular, 600 semibold, 700 bold. A typeface without that weight shows its nearest one. |
 | `clock.dateScale` | 0.6 to 2 | `1` | Scale of the date. |
+| `clock.dateCaps` | `true` or `false` | `false` | The date in capitals, with wider letter spacing. |
+| `clock.divider` | `true` or `false` | `false` | A thin upright line between the time and the date (`inline` layout). |
+| `clock.ampm` | `inline`, `small` | `inline` | AM and PM of a 12-hour clock: `inline` as the language writes it; `small`: smaller, in capitals, beside the time. |
 | **bar** | | | |
 | `bar.show` | `true` or `false` | `true` | Show the top buttons (Inputs, Settings, Customise, ...). |
 | `bar.style` | `pill`, `round`, `flat` | `pill` | `pill`: icon and label on a rounded button; `round`: icon only in a circle; `flat`: no background. |
@@ -183,6 +189,8 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `shelf.x` | 0 to 900 | `96` | Margin on both sides, in px. |
 | `shelf.y` | 0 to 900 | `150` | Distance from the top edge, in px. |
 | `shelf.scale` | 0.4 to 1.6 | `1` | Scale of the name. |
+| `shelf.weight` | 100 to 900 | `700` | Weight of the name: 300 light, 400 regular, 700 bold. |
+| `shelf.motion` | `none`, `fade`, `slide` | `none` | How the name changes when the focus moves: `none` at once; `fade` the old name fades out as the new one fades in; `slide` they also slide a little, in the direction of reading. |
 | **dock** | | | |
 | `dock.anchor` | `top`, `bottom` | `top` | Which screen edge `dock.y` counts from. |
 | `dock.align` | `left`, `center`, `right` | `left` | Which side `dock.x` counts from; `center` centres the dock. |
@@ -193,7 +201,7 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `dock.h` | 100 to 300 | `230` | Height of a dock tile, in px. |
 | `dock.gap` | 8 to 60 | `32` | Space between dock tiles, in px. |
 | `dock.radius` | 0 to 80 | `36` | Corner radius of dock tiles. |
-| `dock.panel` | 0 to 0.6 | `0` | Opacity of a translucent panel behind the dock tiles; 0 for none. |
+| `dock.panel` | 0 to 1 | `0` | Opacity of a panel behind the dock tiles (its colour: `colors.dockPanel`); 0 for none. |
 | `dock.panelPad` | 0 to 60 | `24` | Space between the panel and the tiles, in px. |
 | `dock.tileAlpha` | 0 to 1 | `1` | Opacity of the dock tile background; below 1 lets the wallpaper show through the tiles. |
 | `dock.lift` | 0 to 40 | `10` | How far the focused dock tile rises, in px. |
@@ -212,6 +220,8 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `grid.y` | px, 0 to 1000 | empty | Distance of the grid from the top edge, in px. Empty: under the dock, or 290 for an overlay. |
 | `grid.clipTop` | 0 to 600 | `300` | Where scrolled rows disappear at the top, in px (`below` mode). |
 | `grid.focusScale` | 1 to 1.4 | `1.12` | Scale of the focused tile. |
+| `grid.label` | `none`, `focus` | `none` | `focus`: the name of the focused app under its tile in the grid. Give the rows room for it with `grid.gapY` (about 50). |
+| `grid.header` | `keep`, `fade` | `keep` | `fade`: the clock and the top buttons fade out while the focus is in the app grid, and come back with it. |
 | `grid.overlayDim` | 0 to 1 | `0.95` | Opacity of the layer behind the overlay grid. |
 | `grid.overlayH` | 200 to 900 | `510` | Visible height of the overlay grid before it scrolls, in px. |
 | **tile** | | | |
@@ -219,9 +229,11 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `tile.border` | 0 to 0.6 | `0` | Opacity of a thin outline on every tile. |
 | `tile.ringWidth` | 0 to 10 | `4` | Width of the focus ring, in px; 0 for none. |
 | `tile.ringOffset` | 0 to 14 | `4` | Space between a tile and its focus ring, in px. |
+| `tile.focus` | `ring`, `glass` | `ring` | `ring`: a ring around the focused tile; `glass`: a lit glass plate behind it, its rim in the focus colour (`tile.ringWidth`, `tile.ringOffset`), that glides from tile to tile. |
 | **effects** | | | |
 | `effects.glow` | 0 to 1 | `1` | Strength of the ambient glow at the top. |
 | `effects.glowColor` | `app`, `accent` | `app` | `app`: taken from the focused icon; `accent`: the accent colour. |
+| `effects.glowShape` | `top`, `center` | `top` | `top`: a wash of colour from the top edge; `center`: a large soft circle of colour around the dock. |
 | `effects.speed` | 0 to 2 | `1` | Animation speed multiplier; 0 switches the animations off. |
 | `effects.wallpaper` | a file name | none | A file name in `themes/wallpapers/`: `.jpg`, `.png` or `.webp`, at most 1.5 MB; drawn at 1920 x 1080. |
 | `effects.wallpaperDim` | 0 to 0.9 | `0.4` | How far the wallpaper is darkened with the background colour. |
@@ -251,6 +263,24 @@ list in `theme.json`:
 At most eight slots; values out of range are clamped and a slot with a bad or repeated `id` is left out. A theme that extends another
 keeps its slots unless it has its own `"slots"` (an empty list removes them). In a right-to-left language the slots are mirrored
 like the rest of the screen.
+
+### Focus, names and motion
+
+These settings are off unless a theme sets them, so a theme that does not use them looks as it always did.
+
+- `tile.focus: "glass"` replaces the focus ring with a lit glass plate behind the focused tile. It glides from tile to tile (one plate
+  in the dock, one in the grid), with its rim in the focus colour and as wide as `tile.ringWidth`, `tile.ringOffset` away from the tile.
+- `grid.label: "focus"` writes the name of the focused app under its tile in the grid; leave room for it with `grid.gapY` (about 50 or
+  more), or the name sits over the next row.
+- `shelf.motion` lets the large name fade or slide when the focus moves; `shelf.weight` sets how bold it is.
+- `grid.header: "fade"` moves the clock, the top buttons and the cards out of the way while the focus is in the grid.
+- `clock.weight`, `clock.dateCaps`, `clock.divider` and `clock.ampm: "small"` change the clock's type. A weight the TV's typeface does
+  not have shows as its nearest weight; a theme with `type.fontFile` brings its own.
+- `effects.glowShape: "center"` draws the glow as a large circle around the dock instead of a wash from the top edge.
+- `surface.pillGloss` gives the top buttons a sheen; `colors.dockPanel` colours the panel behind the dock (`dock.panel` is its opacity).
+
+Everything here moves with transform and opacity only, follows `effects.speed`, stands still while an arrow key is held down, and is
+mirrored in a right-to-left language.
 
 A theme file holds values only. The service checks every value against the table and clamps numbers to their range; there is no CSS
 and no script, and a wallpaper is accepted only as a plain file name from the theme's folder that is also a real image of the

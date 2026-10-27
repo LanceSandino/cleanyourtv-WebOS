@@ -48,7 +48,9 @@ const SCHEMA = [
   ],
   ['colors.focus', 'color?', null, null, 'Focus ring colour; empty uses the accent.'],
   ['colors.pill', 'color', null, '#ffffff', 'Colour of the translucent top buttons, with `surface.pillAlpha`.'],
+  ['colors.dockPanel', 'color?', null, null, 'Colour of the panel behind the dock (`dock.panel`); empty: white.'],
   ['surface.pillAlpha', 'num', [0, 0.6], 0.09, 'Opacity of the top buttons.'],
+  ['surface.pillGloss', 'num', [0, 0.5], 0, 'A sheen of the button colour from the top edge of the top buttons; 0 for none.'],
   ['surface.pillRing', 'num', [0, 0.8], 0.1, 'Opacity of the thin outline of the top buttons.'],
   ['surface.pillRadius', 'int', [0, 60], 32, 'Corner radius of the top buttons (pill style only).'],
   ['surface.menuAlpha', 'num', [0.5, 1], 0.97, 'Opacity of the dark layer behind menus.'],
@@ -69,7 +71,7 @@ const SCHEMA = [
     'bool',
     null,
     false,
-    'Show a greeting (Good morning / afternoon / evening, in the language) in capitals above the time. Needs the stacked layout.',
+    'Show a greeting (Good morning / afternoon / evening / night, in the language) in capitals above the time. Needs the stacked layout.',
   ],
   ['clock.layout', 'enum', ['inline', 'stack'], 'inline', '`inline`: the date beside the time; `stack`: under it.'],
   ['clock.anchor', 'enum', TOPBOT, 'top', 'Which screen edge `clock.y` counts from.'],
@@ -77,7 +79,23 @@ const SCHEMA = [
   ['clock.x', 'int', [0, 900], 96, 'Distance from that side, in px (on a 1920 x 1080 canvas). Not used when centred.'],
   ['clock.y', 'int', [0, 900], 54, 'Distance from the top or bottom edge, in px.'],
   ['clock.scale', 'num', [0.6, 2.5], 1, 'Scale of the time.'],
+  [
+    'clock.weight',
+    'int',
+    [100, 900],
+    600,
+    'Weight of the time: 300 light, 400 regular, 600 semibold, 700 bold. A typeface without that weight shows its nearest one.',
+  ],
   ['clock.dateScale', 'num', [0.6, 2], 1, 'Scale of the date.'],
+  ['clock.dateCaps', 'bool', null, false, 'The date in capitals, with wider letter spacing.'],
+  ['clock.divider', 'bool', null, false, 'A thin upright line between the time and the date (`inline` layout).'],
+  [
+    'clock.ampm',
+    'enum',
+    ['inline', 'small'],
+    'inline',
+    'AM and PM of a 12-hour clock: `inline` as the language writes it; `small`: smaller, in capitals, beside the time.',
+  ],
   ['bar.show', 'bool', null, true, 'Show the top buttons (Inputs, Settings, Customise, ...).'],
   [
     'bar.style',
@@ -98,6 +116,14 @@ const SCHEMA = [
   ['shelf.x', 'int', [0, 900], 96, 'Margin on both sides, in px.'],
   ['shelf.y', 'int', [0, 900], 150, 'Distance from the top edge, in px.'],
   ['shelf.scale', 'num', [0.4, 1.6], 1, 'Scale of the name.'],
+  ['shelf.weight', 'int', [100, 900], 700, 'Weight of the name: 300 light, 400 regular, 700 bold.'],
+  [
+    'shelf.motion',
+    'enum',
+    ['none', 'fade', 'slide'],
+    'none',
+    'How the name changes when the focus moves: `none` at once; `fade` the old name fades out as the new one fades in; `slide` they also slide a little, in the direction of reading.',
+  ],
   ['dock.anchor', 'enum', TOPBOT, 'top', 'Which screen edge `dock.y` counts from.'],
   ['dock.align', 'enum', POS, 'left', 'Which side `dock.x` counts from; `center` centres the dock.'],
   ['dock.x', 'int', [0, 900], 96, 'Distance from that side, in px. Not used when centred.'],
@@ -107,7 +133,7 @@ const SCHEMA = [
   ['dock.h', 'int', [100, 300], 230, 'Height of a dock tile, in px.'],
   ['dock.gap', 'int', [8, 60], 32, 'Space between dock tiles, in px.'],
   ['dock.radius', 'int', [0, 80], 36, 'Corner radius of dock tiles.'],
-  ['dock.panel', 'num', [0, 0.6], 0, 'Opacity of a translucent panel behind the dock tiles; 0 for none.'],
+  ['dock.panel', 'num', [0, 1], 0, 'Opacity of a panel behind the dock tiles (its colour: `colors.dockPanel`); 0 for none.'],
   ['dock.panelPad', 'int', [0, 60], 24, 'Space between the panel and the tiles, in px.'],
   ['dock.tileAlpha', 'num', [0, 1], 1, 'Opacity of the dock tile background; below 1 lets the wallpaper show through the tiles.'],
   ['dock.lift', 'int', [0, 40], 10, 'How far the focused dock tile rises, in px.'],
@@ -137,14 +163,42 @@ const SCHEMA = [
   ['grid.y', 'auto', [0, 1000], null, 'Distance of the grid from the top edge, in px. Empty: under the dock, or 290 for an overlay.'],
   ['grid.clipTop', 'int', [0, 600], 300, 'Where scrolled rows disappear at the top, in px (`below` mode).'],
   ['grid.focusScale', 'num', [1, 1.4], 1.12, 'Scale of the focused tile.'],
+  [
+    'grid.label',
+    'enum',
+    ['none', 'focus'],
+    'none',
+    '`focus`: the name of the focused app under its tile in the grid. Give the rows room for it with `grid.gapY` (about 50).',
+  ],
+  [
+    'grid.header',
+    'enum',
+    ['keep', 'fade'],
+    'keep',
+    '`fade`: the clock and the top buttons fade out while the focus is in the app grid, and come back with it.',
+  ],
   ['grid.overlayDim', 'num', [0, 1], 0.95, 'Opacity of the layer behind the overlay grid.'],
   ['grid.overlayH', 'int', [200, 900], 510, 'Visible height of the overlay grid before it scrolls, in px.'],
   ['tile.gloss', 'num', [0, 1], 0, 'A light highlight on every tile.'],
   ['tile.border', 'num', [0, 0.6], 0, 'Opacity of a thin outline on every tile.'],
   ['tile.ringWidth', 'int', [0, 10], 4, 'Width of the focus ring, in px; 0 for none.'],
   ['tile.ringOffset', 'int', [0, 14], 4, 'Space between a tile and its focus ring, in px.'],
+  [
+    'tile.focus',
+    'enum',
+    ['ring', 'glass'],
+    'ring',
+    '`ring`: a ring around the focused tile; `glass`: a lit glass plate behind it, its rim in the focus colour (`tile.ringWidth`, `tile.ringOffset`), that glides from tile to tile.',
+  ],
   ['effects.glow', 'num', [0, 1], 1, 'Strength of the ambient glow at the top.'],
   ['effects.glowColor', 'enum', ['app', 'accent'], 'app', '`app`: taken from the focused icon; `accent`: the accent colour.'],
+  [
+    'effects.glowShape',
+    'enum',
+    ['top', 'center'],
+    'top',
+    '`top`: a wash of colour from the top edge; `center`: a large soft circle of colour around the dock.',
+  ],
   ['effects.speed', 'num', [0, 2], 1, 'Animation speed multiplier; 0 switches the animations off.'],
   [
     'effects.wallpaper',
@@ -407,12 +461,33 @@ function resolve(t, accent) {
     '--glow-op': String(v['effects.glow']),
     '--spd': String(v['effects.speed']),
   };
+  // settings added later: in the reply only when a theme sets them, so the replies for the other themes stay as they were (home.css has
+  // the defaults)
+  /** @type {Record<string, string>} */
+  const attrs = { bar: v['bar.style'], labels, clock: v['clock.layout'], grid: mode, galign: v['grid.align'] };
+  if (v['colors.dockPanel']) {
+    vars['--dock-panel-rgb'] = rgb(v['colors.dockPanel']).join(',');
+    attrs.dockpanel = 'on';
+  }
+  if (v['surface.pillGloss'] > 0)
+    vars['--pill-sheen'] =
+      'linear-gradient(180deg,rgba(' + pill.join(',') + ',' + v['surface.pillGloss'] + '),rgba(' + pill.join(',') + ',0) 75%)';
+  if (v['clock.weight'] !== 600) vars['--clock-wt'] = String(v['clock.weight']);
+  if (v['shelf.weight'] !== 700) vars['--name-wt'] = String(v['shelf.weight']);
+  if (v['clock.dateCaps']) attrs.datecaps = 'on';
+  if (v['clock.divider']) attrs.divider = 'on';
+  if (v['clock.ampm'] === 'small') attrs.ampm = 'small';
+  if (v['shelf.motion'] !== 'none') attrs.shelfm = v['shelf.motion'];
+  if (v['grid.label'] === 'focus') attrs.label = 'focus';
+  if (v['grid.header'] === 'fade') attrs.hdr = 'fade';
+  if (v['tile.focus'] === 'glass') attrs.focus = 'glass';
+  if (v['effects.glowShape'] === 'center') attrs.glow = 'center';
   const w = v['effects.wallpaper'];
   const out = {
     id: t.id,
     name: t.name,
     vars,
-    attrs: { bar: v['bar.style'], labels, clock: v['clock.layout'], grid: mode, galign: v['grid.align'] },
+    attrs,
     cols: v['grid.cols'],
     tileH: v['grid.tileH'],
     gapY: v['grid.gapY'],

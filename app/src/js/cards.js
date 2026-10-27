@@ -2,21 +2,13 @@
    cfg.cards is {<slot id>: {type, ...options}}; a slot without an entry shows the card the theme puts there (slot.card), and
    {type: 'none'} leaves it empty. Each card type draws itself into its box; draw() runs on every rebuild and every clock tick. */
 var CARD_TYPES = {
-  /* "Good morning" by the time of day, with an optional name (set on the phone page) */
+  /* "Good morning" by the time of day (Good night from 22:00 to 4:59), with an optional name (set on the phone page) */
   greeting: {
     name: function () {
       return t('Greeting');
     },
     draw: function (el, o) {
-      var h = new Date().getHours(),
-        n = String(o.name || '').slice(0, 40),
-        s = n
-          ? (h < 12 ? t('Good morning, %s') : h < 18 ? t('Good afternoon, %s') : t('Good evening, %s')).replace('%s', n)
-          : h < 12
-            ? t('Good morning')
-            : h < 18
-              ? t('Good afternoon')
-              : t('Good evening');
+      var s = greeting(new Date().getHours(), String(o.name || '').slice(0, 40));
       if (el.textContent !== s) el.textContent = s;
     },
   },

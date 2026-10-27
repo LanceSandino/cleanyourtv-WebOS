@@ -224,16 +224,16 @@ document.addEventListener('visibilitychange', function () {
 function tick() {
   var d = new Date();
   try {
-    $('time').textContent = d.toLocaleTimeString(LOC, clockOpts());
+    drawTime($('time'), d);
     $('date').textContent = d.toLocaleDateString(LOC, { weekday: 'long', day: 'numeric', month: 'long' });
   } catch (e) {
+    $('time')._k = '';
     $('time').textContent = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
   }
   /* greeting line (shown only when the theme turns clock.greeting on, with the stacked layout) */
   var g = $('greet');
   if (g) {
-    var h = d.getHours();
-    g.textContent = h < 12 ? t('Good morning') : h < 18 ? t('Good afternoon') : t('Good evening');
+    g.textContent = greeting(d.getHours());
   }
   tickCards();
 }

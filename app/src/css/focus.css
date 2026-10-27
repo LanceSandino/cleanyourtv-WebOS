@@ -1,0 +1,205 @@
+/* Theme settings that are off by default (helper/themeschema.js): the clock's look, a glow around the dock, a header that steps aside
+   for the grid, the glass focus, the name under a grid tile and a name that changes with motion. Only transform and opacity animate. */
+
+/* clock.dateCaps, clock.divider, clock.ampm small */
+[data-datecaps] #date {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+[data-divider] #date {
+  margin-left: 30px;
+}
+[data-divider] #date::before {
+  content: "";
+  display: inline-block;
+  vertical-align: middle;
+  width: 2px;
+  height: 1.6em;
+  margin: -0.2em 0.95em 0 0;
+  background: currentColor;
+  opacity: 0.32;
+}
+[data-clock="stack"][data-divider] #date::before {
+  display: none;
+}
+#time .ap {
+  font-size: 0.4em;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-left: 0.3em;
+  opacity: 0.8;
+}
+#time .ap.first {
+  margin: 0 0.3em 0 0;
+}
+
+/* colors.dockPanel: the panel behind the dock in a colour of its own, with a faint light rim */
+[data-dockpanel] #dock {
+  background: rgba(var(--dock-panel-rgb), var(--dock-panel));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+/* effects.glowShape center: a large soft circle of the focused app's colour around the dock, over the whole screen */
+[data-glow="center"] .glow {
+  height: 1080px;
+  background: radial-gradient(circle 1150px at 34% 60%, rgba(var(--c), 0.34), rgba(var(--c), 0.13) 52%, rgba(var(--c), 0) 100%);
+  transition-duration: calc(0.6s * var(--spd));
+}
+
+/* grid.header fade: the clock, the top buttons and the cards step aside while the focus is in the grid (body.ing) */
+[data-hdr="fade"] #top,
+[data-hdr="fade"] #cards {
+  transition:
+    opacity calc(0.3s * var(--spd)) linear,
+    transform calc(0.36s * var(--spd)) ease-out;
+}
+[data-hdr="fade"].ing #top,
+[data-hdr="fade"].ing #cards {
+  opacity: 0;
+  transform: translateY(-36px);
+}
+[data-hdr="fade"].ing #bar {
+  pointer-events: none;
+}
+
+/* tile.focus glass (focus.js): a lit plate behind the focused tile, its rim in the focus colour, gliding from tile to tile. One in the
+   dock and one in the grid; .jump places one without travelling. The focused tile keeps its scale and shadow, without a ring. */
+.glass {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  border: var(--ring-w) solid var(--focus);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0.14));
+  box-shadow: 0 0 22px 2px rgba(255, 255, 255, 0.16);
+  transition:
+    transform calc(0.42s * var(--spd)) cubic-bezier(0.3, 1.3, 0.45, 1),
+    opacity calc(0.18s * var(--spd)) linear;
+  will-change: transform, opacity;
+}
+#dock > .glass.glass {
+  margin: var(--dock-lift) 0 0;
+  width: calc(var(--dock-w) * var(--dock-fs) + 2 * (var(--ring-off) + var(--ring-w)));
+  height: calc(var(--dock-h) * var(--dock-fs) + 2 * (var(--ring-off) + var(--ring-w)));
+  border-radius: calc(var(--dock-rad) * var(--dock-fs) + var(--ring-off) + var(--ring-w));
+}
+#grid > .glass {
+  width: calc(var(--tile-w) * var(--grid-fs) + 2 * (var(--ring-off) + var(--ring-w)));
+  height: calc(var(--tile-h) * var(--grid-fs) + 2 * (var(--ring-off) + var(--ring-w)));
+  border-radius: calc(var(--tile-r) * var(--grid-fs) + var(--ring-off) + var(--ring-w));
+}
+.glass.on,
+.cap.on {
+  opacity: 1;
+}
+[data-focus="glass"] .tile.f::before {
+  display: none;
+}
+[data-focus="glass"] .tile.fill.f {
+  box-shadow: 0 24px 36px rgba(0, 0, 0, 0.6);
+}
+
+/* grid.label focus (focus.js): the name of the focused grid tile, under it; placed at the tile's bottom centre */
+.cap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 4;
+  width: calc(var(--tile-w) + var(--gap-x));
+  margin: calc(var(--tile-h) * (var(--grid-fs) - 1) / 2 + 12px) 0 0 calc((var(--tile-w) + var(--gap-x)) / -2);
+  font-size: calc(24px * var(--fs));
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform calc(0.2s * var(--spd)) ease-out,
+    opacity calc(0.18s * var(--spd)) linear;
+  will-change: transform, opacity;
+}
+[data-focus="glass"] .cap {
+  transition:
+    transform calc(0.42s * var(--spd)) cubic-bezier(0.3, 1.3, 0.45, 1),
+    opacity calc(0.18s * var(--spd)) linear;
+}
+/* placed without travelling (it was hidden), and no motion while an arrow key is held */
+.glass.jump,
+.cap.jump.jump {
+  transition: opacity calc(0.18s * var(--spd)) linear;
+}
+.snap .glass,
+.snap .cap.cap {
+  transition: none;
+}
+
+/* shelf.motion (focus.js showName): two layers take turns; the new name comes in as the old one goes */
+[data-shelfm] #name,
+[data-shelfm] #name2 {
+  position: absolute;
+  left: var(--name-x);
+  right: var(--name-x);
+  top: 0;
+  padding-bottom: 0.25em; /* the descenders (g, p, y) inside the box that cuts a long name off */
+  opacity: 0;
+}
+[data-shelfm] .nm-in {
+  opacity: 1;
+  animation: nm-fade-in calc(0.26s * var(--spd)) ease-out calc(0.1s * var(--spd)) both;
+}
+[data-shelfm] .nm-out {
+  animation: nm-fade-out calc(0.16s * var(--spd)) ease-in both;
+}
+[data-shelfm="slide"] .nm-in {
+  animation-name: nm-slide-in;
+}
+[data-shelfm="slide"] .nm-out {
+  animation-name: nm-slide-out;
+}
+[data-shelfm].snap .nm-in,
+[data-shelfm].snap .nm-out {
+  animation: none;
+}
+@keyframes nm-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes nm-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes nm-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes nm-slide-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}

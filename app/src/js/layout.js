@@ -32,7 +32,7 @@ function rebuild() {
   var g = rest.map(function (a) {
     var t = tile(a);
     gd.appendChild(t);
-    fit(t, false);
+    fit(t, TH.wide);
     return t;
   });
   var tb = shownBar()
@@ -49,6 +49,7 @@ function rebuild() {
     });
   rows = [tb, d.length ? d : tb];
   for (var i = 0; i < g.length; i += TH.cols) rows.push(g.slice(i, i + TH.cols));
+  decoRebuild();
   var nr = Math.min(r, rows.length - 1),
     nc = c;
   if (keep && tiles[keep]) {

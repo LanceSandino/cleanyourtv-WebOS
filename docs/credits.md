@@ -41,6 +41,11 @@ Arase, unmodified, licensed under the MIT license. The manager app loads it to d
 The home-screen design follows the Android TV project [CleanYourTV](https://github.com/Gathin23/cleanyourtv) (MIT). No code from
 it is used.
 
+The **Glass** theme and the theme settings it uses (a glass focus plate that glides between tiles, the name of the focused app under
+its tile, a name that slides when the focus moves, a light clock with a divider, a soft glow around the dock, the header stepping aside
+for the grid) take their ideas from the launcher of [Clean Your TV for LG webOS](https://github.com/Razdva122/clean-your-tv-lg-webos)
+by Razdva122 (MIT). They are written anew for this launcher; no code, image or other file from that project is used.
+
 ## This documentation
 
 Built with [Zensical](https://zensical.org).

@@ -80,3 +80,54 @@ commit_ref: "feature/ui-polish (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T05:02:00Z"
 ```
+
+```yaml
+id: CU-20261027-12
+type: feature
+title: "Theme settings for the focus and the app name: a gliding glass plate, the name under a grid tile, a name that slides, a header that steps aside"
+description: "New theme settings, all off by default: tile.focus glass (a lit plate behind the focused tile that glides between tiles
+  with transform only; one plate in the dock and one in the grid so each moves with its row; positions read once per rebuild),
+  grid.label focus (the focused app's name under its grid tile, also when a push grid hides the large name), shelf.motion fade or
+  slide and shelf.weight (two name layers that take turns, mirrored in right-to-left languages), and grid.header fade (the clock,
+  buttons and cards step aside while the grid has the focus). Grid tiles 1.5 times as wide as tall or more keep a padded icon at its
+  size, as the dock does, instead of stretching it. Everything follows effects.speed and stands still while an arrow is held. A theme
+  that does not set them resolves to the same reply as before (only themes that use a setting send it)."
+impact: medium
+affected_modules: ["helper/themeschema.js", "app/src/js/focus.js", "app/src/js/theme.js", "app/src/js/layout.js", "app/src/js/tiles.js", "app/src/css/focus.css", "app/src/css/home.css", "app/src/css/rtl.css", "app/src/index.html", "app/index.html", "docs/themes.md", "docs/credits.md"]
+related_tests: ["tools/test/theme.test.js", "tools/test/launcher.test.js"]
+commit_ref: "feature/ui-polish (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:24:50Z"
+```
+
+```yaml
+id: CU-20261027-13
+type: feature
+title: "Clock typography settings, and Good night as a greeting"
+description: "clock.weight, clock.dateCaps (capitals with wider spacing), clock.divider (a thin line between time and date) and
+  clock.ampm small (AM/PM set smaller beside the time, split with Intl formatToParts; Chromium 68 names that part dayperiod, which is
+  handled; without formatToParts the time stays one text). The greeting (clock.greeting and the greeting card) says Good night from
+  22:00 to 4:59 instead of Good evening or Good morning, translated in all eight languages."
+impact: low
+affected_modules: ["helper/themeschema.js", "app/src/js/clock.js", "app/src/js/input.js", "app/src/js/cards.js", "app/src/css/home.css", "app/src/css/focus.css", "app/src/css/rtl.css", "i18n/*.json", "app/index.html", "manager/app/index.html"]
+related_tests: ["tools/test/launcher.test.js", "tools/test/theme.test.js", "tools/test/i18n.test.js"]
+commit_ref: "feature/ui-polish (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:24:50Z"
+```
+
+```yaml
+id: CU-20261027-14
+type: feature
+title: "Theme settings for a centred glow, a sheen on the top buttons and a coloured dock panel"
+description: "effects.glowShape center (the glow as a large circle around the dock over the whole screen, still opacity only),
+  surface.pillGloss (a sheen of the button colour from the top edge) and colors.dockPanel (the panel behind the dock in its own colour
+  with a faint light rim; dock.panel now goes up to 1 so the panel can be opaque). The default declarations are untouched; a theme
+  that sets one of these gets an override rule through a body attribute or a variable."
+impact: low
+affected_modules: ["helper/themeschema.js", "app/src/css/home.css", "app/src/css/focus.css", "app/src/js/theme.js", "app/index.html"]
+related_tests: ["tools/test/theme.test.js"]
+commit_ref: "feature/ui-polish (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:24:50Z"
+```

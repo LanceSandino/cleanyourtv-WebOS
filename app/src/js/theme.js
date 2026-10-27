@@ -1,8 +1,42 @@
 /* ---------- theme: the service resolves the chosen theme (manager > Theme) into CSS variables and a few numbers ---------- */
-var TH0 = { cols: 10, tileH: 151, gapY: 26, gt: 350, viewH: 780, dockN: 4, overlay: false, push: null, overlayH: 510, glow: '', slots: [] },
+var TH0 = {
+    cols: 10,
+    tileH: 151,
+    gapY: 26,
+    gt: 350,
+    viewH: 780,
+    dockN: 4,
+    overlay: false,
+    push: null,
+    overlayH: 510,
+    glow: '',
+    slots: [],
+    glass: false,
+    label: false,
+    motion: '',
+    ampm: false,
+    hdr: false,
+    wide: false,
+    capH: 0,
+  },
   TH = TH0,
   themeKeys = [],
-  themeAttrs = ['data-bar', 'data-labels', 'data-clock', 'data-grid', 'data-galign'];
+  themeAttrs = [
+    'data-bar',
+    'data-labels',
+    'data-clock',
+    'data-grid',
+    'data-galign',
+    'data-datecaps',
+    'data-divider',
+    'data-ampm',
+    'data-shelfm',
+    'data-label',
+    'data-hdr',
+    'data-focus',
+    'data-glow',
+    'data-dockpanel',
+  ];
 function applyTheme(t) {
   var st = document.documentElement.style,
     b = document.body,
@@ -11,8 +45,10 @@ function applyTheme(t) {
   themeKeys = [];
   for (k = 0; k < themeAttrs.length; k++) b.removeAttribute(themeAttrs[k]);
   b.classList.remove('grid-open');
+  b.classList.remove('ing');
   if (!t || !t.vars) {
     TH = TH0;
+    decoTheme();
     return;
   }
   for (k in t.vars) {
@@ -43,6 +79,8 @@ function applyTheme(t) {
     themeKeys.push('--wall');
   }
   for (k in t.attrs) b.setAttribute('data-' + k, t.attrs[k]);
+  var at = t.attrs || {},
+    tw = parseFloat(t.vars['--tile-w']) || 151;
   TH = {
     cols: t.cols || 10,
     tileH: t.tileH || 151,
@@ -55,7 +93,19 @@ function applyTheme(t) {
     overlayH: t.overlayH || 510,
     glow: t.glowRgb || '',
     slots: t.slots || [],
+    /* the settings that only themes using them send (theme.json: tile.focus, grid.label, shelf.motion, clock.ampm, grid.header) */
+    glass: at.focus === 'glass',
+    label: at.label === 'focus',
+    motion: at.shelfm || '',
+    ampm: at.ampm === 'small',
+    hdr: at.hdr === 'fade',
+    /* tiles half again as wide as tall or more (a grid of cards: Glass is 1.77, Bloom 1.29) keep a padded icon at its size, as the
+       dock does, instead of stretching it over the tile */
+    wide: tw / (t.tileH || 151) > 1.5,
+    /* room kept under the lowest row for the name under the focused tile */
+    capH: at.label === 'focus' ? 44 : 0,
   };
+  decoTheme();
 }
 
 function setFocus(nr, nc, first) {
@@ -66,9 +116,10 @@ function setFocus(nr, nc, first) {
   var e = rows[r][c];
   e.classList.add('f');
   var a = e._a,
-    nm = a ? a.title : e._o ? barLabel(e._o) : '',
-    n = $('name');
-  if (n.textContent !== nm) n.textContent = nm;
+    nm = a ? a.title : e._o ? barLabel(e._o) : '';
+  showName(nm);
+  decorate(e, first);
+  if (TH.hdr) document.body.classList.toggle('ing', r >= 2);
   if (first) glowNow(e);
   else glowSoon(e);
   var sh = 0;
@@ -77,7 +128,7 @@ function setFocus(nr, nc, first) {
     document.body.classList.toggle('grid-open', r >= 2);
     var ps = 0;
     if (r >= 2) {
-      var bot = TH.push.gridTop - TH.push.up + (r - 2) * (TH.tileH + TH.gapY) + TH.tileH,
+      var bot = TH.push.gridTop - TH.push.up + (r - 2) * (TH.tileH + TH.gapY) + TH.tileH + TH.capH,
         ex = Math.max(0, bot - (1080 - 60));
       ps = -(TH.push.up + ex);
     }
@@ -89,7 +140,7 @@ function setFocus(nr, nc, first) {
     /* the grid is an overlay above the dock: it opens when the focus goes down into it and scrolls on its own */
     document.body.classList.toggle('grid-open', r >= 2);
     var gs = 0;
-    if (r >= 2) gs = Math.min(0, TH.overlayH - ((r - 2) * (TH.tileH + TH.gapY) + TH.tileH + 24));
+    if (r >= 2) gs = Math.min(0, TH.overlayH - ((r - 2) * (TH.tileH + TH.gapY) + TH.tileH + TH.capH + 24));
     $('grid').style.transform = gs ? 'translateY(' + gs + 'px)' : '';
     $('scroll').style.transform = '';
     return;
@@ -98,7 +149,10 @@ function setFocus(nr, nc, first) {
   if (r >= 2) {
     var gr = rows.length - 2,
       gt = TH.gt;
-    sh = Math.min(0, Math.max(50 - (gt + (r - 2) * (TH.tileH + TH.gapY)), TH.viewH - 54 - (gt + gr * TH.tileH + (gr - 1) * TH.gapY)));
+    sh = Math.min(
+      0,
+      Math.max(50 - (gt + (r - 2) * (TH.tileH + TH.gapY)), TH.viewH - 54 - TH.capH - (gt + gr * TH.tileH + (gr - 1) * TH.gapY))
+    );
   } /* row height + gap from the theme: no layout reads */
   $('scroll').style.transform = sh ? 'translateY(' + sh + 'px)' : '';
 }

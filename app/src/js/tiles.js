@@ -31,7 +31,7 @@ function tile(a) {
       var col = iconColor(i, a.id);
       d._col = col;
       paint(d, col);
-      fit(d, !!(d.parentNode && d.parentNode.id === 'dock'));
+      fit(d, !!(d.parentNode && d.parentNode.id === 'dock') || TH.wide);
       if (!col.t) {
         colors[a.id] = col;
         storeSoon();

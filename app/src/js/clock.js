@@ -21,6 +21,68 @@ function barLabel(o) {
           ? t('Live TV')
           : o.label || '';
 }
+/* the parts of a formatted time (Intl formatToParts) as [the time, its day period (AM/PM, or ''), whether the day period comes first].
+   Chromium 68 (webOS 5) calls that part "dayperiod", Chromium 79 "dayPeriod". */
+function splitTime(parts) {
+  var main = '',
+    ap = '',
+    first = false;
+  for (var i = 0; i < parts.length; i++) {
+    if (/^dayperiod$/i.test(parts[i].type)) {
+      ap = parts[i].value;
+      first = !/\S/.test(main);
+    } else main += parts[i].value;
+  }
+  return [main.replace(/^\s+|\s+$/g, ''), ap, first];
+}
+/* the time into #time; clock.ampm small sets AM/PM apart, smaller (where Intl can split the time; else the time as one text) */
+function drawTime(el, d) {
+  var txt = d.toLocaleTimeString(LOC, clockOpts()),
+    sp = null;
+  if (TH.ampm && window.Intl && Intl.DateTimeFormat.prototype.formatToParts) {
+    sp = splitTime(new Intl.DateTimeFormat(LOC, clockOpts()).formatToParts(d));
+    if (!sp[1]) sp = null;
+  }
+  var key = sp ? sp.join('|') : txt;
+  if (el._k === key) return;
+  el._k = key;
+  if (!sp) {
+    el.textContent = txt;
+    return;
+  }
+  el.textContent = '';
+  var ap = document.createElement('span');
+  ap.className = 'ap' + (sp[2] ? ' first' : '');
+  ap.textContent = sp[1];
+  var tm = document.createTextNode(sp[0]);
+  el.appendChild(sp[2] ? ap : tm);
+  el.appendChild(sp[2] ? tm : ap);
+}
+/* which greeting the hour gets: night from 22:00 to 4:59 */
+function greetPart(h) {
+  return h >= 22 || h < 5 ? 'night' : h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening';
+}
+/* "Good morning" and the others by the hour, with a name when one is given */
+function greeting(h, name) {
+  var p = greetPart(h);
+  if (name)
+    return (
+      p === 'night'
+        ? t('Good night, %s')
+        : p === 'morning'
+          ? t('Good morning, %s')
+          : p === 'afternoon'
+            ? t('Good afternoon, %s')
+            : t('Good evening, %s')
+    ).replace('%s', name);
+  return p === 'night'
+    ? t('Good night')
+    : p === 'morning'
+      ? t('Good morning')
+      : p === 'afternoon'
+        ? t('Good afternoon')
+        : t('Good evening');
+}
 function clockOpts() {
   var c = cfg.clock,
     o = { hour: 'numeric', minute: '2-digit' };

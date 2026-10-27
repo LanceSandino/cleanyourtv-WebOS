@@ -56,4 +56,99 @@ run(async () => {
     /function rebuild\(\) \{\s*geoReset\(\);/.test(fs.readFileSync(path.join(root, 'app', 'src', 'js', 'layout.js'), 'utf8')),
     'a rebuild measures the rows again'
   );
+
+  // ---- the clock (clock.js): AM/PM apart for clock.ampm small, and the greeting by the hour ----
+  const C = load('clock.js', ['splitTime', 'greetPart', 'greeting'], 'var t = function (s) { return "<" + s + ">"; };\n');
+  const P = (a, b) => a.map((v, i) => ({ type: b[i], value: v }));
+  const us = C.splitTime(P(['9', ':', '49', ' ', 'PM'], ['hour', 'literal', 'minute', 'literal', 'dayPeriod'])),
+    old = C.splitTime(P(['9', ':', '49', ' ', 'PM'], ['hour', 'literal', 'minute', 'literal', 'dayperiod'])),
+    ko = C.splitTime(P(['오후', ' ', '9', ':', '49'], ['dayPeriod', 'literal', 'hour', 'literal', 'minute'])),
+    h24 = C.splitTime(P(['21', ':', '49'], ['hour', 'literal', 'minute']));
+  ok(
+    us.join('|') === '9:49|PM|false' && old.join('|') === '9:49|PM|false',
+    'AM/PM is split from the time (also as Chromium 68 names the part, "dayperiod")'
+  );
+  ok(ko.join('|') === '9:49|오후|true', 'a day period that comes first (Korean) is marked so');
+  ok(h24.join('|') === '21:49||false', 'a 24-hour time has no day period');
+  ok(
+    [0, 4, 5, 11, 12, 17, 18, 21, 22, 23].map(C.greetPart).join(' ') ===
+      'night night morning morning afternoon afternoon evening evening night night',
+    'the greeting: night from 22:00 to 4:59, morning to 12, afternoon to 18, then evening'
+  );
+  ok(
+    C.greeting(23) === '<Good night>' &&
+      C.greeting(9, 'Sam') === '<Good morning, %s>'.replace('%s', 'Sam') &&
+      C.greeting(2, 'Sam') === '<Good night, %s>'.replace('%s', 'Sam'),
+    'the greeting is translated, with the name in its place'
+  );
+  const en = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'en.json'), 'utf8')),
+    langs = fs.readdirSync(path.join(root, 'i18n')).filter(f => /^[a-z]{2}\.json$/.test(f));
+  ok(
+    en['Good night'] &&
+      langs.every(f => {
+        const L = JSON.parse(fs.readFileSync(path.join(root, 'i18n', f), 'utf8'));
+        return L['Good night'] && L['Good night, %s'] && L['Good night, %s'].indexOf('%s') >= 0;
+      }),
+    'Good night is translated in every language (' + langs.length + ')'
+  );
+
+  // ---- a grid of wide tiles (Glass) keeps a padded icon at its size, as the dock does, instead of stretching it over the tile ----
+  const FT = load('colour.js', ['fit']);
+  const fakeTile = () => {
+    const cls = [];
+    return {
+      _i: { style: {}, removeAttribute() {} },
+      _col: { k: 'pad', box: [0.1, 0.1, 0.9, 0.9] },
+      classList: { remove() {}, add: c => cls.push(c) },
+      style: {},
+      cls,
+    };
+  };
+  const wideT = fakeTile(),
+    squareT = fakeTile();
+  FT.fit(wideT, true);
+  FT.fit(squareT, false);
+  ok(
+    wideT.cls.indexOf('fill') < 0 && wideT._i.style.width === 'auto' && squareT.cls.indexOf('fill') >= 0,
+    'a padded icon fills a square grid tile, and keeps its size on a wide one'
+  );
+  const tsrc = fs.readFileSync(path.join(root, 'app', 'src', 'js', 'theme.js'), 'utf8');
+  ok(
+    /wide: tw \/ \(t\.tileH \|\| 151\) > 1\.5/.test(tsrc) &&
+      /fit\(t, TH\.wide\)/.test(fs.readFileSync(path.join(root, 'app', 'src', 'js', 'layout.js'), 'utf8')) &&
+      /\|\| TH\.wide\)/.test(fs.readFileSync(path.join(root, 'app', 'src', 'js', 'tiles.js'), 'utf8')),
+    'grid tiles more than 1.5 times as wide as tall count as wide, when they are drawn and when their icon loads'
+  );
+
+  // ---- focus.css: the theme options animate only transform and opacity (the TV's GPU is weak) ----
+  const fcss = fs.readFileSync(path.join(root, 'app', 'src', 'css', 'focus.css'), 'utf8'),
+    moved = [];
+  const flat = v => {
+    let x = v;
+    while (/\([^()]*\)/.test(x)) x = x.replace(/\([^()]*\)/g, '');
+    return x;
+  };
+  (fcss.match(/transition:[^;]*;/g) || []).forEach(tr =>
+    flat(tr.replace(/^transition:|;$/g, ''))
+      .split(',')
+      .forEach(part => {
+        const prop = part.trim().split(/\s+/)[0];
+        if (prop && ['transform', 'opacity', 'none'].indexOf(prop) < 0) moved.push(prop);
+      })
+  );
+  (fcss.match(/@keyframes[^{]*\{([^{}]*\{[^}]*\})*\s*\}/g) || []).forEach(k =>
+    (k.match(/([a-z-]+)\s*:/g) || []).forEach(p => {
+      if (['transform:', 'opacity:'].indexOf(p.replace(/\s+/g, '')) < 0) moved.push(p);
+    })
+  );
+  ok(!moved.length, 'focus.css animates only transform and opacity' + (moved.length ? ': ' + moved.join(', ') : ''));
+  ok(
+    /\.snap \.glass/.test(fcss) && /\.snap \.cap/.test(fcss) && /\[data-shelfm\]\.snap \.nm-in/.test(fcss),
+    'the plate, the name under a tile and the large name do not animate while an arrow key is held'
+  );
+  ok(
+    (fcss.match(/calc\([0-9.]+s \* var\(--spd\)\)/g) || []).length >= 8 &&
+      !/[^(]\b0?\.\d+s\b(?! \*)/.test(fcss.replace(/calc\([^)]*\)/g, '')),
+    'every duration follows the theme speed (effects.speed)'
+  );
 });

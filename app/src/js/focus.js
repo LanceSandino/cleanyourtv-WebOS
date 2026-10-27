@@ -41,3 +41,116 @@ function vMove(to) {
   vmem = { from: r, col: c, to: to, toCol: nc };
   setFocus(to, nc);
 }
+
+/* ---------- tile.focus glass and grid.label focus: a lit plate behind the focused tile, gliding from tile to tile, and the name of the
+   focused grid tile under it. One plate lives in the dock and one in the grid, so each moves with its row (scrolling, a centred dock);
+   they move with transform only. The places of the tiles are read once per rebuild. ---------- */
+var deco = { gd: null, gg: null, cap: null },
+  geoGen = 0;
+function decoEl(cls) {
+  var d = document.createElement('div');
+  d.className = cls;
+  return d;
+}
+/* after a theme is applied: make or drop the elements the theme uses */
+function decoTheme() {
+  var want = { gd: TH.glass, gg: TH.glass, cap: TH.label };
+  for (var k in want) {
+    if (want[k] && !deco[k]) deco[k] = decoEl(k === 'cap' ? 'cap' : 'glass');
+    else if (!want[k] && deco[k]) {
+      deco[k].remove();
+      deco[k] = null;
+    }
+  }
+  geoGen++;
+  showName.side = 0;
+  var n2 = $('name2');
+  if (!TH.motion) {
+    if (n2) n2.remove();
+    $('name').className = '';
+  } else if (!n2) {
+    n2 = document.createElement('div');
+    n2.id = 'name2';
+    $('shelf').appendChild(n2);
+  }
+  tick(); /* the time as the theme writes it (clock.ampm) at once, not at the next quarter minute */
+}
+/* a rebuild emptied the dock and the grid: put the plates and the caption back, and read the places again */
+function decoRebuild() {
+  geoGen++;
+  if (deco.gd) $('dock').appendChild(deco.gd);
+  if (deco.gg) $('grid').appendChild(deco.gg);
+  if (deco.cap) $('grid').appendChild(deco.cap);
+  for (var k in deco) if (deco[k]) deco[k]._on = false;
+}
+/* the centre and bottom of every tile in its row's box, and the size of the plates (one layout read per rebuild) */
+function measure() {
+  for (var i = 1; i < rows.length; i++)
+    for (var j = 0; j < rows[i].length; j++) {
+      var e = rows[i][j];
+      e._g = { x: e.offsetLeft + e.offsetWidth / 2, y: e.offsetTop + e.offsetHeight / 2, b: e.offsetTop + e.offsetHeight };
+      e._gen = geoGen;
+    }
+  for (var k in deco) if (deco[k]) deco[k]._sz = [deco[k].offsetWidth, deco[k].offsetHeight];
+}
+function geo(e) {
+  if (e._gen !== geoGen) measure();
+  return e._g;
+}
+/* move an element to x, y; when it was hidden it appears there without travelling from its last place */
+function glideTo(el, x, y, first) {
+  var tr = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
+  if (el._on && !first) {
+    el.style.transform = tr;
+    return;
+  }
+  el.classList.add('jump');
+  el.style.transform = tr;
+  void el.offsetWidth;
+  el.classList.remove('jump');
+  el.classList.add('on');
+  el._on = true;
+}
+function hide(el) {
+  if (el && el._on) {
+    el.classList.remove('on');
+    el._on = false;
+  }
+}
+function decorate(e, first) {
+  if (!TH.glass && !TH.label) return;
+  var tile = e.classList.contains('tile') ? e.parentNode : null,
+    inDock = !!tile && tile.id === 'dock',
+    inGrid = !!tile && tile.id === 'grid',
+    g = tile ? geo(e) : null;
+  if (TH.glass) {
+    var on = inDock ? deco.gd : inGrid ? deco.gg : null;
+    hide(inDock ? deco.gg : deco.gd);
+    if (!inDock && !inGrid) hide(deco.gg);
+    if (on) glideTo(on, g.x - on._sz[0] / 2, g.y - on._sz[1] / 2, first);
+  }
+  if (TH.label) {
+    if (inGrid) {
+      var t = e._a ? e._a.title : '';
+      if (deco.cap.textContent !== t) deco.cap.textContent = t;
+      glideTo(deco.cap, g.x, g.b, first);
+    } else hide(deco.cap);
+  }
+}
+
+/* ---------- the large name of the focused app (shelf.motion): two layers take turns, the new name comes in as the old one goes ---------- */
+function showName(nm) {
+  var a = $('name');
+  if (!TH.motion) {
+    if (a.textContent !== nm) a.textContent = nm;
+    return;
+  }
+  var b = $('name2'),
+    cur = showName.side ? b : a,
+    next = showName.side ? a : b;
+  if (cur.textContent === nm && cur.className === 'nm-in') return;
+  next.textContent = nm;
+  next.className = 'nm-in';
+  cur.className = 'nm-out';
+  showName.side = showName.side ? 0 : 1;
+}

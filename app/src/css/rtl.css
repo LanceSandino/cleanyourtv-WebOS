@@ -83,3 +83,46 @@
 [dir="rtl"] .card-greeting {
   letter-spacing: 0;
 }
+/* the theme settings of focus.css, mirrored */
+[dir="rtl"] [data-datecaps] #date {
+  letter-spacing: 0;
+}
+[dir="rtl"] [data-divider] #date {
+  margin-left: 0;
+  margin-right: 30px;
+}
+[dir="rtl"] [data-divider] #date::before {
+  margin: -0.2em 0 0 0.95em;
+}
+[dir="rtl"] #time .ap {
+  margin: 0 0.3em 0 0;
+}
+[dir="rtl"] #time .ap.first {
+  margin: 0 0 0 0.3em;
+}
+[dir="rtl"] [data-shelfm="slide"] .nm-in {
+  animation-name: nm-slide-in-rtl;
+}
+[dir="rtl"] [data-shelfm="slide"] .nm-out {
+  animation-name: nm-slide-out-rtl;
+}
+@keyframes nm-slide-in-rtl {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes nm-slide-out-rtl {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}

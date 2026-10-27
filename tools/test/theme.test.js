@@ -105,6 +105,80 @@ run(async () => {
     plain.vars['--greet-d'] === 'none' && plain.vars['--dock-tile-alpha'] === '1',
     'by default there is no greeting and the dock tiles are opaque'
   );
+  // settings added for the Glass theme (focus plate, name under a tile, name motion, clock typography, centred glow, pill sheen, dock
+  // panel colour, header fade): each reaches the launcher, a bad value falls back, and a theme that does not use them gets a reply
+  // without them, so the existing themes look and answer exactly as before
+  const LATER_VARS = ['--clock-wt', '--name-wt', '--pill-sheen', '--dock-panel-rgb'],
+    LATER_ATTRS = ['datecaps', 'divider', 'ampm', 'shelfm', 'label', 'hdr', 'focus', 'glow', 'dockpanel'];
+  const later = themeMod.resolve(
+    themeMod.normalize(
+      {
+        colors: { pill: '#ff0000', dockPanel: '#141417' },
+        surface: { pillGloss: 0.2 },
+        clock: { weight: 300, dateCaps: true, divider: true, ampm: 'small' },
+        shelf: { weight: 300, motion: 'slide' },
+        dock: { panel: 0.9 },
+        grid: { label: 'focus', header: 'fade' },
+        tile: { focus: 'glass' },
+        effects: { glowShape: 'center' },
+      },
+      'later'
+    )
+  );
+  ok(
+    later.vars['--clock-wt'] === '300' &&
+      later.vars['--name-wt'] === '300' &&
+      later.vars['--dock-panel-rgb'] === '20,20,23' &&
+      later.attrs.dockpanel === 'on' &&
+      later.vars['--dock-panel'] === '0.9' &&
+      later.vars['--pill-sheen'] === 'linear-gradient(180deg,rgba(255,0,0,0.2),rgba(255,0,0,0) 75%)' &&
+      later.attrs.datecaps === 'on' &&
+      later.attrs.divider === 'on' &&
+      later.attrs.ampm === 'small' &&
+      later.attrs.shelfm === 'slide' &&
+      later.attrs.label === 'focus' &&
+      later.attrs.hdr === 'fade' &&
+      later.attrs.focus === 'glass' &&
+      later.attrs.glow === 'center',
+    'the focus plate, the name under a tile and its motion, the clock typography, the centred glow, the pill sheen, the dock panel colour and the header fade reach the launcher'
+  );
+  const laterBad = themeMod.normalize(
+    {
+      colors: { dockPanel: 'black' },
+      surface: { pillGloss: 3 },
+      clock: { weight: 1200, ampm: 'tiny', divider: 'yes' },
+      shelf: { motion: 'spin' },
+      grid: { label: 'all', header: 'hide' },
+      tile: { focus: 'neon' },
+      effects: { glowShape: 'square' },
+    },
+    'laterbad'
+  );
+  ok(
+    laterBad.v['colors.dockPanel'] === null &&
+      laterBad.v['surface.pillGloss'] === 0.5 &&
+      laterBad.v['clock.weight'] === 900 &&
+      laterBad.v['clock.ampm'] === 'inline' &&
+      laterBad.v['clock.divider'] === false &&
+      laterBad.v['shelf.motion'] === 'none' &&
+      laterBad.v['grid.label'] === 'none' &&
+      laterBad.v['grid.header'] === 'keep' &&
+      laterBad.v['tile.focus'] === 'ring' &&
+      laterBad.v['effects.glowShape'] === 'top',
+    'the new settings are clamped and checked like the others'
+  );
+  const untouched = [];
+  for (const id of folders) {
+    if (id === 'glass') continue;
+    const fd = path.join(tdir, id),
+      rv = themeMod.resolve(themeMod.normalize(JSON.parse(fs.readFileSync(path.join(fd, 'theme.json'), 'utf8')), id, null, fd));
+    if (LATER_VARS.some(k => k in rv.vars) || LATER_ATTRS.some(k => k in rv.attrs)) untouched.push(id);
+  }
+  ok(
+    !untouched.length && !LATER_VARS.some(k => k in plain.vars) && !LATER_ATTRS.some(k => k in plain.attrs),
+    'the themes that do not use the new settings resolve without them (their look and reply are unchanged)' +
+      (untouched.length ? ': ' + untouched.join(', ') : '')
+  );
   // slots for cards: checked and clamped, placed like the clock, kept by a theme that extends it, and only in replies of themes with slots
   const slotted = themeMod.normalize(
     {
