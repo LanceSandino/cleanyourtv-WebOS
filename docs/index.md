@@ -19,6 +19,8 @@ on-device voice recognition, and an optional debloat of LG's ads and telemetry.
 - **Input key.** The remote's Input button opens an Inputs list over the running app. [More](input-key.md).
 - **Picture notifications.** A card with a photo over whatever is on screen, triggered from your network, for example by
   Home Assistant. [More](notifications.md).
+- **Sonos volume on screen (optional).** A Sonos soundbar's volume over any app when it changes, where LG shows no number because
+  the sound goes to the soundbar. It only reads the volume. [More](sonos.md).
 - **Voice (optional).** Speech recognition on the TV (Moonshine), with answers from Home Assistant's Assist, a language model through
   OpenRouter or your own server, shown as text. [More](voice.md).
 - **Debloat.** Stops LG's ad and telemetry services and blocks a few ad servers. [More](debloat.md).

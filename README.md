@@ -88,14 +88,17 @@ and troubleshooting.
 4. **[Picture notifications](https://lancesandino.github.io/cleanyourtv-WebOS/notifications/).** A card with a photo over whatever is on
    screen, sent from your network with a POST request, for example from Home Assistant.
 
-5. **[Voice, on the TV](https://lancesandino.github.io/cleanyourtv-WebOS/voice/) (optional).** Speech recognition from the remote's
+5. **[Sonos volume on screen](https://lancesandino.github.io/cleanyourtv-WebOS/sonos/) (optional).** LG shows no volume number when
+   the sound goes to a soundbar; this shows a Sonos soundbar's own volume over any app when it changes. It only reads the volume.
+
+6. **[Voice, on the TV](https://lancesandino.github.io/cleanyourtv-WebOS/voice/) (optional).** Speech recognition from the remote's
    microphone with a local model (Moonshine), answers from Home Assistant's Assist, a language model through OpenRouter or your own server, shown as
    text. No audio is recorded or sent anywhere.
 
-6. **[Removing LG's ads and telemetry](https://lancesandino.github.io/cleanyourtv-WebOS/debloat/) (optional).** Stops LG's ad and
+7. **[Removing LG's ads and telemetry](https://lancesandino.github.io/cleanyourtv-WebOS/debloat/) (optional).** Stops LG's ad and
    telemetry services and blocks a few ad servers, only while the launcher is Home, and undoes cleanly.
 
-7. **[Setting up, updating and removing it from the TV](https://lancesandino.github.io/cleanyourtv-WebOS/manager/).** The manager app
+8. **[Setting up, updating and removing it from the TV](https://lancesandino.github.io/cleanyourtv-WebOS/manager/).** The manager app
    checks every download against a SHA-256 file, rolls back a launcher or service that does not start, and can follow a
    [dev build](https://lancesandino.github.io/cleanyourtv-WebOS/managing/#dev-builds) to get changes before the next release.
 
@@ -150,9 +153,9 @@ The pages are built with [Zensical](https://zensical.org) from [docs/](docs/), s
 ## Security
 
 The service runs as root on the TV and listens on `127.0.0.1:8765` only. A few short-lived pages open on the local network on
-request (Live TV pairing, share log, voice setup) and the notification endpoint is off until you switch it on. Everything it
-installs comes from this repository's GitHub releases and carries a SHA-256 file, which detects corruption but **not a compromised
-repository**: download only from this repository's release page. [Security](https://lancesandino.github.io/cleanyourtv-WebOS/security/)
+request (Live TV pairing, share log, voice setup); the notification endpoint and the Sonos volume's event port are off until you
+switch them on. Everything it installs comes from this repository's GitHub releases and carries a SHA-256 file, which detects
+corruption but **not a compromised repository**: download only from this repository's release page. [Security](https://lancesandino.github.io/cleanyourtv-WebOS/security/)
 covers the ports, the token for notifications, voice and dev builds. To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
 ---

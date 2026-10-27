@@ -25,6 +25,7 @@ disk, and a reboot without the boot scripts brings LG's Home back.
 | Home takeover at boot, rollback, undo | `scripts/10-cleanyourtv-home`, `scripts/stage-home.sh`, `scripts/undo-home.sh`, `scripts/bootstrap.sh` |
 | Live TV: playlist, guide, favourites | `helper/live.js` and `app/src/js/live.js` |
 | Picture notifications | `notify/app/`, `helper/notify.js`, `helper/notifyapi.js` |
+| Sonos soundbar volume on screen (read only) | `helper/sonos.js` (SSDP search, UPnP volume events), the volume bar in `notify/app/`, `manager/src/js/sonos.js`, `docs/sonos.md` |
 | Voice (Moonshine, OpenRouter, Home Assistant) | `helper/voice.js` (microphone, recogniser), `helper/answers.js` (Assist, OpenRouter, your server), `voice/` |
 | Themes | `helper/themeschema.js` (the schema), `helper/theme.js` (downloads), `themes/` (read from GitHub), `docs/themes.md` |
 | Wallpapers | `helper/wallpapers.js` (library, phone page, Immich sync), `app/src/js/wall.js` (rotation on Home), `docs/wallpapers.md` |
@@ -44,7 +45,8 @@ disk, and a reboot without the boot scripts brings LG's Home back.
   `/tmp/cleanyourtv-helper.log` (service log), `/tmp/lginput-hook-lginput2.log` (input hook).
 - Root SSH works with a key (`ssh root@<tv-ip>`). `luna-send` must have stdin redirected: `luna-send -n 1 -w 5000 -f <uri> '<json>' </dev/null`.
 - The service listens on `127.0.0.1:8765` (use `curl` on the TV). Other ports: 8766 Live TV pairing, 8767 network notifications (opt-in),
-  8768+ share log, 8769 voice setup. The last four are short-lived or off by default.
+  8768+ share log, 8769 voice setup, and a port the system picks for the Sonos volume's events (opt-in). These are short-lived or off by
+  default.
 - Going back to LG's Home: manager app > CleanYourTV as Home off, or `sh /media/developer/cleanyourtv/undo-home.sh`. If a boot crashes,
   the Homebrew Channel's failsafe mode skips the boot scripts.
 - A TV's own state can be the problem: a stuck media pipeline (black video, no sound) is cleared by a reboot; check

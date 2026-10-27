@@ -12,6 +12,10 @@ function build() {
     rows.push({ label: 'Back', fn: pop });
     return;
   }
+  if (view === 'sonos' || view === 'sonospick') {
+    sonosRows();
+    return;
+  }
   if (view === 'channel') {
     var cc = (st && st.channel) || '',
       db = ((tst && tst.builds) || [])[0];
@@ -670,6 +674,11 @@ function build() {
         );
       },
     });
+    rows.push({
+      label: 'Sonos volume on screen',
+      sub: so ? onoff(so.enabled) : '',
+      fn: openSonos,
+    });
     rows.push({ sep: true });
     rows.push({ label: 'Back', fn: pop });
     return;
@@ -897,6 +906,7 @@ function build() {
     label: 'More',
     sub: 'voice, language, network notifications',
     fn: function () {
+      sonosLoad();
       push('more');
     },
   });

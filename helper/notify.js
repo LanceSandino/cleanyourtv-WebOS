@@ -1,5 +1,7 @@
 // Notifications with pictures: the TV's own toasts are text-only, so this shows a card in a small transparent window (the notify
 // app) on top of whatever is running. POST /api/notify {title, text, image, seconds, position}
+// The service's own parts also show the voice cards (kind listening, thinking, answer) and the soundbar's volume (kind volume, from
+// sonos.js: a bar beside the card, not instead of it); network senders cannot.
 const luna = require('./luna'),
   fetch = require('./fetch'),
   web = require('./web');
@@ -25,8 +27,16 @@ async function fetchImage(url) {
 const launch = params => luna('luna://com.webos.applicationManager/launch', { id: 'com.cleanyourtv.notify', params });
 
 async function show(b, internal) {
-  // the voice function's own look; not available to network senders
-  const kind = internal && /^(listening|thinking|answer)$/.test(b.kind) ? b.kind : '';
+  // the voice function's own look and the volume bar; not available to network senders
+  const kind = internal && /^(listening|thinking|answer|volume)$/.test(b.kind) ? b.kind : '';
+  if (kind === 'volume')
+    return launch({
+      kind,
+      volume: Math.max(0, Math.min(100, Math.round(+b.volume) || 0)),
+      muted: !!b.muted,
+      seconds: Math.max(2, Math.min(10, +b.seconds || 3)),
+      position: /^(top|bottom)-(left|right)$/.test(b.position) ? b.position : 'top-left',
+    });
   const p = {
     title: String(b.title || '').slice(0, 120),
     text: String(b.text || '').slice(0, kind ? 1500 : 400),

@@ -26,6 +26,7 @@ nav = [
     { "Live TV" = "live-tv.md" },
     { "The Input key" = "input-key.md" },
     { "Picture notifications" = "notifications.md" },
+    { "Sonos volume on screen" = "sonos.md" },
     { "Voice (optional)" = "voice.md" },
     { "Debloat" = "debloat.md" },
     { "The manager app" = "manager.md" },

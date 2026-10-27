@@ -26,6 +26,7 @@
 | `inputkey.js`, `inputhook.js`, `picker.js` | The Input key: the hook in LG's input processes, the key binds, the Inputs picker. |
 | `manager.js`, `updates.js`, `debloat.js` | The manager's API, updates from GitHub releases with rollback, switching the debloat. |
 | `live.js`, `notify.js`, `notifyapi.js` | One feature each. |
+| `sonos.js` | Sonos volume on screen: the SSDP search, the subscription to the speaker's volume events (its own event port while on) and the volume bar through `notify.js`. Read only: `GetVolume` and `GetMute` are the only actions it can send. |
 | `wallpapers.js` | Wallpapers: the photo library (uploads and Immich, apart on disk, with an index), the phone page on port 8791 and the Immich sync. |
 | `theme.js`, `themeschema.js` | Themes: `themeschema.js` holds every setting a theme can make, the checks and how a theme becomes CSS variables; `theme.js` reads themes from GitHub and keeps them on the TV. |
 | `voice.js`, `answers.js` | Voice: the microphone, the recogniser, the phone setup page; `answers.js` asks Home Assistant, a language model or your server. |

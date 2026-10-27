@@ -60,6 +60,14 @@ function draw() {
     $('sub').textContent = tr('Network notifications');
     return;
   }
+  if (view === 'sonos' || view === 'sonospick') {
+    $('sub').textContent = tr(
+      view === 'sonos'
+        ? 'Shows the Sonos soundbar’s volume over any app when it changes. It only reads the volume and never changes it.'
+        : 'Choose the speaker'
+    );
+    return;
+  }
   if (view === 'models') {
     $('sub').textContent = tr('Choose the model that answers');
     return;

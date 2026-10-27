@@ -3,7 +3,7 @@
 ## What this changes on a TV
 
 CleanYourTV runs a service **as root** on a rooted TV. It listens on `127.0.0.1:8765` only. A few short-lived pages open on the
-local network on request, and an optional notification endpoint is off by default.
+local network on request, and an optional notification endpoint and the Sonos volume's event port are off by default.
 
 | Port | What | When it is open |
 |---|---|---|
@@ -13,6 +13,7 @@ local network on request, and an optional notification endpoint is off by defaul
 | 8768 and up | Share-log page | Ten minutes, at a random address, with a masked report |
 | 8769 | Voice setup page | Ten minutes, at a random 128-bit address, closed after saving |
 | 8791 | Wallpapers page | While the QR screen is open in the manager app: a 6-digit code shown on the TV, at most an hour; see [Wallpapers](wallpapers.md) |
+| One the system picks | Sonos volume events | Only while **Sonos volume on screen** is on: takes `NOTIFY` from the chosen speaker's address on a random path, nothing else; see [Sonos volume on screen](sonos.md) |
 
 What the setup changes on the TV is listed in [What it changes on the TV](tv-changes.md).
 
@@ -27,6 +28,24 @@ It is plain HTTP: the token can be read by anyone who can watch the traffic on y
 token so a phone can copy them. The address is created when the code is shown (96 bits of randomness), follows the same allow list, and stops
 working after ten minutes, when notifications are switched off or the service restarts. Anyone who sees the code on the screen, or can read
 the traffic, can read the token while it is open; **New token** replaces it.
+
+## Sonos volume on screen
+
+Optional and off by default. It only reads, and only on the local network: no account, nothing sent to the internet.
+
+- **What it sends:** an SSDP search (a multicast `M-SEARCH` for Sonos players) when it looks for the speaker; to the speaker itself
+  (port 1400, plain HTTP as the Sonos app uses it) a `GET` of its description, the UPnP actions `GetVolume` and `GetMute`, and
+  `SUBSCRIBE` / `UNSUBSCRIBE` for its volume events. Those two actions are the only ones in the code; anything else is refused before
+  it is sent, and the tests check that a stand-in speaker receives nothing else. It never changes the volume, mute or any setting.
+- **What it listens to:** while the option is on, one port the system picks, for the speaker's events. It answers only `NOTIFY`
+  requests from the followed speaker's address, on a path with 96 random bits made for each subscription and, once the
+  subscription is confirmed, with its id, at most 256 KB; everything else is refused. A device on the network that can fake the
+  speaker's address and has seen the path can only show a wrong number on the screen. Switching the option off unsubscribes and
+  closes the port.
+- **Search answers:** an answer is used only when it points at its sender's own Sonos description (`/xml/device_description.xml`
+  on the address it came from), never at another address or the TV itself.
+- The speaker's address, id and room are kept in `config.json` (readable by root only); the service's replies give the room and
+  model, not the address.
 
 ## Themes
 

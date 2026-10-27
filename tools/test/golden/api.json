@@ -655,6 +655,22 @@
     "status": 200,
     "type": "application/json"
   },
+  "sonos volume (off)": {
+    "body": {
+      "enabled": false,
+      "error": "",
+      "mode": "",
+      "muted": null,
+      "position": "top-left",
+      "speaker": null,
+      "state": "off",
+      "using": null,
+      "volume": null
+    },
+    "cors": "null",
+    "status": 200,
+    "type": "application/json"
+  },
   "live status": {
     "body": {
       "channels": 0,

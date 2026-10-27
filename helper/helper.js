@@ -58,7 +58,7 @@ const core = {
 };
 loaded.push(core);
 
-// the order matters where one part uses another: voice and the notification port show cards through notify
+// the order matters where one part uses another: voice, the notification port and the Sonos volume show cards through notify
 const notify = load('notify', () => require('./notify').create(ctx));
 if (notify) load('voice', () => require('./voice').create(ctx));
 load('live', () => require('./live').create(ctx));
@@ -68,6 +68,7 @@ load('photofeed', () => require('./photofeed').create(ctx));
 load('watch', () => require('./watch').create(ctx));
 const inputkey = load('inputkey', () => require('./inputkey').create(ctx));
 if (notify) load('notifyapi', () => require('./notifyapi').create(ctx));
+if (notify) load('sonos', () => require('./sonos').create(ctx));
 const manager = load('manager', () => require('./manager').create(ctx));
 load('apps', () => require('./apps').create(ctx));
 load('running', () => require('./running').create(ctx));

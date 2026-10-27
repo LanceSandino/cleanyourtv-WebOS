@@ -529,4 +529,27 @@ related_tests: ["tools/test/updates.test.js", "tools/test/api.test.js"]
 commit_ref: "feature/plex-stremio (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T12:49:33Z"
+
+id: CU-20261027-40
+type: feature
+title: "Sonos soundbar volume on screen (read only, off by default)"
+description: "The owner's TV sends its sound to a Sonos soundbar over HDMI ARC, so LG's volume display shows no number. New
+  helper/sonos.js (Node 8 compatible) finds Sonos players with SSDP, reads each description (id, room, model), and follows the
+  chosen speaker (automatic: the only soundbar, or the only player) with UPnP RenderingControl: GetVolume/GetMute for the current
+  state, then SUBSCRIBE to its volume events on a port the system picks, open only while the option is on, answering only NOTIFY
+  from that speaker's address on a 96-bit random path with the subscription id; renewed at half its time, subscribed again when
+  refused, read once a second when no event arrives in 8 s. GetVolume and GetMute are the only actions it can send (READ_ONLY,
+  anything else refused before sending). A change (not the first reading) launches the notify app with kind volume while the TV's
+  power state is Active and its sound output is not the TV's speakers, one launch at a time with the latest value. notify.js accepts
+  kind volume from the service only; notify/app (1.0.5) draws a pill with a bar and the number beside the card, its own timer, the
+  fill moved with transform, and closes the window only when neither shows. Manager > More > Sonos volume on screen: on/off,
+  Speaker (automatic or from a search), Place on screen, Now (the More row reads /api/sonos/status itself, so /api/manager/status is
+  unchanged). API: GET /api/sonos/status, POST /api/sonos/find, /set. Read-only checks with the owner's real speaker (masked): the module found it from the Mac
+  and from the TV, got live events on the TV, and unsubscribed on stop; the bar itself was not yet shown on the TV."
+impact: medium
+affected_modules: ["helper/sonos.js", "helper/notify.js", "helper/helper.js", "notify/app/index.html", "notify/app/appinfo.json", "manager/src/js/sonos.js", "manager/src/js/menu.js", "manager/src/js/list.js", "manager/src/index.html", "manager/app/index.html", "i18n/en.json", "tools/test/api.test.js", "tools/test/golden/api.json", "docs/sonos.md", "docs/security.md", "docs/api.md", "docs/manager.md", "docs/index.md", "docs/development/internals.md", "zensical.toml", "README.md", "AGENTS.md", "DECISIONS.md"]
+related_tests: ["tools/test/sonos.test.js (stand-in players over HTTP and SSDP: off by default, search and its guards, events, no bar for the first reading, screen and sound-output gating, event-port guards, burst, chosen speaker, polling fallback, moved speaker, renewal, unsubscribe on off, only reads reach a speaker; notify.js kind volume; the notify page's bar and window closing)", "tools/test/api.test.js"]
+commit_ref: "feature/sonos-volume (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T12:59:01Z"
 ```
