@@ -58,7 +58,9 @@ rm /var/run/tvconfig/remote/com.webos.surfacemanager.json && \
 3. **When the events do not arrive.** If no event reaches the TV within eight seconds (a firewall between the two, for example), the
    service reads the volume once a second instead, and only while the screen is on.
 4. **Showing it.** A change starts the hidden notify app (the one that shows [picture notifications](notifications.md)) with the
-   new volume. It does not take the remote.
+   new volume. It does not take the remote. Starting that app takes 1 to 2 seconds on webOS 25, so after the bar fades its window
+   stays open, empty and transparent, for ten minutes: a change in that time shows at once. The first change after a pause of more
+   than ten minutes (or after a restart) still waits for the app to start.
 
 No Sonos account, no internet and no Sonos app are involved: everything stays on your local network.
 

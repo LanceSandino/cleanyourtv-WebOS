@@ -273,7 +273,7 @@ run(async () => {
   ok(await until(() => shows.length === 1), 'a change of the volume shows the bar');
   const s1 = shows[0] || {};
   ok(
-    s1.kind === 'volume' && s1.volume === 12 && s1.muted === false && s1.internal === true && s1.position === 'top-left',
+    s1.kind === 'volume' && s1.volume === 12 && s1.muted === false && s1.internal === true && s1.position === 'top-left' && s1.stay === 600,
     'with the new volume: ' + JSON.stringify(s1)
   );
   await bar.change(12, true);
@@ -495,14 +495,20 @@ run(async () => {
 
   // ---- notify.js: the volume bar is for the service's own parts only
   const notify = req('notify');
-  await notify.show({ kind: 'volume', volume: 140, muted: 1, position: 'middle-center', seconds: 99 }, true);
+  await notify.show({ kind: 'volume', volume: 140, muted: 1, position: 'middle-center', seconds: 99, stay: 99999 }, true);
   const sent = fs.readFileSync(LUNALOG, 'utf8').trim().split('\n').pop();
   let p = {};
   try {
     p = JSON.parse(sent).params;
   } catch (_) {}
   ok(
-    p.kind === 'volume' && p.volume === 100 && p.muted === true && p.position === 'top-left' && p.seconds === 10 && !('title' in p),
+    p.kind === 'volume' &&
+      p.volume === 100 &&
+      p.muted === true &&
+      p.position === 'top-left' &&
+      p.seconds === 10 &&
+      p.stay === 1800 &&
+      !('title' in p),
     'the volume bar is launched with a clamped volume and a known place: ' + JSON.stringify(p)
   );
   const net = await notify.show({ kind: 'volume', volume: 5 });
@@ -597,4 +603,17 @@ run(async () => {
   ok(!closes, 'the window stays while the card still shows');
   advance(8000);
   ok(!card.classList.contains('on') && closes === 1, 'and closes once neither shows');
+  // the service's volume bar keeps the window open, empty, so the next change shows at once
+  launch({ kind: 'volume', volume: 20, muted: false, seconds: 3, position: 'top-left', stay: 600 });
+  advance(4000);
+  ok(!vol.classList.contains('on') && closes === 1, 'with a stay, the window stays open after the bar fades');
+  launch({ title: 'Door', text: 'Someone is there', seconds: 2 });
+  advance(5000);
+  ok(!card.classList.contains('on') && closes === 1, 'also after a card shown meanwhile');
+  launch({ kind: 'volume', volume: 21, muted: false, seconds: 3, position: 'top-left', stay: 600 });
+  ok(vol.classList.contains('on') && els.vnum.textContent === '21', 'the next change shows in the open window');
+  advance(599000);
+  ok(closes === 1, 'each change keeps it open for the whole stay again');
+  advance(2000);
+  ok(closes === 2, 'and it closes once the stay has passed');
 });

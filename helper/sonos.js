@@ -27,7 +27,10 @@ const READ_ONLY = ['GetVolume', 'GetMute'];
 // the Sonos models that take the TV's sound, for the automatic choice (a Sub or the surrounds of a set answer the search too)
 const THEATER = /\b(Playbar|Playbase|Beam|Arc|Ray|Amp)\b/i;
 const MAX_BYTES = 256 * 1024,
-  SECONDS_SHOWN = 3;
+  SECONDS_SHOWN = 3,
+  // the notify app stays open, empty, this long after the bar fades: the next change then shows at once instead of after the app's
+  // 1 to 2 s start (seen on webOS 25 in LG's log: launch to visible 0.9-1.9 s cold, 0.07 s when it was still open)
+  STAY_SECONDS = 600;
 
 // one request to a speaker; resolves {status, headers, body, local} (local: this TV's address on that connection) or {error}, never
 // rejects, always ends (time limit) and reads at most MAX_BYTES
@@ -297,7 +300,14 @@ function create(ctx, opts) {
   let showing = false,
     queued = null;
   function overlay() {
-    queued = { kind: 'volume', volume: st.volume, muted: !!st.muted, seconds: SECONDS_SHOWN, position: cfg().position };
+    queued = {
+      kind: 'volume',
+      volume: st.volume,
+      muted: !!st.muted,
+      seconds: SECONDS_SHOWN,
+      position: cfg().position,
+      stay: STAY_SECONDS,
+    };
     if (showing) return;
     showing = true;
     const next = () => {

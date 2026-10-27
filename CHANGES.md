@@ -607,4 +607,20 @@ related_tests: ["tools/oldchrome.js (home key: homeKey over a menu, plain keepAl
 commit_ref: "feature/home-key-rows (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T14:22:12Z"
+
+id: CU-20261027-42
+type: fix
+title: "The Sonos volume bar shows at once after the first change"
+description: "Lance found the bar slow to appear. LG's log on the TV (read only) showed the notify app's launch taking 0.9 to 1.9 s
+  until its window was visible when the app had to start, and 0.07 s when it was still open; the luna checks of power state and
+  sound output take 30 to 50 ms. The app closed itself about 3.5 s after each bar, so nearly every press waited for a cold start.
+  Volume launches now carry stay (sonos.js: 600 s; notify.js clamps 0 to 1800): the page (notify app 1.0.6) keeps its window open,
+  empty, until the stay has passed since the last volume launch, and only then closes; a card shown meanwhile does not close it.
+  Notifications without stay close as before. Not yet measured on the TV."
+impact: low
+affected_modules: ["helper/sonos.js", "helper/notify.js", "notify/app/index.html", "notify/app/appinfo.json", "docs/sonos.md"]
+related_tests: ["tools/test/sonos.test.js (the bar's launch carries stay 600; notify.js clamps stay; the page keeps the window open after the bar and a card, a change shows in it, it closes once the stay has passed)"]
+commit_ref: "feature/sonos-fast (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T14:15:25Z"
 ```
