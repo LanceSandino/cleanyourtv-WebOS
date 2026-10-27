@@ -52,9 +52,21 @@ run(async () => {
     status: () => ({ configured: famCalls.length > 0, host: 'photos.lan', photos: 7 }),
     setup: c => (famCalls.push(c), { configured: true, photos: 7 }),
     disconnect: () => (famCalls.push('disconnect'), { configured: false }),
+    ids: () => famIds.slice(),
+    send: (res, id) => (res.writeHead(200, { 'content-type': 'image/jpeg' }), res.end('feed ' + id)),
   };
+  let famIds = [];
   const wp = W.create({ config, feature: n => (n === 'photofeed' ? famStub : null) });
   let r = await call(wp, '/api/wallpapers/status');
+  // the photo feed's photos are Wallpapers photos too (f/<id>), served through the feed
+  famIds = ['a1b2', 'c3d4'];
+  const withFeed = await call(wp, '/api/wallpapers/list');
+  const fphoto = await call(wp, '/api/wallpapers/photo/f/c3d4');
+  ok(
+    withFeed.j.photos.join() === 'f/a1b2,f/c3d4' && /^2:/.test(withFeed.j.stamp) && fphoto.out === 'feed c3d4',
+    "the photo feed's photos are listed as Wallpapers photos and served through the feed"
+  );
+  famIds = [];
   ok(r.j.total === 0 && r.j.size === '4k' && !r.j.immich.configured, 'no photos at first; the picture size is 4K');
 
   // ---- the phone page ----

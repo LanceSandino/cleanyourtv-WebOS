@@ -20,6 +20,11 @@ no photos in the library, Home looks as before. The theme **Still** switches the
 
 ## Adding photos
 
+The photos of a [photo feed](screensaver.md#where-the-photos-come-from) (for example the family calendar's) are Wallpapers photos
+too, as soon as the feed is set up: nothing to add here. They are fetched one at a time when shown and do not count towards the
+150 MB below.
+
+
 In the manager app, **Wallpapers** > **Manage from your phone** shows a QR code and a 6-digit code. Scan it with a phone on the
 same Wi-Fi. The page has two parts:
 

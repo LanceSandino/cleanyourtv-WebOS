@@ -174,8 +174,9 @@ function create(ctx) {
       // secs: how often the photo changes while Home is shown, in seconds (0: each time Home opens); "every" (minutes) came before it
       const secs = typeof b.wall.secs === 'number' ? b.wall.secs : typeof b.wall.every === 'number' ? b.wall.every * 60 : 900;
       out.wall = { on: b.wall.on === true, secs: WALL_SECS.indexOf(secs) >= 0 ? secs : 900 };
-      // one chosen photo (Customise > Wallpapers > Choose a photo): an id as the wallpapers list names it, u/<id> or i/<asset id>
-      if (typeof b.wall.pick === 'string' && /^[ui]\/[0-9a-f-]{16,36}$/i.test(b.wall.pick)) out.wall.pick = b.wall.pick;
+      // one chosen photo (Customise > Wallpapers > Choose a photo): an id as the wallpapers list names it, u/<id>, i/<asset id> or f/<feed id>
+      if (typeof b.wall.pick === 'string' && /^([ui]\/[0-9a-f-]{16,36}|f\/[A-Za-z0-9_-]{1,64})$/i.test(b.wall.pick))
+        out.wall.pick = b.wall.pick;
     }
     // the screensaver: on or off, when it starts, how long a photo stays, the clock over the photos
     if (b.saver && typeof b.saver === 'object') {

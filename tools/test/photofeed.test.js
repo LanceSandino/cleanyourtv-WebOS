@@ -168,14 +168,24 @@ run(async () => {
   await f.refresh();
   ok(!fs.existsSync(path.join(cacheDir, 'p2.jpg')) && f.status().photos === 2, 'a photo hidden on the server is removed from the TV');
 
-  // a bigger library: the TV keeps only the cache's worth
+  // a bigger library shown for a long time: photos are shown from memory, and the flash storage gets only the first few (then at most
+  // one new photo every half hour), so a long evening of photos does not wear it
   ids = [];
-  for (let i = 0; i < fam.CACHE_FILES + 12; i++) ids.push('q' + i);
+  for (let i = 0; i < 42; i++) ids.push('q' + i);
   await f.refresh();
+  const before42 = seen.photos.length;
   for (let i = 0; i < ids.length; i++) await call(f, '/api/photofeed/next');
   await new Promise(r => setTimeout(r, 300));
   const files = fs.readdirSync(cacheDir).filter(n => /\.jpg$/.test(n));
-  ok(files.length <= fam.CACHE_FILES, 'never more than ' + fam.CACHE_FILES + ' photos on the TV (' + files.length + ')');
+  ok(seen.photos.length - before42 >= 42, 'all 42 photos were shown');
+  ok(
+    files.length <= fam.DISK_WARM + 1,
+    'only a few of them were written to the storage (' +
+      files.length +
+      ' files; at most ' +
+      fam.DISK_WARM +
+      ' at once, then one per half hour)'
+  );
 
   // a photo the server cannot convert (422) is skipped, like one that is gone (404)
   ids = ids.concat(['broken']);
@@ -191,10 +201,9 @@ run(async () => {
   down = true;
   const away = [];
   for (let i = 0; i < 12; i++) away.push((await call(f, '/api/photofeed/next')).j);
-  const onTv = fs.readdirSync(cacheDir).map(n => n.replace(/\.jpg$/, ''));
   ok(
-    away.every(x => x && x.id && onTv.indexOf(x.id) >= 0) && away.some(x => x.offline),
-    'with the server away the screensaver goes on with the photos on the TV'
+    away.every(x => x && x.id && ids.indexOf(x.id) >= 0) && away.some(x => x.offline),
+    'with the server away the screensaver goes on with the photos in memory and on the storage'
   );
   down = false;
 
@@ -238,18 +247,44 @@ run(async () => {
   );
 
   // offline with part of the library on the TV: what is shown never repeats at once, also when the next photo cannot be fetched
+  // (no memory here, so a3 is gone once its file is)
   ids = ['a1', 'a2', 'a3'];
-  await f.setup(code({ u: url, t: TOKEN, ca: k.ca }));
-  for (let i = 0; i < 3; i++) await call(f, '/api/photofeed/next');
+  const g = fam.create({ config, feature: () => null, memFiles: 0 });
+  await g.setup(code({ u: url, t: TOKEN, ca: k.ca }));
+  for (let i = 0; i < 3; i++) await call(g, '/api/photofeed/next');
   await new Promise(r => setTimeout(r, 200));
   fs.unlinkSync(path.join(cacheDir, 'a3.jpg'));
   down = true;
   const seq = [];
-  for (let i = 0; i < 24; i++) seq.push((await call(f, '/api/photofeed/next')).j.id);
+  for (let i = 0; i < 24; i++) seq.push((await call(g, '/api/photofeed/next')).j.id);
   down = false;
   ok(
     seq.every((x, i) => x && (i === 0 || x !== seq[i - 1])),
     'offline with part of the library on the TV: never the same photo twice in a row (' + seq.join(',') + ')'
+  );
+
+  // the photo chosen as the wallpaper stays on the storage; with the storage nearly full nothing else is written
+  const tight = fam.create({ config, feature: () => null, freeKb: () => 1024 });
+  ids = ['w1', 'w2', 'w3'];
+  await tight.setup(code({ u: url, t: TOKEN, ca: k.ca }));
+  config.update('test', c => {
+    c.wall = { on: true, secs: 900, pick: 'f/w2' };
+  });
+  for (let i = 0; i < 3; i++) await call(tight, '/api/photofeed/next');
+  await new Promise(r => setTimeout(r, 200));
+  ok(!fs.readdirSync(cacheDir).filter(n => /\.jpg$/.test(n)).length, 'with the storage nearly full no photo is written to it');
+  const roomy = fam.create({ config, feature: () => null, diskEveryMs: 0, freeKb: () => 4e6 });
+  await roomy.setup(code({ u: url, t: TOKEN, ca: k.ca }));
+  ids = [];
+  for (let i = 0; i < 30; i++) ids.push('z' + i);
+  ids.push('w2');
+  await roomy.refresh();
+  for (let i = 0; i < ids.length; i++) await call(roomy, '/api/photofeed/next');
+  await new Promise(r => setTimeout(r, 200));
+  const kept = fs.readdirSync(cacheDir).filter(n => /\.jpg$/.test(n));
+  ok(
+    kept.indexOf('w2.jpg') >= 0 && kept.length <= fam.DISK_FILES + 1,
+    'the chosen wallpaper stays on the storage, and the offline set keeps to ' + fam.DISK_FILES + ' photos (' + kept.length + ')'
   );
   srv.close();
 });

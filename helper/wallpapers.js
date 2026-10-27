@@ -306,10 +306,14 @@ function create(ctx) {
   }
 
   // ---- what the TV shows ----
+  // the photo feed (photofeed.js), when one is set up: its photos are Wallpapers photos too, fetched one at a time when shown
+  const feedPart = () => (ctx.feature ? ctx.feature('photofeed') : null);
   function list() {
+    const f = feedPart();
     return idx()
       .upload.map(u => 'u/' + u.id)
-      .concat(immichList().map(id => 'i/' + id));
+      .concat(immichList().map(id => 'i/' + id))
+      .concat(f ? f.ids().map(id => 'f/' + id) : []);
   }
   // a number that changes whenever the set of photos changes: the launcher reads the list again then
   const stamp = () => {
@@ -350,6 +354,10 @@ function create(ctx) {
     return '';
   }
   function sendPhoto(res, src, id, cache) {
+    if (src === 'f') {
+      const f = feedPart();
+      return f ? f.send(res, id) : web.notFound(res);
+    }
     const f = photoFile(src, id);
     if (!f || !fs.existsSync(f)) return web.notFound(res);
     res.writeHead(200, { 'content-type': MIME[f.split('.').pop()] || 'image/jpeg', 'cache-control': cache || 'max-age=86400' });
@@ -485,6 +493,8 @@ function create(ctx) {
     const json = (o, c) => web.json(res, o, c);
     const m = /^\/api\/wallpapers\/photo\/([ui])\/([0-9a-f-]{16,36})$/i.exec(u);
     if (m) return sendPhoto(res, m[1], m[2]);
+    const mf = /^\/api\/wallpapers\/photo\/f\/([A-Za-z0-9_-]{1,64})$/.exec(u);
+    if (mf) return sendPhoto(res, 'f', mf[1]);
     if (u === '/api/wallpapers/status') return json(status());
     if (u === '/api/wallpapers/list') return json({ photos: list(), stamp: stamp() });
     if (req.method !== 'POST') return web.notFound(res);

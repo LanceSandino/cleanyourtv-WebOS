@@ -3,9 +3,11 @@
 // one photo as JPEG, both with Authorization: Bearer <token>. It is set up with the server's setup code, "cyfp1." + base64url JSON
 // {u: the https address, t: the token, ca: the server's root certificate as base64 DER}; with ca, that certificate is the only one
 // trusted for the server.
-// The TV never holds the library: the ids are read every hour, and a photo is fetched when the screensaver is about to show it (and
-// the one after it) into a small cache (CACHE_FILES photos, CACHE_BYTES), the least recently shown leaving first. A photo hidden or
-// removed on the server leaves the cache at the next read of the ids. The shuffled order is saved with the ids, so a restart goes on
+// The TV never holds the library: the ids are read every hour, and a photo is fetched when it is about to be shown (and the one after
+// it). Photos are kept in memory (MEM_FILES) to be shown; only a small offline set goes to the TV's flash storage (DISK_FILES,
+// DISK_BYTES), filled slowly (the first DISK_WARM at once, then at most one new photo every DISK_EVERY_MS) and only while the storage
+// has MIN_FREE_KB free, so a screensaver changing photos all evening does not wear the flash. A photo chosen as the wallpaper
+// (cfg.wall.pick 'f/<id>') is always kept on disk. A photo hidden or removed on the server leaves memory and disk at the next read. The shuffled order is saved with the ids, so a restart goes on
 // where it was instead of starting a new round. The token stays in config.json (root only), never returned.
 //   GET  /api/photofeed/status        {configured, host, tokenHint, pinned, photos, cached, lastSync, tried, error}
 //   GET  /api/photofeed/next          {id}: the photo to show next, already in the cache ({id: null, reason} when there is none)
@@ -20,12 +22,17 @@ const P = require('./paths'),
   nc = require('./netcompat'),
   { URL } = nc;
 const { imageType } = require('./wallpapers');
+const diag = require('./diag');
 
 const DIR = P.D + '/photofeed',
   CACHE = DIR + '/cache',
   STATE = DIR + '/list.json';
-const CACHE_FILES = 30,
-  CACHE_BYTES = 40 * 1024 * 1024,
+const MEM_FILES = 8,
+  DISK_FILES = 20,
+  DISK_BYTES = 24 * 1024 * 1024,
+  DISK_WARM = 5,
+  DISK_EVERY_MS = 30 * 60 * 1000,
+  MIN_FREE_KB = 300 * 1024,
   PHOTO_MAX = 8 * 1024 * 1024,
   WIDTH = 1920,
   LIST_MS = 3600 * 1000;
@@ -142,14 +149,16 @@ function create(ctx) {
       fs.unlinkSync(f);
     } catch (_) {}
   };
-  // the cache within its limits: the least recently shown leave first, never the ones in keep
-  function trim(keep) {
+  // the offline set within its limits: the oldest written leave first, never the chosen wallpaper
+  function trim() {
     let n = 0,
       bytes = 0;
+    const pin = pinned();
     for (const c of cached()) {
+      if (c.id === pin) continue;
       n++;
       bytes += c.size;
-      if ((n > CACHE_FILES || bytes > CACHE_BYTES) && keep.indexOf(c.id) < 0) unlink(fileOf(c.id));
+      if (n > DISK_FILES || bytes > DISK_BYTES) unlink(fileOf(c.id));
     }
   }
   // photos that are no longer in the list (hidden or removed on the server) leave the TV
@@ -157,6 +166,7 @@ function create(ctx) {
     const ids = {};
     for (const id of state().ids) ids[id] = 1;
     for (const c of cached()) if (!ids[c.id]) unlink(fileOf(c.id));
+    mem = mem.filter(x => ids[x.id]);
   }
 
   const headers = (f, extra) =>
@@ -198,7 +208,8 @@ function create(ctx) {
               now = {};
             for (const id of s.ids) was[id] = 1;
             for (const id of got.ids) now[id] = 1;
-            queue = queue.filter(id => now[id]).concat(shuffled(got.ids.filter(id => !was[id])));
+            // (no round going yet: the next one takes every photo)
+            queue = queue.length ? queue.filter(id => now[id]).concat(shuffled(got.ids.filter(id => !was[id]))) : [];
             s.ids = got.ids;
             s.etag = got.etag;
             purge();
@@ -254,17 +265,73 @@ function create(ctx) {
     return queue[0] || '';
   }
 
-  // a photo in the cache: downloaded at WIDTH once, then shown from there
+  // ---- where a photo is kept: memory to show it, the flash storage only for a small offline set ----
+  let mem = [], // [{id, buf}], the most recently used first
+    lastDiskWrite = 0,
+    freeKb = -1, // free space of the storage, -1 while unknown
+    freeAt = 0;
+  const memFiles = ctx.memFiles !== undefined ? ctx.memFiles : MEM_FILES,
+    diskEvery = ctx.diskEveryMs !== undefined ? ctx.diskEveryMs : DISK_EVERY_MS;
+  // the photo chosen as the wallpaper, if it is one of the feed's: kept on disk so it shows after a restart with the server away
+  const pinned = () => {
+    const w = config.get().wall,
+      m = /^f\/([A-Za-z0-9_-]{1,64})$/.exec((w && w.pick) || '');
+    return m ? m[1] : '';
+  };
+  function memGet(id) {
+    for (let k = 0; k < mem.length; k++)
+      if (mem[k].id === id) {
+        const e = mem.splice(k, 1)[0];
+        mem.unshift(e);
+        return e.buf;
+      }
+    return null;
+  }
+  function memPut(id, buf) {
+    mem = [{ id, buf }].concat(mem.filter(x => x.id !== id)).slice(0, memFiles);
+  }
+  // free space of the storage, looked at now and then (df; the Node of webOS 5 to 25 has no statfs)
+  function checkFree() {
+    if (ctx.freeKb) return (freeKb = ctx.freeKb());
+    if (Date.now() - freeAt < 3600 * 1000) return freeKb;
+    freeAt = Date.now();
+    diag.execFile('df', ['-k', P.D], { timeout: 5000 }, (e, out) => {
+      const row =
+        String(out || '')
+          .trim()
+          .split('\n')
+          .pop() || '';
+      const avail = +row.split(/\s+/)[3];
+      freeKb = !e && avail >= 0 ? avail : -1;
+    });
+    return freeKb;
+  }
+  // onto the storage only the first few, then one now and then, the chosen wallpaper always, and never with the storage nearly full
+  function maybeDisk(id, buf) {
+    const pin = id === pinned();
+    if (!pin && cached().length >= DISK_WARM && Date.now() - lastDiskWrite < diskEvery) return;
+    const free = checkFree();
+    if (free >= 0 && free < MIN_FREE_KB) return;
+    try {
+      nc.mkdirp(CACHE);
+      fs.writeFileSync(fileOf(id) + '.part', buf);
+      fs.renameSync(fileOf(id) + '.part', fileOf(id));
+      if (!pin) lastDiskWrite = Date.now();
+      trim();
+    } catch (e) {
+      console.error('photo feed: could not keep a photo on disk: ' + e.message);
+    }
+  }
+  // a photo to show: from memory, from the offline set, or downloaded at WIDTH (one download at a time for each photo)
   const inflight = {};
   function ensure(id) {
-    const file = fileOf(id);
-    if (fs.existsSync(file)) {
-      const now = new Date();
-      try {
-        fs.utimesSync(file, now, now);
-      } catch (_) {}
-      return Promise.resolve(file);
-    }
+    const m = memGet(id);
+    if (m) return Promise.resolve(m);
+    try {
+      const b = fs.readFileSync(fileOf(id));
+      memPut(id, b);
+      return Promise.resolve(b);
+    } catch (_) {}
     if (inflight[id]) return inflight[id];
     const f = feedCfg();
     if (!f) return Promise.reject(new Error('not set up'));
@@ -275,11 +342,9 @@ function create(ctx) {
       )
       .then(r => {
         if (imageType(r.body) !== 'jpg') throw new Error('the photo feed sent something that is not a JPEG');
-        nc.mkdirp(CACHE);
-        fs.writeFileSync(file + '.part', r.body);
-        fs.renameSync(file + '.part', file);
-        trim([id, last]);
-        return file;
+        memPut(id, r.body);
+        maybeDisk(id, r.body);
+        return r.body;
       });
     inflight[id] = p.then(
       x => {
@@ -319,9 +384,10 @@ function create(ctx) {
       }
     }
     // the server away: what is in the cache keeps the screensaver going, and the order does not bring that photo straight back
-    const c = cached()
+    const c = mem
       .map(x => x.id)
-      .filter(x => x !== shown);
+      .concat(cached().map(x => x.id))
+      .filter((x, k, a) => x !== shown && a.indexOf(x) === k);
     if (c.length) {
       last = c[nc.randomInt(0, c.length)];
       if (queue[0] === last) {
@@ -346,7 +412,8 @@ function create(ctx) {
       tokenHint: f ? '…' + f.token.slice(-4) : '',
       pinned: !!(f && f.ca),
       photos: f ? s.ids.length : 0,
-      cached: f ? cached().length : 0,
+      cached: f ? cached().length : 0, // on the storage (the offline set)
+      inMemory: f ? mem.length : 0,
       lastSync: s.ok || 0,
       tried: s.tried || 0,
       error: s.error || '',
@@ -369,6 +436,7 @@ function create(ctx) {
       c.photoFeed = { url: f.url, token: f.token, ca: f.ca };
     });
     for (const x of cached()) unlink(fileOf(x.id));
+    mem = [];
     st = { ids: got.ids, etag: got.etag, ok: Date.now(), tried: Date.now(), error: '' };
     queue = [];
     last = '';
@@ -381,6 +449,7 @@ function create(ctx) {
       delete c.photoFeed;
     });
     for (const x of cached()) unlink(fileOf(x.id));
+    mem = [];
     unlink(STATE);
     st = null;
     queue = [];
@@ -391,9 +460,9 @@ function create(ctx) {
 
   function send(res, id) {
     return ensure(id).then(
-      file => {
-        res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'private, max-age=86400' });
-        fs.createReadStream(file).pipe(res);
+      buf => {
+        res.writeHead(200, { 'content-type': 'image/jpeg', 'content-length': buf.length, 'cache-control': 'private, max-age=86400' });
+        res.end(buf);
       },
       () => web.notFound(res)
     );
@@ -421,7 +490,9 @@ function create(ctx) {
     }
   }
 
-  return { name: 'photofeed', prefix: '/api/photofeed/', handle, start, status, count, setup, disconnect, refresh, next };
+  // the feed's photos are Wallpapers photos too (wallpapers.js lists them as f/<id> and serves them through send)
+  const ids = () => (feedCfg() ? state().ids.slice() : []);
+  return { name: 'photofeed', prefix: '/api/photofeed/', handle, start, status, count, setup, disconnect, refresh, next, ids, send };
 }
 
-module.exports = { create, parseCode, CACHE_FILES, CACHE_BYTES };
+module.exports = { create, parseCode, MEM_FILES, DISK_FILES, DISK_BYTES, DISK_WARM, MIN_FREE_KB };

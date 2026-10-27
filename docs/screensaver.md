@@ -27,9 +27,14 @@ TV asks Home at all depends on the firmware: if LG's screensaver still appears, 
 1. A **photo feed**, when one is set up (below).
 2. Otherwise the [Wallpapers](wallpapers.md) photos (phone uploads and Immich), in a shuffled order.
 
+A photo feed's photos are Wallpapers photos as well: Customise > Wallpapers counts them, shows them behind Home and lets you choose
+one of them as your wallpaper.
+
 The TV never holds a whole photo library. It reads the feed's list of photo ids every hour and fetches a photo, at 1920 pixels,
-only when the screensaver is about to show it (and the one after it). At most 30 photos (40 MB) stay on the TV, the least recently
-shown leaving first. Photos come in a shuffled round: every photo once before any comes back, never the same one twice in a row.
+only when it is about to be shown (and the one after it). Photos are shown from memory (the last 8); only a small offline set goes
+to the TV's storage: the first 5 at once, then at most one new photo every half hour, at most 20 photos (24 MB), and nothing while
+the storage has less than 300 MB free. A screensaver that changes photos all evening therefore hardly writes to the TV's flash
+memory. A photo from the feed chosen as the wallpaper is always kept. Photos come in a shuffled round: every photo once before any comes back, never the same one twice in a row.
 The round is saved with the list, so after a restart the TV goes on where it was; a photo added on the server joins the current
 round, and a photo hidden or deleted on the server leaves the TV at the next read of the list. With the server away, the photos
 already on the TV keep the screensaver going.
