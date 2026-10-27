@@ -21,6 +21,7 @@ module.exports = {
   LIVE: env.CYTV_LIVE_DIR || D + '/live',
   THEMES: env.CYTV_THEMES || path.join(__dirname, 'themes'),
   VOICE: D + '/voice',
+  WEATHER: D + '/weather.json', // the weather card's last answers (weather.js)
   HOOK: D + '/inputhook',
   APP: D + '/app',
   HOME_OVERLAY: D + '/home-overlay', // what stage-home.sh mounts over LG's Home: a copy of app/ with LG's appinfo.json

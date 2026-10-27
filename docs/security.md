@@ -108,6 +108,11 @@ Plex and Stremio are read only once you link them there, with their own TV sign-
 - The keys are never returned by the service: not in `/api/apps`, not in `/api/watch/accounts` (linked or not, and the server's name).
   **Unlink** forgets them; the access stays listed in your Plex account (Authorized Devices) or Stremio account until you remove it
   there.
+## Weather card
+
+Only with a weather card on Home. The service asks `api.open-meteo.com` over HTTPS for the weather at the card's place, at most every
+30 minutes, and keeps the last answer in `weather.json`; the request carries the place's coordinates (rounded to about a kilometre) and
+nothing else. Searching a place on the phone page sends the name you type to `geocoding-api.open-meteo.com`. No account or key.
 
 ## Voice
 
