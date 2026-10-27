@@ -201,13 +201,6 @@ const SCHEMA = [
   ],
   ['effects.speed', 'num', [0, 2], 1, 'Animation speed multiplier; 0 switches the animations off.'],
   [
-    'effects.particles',
-    'enum',
-    ['none', 'snow', 'leaves', 'bats', 'confetti', 'hearts', 'stars'],
-    'none',
-    'A few light shapes drifting over the background (behind the apps), for a season or a holiday; off when `effects.speed` is 0.',
-  ],
-  [
     'effects.wallpaper',
     'file',
     null,
@@ -215,6 +208,14 @@ const SCHEMA = [
     'A file name in `themes/wallpapers/`: `.jpg`, `.png` or `.webp`, at most 1.5 MB; drawn at 1920 x 1080.',
   ],
   ['effects.wallpaperDim', 'num', [0, 0.9], 0.4, 'How far the wallpaper is darkened with the background colour.'],
+  [
+    'effects.overlay',
+    'file',
+    null,
+    '',
+    'A decorative frame: a `.png` or `.webp` with transparency in the theme folder, at most 1.5 MB, drawn at 1920 x 1080 over the ' +
+      'background, the wallpaper and your photos and under the clock, the buttons and the apps (the holiday themes use one). It is still: nothing in it moves.',
+  ],
 ];
 const DEFAULTS = {};
 for (const r of SCHEMA) DEFAULTS[r[0]] = r[3];
@@ -302,6 +303,16 @@ function normalize(raw, id, base, wallDir) {
       }
     } catch (_) {}
   } else if (w === '') v['effects.wallpaper'] = '';
+  // a decorative frame over the background (png or webp: it needs transparency), kept with the folder that holds it like the wallpaper
+  const ovl = getPath(raw, 'effects.overlay');
+  if (typeof ovl === 'string' && FILE.test(ovl) && /\.(png|webp)$/i.test(ovl)) {
+    try {
+      if (imageOk(fs.readFileSync(path.join(wallDir || path.join(dir(), id), ovl)), ovl, MAX_WALLPAPER)) {
+        v['effects.overlay'] = ovl;
+        v.overlayTheme = id;
+      }
+    } catch (_) {}
+  } else if (ovl === '') v['effects.overlay'] = '';
   // a typeface: kept with the id of the theme whose folder holds it, so a theme that extends this one uses the same file
   const f = getPath(raw, 'type.fontFile');
   if (typeof f === 'string' && FONT_FILE.test(f)) {
@@ -498,7 +509,6 @@ function resolve(t, accent) {
   if (v['grid.header'] === 'fade') attrs.hdr = 'fade';
   if (v['tile.focus'] === 'glass') attrs.focus = 'glass';
   if (v['effects.glowShape'] === 'center') attrs.glow = 'center';
-  if (v['effects.particles'] !== 'none' && v['effects.speed'] > 0) attrs.particles = v['effects.particles'];
   const w = v['effects.wallpaper'];
   const out = {
     id: t.id,
@@ -518,6 +528,8 @@ function resolve(t, accent) {
     nightRgb: night.join(','),
     wallpaper: w ? { id: v.wallTheme || t.id, file: w, dim: v['effects.wallpaperDim'] } : null,
   };
+  // only a theme with a frame has this key, so the replies for the other themes stay as they were
+  if (v['effects.overlay']) out.frame = { id: v.overlayTheme || t.id, file: v['effects.overlay'] }; // (out.overlay is the grid mode)
   // only a theme with slots has this key (the same reason)
   if (v.slots && v.slots.length)
     out.slots = v.slots.map(sl => {

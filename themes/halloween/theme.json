@@ -1,20 +1,20 @@
 {
  "name": "Halloween",
  "author": "CleanYourTV",
- "description": "Pumpkin orange on a night purple, with a few bats flying past. Applied by itself from 15 to 31 October with Holiday themes on.",
+ "description": "Slime green on a teal night, with cobwebs, bats and jack-o’-lanterns around the edges. Applied by itself from 15 to 31 October with Holiday themes on.",
  "holiday": {
   "from": "10-15",
   "to": "10-31"
  },
  "colors": {
-  "night": "#0b0610",
-  "panel": "#1d1024",
-  "ink": "#fff1e6",
-  "accent": "#ff7a18"
+  "night": "#021316",
+  "panel": "#0a2629",
+  "ink": "#eafff6",
+  "accent": "#4dff9a"
  },
  "effects": {
   "glowColor": "accent",
   "glow": 0.85,
-  "particles": "bats"
+  "overlay": "frame.png"
  }
 }

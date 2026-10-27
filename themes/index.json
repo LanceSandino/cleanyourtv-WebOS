@@ -26,7 +26,7 @@
    "id": "independence-day",
    "name": "Fourth of July",
    "author": "CleanYourTV",
-   "description": "Red, white and blue, with stars twinkling. Applied by itself from 1 to 4 July with Holiday themes on.",
+   "description": "Red, white and blue, with bunting along the top and still fireworks. Applied by itself from 1 to 4 July with Holiday themes on.",
    "preview": "independence-day/preview.jpg",
    "holiday": {
     "from": "07-01",
@@ -44,7 +44,7 @@
    "id": "halloween",
    "name": "Halloween",
    "author": "CleanYourTV",
-   "description": "Pumpkin orange on a night purple, with a few bats flying past. Applied by itself from 15 to 31 October with Holiday themes on.",
+   "description": "Slime green on a teal night, with cobwebs, bats and jack-o’-lanterns around the edges. Applied by itself from 15 to 31 October with Holiday themes on.",
    "preview": "halloween/preview.jpg",
    "holiday": {
     "from": "10-15",
@@ -55,7 +55,7 @@
    "id": "harvest",
    "name": "Harvest",
    "author": "CleanYourTV",
-   "description": "Warm amber and brown, with autumn leaves drifting down, for Thanksgiving. Applied by itself from 20 to 30 November with Holiday themes on.",
+   "description": "Warm amber and brown for Thanksgiving, with autumn leaves and pumpkins in the corners. Applied by itself from 20 to 30 November with Holiday themes on.",
    "preview": "harvest/preview.jpg",
    "holiday": {
     "from": "11-20",
@@ -94,7 +94,7 @@
    "id": "new-year",
    "name": "New Year",
    "author": "CleanYourTV",
-   "description": "Gold on midnight blue, with confetti. Applied by itself from 27 December to 2 January with Holiday themes on.",
+   "description": "Gold on midnight blue, with gold sparkles and still fireworks. Applied by itself from 27 December to 2 January with Holiday themes on.",
    "preview": "new-year/preview.jpg",
    "holiday": {
     "from": "12-27",
@@ -126,7 +126,7 @@
    "id": "valentines",
    "name": "Valentine's",
    "author": "CleanYourTV",
-   "description": "Rose pink on deep red, with hearts rising. Applied by itself from 7 to 14 February with Holiday themes on.",
+   "description": "Rose pink on deep red, with soft hearts in the corners. Applied by itself from 7 to 14 February with Holiday themes on.",
    "preview": "valentines/preview.jpg",
    "holiday": {
     "from": "02-07",
@@ -144,7 +144,7 @@
    "id": "winter-holidays",
    "name": "Winter holidays",
    "author": "CleanYourTV",
-   "description": "Pine green and berry red, with snow falling. Applied by itself from 1 to 26 December with Holiday themes on.",
+   "description": "Pine green and berry red, with a string of lights along the top and snowflakes. Applied by itself from 1 to 26 December with Holiday themes on.",
    "preview": "winter-holidays/preview.jpg",
    "holiday": {
     "from": "12-01",

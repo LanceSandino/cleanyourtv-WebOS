@@ -415,9 +415,12 @@ run(async () => {
       r.j.holidays.active === 'halloween' &&
       fs.existsSync(path.join(tlocal, 'halloween', 'theme.json')) &&
       hv.id === 'halloween' &&
-      hv.attrs.particles === 'bats' &&
-      hv.vars['--acc'] === '#ff7a18',
-    "switched on in Halloween's dates: its theme is downloaded and applied, with its bats and colours"
+      hv.frame &&
+      hv.frame.id === 'halloween' &&
+      hv.frame.file === 'frame.png' &&
+      fs.existsSync(path.join(tlocal, 'halloween', 'frame.png')) &&
+      hv.vars['--acc'] === '#4dff9a',
+    "switched on in Halloween's dates: its theme and its still frame are downloaded and applied, with its colours"
   );
   ok(
     hv.vars['--cols'] === bloomRv.vars['--cols'] &&

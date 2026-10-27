@@ -1,7 +1,7 @@
 {
  "name": "New Year",
  "author": "CleanYourTV",
- "description": "Gold on midnight blue, with confetti. Applied by itself from 27 December to 2 January with Holiday themes on.",
+ "description": "Gold on midnight blue, with gold sparkles and still fireworks. Applied by itself from 27 December to 2 January with Holiday themes on.",
  "holiday": {
   "from": "12-27",
   "to": "01-02"
@@ -15,6 +15,6 @@
  "effects": {
   "glowColor": "accent",
   "glow": 0.85,
-  "particles": "confetti"
+  "overlay": "frame.png"
  }
 }

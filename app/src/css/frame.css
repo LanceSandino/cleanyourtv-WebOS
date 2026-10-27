@@ -1,0 +1,11 @@
+/* a theme's frame (frame.js, effects.overlay): a still, transparent picture over the wallpaper and the photos, under the clock, the
+   buttons and the apps; drawn at 1920 x 1080 whatever its own size */
+#thframe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 1080px;
+  background: center / 1920px 1080px no-repeat;
+  pointer-events: none;
+}

@@ -1,7 +1,7 @@
 {
  "name": "Fourth of July",
  "author": "CleanYourTV",
- "description": "Red, white and blue, with stars twinkling. Applied by itself from 1 to 4 July with Holiday themes on.",
+ "description": "Red, white and blue, with bunting along the top and still fireworks. Applied by itself from 1 to 4 July with Holiday themes on.",
  "holiday": {
   "from": "07-01",
   "to": "07-04"
@@ -16,6 +16,6 @@
  "effects": {
   "glowColor": "accent",
   "glow": 0.8,
-  "particles": "stars"
+  "overlay": "frame.png"
  }
 }

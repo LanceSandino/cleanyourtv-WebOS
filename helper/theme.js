@@ -250,6 +250,13 @@ function create(ctx) {
       wall = await fetchBuf(base() + '/' + id + '/' + w, MAX_WALLPAPER, 25000);
       if (!imageOk(wall, w, MAX_WALLPAPER)) throw new Error('the wallpaper is not an image of that type');
     }
+    const ov = getPath(raw, 'effects.overlay');
+    let frame = null;
+    if (typeof ov === 'string' && ov !== '') {
+      if (!FILE.test(ov) || !/\.(png|webp)$/i.test(ov)) throw new Error('the frame name is not valid');
+      frame = await fetchBuf(base() + '/' + id + '/' + ov, MAX_WALLPAPER, 25000);
+      if (!imageOk(frame, ov, MAX_WALLPAPER)) throw new Error('the frame is not an image of that type');
+    }
     const f = getPath(raw, 'type.fontFile');
     let font = null;
     if (typeof f === 'string' && f !== '') {
@@ -261,6 +268,7 @@ function create(ctx) {
       had = fs.existsSync(path.join(d, 'theme.json'));
     mkdirs(d);
     if (wall) writeAtomic(path.join(d, w), wall);
+    if (frame) writeAtomic(path.join(d, ov), frame);
     if (font) writeAtomic(path.join(d, f), font);
     writeAtomic(path.join(d, 'theme.json'), JSON.stringify(raw));
     cache = null;
@@ -349,7 +357,8 @@ function create(ctx) {
     m = /^wallpaper\/([a-z0-9-]{1,30})\/([\w-]{1,40}\.(?:jpg|png|webp))$/.exec(act);
     if (m) {
       const t = load()[m[1]];
-      if (!t || t.v['effects.wallpaper'] !== m[2]) {
+      // a theme's wallpaper or its frame (effects.overlay), from that theme's folder
+      if (!t || (t.v['effects.wallpaper'] !== m[2] && t.v['effects.overlay'] !== m[2])) {
         res.writeHead(404);
         return res.end();
       }

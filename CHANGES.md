@@ -759,3 +759,22 @@ commit_ref: "feature/wallpaper-fit (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T19:49:01Z"
 ```
+
+```yaml
+id: CU-20261027-36
+type: change
+title: "Holiday themes get still frames instead of moving shapes"
+description: "The owner asked for a spooky overlay like a Disney Halloween banner or the family calendar's seasonal decorations, and
+  for nothing that moves unless it is sure not to slow the TV. effects.particles (and particles.js/css) is removed; a theme may have
+  a frame instead, effects.overlay: a png or webp with transparency (at most 1.5 MB) in its folder, downloaded with the theme, served
+  by the wallpaper route, kept with the folder that holds it (v.overlayTheme), sent as frame {id, file} only when set (overlay is already the grid mode's flag), and drawn by
+  frame.js as one element between the background and the clock. tools/holiday-art.mjs draws the six frames as SVG (our own work:
+  vignette in the holiday colour, soft blurred shapes, a few sharper ones in the corners) and renders them with Chrome at 960 x 540
+  (300-400 KB each). Halloween's colours become teal and slime green (#021316, #4dff9a)."
+impact: low
+affected_modules: ["helper/themeschema.js", "helper/theme.js", "app/src/js/frame.js", "app/src/css/frame.css", "app/src/js/theme.js", "app/src/js/menus.js", "themes/", "tools/holiday-art.mjs", "tools/oldchrome.js", "docs/themes.md", "themes/README.md", "DECISIONS.md"]
+related_tests: ["tools/test/theme.test.js", "tools/oldchrome.js (holiday frame: Halloween's frame behind the clock, no animation, not catching the pointer)"]
+commit_ref: "feature/holiday-frames (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T23:00:16Z"
+```

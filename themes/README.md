@@ -124,7 +124,7 @@ Folder: [`warm/`](warm/)
 
 ### Halloween
 
-Pumpkin orange on a night purple, with a few bats flying past. Applied by itself from 15 to 31 October with Holiday themes on.
+Slime green on a teal night, with cobwebs, bats and jack-o’-lanterns around the edges. Applied by itself from 15 to 31 October with Holiday themes on.
 
 [![Halloween](halloween/preview.jpg)](halloween/preview.jpg)
 
@@ -132,7 +132,7 @@ Folder: [`halloween/`](halloween/)
 
 ### Harvest
 
-Warm amber and brown, with autumn leaves drifting down, for Thanksgiving. Applied by itself from 20 to 30 November with Holiday themes on.
+Warm amber and brown for Thanksgiving, with autumn leaves and pumpkins in the corners. Applied by itself from 20 to 30 November with Holiday themes on.
 
 [![Harvest](harvest/preview.jpg)](harvest/preview.jpg)
 
@@ -140,7 +140,7 @@ Folder: [`harvest/`](harvest/)
 
 ### Winter holidays
 
-Pine green and berry red, with snow falling. Applied by itself from 1 to 26 December with Holiday themes on.
+Pine green and berry red, with a string of lights along the top and snowflakes. Applied by itself from 1 to 26 December with Holiday themes on.
 
 [![Winter holidays](winter-holidays/preview.jpg)](winter-holidays/preview.jpg)
 
@@ -148,7 +148,7 @@ Folder: [`winter-holidays/`](winter-holidays/)
 
 ### New Year
 
-Gold on midnight blue, with confetti. Applied by itself from 27 December to 2 January with Holiday themes on.
+Gold on midnight blue, with gold sparkles and still fireworks. Applied by itself from 27 December to 2 January with Holiday themes on.
 
 [![New Year](new-year/preview.jpg)](new-year/preview.jpg)
 
@@ -156,7 +156,7 @@ Folder: [`new-year/`](new-year/)
 
 ### Valentine's
 
-Rose pink on deep red, with hearts rising. Applied by itself from 7 to 14 February with Holiday themes on.
+Rose pink on deep red, with soft hearts in the corners. Applied by itself from 7 to 14 February with Holiday themes on.
 
 [![Valentine's](valentines/preview.jpg)](valentines/preview.jpg)
 
@@ -164,7 +164,7 @@ Folder: [`valentines/`](valentines/)
 
 ### Fourth of July
 
-Red, white and blue, with stars twinkling. Applied by itself from 1 to 4 July with Holiday themes on.
+Red, white and blue, with bunting along the top and still fireworks. Applied by itself from 1 to 4 July with Holiday themes on.
 
 [![Fourth of July](independence-day/preview.jpg)](independence-day/preview.jpg)
 

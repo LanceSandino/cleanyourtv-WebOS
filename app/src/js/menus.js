@@ -1101,7 +1101,7 @@ function themeMenu() {
         items.push({
           label: t('Holiday themes'),
           sub: hol.on ? (hol.active ? t('On, %s now').replace('%s', hol.name) : t('On')) : t('Off'),
-          desc: t("A holiday's colours and effect go over your theme during its dates; yours comes back after."),
+          desc: t("A holiday's colours and frame go over your theme during its dates; yours comes back after."),
           stay: true,
           fn: function () {
             if (!hol.on) toast(t('Getting the holiday theme...'));

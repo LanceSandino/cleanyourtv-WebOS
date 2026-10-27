@@ -100,7 +100,15 @@ const theme = require(path.join(ROOT, 'helper', 'theme.js')).create({
 // a page can ask for one of the repository's themes instead of the default (PAGES' seventh field)
 const schema = require(path.join(ROOT, 'helper', 'themeschema.js'));
 const themeOf = id =>
-  schema.resolve(schema.normalize(JSON.parse(fs.readFileSync(path.join(ROOT, 'themes', id, 'theme.json'), 'utf8')), id, null), '');
+  schema.resolve(
+    schema.normalize(
+      JSON.parse(fs.readFileSync(path.join(ROOT, 'themes', id, 'theme.json'), 'utf8')),
+      id,
+      null,
+      path.join(ROOT, 'themes', id)
+    ),
+    ''
+  );
 let pageTheme = null;
 // in front of the page's own script: report script errors on <html data-errors>, and the TV's webOSSystem with no launch parameters
 const PROBE =
@@ -220,13 +228,15 @@ const WALL_FIT =
   'var portrait=!!p&&p.classList.contains("fit")&&after(p)==="contain";pick("u/0000000000000002",function(l){' +
   'var landscape=!!l&&!l.classList.contains("fit")&&after(l)==="cover";' +
   'document.body.setAttribute("data-fit",portrait&&landscape?"ok":"bad portrait="+portrait+" landscape="+landscape)})})},500)})()</script>';
-// a holiday theme's effect (Halloween: bats): a layer of a few animated shapes behind the clock and the apps, not catching the pointer
+// a holiday theme's frame (Halloween): one still picture behind the clock and the apps, not catching the pointer; nothing animates
 const FX_CHECK =
   '<script>(function(){var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);setTimeout(function(){' +
-  'var fx=document.getElementById("fx"),top=document.getElementById("top");var n=fx?fx.children.length:0;' +
-  'var behind=!!fx&&!!(fx.compareDocumentPosition(top)&Node.DOCUMENT_POSITION_FOLLOWING);' +
-  'var ok=!!fx&&fx.className==="fx-bats"&&n===4&&behind&&getComputedStyle(fx).pointerEvents==="none"&&document.body.getAttribute("data-particles")==="bats";' +
-  'document.body.setAttribute("data-fx",ok?"ok":"bad fx="+(fx&&fx.className)+" n="+n+" behind="+behind)},800)},300)})()</script>';
+  'var fr=document.getElementById("thframe"),top=document.getElementById("top");' +
+  'var behind=!!fr&&!!(fr.compareDocumentPosition(top)&Node.DOCUMENT_POSITION_FOLLOWING),cs=fr&&getComputedStyle(fr);' +
+  'var pic=!!cs&&/\\/api\\/theme\\/wallpaper\\/halloween\\/frame\\.png/.test(cs.backgroundImage);' +
+  'var still=!!cs&&cs.animationName==="none"&&!document.getElementById("fx");' +
+  'var ok=!!fr&&behind&&pic&&still&&cs.pointerEvents==="none";' +
+  'document.body.setAttribute("data-fx",ok?"ok":"bad frame="+!!fr+" behind="+behind+" pic="+pic+" still="+still)},800)},300)})()</script>';
 // [name, file, what it draws, how many at least, milliseconds of page time to wait, a script to run in it, a theme id]
 const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
@@ -245,7 +255,7 @@ const PAGES = [
   ['lg row', 'app/index.html', /data-lg="ok"/g, 1, 15000, LG_ROW],
   ['wallpaper fit', 'app/index.html', /data-fit="ok"/g, 1, 15000, WALL_FIT],
   ['dock row in glass', 'app/index.html', /data-dock="ok"/g, 1, 15000, DOCK_ROW, 'glass'],
-  ['holiday effect', 'app/index.html', /data-fx="ok"/g, 1, 15000, FX_CHECK, 'halloween'],
+  ['holiday frame', 'app/index.html', /data-fx="ok"/g, 1, 15000, FX_CHECK, 'halloween'],
 ];
 let famN = 0,
   plexState = 'idle',

@@ -12,22 +12,23 @@ Your own photos can replace a theme's background: see [Wallpapers](wallpapers.md
 
 ## Holiday themes
 
-**Customise** > **Theme** > **Holiday themes** switches them on (off unless you do). During a holiday's dates its colours and a light
-effect go over your theme: your layout, wallpaper and photos stay, and your theme stays chosen and comes back after the dates. The TV
+**Customise** > **Theme** > **Holiday themes** switches them on (off unless you do). During a holiday's dates its colours and a still
+frame go over your theme: your layout, wallpaper and photos stay, and your theme stays chosen and comes back after the dates. The TV
 downloads a holiday theme a few days before it begins.
 
-| Theme | Dates | Effect |
+| Theme | Dates | Frame |
 |---|---|---|
-| Valentine's | 7 to 14 February | hearts rising |
-| Fourth of July | 1 to 4 July | stars twinkling |
-| Halloween | 15 to 31 October | bats flying past |
-| Harvest (Thanksgiving) | 20 to 30 November | autumn leaves falling |
-| Winter holidays | 1 to 26 December | snow falling |
-| New Year | 27 December to 2 January | confetti |
+| Valentine's | 7 to 14 February | soft hearts in the corners |
+| Fourth of July | 1 to 4 July | bunting along the top, still fireworks |
+| Halloween | 15 to 31 October | teal mist, a creeping shadow, bats, cobwebs, a spider, jack-o'-lanterns |
+| Harvest (Thanksgiving) | 20 to 30 November | autumn leaves and pumpkins in the corners |
+| Winter holidays | 1 to 26 December | a string of lights along the top, snowflakes |
+| New Year | 27 December to 2 January | gold sparkles, still fireworks |
 
 They can also be chosen like any other theme. A theme becomes a holiday theme with `"holiday": {"from": "MM-DD", "to": "MM-DD"}` in its
-`theme.json` (a range may run over the new year); the effect is `effects.particles`. The effects are a few shapes moved with transform
-and opacity only, behind the clock, the buttons and the apps, and are off when a theme's `effects.speed` is 0.
+`theme.json` (a range may run over the new year); the frame is `effects.overlay`, a transparent picture drawn over the background, the
+wallpaper and the photos and under the clock, the buttons and the apps. Nothing in it moves, so it costs the TV nothing once it is
+drawn. The six frames are drawn by `node tools/holiday-art.mjs` (needs Google Chrome) from the SVG kept next to them.
 
 ## Where the themes come from
 
@@ -257,9 +258,9 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `effects.glowColor` | `app`, `accent` | `app` | `app`: taken from the focused icon; `accent`: the accent colour. |
 | `effects.glowShape` | `top`, `center` | `top` | `top`: a wash of colour from the top edge; `center`: a large soft circle of colour around the dock. |
 | `effects.speed` | 0 to 2 | `1` | Animation speed multiplier; 0 switches the animations off. |
-| `effects.particles` | `none`, `snow`, `leaves`, `bats`, `confetti`, `hearts`, `stars` | `none` | A few light shapes drifting over the background (behind the apps), for a season or a holiday; off when `effects.speed` is 0. |
 | `effects.wallpaper` | a file name | none | A file name in `themes/wallpapers/`: `.jpg`, `.png` or `.webp`, at most 1.5 MB; drawn at 1920 x 1080. |
 | `effects.wallpaperDim` | 0 to 0.9 | `0.4` | How far the wallpaper is darkened with the background colour. |
+| `effects.overlay` | a file name | none | A decorative frame: a `.png` or `.webp` with transparency in the theme folder, at most 1.5 MB, drawn at 1920 x 1080 over the background, the wallpaper and your photos and under the clock, the buttons and the apps (the holiday themes use one). It is still: nothing in it moves. |
 <!-- schema:end -->
 
 ### Slots for cards

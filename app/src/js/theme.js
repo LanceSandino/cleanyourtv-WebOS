@@ -36,7 +36,6 @@ var TH0 = {
     'data-focus',
     'data-glow',
     'data-dockpanel',
-    'data-particles',
   ];
 function applyTheme(t) {
   var st = document.documentElement.style,
@@ -49,7 +48,7 @@ function applyTheme(t) {
   b.classList.remove('ing');
   if (!t || !t.vars) {
     TH = TH0;
-    FX.sync('');
+    FRAME.set(null);
     decoTheme();
     return;
   }
@@ -81,7 +80,7 @@ function applyTheme(t) {
     themeKeys.push('--wall');
   }
   for (k in t.attrs) b.setAttribute('data-' + k, t.attrs[k]);
-  FX.sync((t.attrs || {}).particles); /* a holiday theme's snow, leaves, bats... (particles.js) */
+  FRAME.set(t.frame); /* a holiday theme's still frame (frame.js) */
   var at = t.attrs || {},
     tw = parseFloat(t.vars['--tile-w']) || 151;
   TH = {

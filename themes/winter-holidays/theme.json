@@ -1,7 +1,7 @@
 {
  "name": "Winter holidays",
  "author": "CleanYourTV",
- "description": "Pine green and berry red, with snow falling. Applied by itself from 1 to 26 December with Holiday themes on.",
+ "description": "Pine green and berry red, with a string of lights along the top and snowflakes. Applied by itself from 1 to 26 December with Holiday themes on.",
  "holiday": {
   "from": "12-01",
   "to": "12-26"
@@ -15,6 +15,6 @@
  "effects": {
   "glowColor": "accent",
   "glow": 0.8,
-  "particles": "snow"
+  "overlay": "frame.png"
  }
 }
