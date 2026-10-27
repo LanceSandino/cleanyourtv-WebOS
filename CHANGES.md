@@ -493,3 +493,20 @@ commit_ref: "feature/plex-stremio (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T12:17:40Z"
 ```
+
+```yaml
+id: CU-20261027-29
+type: fix
+title: "A dock app's row shows in themes that keep the grid under the dock"
+description: "On the owner's TV (Glass theme, grid.mode push) highlighting a dock app opened its row as the grid's first row, which
+  stays below the screen until the focus goes into the grid, so nothing seemed to happen. setFocus now treats the dock with that row
+  open like the first grid row (rr): the push, plain and overlay layouts move as they would for that row (Glass: the view goes up
+  554 px, the header fades), and come back when the row closes. tools/oldchrome.js gains a seventh PAGES field (a repository theme
+  for that page), a Glass check for this, and --engine <text> to run one engine (Chromium 79 crashes at startup on macOS 26)."
+impact: low
+affected_modules: ["app/src/js/theme.js", "tools/oldchrome.js", "docs/launcher.md"]
+related_tests: ["tools/oldchrome.js (dock row in glass: Plex's row on the screen with the view pushed up, gone and back down after Right)"]
+commit_ref: "feature/plex-stremio (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T12:38:42Z"
+```

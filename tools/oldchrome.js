@@ -3,6 +3,7 @@
 // not draw what it should (tiles, rows, inputs). A current Chrome hides such problems: these versions lack features it has.
 //   node tools/oldchrome.js                 both engines
 //   node tools/oldchrome.js --shots <dir>   also saves a screenshot of each page per engine
+//   node tools/oldchrome.js --engine 68     one engine only (the one whose name has that text)
 // The engines are Chromium snapshots from Google's storage, downloaded once (about 100 MB each), checked against pinned SHA-256 sums
 // and kept in ~/.cache/cleanyourtv. Linux x64 and macOS (x64, or Apple silicon with Rosetta). Needs curl and unzip. Runs on Node 8.
 'use strict';
@@ -37,6 +38,8 @@ const ENGINES = [
 const PLAT = process.platform === 'darwin' ? 'mac' : process.platform === 'linux' && process.arch === 'x64' ? 'linux' : '';
 const args = process.argv.slice(2);
 const shots = args.indexOf('--shots') >= 0 ? path.resolve(args[args.indexOf('--shots') + 1]) : '';
+// --engine 68: only the engines whose name has that text (Chromium 79 crashes at startup on newer macOS; CI runs both)
+const only = args.indexOf('--engine') >= 0 ? String(args[args.indexOf('--engine') + 1] || '') : '';
 
 let failed = 0;
 const ok = (c, name) => {
@@ -94,6 +97,11 @@ const theme = require(path.join(ROOT, 'helper', 'theme.js')).create({
   config: require(path.join(ROOT, 'helper', 'config.js')).memory({}),
   noStartup: true,
 });
+// a page can ask for one of the repository's themes instead of the default (PAGES' seventh field)
+const schema = require(path.join(ROOT, 'helper', 'themeschema.js'));
+const themeOf = id =>
+  schema.resolve(schema.normalize(JSON.parse(fs.readFileSync(path.join(ROOT, 'themes', id, 'theme.json'), 'utf8')), id, null), '');
+let pageTheme = null;
 // in front of the page's own script: report script errors on <html data-errors>, and the TV's webOSSystem with no launch parameters
 const PROBE =
   '<script>window.onerror=function(m,s,l){var h=document.documentElement;h.setAttribute("data-errors",(h.getAttribute("data-errors")||"")+m+" (line "+l+"); ")};' +
@@ -192,7 +200,17 @@ const LG_ROW =
   'var cards=document.querySelectorAll("#grid .wcard"),badge=cards[0]&&cards[0].querySelector(".wsrc").textContent;key(40);key(13);setTimeout(function(){var l=launched[0]||[];' +
   'var ok=cards.length===1&&badge===""&&l[0]==="app.1"&&l[1]&&l[1].contentTarget==="v=1";' +
   'document.body.setAttribute("data-lg",ok?"ok":"bad cards="+cards.length+" badge="+badge+" launched="+JSON.stringify(launched))},800)},1000)},2500)},300)})()</script>';
-// [name, file, what it draws, how many at least, milliseconds of page time to wait]
+// a theme that keeps the grid under the dock (Glass, grid.mode push): highlighting Plex in the dock opens its row, and the view goes up
+// so that row is on the screen; moving on to an app without cards closes it and the view comes back down (the slide itself is
+// switched off: headless Chromium does not run it in page time)
+const DOCK_ROW =
+  '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}function sc(){return document.getElementById("scroll").style.transform}' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile")||!TH.push)return;clearInterval(go);document.getElementById("scroll").style.transition="none";setTimeout(function(){key(39);key(39);setTimeout(function(){' +
+  'var c=document.querySelector("#grid .wcard"),b=c&&c.getBoundingClientRect(),seen=!!b&&b.top>=0&&b.bottom<=window.innerHeight,up=sc();key(39);setTimeout(function(){' +
+  'var gone=!document.querySelector("#grid .wcard"),down=sc();var ok=seen&&!!up&&gone&&!down;' +
+  'document.body.setAttribute("data-dock",ok?"ok":"bad seen="+seen+" top="+(b&&Math.round(b.top))+" up="+up+" gone="+gone+" down="+down)},1200)},1200)},2500)},300)})()</script>';
+// [name, file, what it draws, how many at least, milliseconds of page time to wait, a script to run in it, a theme id]
 const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
   ['manager', 'manager/app/index.html', /class="row[ "]/g, 5, 8000],
@@ -208,6 +226,7 @@ const PAGES = [
   ['linking plex', 'app/index.html', /data-link="ok"/g, 1, 20000, WATCH_LINK],
   ['hold ok', 'app/index.html', /data-hold="ok"/g, 1, 20000, HOLD_OK],
   ['lg row', 'app/index.html', /data-lg="ok"/g, 1, 15000, LG_ROW],
+  ['dock row in glass', 'app/index.html', /data-dock="ok"/g, 1, 15000, DOCK_ROW, 'glass'],
 ];
 let famN = 0,
   plexState = 'idle',
@@ -240,7 +259,14 @@ function serve() {
       noToken.push(u);
       return r.writeHead(403, { 'content-type': 'application/json' }), r.end('{"error":"token required"}');
     }
-    if (p) return (famN = 0), (plexState = 'idle'), r.writeHead(200, { 'content-type': 'text/html' }), r.end(page(p[1], p[5])); // each page starts at p1
+    if (p)
+      return (
+        (famN = 0),
+        (plexState = 'idle'),
+        (pageTheme = p[6] ? themeOf(p[6]) : null),
+        r.writeHead(200, { 'content-type': 'text/html' }),
+        r.end(page(p[1], p[5]))
+      ); // each page starts at p1
     if (u === '/qrcode.js')
       return (
         r.writeHead(200, { 'content-type': 'text/javascript' }),
@@ -252,7 +278,7 @@ function serve() {
         apps: apps.map(a => ({ id: a.id, title: a.title })),
         config: {
           dock: apps.slice(0, 4).map(a => a.id),
-          theme: theme.resolved(),
+          theme: pageTheme || theme.resolved(),
           saver: { on: true, after: 60, secs: 15, clock: true },
           photoFeed: { photos: 2 },
         },
@@ -368,7 +394,7 @@ function run(bin, url, extra, budget) {
   });
   if (shots) cp.spawnSync('mkdir', ['-p', shots]);
   try {
-    for (const e of ENGINES) {
+    for (const e of ENGINES.filter(x => !only || x[0].indexOf(only) >= 0)) {
       const bin = engine(e[1], e[2]);
       for (const p of PAGES) {
         const url = 'http://127.0.0.1:8765/' + p[0].replace(/ /g, '-') + '.html';
@@ -422,6 +448,8 @@ function run(bin, url, extra, budget) {
     ok(false, String(err.message || err));
   }
   srv.close();
-  console.log(failed ? failed + ' check(s) failed in old Chromium' : 'the pages work in Chromium 68 and 79');
+  console.log(
+    failed ? failed + ' check(s) failed in old Chromium' : only ? 'the pages work in ' + only : 'the pages work in Chromium 68 and 79'
+  );
   process.exit(failed ? 1 : 0);
 })();

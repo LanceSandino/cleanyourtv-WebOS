@@ -2792,16 +2792,20 @@ function setFocus(nr, nc, first) {
   showName(nm);
   WATCH.focused(e);
   decorate(e, first);
-  if (TH.hdr) document.body.classList.toggle('ing', r >= 2);
+  /* a dock app's Continue watching row (watch.js) is the grid's first row: while it is open the view goes as far as it would for
+     that row, so it shows (in a theme that keeps the grid under the dock, it would stay out of sight) */
+  var peek = r === 1 && rows[2] && rows[2][0] && rows[2][0]._a && rows[2][0]._a.watch,
+    rr = peek ? 2 : r;
+  if (TH.hdr) document.body.classList.toggle('ing', rr >= 2);
   if (first) glowNow(e);
   else glowSoon(e);
   var sh = 0;
   if (TH.push) {
     /* the grid sits under the dock: focusing it scrolls everything up (the dock stops at its 'up' position) and the grid fades in */
-    document.body.classList.toggle('grid-open', r >= 2);
+    document.body.classList.toggle('grid-open', rr >= 2);
     var ps = 0;
-    if (r >= 2) {
-      var bot = TH.push.gridTop - TH.push.up + (r - 2) * (TH.tileH + TH.gapY) + TH.tileH + TH.capH,
+    if (rr >= 2) {
+      var bot = TH.push.gridTop - TH.push.up + (rr - 2) * (TH.tileH + TH.gapY) + TH.tileH + TH.capH,
         ex = Math.max(0, bot - (1080 - 60));
       ps = -(TH.push.up + ex);
     }
@@ -2811,20 +2815,20 @@ function setFocus(nr, nc, first) {
   }
   if (TH.overlay) {
     /* the grid is an overlay above the dock: it opens when the focus goes down into it and scrolls on its own */
-    document.body.classList.toggle('grid-open', r >= 2);
+    document.body.classList.toggle('grid-open', rr >= 2);
     var gs = 0;
-    if (r >= 2) gs = Math.min(0, TH.overlayH - ((r - 2) * (TH.tileH + TH.gapY) + TH.tileH + TH.capH + 24));
+    if (rr >= 2) gs = Math.min(0, TH.overlayH - ((rr - 2) * (TH.tileH + TH.gapY) + TH.tileH + TH.capH + 24));
     $('grid').style.transform = gs ? 'translateY(' + gs + 'px)' : '';
     $('scroll').style.transform = '';
     return;
   }
   $('grid').style.transform = '';
-  if (r >= 2) {
+  if (rr >= 2) {
     var gr = rows.length - 2,
       gt = TH.gt;
     sh = Math.min(
       0,
-      Math.max(50 - (gt + (r - 2) * (TH.tileH + TH.gapY)), TH.viewH - 54 - TH.capH - (gt + gr * TH.tileH + (gr - 1) * TH.gapY))
+      Math.max(50 - (gt + (rr - 2) * (TH.tileH + TH.gapY)), TH.viewH - 54 - TH.capH - (gt + gr * TH.tileH + (gr - 1) * TH.gapY))
     );
   } /* row height + gap from the theme: no layout reads */
   $('scroll').style.transform = sh ? 'translateY(' + sh + 'px)' : '';
