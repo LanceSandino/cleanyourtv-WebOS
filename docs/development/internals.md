@@ -27,7 +27,9 @@
 | `manager.js`, `updates.js`, `debloat.js` | The manager's API, updates from GitHub releases with rollback, switching the debloat. |
 | `live.js`, `notify.js`, `notifyapi.js` | One feature each. |
 | `sonos.js` | Sonos volume on screen: the SSDP search, the subscription to the speaker's volume events (its own event port while on) and the volume bar through `notify.js`. Read only: `GetVolume` and `GetMute` are the only actions it can send. |
-| `lgvolume.js` | Hides LG's own volume bar while the Sonos volume shows: one setting (`volumeOSD` false) in configd's runtime layer in RAM, then configd reads its layers again; removed the same way. Only where `tvprofile.js` says `lgVolumeBar: 'configd'` (webOS 25). |
+| `lgconfig.js` | The service's overrides of LG's settings: one JSON file per namespace in the country folders of configd's RAM layer `/var/run/tvconfig/rmm`, a record in `/tmp` so only its own files are ever replaced or removed, then `reconfigure`. Used by `lgvolume.js` and `lgpreload.js`. |
+| `lgvolume.js` | Hides LG's own volume bar while the Sonos volume shows: `volumeOSD` false through `lgconfig.js`. Only where `tvprofile.js` says `lgVolumeBar: 'configd'` (webOS 25). |
+| `lgpreload.js` | The debloat group "Stop LG pre-loading apps": LG's pre-load list with every app off but Home (and the Homebrew Channel's), through `lgconfig.js`, then a restart of `preload-manager.service`; after every start, on every change of the debloat (`debloat.onChange`) and when lost. Only where `tvprofile.js` says `lgPreload: 'configd'`. |
 | `wallpapers.js` | Wallpapers: the photo library (uploads and Immich, apart on disk, with an index), the phone page on port 8791 and the Immich sync. |
 | `theme.js`, `themeschema.js` | Themes: `themeschema.js` holds every setting a theme can make, the checks and how a theme becomes CSS variables; `theme.js` reads themes from GitHub and keeps them on the TV. |
 | `voice.js`, `answers.js` | Voice: the microphone, the recogniser, the phone setup page; `answers.js` asks Home Assistant, a language model or your server. |

@@ -30,9 +30,12 @@ On webOS 25, LG's surface manager draws that bar only while one of LG's settings
 configuration service (configd), is not `false`, and it follows that setting while the TV runs. **Hide LG's volume bar** sets it to
 `false`, and only while it applies:
 
-- The service writes one small file, `{"volumeOSD": false}`, into configd's runtime layer, `/var/run/tvconfig/remote/`, which is in
-  RAM and which configd reads before LG's built-in settings. Then it asks configd to read its settings again
-  (`luna://com.webos.service.config/reconfigure`), as LG itself does at every start. No file of LG's is changed and nothing is mounted.
+- The service writes one small file, `com.webos.surfacemanager.json` holding `{"volumeOSD":false}`, into each country folder of
+  configd's layer *TV Region Manager Options*, `/var/run/tvconfig/rmm/<country>/`, which is in RAM and outranks LG's built-in
+  settings. Then it asks configd to read its settings again (`luna://com.webos.service.config/reconfigure`), as LG itself does at
+  every start. No file of LG's is changed, nothing is mounted, and it never replaces or removes a file it did not write (it keeps a
+  record in `/tmp/cleanyourtv-lgconfig.json`). Version 1.6.19 used `/var/run/tvconfig/remote/`, which configd turned out to read only
+  at boot, before that folder exists; the service removes that old file.
 - It removes the file again (and asks configd to read again) as soon as the option, or **Show the Sonos volume**, is switched off,
   or the TV's sound goes anywhere but HDMI ARC/eARC or optical: the TV's speakers, headphones or a Bluetooth speaker then get LG's
   bar as usual. The sound output is looked at every 20 seconds.
@@ -42,8 +45,8 @@ configuration service (configd), is not `false`, and it follows that setting whi
 By hand, from a shell on the TV:
 
 ```sh
-cat /var/run/tvconfig/remote/com.webos.surfacemanager.json   # {"volumeOSD": false} while LG's bar is hidden
-rm /var/run/tvconfig/remote/com.webos.surfacemanager.json && \
+cat /var/run/tvconfig/rmm/*/com.webos.surfacemanager.json   # {"volumeOSD":false} while LG's bar is hidden
+rm /var/run/tvconfig/rmm/*/com.webos.surfacemanager.json && \
   luna-send -n 1 -w 15000 -f luna://com.webos.service.config/reconfigure '{}' </dev/null   # LG's bar back until the service hides it again
 ```
 

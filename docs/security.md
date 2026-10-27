@@ -47,9 +47,23 @@ Optional and off by default. It only reads, and only on the local network: no ac
 - The speaker's address, id and room are kept in `config.json` (readable by root only); the service's replies give the room and
   model, not the address.
 - **Hide LG's volume bar** (on by default while the option is on) changes one of LG's settings in RAM only: it writes
-  `{"volumeOSD": false}` to `/var/run/tvconfig/remote/com.webos.surfacemanager.json` and asks LG's configuration service to read its
-  settings again, only while the sound goes to HDMI ARC/eARC or optical, and removes the file otherwise. It never removes or replaces
-  a file of that name that it did not write. See [Sonos volume on screen](sonos.md#lgs-own-volume-bar).
+  `{"volumeOSD":false}` as `com.webos.surfacemanager.json` into the country folders of configd's layer `/var/run/tvconfig/rmm/` and
+  asks LG's configuration service to read its settings again, only while the sound goes to HDMI ARC/eARC or optical, and removes the
+  file otherwise. See [Sonos volume on screen](sonos.md#lgs-own-volume-bar).
+
+## LG's settings changed in RAM
+
+Two options change LG's own settings, both through LG's configuration service (configd) and only in RAM (`helper/lgconfig.js`):
+**Hide LG's volume bar** (above) and the debloat group **Stop LG pre-loading apps**. Each writes one small JSON file per setting into
+the country folders of configd's layer `/var/run/tvconfig/rmm/` (in RAM; configd reads it above LG's built-in settings), keeps a record
+of what it wrote in `/tmp/cleanyourtv-lgconfig.json`, and only ever replaces or removes a file that holds exactly what it wrote, so
+LG's own files are never touched. After each change it asks configd to read its settings again (`reconfigure`). A restart of the TV
+clears all of it.
+
+**Stop LG pre-loading apps** also restarts one of LG's services, `preload-manager.service` (`systemctl restart`), because that
+service reads its app list only when it starts: once when the group is switched on or off, about a minute after every start of the
+TV, and when the setting was lost. Its list keeps Home (the launcher) and anything of the Homebrew Channel's switched on. If configd
+does not take the list on a TV, the file is taken away again and nothing is restarted. See [Debloat](debloat.md#lgs-pre-loading).
 
 ## Themes
 

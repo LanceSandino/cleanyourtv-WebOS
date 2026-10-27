@@ -49,10 +49,16 @@ Either bind mount lives in RAM. A reboot without the boot scripts, or the Homebr
 
 ## While it runs
 
-With **Sonos volume on screen** and **Hide LG's volume bar** on (webOS 25), while the sound goes to the soundbar the service keeps one
-file in RAM, `/var/run/tvconfig/remote/com.webos.surfacemanager.json` (`{"volumeOSD": false}`), and asks LG's configuration service to
-read its settings again; LG's volume bar stays away while it is there. It is removed when that no longer applies, and a restart
-clears it. See [Sonos volume on screen](sonos.md#lgs-own-volume-bar).
+On webOS 25 the service can change two of LG's settings in RAM, through files in the country folders of LG's configuration layer
+`/var/run/tvconfig/rmm/<country>/` (a record of what it wrote is in `/tmp/cleanyourtv-lgconfig.json`; a restart clears both):
+
+- With **Sonos volume on screen** and **Hide LG's volume bar** on, while the sound goes to the soundbar: `com.webos.surfacemanager.json`
+  (`{"volumeOSD":false}`), so LG's volume bar stays away. See [Sonos volume on screen](sonos.md#lgs-own-volume-bar).
+- With the debloat group **Stop LG pre-loading apps** on: `com.webos.service.preloadmanager.json` (LG's pre-load list with every app off
+  but Home and the Homebrew Channel's), followed by a restart of LG's `preload-manager.service`, about a minute after every start of
+  the TV and whenever the group is switched on or off. See [Debloat](debloat.md#lgs-pre-loading).
+
+After each change it asks LG's configuration service to read its settings again.
 
 ## Processes and ports
 

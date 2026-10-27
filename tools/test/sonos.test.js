@@ -409,10 +409,15 @@ run(async () => {
   one.server.close();
   moved.server.close();
 
-  // ---- LG's own volume bar (lgvolume.js): a one-setting file in configd's runtime layer, only while it applies
-  const layer = path.join(tmp, 'tvconfig-remote');
-  fs.mkdirSync(layer);
-  const lgFile = path.join(layer, 'com.webos.surfacemanager.json');
+  // ---- LG's own volume bar (lgvolume.js on lgconfig.js): one setting in configd's RAM layer, in every country folder, while it applies
+  const layer = path.join(tmp, 'rmm'),
+    oldDir = path.join(tmp, 'tvconfig-remote'),
+    record = path.join(tmp, 'lgconfig-record.json');
+  for (const d of [layer, path.join(layer, 'USA'), path.join(layer, 'CAN'), oldDir]) fs.mkdirSync(d);
+  const lgFile = path.join(layer, 'USA', 'com.webos.surfacemanager.json'),
+    lgFile2 = path.join(layer, 'CAN', 'com.webos.surfacemanager.json'),
+    oldFile = path.join(oldDir, 'com.webos.surfacemanager.json');
+  fs.writeFileSync(oldFile, '{"volumeOSD": false}\n'); // what 1.6.19 wrote where configd never reads it
   let out2 = 'external_arc',
     prof = { lgVolumeBar: 'configd' };
   const lcalls = [];
@@ -429,10 +434,19 @@ run(async () => {
   };
   const son2 = S.create(
     ctx2,
-    Object.assign({}, opts, { outputMs: 60, lgDir: layer, findMs: 50, retryMs: 5000, ssdp: { address: '127.0.0.1', port: 9 } })
+    Object.assign({}, opts, {
+      outputMs: 60,
+      lgDir: layer,
+      lgRecord: record,
+      lgOldDir: oldDir,
+      findMs: 50,
+      retryMs: 5000,
+      ssdp: { address: '127.0.0.1', port: 9 },
+    })
   );
   const reconf = () => lcalls.filter(u => u === 'com.webos.service.config/reconfigure').length;
   const lgText = () => (fs.existsSync(lgFile) ? fs.readFileSync(lgFile, 'utf8') : null);
+  ok(!fs.existsSync(oldFile), "1.6.19's file in the layer configd never reads is removed");
   son2.start();
   await sleep(100);
   ok(
@@ -441,10 +455,13 @@ run(async () => {
   );
   son2.set({ enabled: true });
   ok(await until(() => lgText() !== null), "on, with the sound on HDMI ARC: LG's bar is hidden");
-  ok(lgText() === '{"volumeOSD": false}\n' && reconf() === 1, 'by one setting in the runtime layer, then configd reads its layers again');
-  ok(son2.status().lgBar === 'hidden', 'the status says so');
+  ok(
+    lgText() === '{"volumeOSD":false}\n' && fs.readFileSync(lgFile2, 'utf8') === lgText() && reconf() === 1,
+    'by one setting in every country folder of the layer, then configd reads its layers again'
+  );
+  ok(son2.status().lgBar === 'hidden' && fs.existsSync(record), 'the status says so, and what was written is recorded');
   out2 = 'tv_speaker';
-  ok(await until(() => lgText() === null), "the sound moves to the TV's speakers: LG's bar comes back");
+  ok(await until(() => lgText() === null && !fs.existsSync(lgFile2)), "the sound moves to the TV's speakers: LG's bar comes back");
   ok(reconf() === 2, 'and configd reads its layers again');
   out2 = 'external_optical';
   ok(await until(() => lgText() !== null), 'optical: hidden again');
@@ -464,17 +481,22 @@ run(async () => {
   fs.writeFileSync(lgFile, '{"volumeOSD": true, "other": 1}\n'); // someone else's file of that name
   son2.set({ enabled: true });
   await sleep(250);
-  ok(lgText() === '{"volumeOSD": true, "other": 1}\n' && reconf() === n2, 'a file that is not ours is neither replaced');
+  ok(lgText() === '{"volumeOSD": true, "other": 1}\n', 'a file that is not ours is neither replaced');
   son2.set({ enabled: false });
   await sleep(150);
   ok(lgText() === '{"volumeOSD": true, "other": 1}\n', 'nor removed');
+  ok(!fs.existsSync(lgFile2), 'while its own file in the other folder comes and goes as before');
   fs.unlinkSync(lgFile);
+  const n3 = reconf();
   prof = { lgVolumeBar: '' };
   son2.set({ enabled: true });
   await sleep(250);
-  ok(lgText() === null && son2.status().lgBar === 'unsupported' && reconf() === n2, 'a TV where it was not tried: nothing is written');
+  ok(
+    lgText() === null && son2.status().lgBar === 'unsupported' && reconf() === n3 && n3 >= n2,
+    'a TV where it was not tried: nothing is written'
+  );
   prof = { lgVolumeBar: 'configd' };
-  const gone = req('lgvolume').create(ctx2, path.join(tmp, 'no-such-layer'));
+  const gone = req('lgvolume').create(ctx2, { dir: path.join(tmp, 'no-such-layer'), record });
   ok(
     !gone.supported() && (await gone.hide()) === false && !fs.existsSync(path.join(tmp, 'no-such-layer')),
     'without the layer folder: nothing, and the folder is not made'

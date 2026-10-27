@@ -624,3 +624,28 @@ commit_ref: "feature/sonos-fast (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T14:15:25Z"
 ```
+
+```yaml
+id: CU-20261027-43
+type: fix
+title: "LG's settings changed through a configd layer that configd reads; LG's app pre-loading stopped"
+description: "1.6.19 hid LG's volume bar with a file in /var/run/tvconfig/remote, which never worked: configd's log on the TV shows it
+  selects that ReadOnly layer only in its constructor (~2.7 s after boot), when the folder does not exist yet, and skips it on every
+  reconfigure; a test with Lance's yes left volumeOSD true. New helper/lgconfig.js writes <namespace>.json into every country folder of
+  the layer TV Region Manager Options (/var/run/tvconfig/rmm, RAM, priority 154, above base and distro, re-selected on reconfigure),
+  records what it wrote in /tmp/cleanyourtv-lgconfig.json, replaces or removes only files holding exactly that, never creates LG's
+  folders, and calls reconfigure. lgvolume.js uses it (and removes 1.6.19's file once). New helper/lgpreload.js (Lance asked for
+  pre-loading to be blocked): a debloat group 'preload' (on with the debloat unless switched off; Manager > Debloat > Stop LG
+  pre-loading apps) sets com.webos.service.preloadmanager.supportAppList to configd's current list with every app off except
+  com.webos.app.home and org.webosbrew.*, checks configd gives it back, and restarts preload-manager.service (it reads configd only at
+  start: a one-shot getConfigs and a static maxPreloadApp in its binary); 60 s after the service starts, on every debloat change
+  (debloat.onChange), every 10 min when lost; switched off it is removed with one more restart; if configd does not take the list it
+  is taken away again without a restart and not retried until the settings change; not while LG's Home is chosen; webOS 25 only
+  (tvprofile lgPreload). Not yet verified on the TV: the rmm test write and the first restart wait for Lance's explicit yes."
+impact: medium
+affected_modules: ["helper/lgconfig.js", "helper/lgvolume.js", "helper/lgpreload.js", "helper/sonos.js", "helper/debloat.js", "helper/tvprofile.js", "helper/helper.js", "manager/src/js/menu.js", "manager/src/js/help.js", "manager/app/index.html", "app/index.html", "picker/app/index.html", "i18n/en.json", "tools/test/api.test.js", "docs/debloat.md", "docs/security.md", "docs/tv-changes.md", "docs/sonos.md", "docs/manager.md", "docs/development/internals.md", "AGENTS.md", "DECISIONS.md"]
+related_tests: ["tools/test/lgconfig.test.js (a stand-in configd: set/clear per namespace in every country folder, own files only, no folder made, bad names refused; pre-loading: only Home and the Homebrew Channel on, restart after configd confirms, nothing more while in place, put back when lost, back with a restart when switched off, nothing with the debloat off, on an untried TV or with LG's Home, rolled back without a restart when configd ignores it, applied at once on a debloat change)", "tools/test/sonos.test.js (LG's own volume bar on the rmm layer; 1.6.19's file removed)", "tools/test/tvprofile.test.js", "tools/test/api.test.js"]
+commit_ref: "feature/lg-config (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T14:32:42Z"
+```

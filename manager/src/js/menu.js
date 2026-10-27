@@ -926,12 +926,13 @@ function build() {
   });
 }
 
-/* the debloat's four groups (scripts/debloat-stop.sh); options.debloatOff lists the ones switched off */
+/* the debloat's groups (scripts/debloat-stop.sh; preload is the service's own, helper/lgpreload.js); options.debloatOff lists the ones switched off */
 var DEBLOAT = [
   { id: 'ads', label: 'Ads', what: 'ad services and ad servers' },
   { id: 'tracking', label: 'Viewing tracking (LivePlus)', what: 'acr2' },
   { id: 'logs', label: 'Telemetry logs', what: 'remotelogger, service-logger' },
   { id: 'suggestions', label: 'Suggestions and nudges', what: 'contentminer, nudge, sportsalarm' },
+  { id: 'preload', label: 'Stop LG pre-loading apps', what: 'LG Channels, Netflix, YouTube and others; Home stays quick' },
 ];
 function debloatOn(id) {
   var o = st.options || {};

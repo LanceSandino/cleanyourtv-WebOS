@@ -292,6 +292,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       'inputkey',
       'notifyapi',
       'sonos',
+      'lgpreload',
       'manager',
       'apps',
       'running',

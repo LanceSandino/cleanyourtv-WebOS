@@ -131,7 +131,9 @@ function create(ctx, opts) {
       screenMs: 3000, // how long the TV's power state and sound output are trusted
       subSeconds: 1800, // how long a subscription is asked for; renewed at half
       outputMs: 20000, // how often the TV's sound output is looked at while LG's bar may be hidden
-      lgDir: '', // configd's runtime layer for lgvolume.js (tests)
+      lgDir: '', // lgvolume.js / lgconfig.js: the configd layer, the record of what was written, the old 1.6.19 folder (tests)
+      lgRecord: '',
+      lgOldDir: '',
       ssdp: { address: '239.255.255.250', port: 1900 },
       selfOk: false, // the tests' stand-in speaker runs on this computer
     },
@@ -506,7 +508,7 @@ function create(ctx, opts) {
   // LG's own volume bar (lgvolume.js): hidden while this option and hideLg are on and the sound goes to the soundbar (HDMI ARC or
   // optical); back as soon as one of them is no longer so, also when the sound moves to the TV's speakers or headphones. Looked at
   // after every change of the settings and every 20 s while it may apply. Only ever one look at a time; a change during one looks again.
-  const lg = ctx.lgvolume || require('./lgvolume').create(ctx, o.lgDir);
+  const lg = ctx.lgvolume || require('./lgvolume').create(ctx, { dir: o.lgDir, record: o.lgRecord, oldDir: o.lgOldDir });
   /** @type {any} */ let lgTimer = null;
   let lgBusy = false,
     lgAgain = false;
@@ -523,7 +525,7 @@ function create(ctx, opts) {
           want = /^external_(arc|optical)/.test(String((out && out.soundOutput) || ''));
         }
         if (want && !lg.hidden()) await lg.hide();
-        else if (!want && lg.hidden()) await lg.show();
+        else if (!want) await lg.show(); // removes only what it wrote; nothing to do (and no luna call) when nothing is there
       } while (lgAgain);
     } catch (e) {
       console.error("sonos: LG's volume bar: " + ((e && e.message) || e));
