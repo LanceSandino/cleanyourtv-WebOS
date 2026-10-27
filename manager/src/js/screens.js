@@ -62,6 +62,12 @@ function openLiveTv() {
 }
 /* Wallpapers: photos uploaded from a phone and synced from Immich (helper/wallpapers.js); the launcher's Customise switches them on */
 function openWallpapers() {
+  api('/api/photofeed/status').then(
+    function (r) {
+      pf = r;
+    },
+    function () {}
+  );
   api('/api/wallpapers/status').then(
     function (r) {
       wp = r;
@@ -97,18 +103,23 @@ function wallCall(path, b, msg) {
     }
   );
 }
-function openWallPair() {
+function openWallPair(tab) {
+  var feed = tab === 'feed';
   shareMode = 'wall';
   push('share');
   $('share').style.display = 'block';
   $('shareurl').textContent = '';
   $('qrbox').style.visibility = 'hidden';
-  $('share').querySelector('h2').textContent = tr('Wallpapers');
-  $('share').querySelector('ol').innerHTML = tr(
-    '<li>Phone on the <b>same Wi-Fi</b> as the TV.</li><li>Scan the code with the camera.</li><li>Choose <b>Upload photos</b> or <b>Configure Immich</b>.</li>'
-  );
+  $('share').querySelector('h2').textContent = tr(feed ? 'Photo feed for the screensaver' : 'Wallpapers');
+  $('share').querySelector('ol').innerHTML = feed
+    ? tr(
+        '<li>Phone or computer on the <b>same network</b> as the TV.</li><li>Scan the code, or type the address below and the code.</li><li>Paste the <b>setup code</b> from your photo server (family-calendar: Admin &gt; Photo feeds) and choose <b>Check and save</b>.</li>'
+      )
+    : tr(
+        '<li>Phone on the <b>same Wi-Fi</b> as the TV.</li><li>Scan the code with the camera.</li><li>Choose <b>Upload photos</b>, <b>Configure Immich</b> or <b>Photo feed</b>.</li>'
+      );
   $('sharemsg').textContent = tr('Preparing\u2026');
-  api('/api/wallpapers/pair', {}).then(
+  api('/api/wallpapers/pair', feed ? { tab: 'feed' } : {}).then(
     function (r) {
       if (view !== 'share' || shareMode !== 'wall') return;
       if (r.error) {

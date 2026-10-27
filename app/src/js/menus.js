@@ -572,7 +572,7 @@ function wallMenu() {
         sub: (w.on ? t('On') : t('Off')) + ' \u00B7 ' + (n ? t(n + ' photos') : t('no photos yet')),
         stay: true,
         fn: function () {
-          cfg.wall = { on: !w.on, secs: e };
+          cfg.wall = { on: !w.on, secs: e, pick: w.pick };
           saveCfg();
         },
       },
@@ -582,10 +582,31 @@ function wallMenu() {
         stay: true,
         fn: function () {
           var k = EV.indexOf(e);
-          cfg.wall = { on: !!w.on, secs: EV[(k < 0 ? 6 : k + 1) % EV.length] };
+          cfg.wall = { on: !!w.on, secs: EV[(k < 0 ? 6 : k + 1) % EV.length], pick: w.pick };
           saveCfg();
         },
       },
+      /* one chosen photo instead of a new one now and then (wallpick.js); choosing again or here goes back to all of them */
+      {
+        label: t('Photo'),
+        sub: w.pick ? t('One chosen photo') : t('All photos, shuffled'),
+        stay: true,
+        fn: function () {
+          if (!w.pick) return WALLPICK.start();
+          cfg.wall = { on: !!w.on, secs: e };
+          saveCfg();
+        },
+      },
+      n
+        ? {
+            label: t('Choose a photo...'),
+            sub: t('browse them on the screen'),
+            stay: true,
+            fn: function () {
+              WALLPICK.start();
+            },
+          }
+        : null,
       { sep: true },
       {
         label: t('Add photos...'),
@@ -594,7 +615,9 @@ function wallMenu() {
           launch('com.cleanyourtv.manager', { open: 'wallpapers' });
         },
       },
-    ];
+    ].filter(function (it) {
+      return it;
+    });
   });
 }
 /* Screensaver (saver.js): the photo feed's photos, or the Wallpapers photos, when Home is left alone, instead of LG's screensaver. The
@@ -661,9 +684,9 @@ function saverMenu() {
         : null,
       {
         label: t('Photo feed...'),
-        sub: fam ? t(fam + ' photos') : t('set up on a phone'),
+        sub: fam ? t(fam + ' photos') : t('set up on a phone or a computer'),
         fn: function () {
-          launch('com.cleanyourtv.manager', { open: 'wallpapers' });
+          launch('com.cleanyourtv.manager', { open: 'photofeed' }); /* straight to the QR code of the phone page's Photo feed tab */
         },
       },
     ].filter(function (it) {

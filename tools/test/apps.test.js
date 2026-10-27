@@ -85,6 +85,13 @@ run(async () => {
   );
   await call(apps, '/api/config', 'POST', { wall: { on: true, secs: 10 } });
   const w10 = config.get().wall;
+  await call(apps, '/api/config', 'POST', { wall: { on: true, secs: 0, pick: 'u/0123456789abcdef' } });
+  const wPick = config.get().wall;
+  await call(apps, '/api/config', 'POST', { wall: { on: true, secs: 0, pick: '../../etc/passwd' } });
+  ok(
+    wPick.pick === 'u/0123456789abcdef' && config.get().wall.pick === undefined,
+    'one chosen wallpaper is kept as the photo id it names; anything else is dropped'
+  );
   await call(apps, '/api/config', 'POST', { wall: { on: true, every: 5 } });
   const wOld = config.get().wall;
   await call(apps, '/api/config', 'POST', { wall: { on: false, secs: 7 } });

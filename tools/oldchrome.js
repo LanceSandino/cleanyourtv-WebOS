@@ -109,6 +109,16 @@ const SAVER_KEYS =
   '(function next(){if(!steps.length){key(40);var ok=seen.join()==="p1,p2,p1,p2,p3"&&!SAVER.active()&&foc()===f0;' +
   'document.body.setAttribute("data-keys",ok?"ok":"bad "+seen.join()+" active="+SAVER.active()+" focus="+foc()+"/"+f0);return}' +
   'key(steps.shift());setTimeout(function(){seen.push(photo());next()},1500)})()},500)})()</script>';
+// choosing one wallpaper (wallpick.js): open the chooser, Right to the second photo, OK; that photo is then the wallpaper on Home and
+// the chooser is gone. The outcome lands in data-pick.
+const WALLPICK_KEYS =
+  '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);WALLPICK.start();' +
+  'var w=setInterval(function(){if(!WALLPICK.open())return;clearInterval(w);key(39);setTimeout(function(){key(13);setTimeout(function(){' +
+  'var bg=[].map.call(document.querySelectorAll(".wp.on"),function(x){return x.style.backgroundImage}).join();' +
+  'var ok=cfg.wall&&cfg.wall.pick==="u/0000000000000002"&&!WALLPICK.open()&&bg.indexOf("u/0000000000000002")>=0;' +
+  'document.body.setAttribute("data-pick",ok?"ok":"bad pick="+(cfg.wall&&cfg.wall.pick)+" open="+WALLPICK.open()+" bg="+bg)},2500)},800)},300)},500)})()</script>';
 // [name, file, what it draws, how many at least, milliseconds of page time to wait]
 const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
@@ -118,6 +128,7 @@ const PAGES = [
   ['saver', 'app/index.html', /class="svp on"/g, 1, 75000],
   // and its keys: Left and Right step through the photos, another key ends it without acting on Home
   ['saver keys', 'app/index.html', /data-keys="ok"/g, 1, 90000, SAVER_KEYS],
+  ['wallpaper chooser', 'app/index.html', /data-pick="ok"/g, 1, 20000, WALLPICK_KEYS],
 ];
 let famN = 0;
 // a stand-in photo from the feed: a landscape picture with the photo's name on it
@@ -172,6 +183,10 @@ function serve() {
         ],
       });
     if (u === '/api/manager/status') return json(golden['manager status'].body);
+    // three Wallpapers photos for the chooser (wallpick.js)
+    if (u === '/api/wallpapers/list')
+      return json({ photos: ['u/0000000000000001', 'u/0000000000000002', 'u/0000000000000003'], stamp: '3:test' });
+    if (/^\/api\/wallpapers\/photo\/u\/\d{16}$/.test(u)) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(photo(u));
     if (u === '/api/photofeed/next') return json({ id: 'p' + ++famN });
     if (/^\/api\/photofeed\/photo\/p\d+$/.test(u)) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(photo(u));
     if (u === '/api/log') {

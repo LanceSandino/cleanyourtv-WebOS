@@ -10,6 +10,7 @@ var kFlow = 'input',
 var napi = null,
   lv = null,
   wp = null,
+  pf = null, // the photo feed's status (helper/photofeed.js), shown on the Wallpapers screen
   vo = null,
   mdl = [],
   agl = [],

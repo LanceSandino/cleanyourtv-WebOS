@@ -643,5 +643,16 @@
  "The photo feed must use https.": "The photo feed must use https.",
  "The photo feed refused the token. Set it up again with a new setup code.": "The photo feed refused the token. Set it up again with a new setup code.",
  "The photo feed's certificate does not match the setup code.": "The photo feed's certificate does not match the setup code.",
- "The photo feed did not answer.": "The photo feed did not answer."
+ "The photo feed did not answer.": "The photo feed did not answer.",
+ "Photo": "Photo",
+ "One chosen photo": "One chosen photo",
+ "All photos, shuffled": "All photos, shuffled",
+ "Choose a photo...": "Choose a photo...",
+ "browse them on the screen": "browse them on the screen",
+ "set up on a phone or a computer": "set up on a phone or a computer",
+ "in use": "in use",
+ "This photo is your wallpaper now.": "This photo is your wallpaper now.",
+ "No photos yet: add them in the CleanYourTV app.": "No photos yet: add them in the CleanYourTV app.",
+ "Left and Right: browse · OK: use this photo · Back: cancel": "Left and Right: browse · OK: use this photo · Back: cancel",
+ "Could not read the photos.": "Could not read the photos."
 }

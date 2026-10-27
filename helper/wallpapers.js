@@ -358,13 +358,14 @@ function create(ctx) {
 
   // ---- the phone page: LAN, short-lived, the code shown on the TV in every request (header x-code) ----
   let pair = null;
-  function startPair() {
+  // tab 'feed': the QR code opens the phone page on its Photo feed tab (the launcher's Customise > Screensaver > Photo feed...)
+  function startPair(tab) {
     stopPair();
     const code = String(nc.randomInt(100000, 1000000));
     let bad = 0;
     const srv = http.createServer((req, res) => phone(req, res, code, () => ++bad));
     pair = { code, srv, url: 'http://' + web.lanIp() + ':' + PAIR_PORT, until: Date.now() + PAIR_MS, timer: setTimeout(stopPair, PAIR_MS) };
-    const out = { url: pair.url, code, qr: pair.url + '/#' + code, seconds: PAIR_MS / 1000 };
+    const out = { url: pair.url, code, qr: pair.url + '/#' + code + (tab === 'feed' ? ':feed' : ''), seconds: PAIR_MS / 1000 };
     return new Promise(resolve => {
       srv.on('error', e => {
         stopPair();
@@ -495,7 +496,7 @@ function create(ctx) {
         });
       return json(status());
     }
-    if (u === '/api/wallpapers/pair') return json(b.stop ? (stopPair(), {}) : await startPair());
+    if (u === '/api/wallpapers/pair') return json(b.stop ? (stopPair(), {}) : await startPair(b.tab === 'feed' ? 'feed' : ''));
     if (u === '/api/wallpapers/sync') {
       sync();
       return json(status());
@@ -575,7 +576,7 @@ $('as').onclick=function(){var ids=[].map.call($('al').querySelectorAll('input:c
 $('isy').onclick=function(){api('immich/sync',{}).then(function(){msg(t('Syncing…'));setTimeout(state,1500)})};
 $('idc').onclick=function(){if(confirm(t('Disconnect Immich? Its photos are removed from the TV.')))api('immich/disconnect',{}).then(function(){$('albox').className='hide';$('iphb').className='hide';msg(t('Immich disconnected.'));state()})};
 $('go').onclick=function(){code=$('code').value.trim();state().catch(function(){})};
-code=(location.hash||'').slice(1);if(/^\\d{6}$/.test(code))state().catch(function(){});else showLogin();
+var h=(location.hash||'').slice(1).split(':');code=h[0];if(/^\\d{6}$/.test(code))state().then(function(){if(h[1]==='feed')$('tf').onclick()}).catch(function(){});else showLogin();
 `;
 function phonePage(lang) {
   const T = s => web.esc(i18n.tr(lang, s));

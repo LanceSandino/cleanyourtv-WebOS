@@ -37,9 +37,11 @@ already on the TV keep the screensaver going.
 1. On the server that offers the feed, create a token for the TV and copy its **setup code** (it starts with `cyfp1.`). The code
    holds the server's address, a token that can only read the feed, and the server's own root certificate. In
    [family-calendar](#family-calendar-and-frameo) this is **Admin** > **Photo feeds**, on the server itself.
-2. On the TV: **Customise** > **Screensaver** > **Photo feed...** opens the Wallpapers screen of the CleanYourTV app. Open the phone
-   page there, on a phone or a computer on the same network, choose **Photo feed**, paste the code and choose **Check and save**.
-   The code is tried before it is saved.
+2. On the TV: **Customise** > **Screensaver** > **Photo feed...** shows a QR code and an address with a 6-digit code. Open it on a
+   phone, or type the address on a computer on the same network (the computer that runs family-calendar works: copy the setup code
+   there and paste it straight in); the page opens on **Photo feed**. Paste the code and choose **Check and save**. The code is tried
+   before it is saved. The CleanYourTV app's **Wallpapers** screen shows the feed (**Photo feed**: how many photos, when it was read)
+   and can disconnect it.
 
 The token is kept in `config.json` (readable by root only) and is never shown again or sent to the launcher. The TV talks to the
 server over HTTPS only, trusts only the certificate in the code, and follows no redirects. To stop, choose **Disconnect the photo

@@ -682,7 +682,7 @@ function build() {
         var m = Math.round((Date.now() - t) / 60000);
         return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' days ago';
       };
-    rows.push({ label: 'Manage from your phone', sub: 'upload photos, configure Immich', fn: openWallPair });
+    rows.push({ label: 'Manage from your phone', sub: 'upload photos, configure Immich, add a photo feed', fn: openWallPair });
     rows.push({ sep: true });
     rows.push({ label: 'Local uploads', sub: w.uploads + ' photos', fn: openWallPair });
     rows.push({
@@ -698,6 +698,17 @@ function build() {
       label: 'Total',
       sub: w.total + ' photos \u00B7 ' + Math.round(w.bytes / 1048576) + ' of 150 MB',
       fn: null,
+    });
+    /* the photo feed is the screensaver's (helper/photofeed.js), set up on the same phone page */
+    var f = pf || {};
+    rows.push({
+      label: 'Photo feed',
+      sub: f.configured
+        ? f.photos + ' photos \u00B7 ' + f.host + ' \u00B7 read ' + ago(f.lastSync) + (f.error ? ' \u00B7 ' + f.error : '')
+        : 'for the screensaver \u00B7 not set up \u00B7 set up from your phone',
+      fn: function () {
+        openWallPair('feed');
+      },
     });
     rows.push({ sep: true });
     rows.push({
@@ -725,6 +736,14 @@ function build() {
       },
     });
     rows.push({
+      label: 'Disconnect the photo feed',
+      sub: f.configured ? 'its photos leave the TV' : 'not set up',
+      dim: !f.configured,
+      fn: function () {
+        if (f.configured) push('confirm-wp-feed');
+      },
+    });
+    rows.push({
       label: 'Disconnect Immich',
       sub: im.configured ? '' : 'not connected',
       dim: !im.configured,
@@ -734,6 +753,26 @@ function build() {
     });
     rows.push({ sep: true });
     rows.push({ label: 'Back', fn: pop });
+    return;
+  }
+  if (view === 'confirm-wp-feed') {
+    rows.push({ label: 'Cancel', fn: pop });
+    rows.push({
+      label: 'Yes, disconnect the photo feed',
+      sub: 'the token is forgotten and its photos leave the TV; a new setup code is needed to connect again',
+      fn: function () {
+        api('/api/photofeed/disconnect', {}).then(
+          function (r) {
+            pf = r;
+            banner('Photo feed disconnected', 'ok');
+            pop();
+          },
+          function () {
+            banner('The service did not answer', 'err');
+          }
+        );
+      },
+    });
     return;
   }
   if (view === 'confirm-wp-uploads' || view === 'confirm-wp-immich') {

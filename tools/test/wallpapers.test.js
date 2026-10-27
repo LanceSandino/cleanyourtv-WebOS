@@ -59,8 +59,12 @@ run(async () => {
 
   // ---- the phone page ----
   r = await call(wp, '/api/wallpapers/pair', 'POST', {});
-  const code = r.j.code;
+  let code = r.j.code;
   ok(/^\d{6}$/.test(code) && /:8791\/#\d{6}$/.test(r.j.qr), 'the phone page opens with a 6-digit code, which the QR code carries');
+  const feedQr = await call(wp, '/api/wallpapers/pair', 'POST', { tab: 'feed' });
+  ok(/#\d{6}:feed$/.test(feedQr.j.qr), 'the screensaver opens the phone page on its Photo feed tab (the QR code says so)');
+  code = (await call(wp, '/api/wallpapers/pair', 'POST', {})).j.code; // a new page, a new code
+  await sleep(100);
   await sleep(100);
   let p = await phone('GET', '/');
   ok(

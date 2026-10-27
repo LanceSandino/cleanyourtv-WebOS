@@ -1,0 +1,42 @@
+/* Choosing one wallpaper (wallpick.js): over Home and its menus, under the screensaver; the photo whole on black, a bar at the bottom */
+#wpk {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 90;
+  background: #000;
+  display: none;
+}
+#wpk.on {
+  display: block;
+}
+#wpkp {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: #000 center / contain no-repeat;
+}
+#wpkb {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 28px 96px 40px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+#wpkn {
+  font-size: 34px;
+  font-weight: 600;
+}
+#wpkh {
+  font-size: 28px;
+  color: #d8dade;
+}

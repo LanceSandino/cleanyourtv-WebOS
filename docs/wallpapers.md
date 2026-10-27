@@ -11,6 +11,8 @@ In the launcher, **Customise** > **Wallpapers**:
 |---|---|
 | Use Wallpapers | On: a photo from the library replaces the theme's background, in every theme. Off: the theme as it is. |
 | New photo | When the photo changes: each time Home opens, or also every 10 or 30 seconds, every minute, or every 3, 5, 15 or 60 minutes while Home is on screen. The photos cross-fade. |
+| Photo | **All photos, shuffled** (a new one as set above), or **One chosen photo**, which stays. Choosing it here goes back to all photos. |
+| Choose a photo... | Browse the photos on the screen, one at a time and whole: **Left** and **Right** to browse, **OK** to use the one on the screen as your wallpaper, **Back** to leave. With the Magic Remote, the left and right thirds of the screen browse and the middle chooses. |
 | Add photos... | Opens the manager app on its Wallpapers screen. |
 
 The photo is chosen at random and darkened like a theme's wallpaper (the theme's own darkening, or 40 % when it has none). With
