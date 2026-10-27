@@ -60,6 +60,37 @@ run(async () => {
       JSON.parse(qs.appDesc).folderPath === q.appDesc.folderPath,
     'jtool wamlaunch: webapp-mgr opens the launcher folder as com.webos.app.home (also with the description as a string)'
   );
+  // reload-home.sh: webOS starts Home again by itself after its page is stopped, so Home is launched only when no new Home process
+  // came up (a launch on top of it showed as a second load after an update); stand-ins for pgrep, pkill and luna-send
+  const rbin = path.join(tmp, 'reload-bin'),
+    st = path.join(tmp, 'reload-state');
+  fs.mkdirSync(rbin);
+  const stand = (name, body) => {
+    fs.writeFileSync(path.join(rbin, name), '#!/bin/sh\n' + body + '\n');
+    fs.chmodSync(path.join(rbin, name), 0o755);
+  };
+  stand('pgrep', 'cat "' + st + '/pids" 2>/dev/null; [ -s "' + st + '/pids" ]');
+  stand('pkill', 'echo pkill >> "' + st + '/calls"; cat "' + st + '/after" > "' + st + '/pids"');
+  stand('luna-send', 'echo "luna $*" >> "' + st + '/calls"');
+  const reload = (before, after) => {
+    cp.spawnSync('rm', ['-rf', st]);
+    fs.mkdirSync(st);
+    fs.writeFileSync(path.join(st, 'pids'), before);
+    fs.writeFileSync(path.join(st, 'after'), after);
+    const r = cp.spawnSync('sh', [path.join(root, 'scripts', 'reload-home.sh')], {
+      encoding: 'utf8',
+      env: Object.assign({}, process.env, { CYTV_TEST_BIN: rbin, CYTV_HOME_WAIT: '2' }),
+    });
+    const calls = fs.existsSync(path.join(st, 'calls')) ? fs.readFileSync(path.join(st, 'calls'), 'utf8') : '';
+    return { status: r.status, killed: /pkill/.test(calls), launched: /applicationManager\/launch/.test(calls) };
+  };
+  let rh = reload('100\n', '200\n');
+  ok(rh.status === 0 && rh.killed && !rh.launched, 'Home came back by itself (a new process): it is not launched again');
+  rh = reload('100\n', '');
+  ok(rh.killed && rh.launched, 'Home did not come back: it is launched');
+  rh = reload('100\n', '100\n');
+  ok(rh.killed && rh.launched, 'the stopped process still listed is not taken for a new one: Home is launched');
+
   // bootstrap.sh run for real against a folder that stands in for the TV's root (CYTV_TEST_ROOT), with stand-ins for luna-send and systemctl
   const R = path.join(tmp, 'root'),
     S = path.join(tmp, 'pkg'),

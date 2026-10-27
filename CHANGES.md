@@ -703,3 +703,20 @@ commit_ref: "feature/lg-config (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T15:22:20Z"
 ```
+
+```yaml
+id: CU-20261027-33
+type: fix
+title: "Home loads once after an update"
+description: "The owner saw Home load twice after updating. reload-home.sh stopped Home's page and launched Home 2 s later, but webOS
+  starts Home again by itself: on the owner's TV after the 1.6.20 update the log shows the new launcher ready, then a relaunch 1.7 s
+  later from that launch. reload-home.sh now waits up to 8 s for a new Home process (one that was not running before the stop) and
+  launches Home only when none came up. CYTV_TEST_BIN and CYTV_HOME_WAIT let the test run it with stand-ins. Not yet tried on the
+  TV: running it there was not allowed in this session."
+impact: low
+affected_modules: ["scripts/reload-home.sh"]
+related_tests: ["tools/test/scripts.test.js"]
+commit_ref: "feature/one-home-load (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T16:31:41Z"
+```
