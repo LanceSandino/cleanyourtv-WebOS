@@ -296,6 +296,9 @@ body {
   width: var(--grid-w);
   display: grid;
   grid-template-columns: repeat(var(--cols), 1fr);
+}
+/* the gap of a grid; a centred grid is a flex box, which Chromium before 84 (webOS 5 and 6) does not space with gap */
+body:not([data-galign="center"]) #grid {
   gap: var(--gap-y) var(--gap-x);
 }
 /* an overlay grid: hidden until the focus moves down into it, then dark layer + grid over the screen above the dock */
@@ -350,9 +353,14 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  /* spaced with margins, half a gap on each side of a tile, and the box reaches half a gap further out on both sides, so the tiles sit
+     where the gaps would put them */
+  left: calc(var(--grid-l) - var(--gap-x) / 2);
+  width: calc(var(--grid-w) + var(--gap-x));
 }
 [data-galign="center"] #grid .tile {
   width: var(--tile-w);
+  margin: 0 calc(var(--gap-x) / 2) var(--gap-y);
 }
 .tile::after {
   content: "";

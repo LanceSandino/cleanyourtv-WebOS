@@ -55,6 +55,44 @@ run(async () => {
     }
   }
   ok(!gapBad.length, 'no flex container uses gap (a sibling margin instead)' + (gapBad.length ? ':\n  ' + gapBad.join('\n  ') : ''));
+  // the same, when one rule gives an element its gap and another turns it into a flex box in some state: Bloom's centred app grid
+  // ([data-galign="center"] #grid) kept the gap of #grid, so its tiles touched on webOS 5 and 6. A gap rule for that element has to leave
+  // the flex state out with :not(...).
+  const lastPart = s =>
+      s
+        .trim()
+        .split(/[\s>+~]+/)
+        .pop(),
+    states = s =>
+      s
+        .trim()
+        .split(/[\s>+~]+/)
+        .slice(0, -1)
+        .join(' ')
+        .match(/\[[^\]]+\]/g) || [];
+  const inherited = [];
+  for (const f of pages) {
+    const t = fs.readFileSync(f, 'utf8'),
+      re = /([^{}]+)\{([^{}]*)\}/g,
+      rules = [];
+    let m;
+    while ((m = re.exec(t))) rules.push({ sel: m[1].trim().split('\n').pop(), body: m[2] });
+    const flex = rules.filter(x => /display:\s*(inline-)?flex/.test(x.body)),
+      gaps = rules.filter(
+        x => /(^|[;\s])(row-|column-)?gap\s*:\s*(?!0(px)?\s*(;|$))/.test(x.body) && !/display:\s*(inline-)?flex/.test(x.body)
+      );
+    for (const fl of flex)
+      for (const fs1 of fl.sel.split(','))
+        for (const g of gaps)
+          for (const gs of g.sel.split(','))
+            if (lastPart(gs) === lastPart(fs1) && states(fs1).length && !states(fs1).some(c => gs.indexOf(':not(' + c + ')') >= 0))
+              inherited.push(path.relative(root, f) + ': ' + gs.trim() + ' still applies to ' + fs1.trim());
+  }
+  ok(
+    !inherited.length,
+    'no element keeps a gap from another rule while a state makes it a flex box' +
+      (inherited.length ? ':\n  ' + inherited.join('\n  ') : '')
+  );
   ok(
     !fs.existsSync(path.join(root, 'shared', 'flexgap.js')) && !/flexgap/.test(fs.readFileSync(path.join(root, 'ipk', 'build.py'), 'utf8')),
     'no script adds the spacing after a redraw'

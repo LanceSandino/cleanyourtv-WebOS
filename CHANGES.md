@@ -47,3 +47,19 @@ commit_ref: "feature/api-host-check (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T05:05:32Z"
 ```
+
+```yaml
+id: CU-20261027-10
+type: fix
+title: "A centred app grid (Bloom) has its gaps on webOS 5 and 6"
+description: "grid.align center makes the app grid a flex box, and it kept the gap of the normal grid; Chromium before 84 (webOS 5 and
+  6) ignores gap in a flex box, so Bloom's tiles touched there (seen in Chromium 68 with tools/theme-preview.mjs). The gap now applies
+  only to the normal grid (body:not([data-galign=center]) #grid), and a centred grid spaces its tiles with half a gap of margin on each
+  side, its box reaching half a gap further out, so the tiles sit where they sat in a current Chrome (pixel-identical there)."
+impact: low
+affected_modules: ["app/src/css/home.css", "app/index.html"]
+related_tests: ["tools/test/pages.test.js"]
+commit_ref: "feature/ui-polish (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T04:55:45Z"
+```
