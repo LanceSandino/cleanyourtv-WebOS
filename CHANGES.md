@@ -356,3 +356,21 @@ commit_ref: "feature/ui-round-2 (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T07:27:51Z"
 ```
+
+```yaml
+id: CU-20261027-22
+type: feature
+title: "Uninstall apps from Home, not only hide them"
+description: "The owner asked to remove apps, not only hide them. apps.js passes the app manager's removable flag to the launcher
+  (false for this project's apps, the Homebrew Channel, the input hook and com.webos./com.lge. apps whatever the app manager says) and
+  POST /api/uninstall {id} removes a removable app through com.webos.appInstallService/remove (store apps) or dev/remove (developer
+  apps), then takes it out of the dock and the hidden list. On the owner's TV, LG Movies & TV and LG Gaming Portal are removable store
+  apps; Home Hub, LG Channels, Sports, Multi View, LG Gallery+, Amazon Alexa, Apps, Web Browser and Camera are system apps (hide
+  only). The launcher offers Uninstall... (with a confirmation) when holding OK on an app, and on hold in Customise > Hidden apps."
+impact: medium
+affected_modules: ["helper/apps.js", "app/src/js/menus.js", "app/src/js/layout.js", "docs/launcher.md"]
+related_tests: ["tools/test/apps.test.js", "tools/test/api.test.js"]
+commit_ref: "feature/uninstall-apps (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T07:30:55Z"
+```

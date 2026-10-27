@@ -13,6 +13,9 @@ const P = require('./paths'),
   { LAUNCHER_KEYS } = require('./config');
 
 const HALF_LIFE = 30 * 24 * 3600 * 1000; // usage counts halve every 30 days
+// apps that are never uninstalled from Home, whatever the app manager says: this project's, the Homebrew Channel (it keeps the TV
+// rooted), the input hook the Input key runs on, and LG's own
+const KEEP = /^(com\.cleanyourtv\.|org\.webosbrew\.hbchannel$|org\.webosbrew\.inputhook$|com\.webos\.|com\.lge\.)/;
 const WALL_SECS = [0, 10, 30, 60, 180, 300, 900, 3600]; // the photo-change intervals Customise > Wallpapers offers
 // Customise > Screensaver: how long Home is left alone before it starts, and how long each photo stays (seconds)
 const SAVER_AFTER = [60, 120, 300, 600, 900, 1800],
@@ -35,7 +38,14 @@ function create(ctx) {
         if (!Array.isArray(r.apps)) return appCache || [];
         appCache = r.apps
           .filter(a => a.visible !== false && a.id !== HOME)
-          .map(a => ({ id: a.id, title: a.title, icon: a.largeIcon || a.icon, folder: a.folderPath, type: a.type }));
+          .map(a => ({
+            id: a.id,
+            title: a.title,
+            icon: a.largeIcon || a.icon,
+            folder: a.folderPath,
+            type: a.type,
+            removable: a.removable === true && !KEEP.test(a.id),
+          }));
         appCacheAt = Date.now();
         return appCache;
       });
@@ -82,6 +92,30 @@ function create(ctx) {
   }
   async function apps() {
     return (await installed()).concat(pinned());
+  }
+  // ---- uninstalling (hold OK on an app > Uninstall): what the app manager calls removable (LG's store apps, developer apps), never
+  // LG's system apps, this project's own apps, the Homebrew Channel (root) or the input hook the Input key uses ----
+  async function uninstall(id) {
+    if (!/^[\w.\-]+$/.test(id)) return { returnValue: false, error: 'bad id' };
+    appCache = null; // the app manager's own answer, not a list from before
+    const a = (await askApps()).find(x => x.id === id);
+    if (!a) return { returnValue: false, error: 'This app is not installed.' };
+    if (!a.removable)
+      return { returnValue: false, error: 'This app cannot be uninstalled: it is part of the TV, or CleanYourTV needs it.' };
+    const dev = /^\/media\/developer\//.test(a.folder || '');
+    const r = await luna(
+      'luna://com.webos.appInstallService/' + (dev ? 'dev/remove' : 'remove'),
+      { id, subscribe: false },
+      { wait: 30000 }
+    );
+    if (r.returnValue === false) return { returnValue: false, error: r.errorText || 'The TV did not remove the app.' };
+    console.log('apps: uninstalled ' + id);
+    config.update('launcher', c => {
+      if (Array.isArray(c.dock)) c.dock = c.dock.filter(i => i !== id);
+      if (Array.isArray(c.hidden)) c.hidden = c.hidden.filter(i => i !== id);
+    });
+    appCache = null;
+    return { returnValue: true };
   }
   async function pin(b) {
     const id = String(b.id || '');
@@ -235,6 +269,7 @@ function create(ctx) {
       if (!/^[\w.\-]+$/.test(b.id || '')) return web.json(res, { error: 'bad id' }, 400);
       return web.json(res, await luna('luna://com.webos.applicationManager/launch', { id: b.id, params: b.params || {} }));
     }
+    if (u === '/api/uninstall' && req.method === 'POST') return web.json(res, await uninstall(String((await body(req)).id || '')));
     if (u === '/api/config' && req.method === 'POST') {
       saveLauncherConfig(await body(req));
       return web.json(res, { returnValue: true });
@@ -252,7 +287,7 @@ function create(ctx) {
 
   return {
     name: 'apps',
-    paths: ['/api/apps', '/api/inputs', '/api/inputs/pin', '/api/foreground', '/api/launch', '/api/config'],
+    paths: ['/api/apps', '/api/inputs', '/api/inputs/pin', '/api/foreground', '/api/launch', '/api/config', '/api/uninstall'],
     prefix: '/icon/',
     handle,
     start: () => setInterval(pollForeground, 4000),

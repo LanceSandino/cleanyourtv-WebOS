@@ -656,5 +656,11 @@
  "Left and Right: browse · OK: use this photo · Back: cancel": "Left and Right: browse · OK: use this photo · Back: cancel",
  "Could not read the photos.": "Could not read the photos.",
  "Look": "Look",
- "Photos": "Photos"
+ "Photos": "Photos",
+ "Uninstall...": "Uninstall...",
+ "Uninstall %s?": "Uninstall %s?",
+ "Uninstalling %s...": "Uninstalling %s...",
+ "%s is uninstalled.": "%s is uninstalled.",
+ "OK shows an app on Home again. Hold OK to uninstall it, where the TV allows that.": "OK shows an app on Home again. Hold OK to uninstall it, where the TV allows that.",
+ "part of the TV": "part of the TV"
 }

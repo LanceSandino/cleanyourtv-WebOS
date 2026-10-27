@@ -112,7 +112,7 @@ function load() {
       if (sig === lastSig) return;
       lastSig = sig;
       apps = x.apps.map(function (a) {
-        return a.input ? { id: a.id, title: a.title, input: a.input, off: !!a.off } : { id: a.id, title: a.title };
+        return a.input ? { id: a.id, title: a.title, input: a.input, off: !!a.off } : { id: a.id, title: a.title, rm: !!a.removable };
       });
       cfg = x.config || {};
       useLang(cfg.lang);

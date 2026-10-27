@@ -110,4 +110,50 @@ run(async () => {
     r.j.returnValue === true && config.get().pinnedInputs.length === 1 && config.get().dock.indexOf('com.webos.app.hdmi2') < 0,
     'an input taken off Home leaves the dock too'
   );
+
+  // ---- uninstalling (hold OK > Uninstall): only what the app manager calls removable, never LG's own or what CleanYourTV needs ----
+  const removed = [];
+  const luna2 = async (uri, p) => {
+    if (/listApps/.test(uri))
+      return {
+        returnValue: true,
+        apps: [
+          { id: 'netflix', title: 'Netflix', folderPath: '/media/cryptofs/apps/usr/palm/applications/netflix', removable: true },
+          { id: 'com.webos.app.lgchannels', title: 'LG Channels', folderPath: '/media/system/apps/x', removable: false },
+          { id: 'org.webosbrew.hbchannel', title: 'Homebrew Channel', folderPath: '/media/developer/apps/x', removable: true },
+          { id: 'com.cleanyourtv.manager', title: 'CleanYourTV', folderPath: '/media/developer/apps/y', removable: true },
+          {
+            id: 'com.example.dev',
+            title: 'Dev app',
+            folderPath: '/media/developer/apps/usr/palm/applications/com.example.dev',
+            removable: true,
+          },
+        ],
+      };
+    if (/appInstallService/.test(uri)) removed.push(uri.replace('luna://com.webos.appInstallService/', '') + ' ' + p.id);
+    return { returnValue: true };
+  };
+  const config2 = memoryConfig({ dock: ['netflix', 'com.example.dev'], hidden: ['com.example.dev'] });
+  const apps2 = req('apps').create({ config: config2, luna: luna2, version: '1.6.0', feature: () => null });
+  const list2 = (await call(apps2, '/api/apps')).j.apps;
+  const rm = id => list2.filter(a => a.id === id)[0].removable;
+  ok(
+    rm('netflix') &&
+      rm('com.example.dev') &&
+      !rm('com.webos.app.lgchannels') &&
+      !rm('org.webosbrew.hbchannel') &&
+      !rm('com.cleanyourtv.manager'),
+    "the launcher is told which apps can be uninstalled: store and developer apps, not LG's system apps, the Homebrew Channel or CleanYourTV"
+  );
+  const refused = [];
+  for (const id of ['com.webos.app.lgchannels', 'org.webosbrew.hbchannel', 'com.cleanyourtv.manager', 'not.installed', '../x'])
+    refused.push((await call(apps2, '/api/uninstall', 'POST', { id })).j.returnValue === false);
+  ok(refused.every(Boolean) && !removed.length, 'LG apps, the apps CleanYourTV needs, unknown ids and bad ids are not uninstalled');
+  const a1 = (await call(apps2, '/api/uninstall', 'POST', { id: 'netflix' })).j;
+  const a2 = (await call(apps2, '/api/uninstall', 'POST', { id: 'com.example.dev' })).j;
+  ok(
+    a1.returnValue && a2.returnValue && removed.join() === 'remove netflix,dev/remove com.example.dev',
+    "a store app goes through the app store's remove, a developer app through dev/remove"
+  );
+  ok(!config2.get().dock.length && !config2.get().hidden.length, 'an uninstalled app leaves the dock and the hidden list');
 });

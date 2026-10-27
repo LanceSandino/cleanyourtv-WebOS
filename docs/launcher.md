@@ -21,7 +21,7 @@ same on every supported webOS version.
 |---|---|
 | Open an app | OK |
 | Move between the rows | Up and Down go to the app or button above or below; the opposite key right after goes straight back to where the focus was |
-| App options (dock, hide) | Hold OK on an app |
+| App options (dock, hide, uninstall) | Hold OK on an app |
 | Move or remove a top button | Hold OK on it |
 | Customise | The **Customise** button |
 | Live TV | The **Live TV** button or tile |
@@ -65,6 +65,14 @@ with Home still in view on the left, so a change shows at once:
 
 Putting the dock, buttons, hidden apps, order and clock back to the defaults is in the manager app: **Reset Home customisation**.
 
+
+## Uninstalling apps
+
+Holding OK on an app offers **Uninstall...** for the apps the TV lets go of: apps from LG's app store (also LG's own store apps, such
+as LG Movies & TV or LG Gaming Portal) and developer apps. It asks first; the app and its data leave the TV, and LG's app store
+installs it again. LG's system apps (Home Hub, LG Channels, Sports, Multi View and the like) are part of the firmware and can only be
+hidden. CleanYourTV, the Homebrew Channel (it keeps the TV rooted) and LG Input Hook (the Input key needs it) are never offered. In
+**Customise** > **Hidden apps**, holding OK on a hidden app uninstalls it too.
 
 ## Inputs
 

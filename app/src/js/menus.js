@@ -438,8 +438,33 @@ function appMenu(a) {
           toast(t('%s is hidden. Customise > Hidden apps shows it again.').replace('%s', a.title));
         },
       });
+    if (a.rm) items.push({ label: t('Uninstall...'), stay: true, fn: uninstallMenu.bind(null, a) });
     return items;
   });
+}
+/* uninstalling (helper/apps.js): asked first; LG's system apps and the ones CleanYourTV needs are not offered */
+function uninstallMenu(a) {
+  openMenu(t('Uninstall %s?').replace('%s', a.title), [
+    { label: t('Cancel'), fn: backMenu, stay: true },
+    {
+      label: t('Uninstall'),
+      sub: t("removed from the TV with its data; LG's app store installs it again"),
+      fn: function () {
+        toast(t('Uninstalling %s...').replace('%s', a.title));
+        api('/api/uninstall', { id: a.id }).then(
+          function (r) {
+            if (r && r.returnValue) {
+              toast(t('%s is uninstalled.').replace('%s', a.title));
+              setTimeout(load, 1500);
+            } else toast(t((r && r.error) || 'The TV did not remove the app.'), true);
+          },
+          function () {
+            toast(t('The service did not answer.'), true);
+          }
+        );
+      },
+    },
+  ]);
 }
 
 function removeButton(o) {
@@ -982,14 +1007,25 @@ function hiddenMenu() {
   openBuilt(t('Hidden apps'), function () {
     var h = hiddenIds();
     if (!h.length) return [{ note: t('No hidden apps. To hide one, hold OK on it on Home and choose Hide app.') }];
-    return [{ note: t('OK shows an app on Home again.') }].concat(
+    var by = {};
+    apps.forEach(function (a) {
+      by[a.id] = a;
+    });
+    return [{ note: t('OK shows an app on Home again. Hold OK to uninstall it, where the TV allows that.') }].concat(
       h.map(function (id) {
         return {
           label: title(id),
+          sub: by[id] && by[id].rm ? '' : t('part of the TV'),
           stay: true,
           fn: function () {
             unhideApp(id);
           },
+          hold:
+            by[id] && by[id].rm
+              ? function () {
+                  uninstallMenu(by[id]);
+                }
+              : null,
         };
       })
     );
