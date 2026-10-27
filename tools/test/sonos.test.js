@@ -376,6 +376,17 @@ run(async () => {
   moved.refuseRenew = false;
   moved.timeout = 1800;
 
+  // ---- the place on screen and LG's bar change without subscribing again, so a change right after still shows
+  await until(() => son.status().mode === 'events');
+  const subsN = moved.n,
+    n5 = shows.length;
+  r = await call(son, '/api/sonos/set', 'POST', { position: 'top-right', hideLg: false });
+  await moved.change(22, false);
+  ok(
+    (await until(() => shows.length === n5 + 1)) && shows[n5].position === 'top-right' && shows[n5].volume === 22 && moved.n === subsN,
+    "a new place or LG's bar keeps the subscription, and the next change shows in the new place"
+  );
+
   // ---- switched off: unsubscribed, the event port closed
   await until(() => son.status().mode === 'events');
   const lastCb = moved.lastCallback,

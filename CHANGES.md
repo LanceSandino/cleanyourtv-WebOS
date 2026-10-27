@@ -688,3 +688,18 @@ commit_ref: "feature/lg-config (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T15:15:43Z"
 ```
+
+```yaml
+id: CU-20261027-46
+type: fix
+title: "Changing the bar's place or LG's bar no longer restarts the Sonos subscription"
+description: "Seen on the TV while testing: switching Hide LG's volume bar off called sync(), which subscribed to the speaker again
+  and cleared the volume, so a change in the next second showed no bar. set() now starts again only when Sonos volume is switched on
+  or off or another speaker is chosen; the place and hideLg only save and look at LG's bar again (lgPlan)."
+impact: low
+affected_modules: ["helper/sonos.js"]
+related_tests: ["tools/test/sonos.test.js (a new place or LG's bar keeps the subscription, and the next change shows in the new place)"]
+commit_ref: "feature/lg-config (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T15:22:20Z"
+```

@@ -534,15 +534,20 @@ function create(ctx, opts) {
   }
 
   // make the running work match the settings: at start and after every change
+  // LG's bar after a change of the settings: looked at now, and every 20 s while it may apply
+  function lgPlan() {
+    const c = cfg();
+    if (lgTimer) clearInterval(lgTimer);
+    lgTimer = c.enabled && c.hideLg ? setInterval(lgSync, o.outputMs) : null;
+    lgSync();
+  }
   function sync() {
     const c = cfg();
     gen++;
     clearTimers();
     unsubscribe();
     wait = 0;
-    if (lgTimer) clearInterval(lgTimer);
-    lgTimer = c.enabled && c.hideLg ? setInterval(lgSync, o.outputMs) : null;
-    lgSync();
+    lgPlan();
     if (!c.enabled) {
       closePort();
       speaker = null;
@@ -578,8 +583,12 @@ function create(ctx, opts) {
     }
     if (POSITIONS.indexOf(b.position) >= 0) n.position = b.position;
     if (typeof b.hideLg === 'boolean') n.hideLg = b.hideLg;
+    const was = cfg();
     save(n);
-    sync();
+    // only switching on or off and another speaker start again; the place and LG's bar keep the subscription (a change of the
+    // volume while it subscribes again would not show)
+    if (!!was.enabled !== !!n.enabled || (was.speaker && was.speaker.id) !== (n.speaker && n.speaker.id)) sync();
+    else lgPlan();
     return status();
   }
 
