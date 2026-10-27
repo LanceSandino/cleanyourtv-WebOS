@@ -1,6 +1,7 @@
 /* ---------- Wallpapers: the service's photos (uploads and Immich, GET /api/wallpapers/list) behind Home instead of the theme's
    background. A random photo each time Home opens and every cfg.wall.secs seconds (0: only when Home opens), cross-faded between two
-   layers (opacity only). Darkened like a theme's wallpaper. Off, or no photos: the theme as it is. ---------- */
+   layers (opacity only). Darkened like a theme's wallpaper; a photo whose shape is far from the screen's is shown whole over a
+   blurred copy of itself. Off, or no photos: the theme as it is. ---------- */
 /* seconds between photos; settings saved before 1.6.10 hold minutes in "every" */
 function wallSecs() {
   var w = cfg.wall || {};
@@ -42,7 +43,11 @@ var WALL = (function () {
         on = l[side],
         off = l[side ^ 1];
       side ^= 1;
-      on.style.backgroundImage = 'url("' + url + '")';
+      /* the whole photo when its shape is far from the screen's (a portrait photo would lose heads and feet), over a blurred and
+         darkened copy that fills the screen, as the screensaver shows it whole; a photo near 16:9 fills the screen as before */
+      var r = im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : 16 / 9;
+      on.style.setProperty('--wpimg', 'url("' + url + '")');
+      on.classList.toggle('fit', Math.abs(r - 16 / 9) / (16 / 9) > 0.12);
       on.classList.add('on');
       off.classList.remove('on');
       dim();

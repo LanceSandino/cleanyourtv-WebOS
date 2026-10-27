@@ -720,3 +720,20 @@ commit_ref: "feature/one-home-load (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T16:31:41Z"
 ```
+
+```yaml
+id: CU-20261027-34
+type: fix
+title: "Wallpapers show a portrait photo whole instead of cropping it"
+description: "The owner's photo of Home showed a portrait wallpaper cut to the middle (background-size: cover), heads off; the
+  screensaver shows photos whole (contain on black). wall.js now reads the photo's shape when it has loaded: more than 12 % away from
+  16:9, the layer gets .fit, which draws the photo whole (::after, contain) over a blurred (40 px), darkened copy that fills the
+  screen (::before, cover, 80 px over each edge so the blur has no light rim). A photo near 16:9 fills the screen as before. The photo
+  is now a CSS variable (--wpimg) on the layer; only the layer's opacity animates, so the blur is drawn once."
+impact: low
+affected_modules: ["app/src/js/wall.js", "app/src/css/home.css", "tools/oldchrome.js", "docs/wallpapers.md"]
+related_tests: ["tools/oldchrome.js (wallpaper fit: a portrait stand-in photo gets contain, a landscape one cover; wallpaper chooser)"]
+commit_ref: "feature/wallpaper-fit (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T19:36:23Z"
+```

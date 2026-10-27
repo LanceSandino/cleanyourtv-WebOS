@@ -127,7 +127,7 @@ const SAVER_KEYS =
 const WALLPICK_KEYS =
   '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
   'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}' +
-  'function bg(){return [].map.call(document.querySelectorAll(".wp.on"),function(x){return x.style.backgroundImage}).join()}' +
+  'function bg(){return [].map.call(document.querySelectorAll(".wp.on"),function(x){return x.style.getPropertyValue("--wpimg")}).join()}' +
   // the glow's final opacity, without its fade (headless Chromium 68 does not always run a fade on in virtual time)
   'function done(){var glow=[].every.call(document.querySelectorAll(".glow"),function(g){g.style.transition="none";return getComputedStyle(g).opacity==="0"});' +
   'var h=document.querySelector(".halo.on");if(h)h.style.transition="none";var halo=!!h&&getComputedStyle(h).opacity==="1";' +
@@ -211,6 +211,15 @@ const DOCK_ROW =
   'var c=document.querySelector("#grid .wcard"),b=c&&c.getBoundingClientRect(),seen=!!b&&b.top>=0&&b.bottom<=window.innerHeight,up=sc();key(39);setTimeout(function(){' +
   'var gone=!document.querySelector("#grid .wcard"),down=sc();var ok=seen&&!!up&&gone&&!down;' +
   'document.body.setAttribute("data-dock",ok?"ok":"bad seen="+seen+" top="+(b&&Math.round(b.top))+" up="+up+" gone="+gone+" down="+down)},1200)},1200)},2500)},300)})()</script>';
+// a portrait wallpaper (the third stand-in photo) is shown whole (contain) over a blurred copy; a landscape one fills the screen
+const WALL_FIT =
+  '<script>(function(){function on(){return document.querySelector(".wp.on")}function after(x){return getComputedStyle(x,"::after").backgroundSize}' +
+  'function pick(id,cb){cfg.wall={on:true,secs:0,pick:id};WALL.sync();var n=0,w=setInterval(function(){var x=on();' +
+  'if(++n<50&&!(x&&x.style.getPropertyValue("--wpimg").indexOf(id)>=0))return;clearInterval(w);cb(x)},200)}' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);pick("u/0000000000000003",function(p){' +
+  'var portrait=!!p&&p.classList.contains("fit")&&after(p)==="contain";pick("u/0000000000000002",function(l){' +
+  'var landscape=!!l&&!l.classList.contains("fit")&&after(l)==="cover";' +
+  'document.body.setAttribute("data-fit",portrait&&landscape?"ok":"bad portrait="+portrait+" landscape="+landscape)})})},500)})()</script>';
 // [name, file, what it draws, how many at least, milliseconds of page time to wait, a script to run in it, a theme id]
 const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
@@ -227,6 +236,7 @@ const PAGES = [
   ['linking plex', 'app/index.html', /data-link="ok"/g, 1, 20000, WATCH_LINK],
   ['hold ok', 'app/index.html', /data-hold="ok"/g, 1, 20000, HOLD_OK],
   ['lg row', 'app/index.html', /data-lg="ok"/g, 1, 15000, LG_ROW],
+  ['wallpaper fit', 'app/index.html', /data-fit="ok"/g, 1, 15000, WALL_FIT],
   ['dock row in glass', 'app/index.html', /data-dock="ok"/g, 1, 15000, DOCK_ROW, 'glass'],
 ];
 let famN = 0,
@@ -237,6 +247,12 @@ const photo = u =>
   '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000"><rect width="1600" height="1000" fill="#3a6e8f"/>' +
   '<circle cx="1200" cy="300" r="140" fill="#f4d35e"/><path d="M0 1000 L500 520 L900 820 L1250 600 L1600 1000Z" fill="#2d4a3e"/>' +
   '<text x="80" y="140" font-size="90" fill="#fff" font-family="sans-serif">' +
+  u.split('/').pop() +
+  '</text></svg>';
+// a portrait one (for the wallpaper's whole-photo view)
+const portrait = u =>
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1600"><rect width="1000" height="1600" fill="#8f5a3a"/>' +
+  '<circle cx="500" cy="420" r="200" fill="#f4d35e"/><text x="60" y="1500" font-size="80" fill="#fff" font-family="sans-serif">' +
   u.split('/').pop() +
   '</text></svg>';
 const TOKEN = 'harness-token-0123456789abcdef',
@@ -347,6 +363,7 @@ function serve() {
     // three Wallpapers photos for the chooser (wallpick.js)
     if (u === '/api/wallpapers/list')
       return json({ photos: ['u/0000000000000001', 'u/0000000000000002', 'u/0000000000000003'], stamp: '3:test' });
+    if (/^\/api\/wallpapers\/photo\/u\/\d{15}3$/.test(u)) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(portrait(u));
     if (/^\/api\/wallpapers\/photo\/u\/\d{16}$/.test(u)) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(photo(u));
     if (u === '/api/photofeed/next') return json({ id: 'p' + ++famN });
     if (/^\/api\/photofeed\/photo\/p\d+$/.test(u)) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(photo(u));
