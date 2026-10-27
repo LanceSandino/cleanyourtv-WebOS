@@ -36,7 +36,12 @@ whenever the group is switched on, the service:
    if it does not, it takes the file away again and leaves the preload manager alone until the setting is changed;
 3. restarts the preload manager: `systemctl restart preload-manager.service`.
 
-It looks every ten minutes whether the setting is still there and puts it back (with a restart) if it was lost. Switching the group or
+After the restart it asks the preload manager for its own view (`getPreloadPolicy`). If it still has apps switched on that the list
+switches off, the setting is taken away again and nothing more is restarted until the group is switched again. **On the TV this was
+tried on (webOS 25) that is what happens:** the preload manager keeps LG's own list after the restart and decides with its saved
+`allowedApps` (`/var/preferences/webos-preload-manager-conf.json`), so this group does not stop pre-loading there yet.
+
+It looks every ten minutes whether the setting is still there and still followed, and puts it back (with a restart) if it was lost. Switching the group or
 the debloat off removes the file, asks configd to read again and restarts the preload manager once more, so LG's list is back. A
 restart of the TV clears the file; apps that were already started stay until they are closed. It does nothing while LG's Home is chosen.
 

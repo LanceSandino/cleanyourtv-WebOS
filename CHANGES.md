@@ -649,3 +649,22 @@ commit_ref: "feature/lg-config (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T14:32:42Z"
 ```
+
+```yaml
+id: CU-20261027-44
+type: fix
+title: "Stop LG pre-loading checks that the preload manager follows the list"
+description: "Deployed on the owner's TV (with Lance's go-ahead): the rmm layer works, configd gives volumeOSD false and the new
+  supportAppList (only com.webos.app.home on, also to the preload manager's own identity), and preload-manager.service was restarted
+  once (stable, NRestarts 0). But its getPreloadPolicy after the restart still listed LG's own 20 apps as enabled and it pre-started
+  com.webos.app.browser 7 s later: it does not take isEnabled from configd at runtime; its gate is isAllowed from allowedApps in
+  /var/preferences/webos-preload-manager-conf.json. lgpreload.js now asks getPreloadPolicy after the restart (and at every check while
+  set): when the preload manager keeps apps on that the list switches off, the setting is taken away again and nothing more is
+  restarted until the group is switched; docs say the group does not stop pre-loading there yet."
+impact: low
+affected_modules: ["helper/lgpreload.js", "docs/debloat.md", "docs/security.md"]
+related_tests: ["tools/test/lgconfig.test.js (a preload manager that keeps its own list: one restart, then taken away, nothing more, not retried by itself; one that follows: its policy confirms)"]
+commit_ref: "feature/lg-config (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T14:47:45Z"
+```

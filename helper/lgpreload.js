@@ -29,6 +29,8 @@ function create(ctx, opts) {
       startMs: 60000, // after the service starts, like the debloat at boot: the TV settles first
       checkMs: 10 * 60 * 1000, // how often it looks whether the setting is still there
       restart: () => exec.sh('systemctl restart preload-manager.service', 30000),
+      settleMs: 1500, // the preload manager's start, before its policy is asked
+      tries: 8,
     },
     opts
   );
@@ -53,6 +55,28 @@ function create(ctx, opts) {
     const r = await o.restart();
     note(why + (r && r.ok === false ? '; restarting preload-manager failed: ' + (r.error || r.err || '') : '; preload-manager restarted'));
   }
+  // the preload manager's own view (getPreloadPolicy): true when every app it knows that the list switches off is off there, false when
+  // it kept apps on, null when it does not answer. On the owner's TV (webOS 25) it kept LG's own list after the restart: it does not
+  // take isEnabled from configd at runtime, so the setting is taken away again there and nothing more is restarted.
+  async function taken(list) {
+    const off = {};
+    list.forEach(a => {
+      if (a && !KEEP(a.id)) off[a.id] = 1;
+    });
+    for (let i = 0; i < o.tries; i++) {
+      await new Promise(r => setTimeout(r, i ? o.settleMs : 0));
+      const r = await ctx.luna('luna://com.webos.service.preloadmanager/getPreloadPolicy', {});
+      const apps = r && Array.isArray(r.applications) ? r.applications : null;
+      if (!apps) continue;
+      return apps.every(a => !a || !off[a.id] || a.isEnabled === false);
+    }
+    return null;
+  }
+  async function giveUp(why) {
+    broken = true;
+    await layer.clear(NS);
+    note(why + '; taken away again, nothing more is restarted until the setting is changed');
+  }
   async function apply() {
     const now = (await layer.get([KEY]))[KEY];
     if (!Array.isArray(now) || !now.length) return note('configd gave no app list; nothing changed');
@@ -60,13 +84,17 @@ function create(ctx, opts) {
     await layer.set(NS, { supportAppList: list });
     // only restart when configd really gives the new list (the layer works on this TV)
     const after = (await layer.get([KEY]))[KEY];
-    if (!Array.isArray(after) || after.length !== list.length || !after.every(a => a && (KEEP(a.id) || a.isEnabled === false))) {
-      broken = true;
-      await layer.clear(NS);
-      return note('configd did not take the list; taken away again, preload-manager left as it is');
-    }
+    if (!Array.isArray(after) || after.length !== list.length || !after.every(a => a && (KEEP(a.id) || a.isEnabled === false)))
+      return giveUp('configd did not take the list');
     const off = list.filter(a => !KEEP(a.id)).length;
-    await restart('LG pre-loading stopped (' + off + ' apps off, Home kept)');
+    await restart('list set (' + off + ' apps off, Home kept)');
+    if ((await taken(list)) === false) return giveUp('the preload manager kept its own list after the restart');
+    note('LG pre-loading stopped (' + off + ' apps off, Home kept)');
+  }
+  // still in place and still followed (a check every few minutes)
+  async function check() {
+    const list = ((await layer.get([KEY]))[KEY] || []).filter(Boolean);
+    if ((await taken(list)) === false) await giveUp('the preload manager does not follow the list');
   }
   // make it match the settings; one at a time, a change meanwhile looks again
   async function sync() {
@@ -76,7 +104,9 @@ function create(ctx, opts) {
       do {
         again = false;
         if (wanted()) {
-          if (!layer.owned(NS) && !broken) await apply();
+          if (broken) continue;
+          if (!layer.owned(NS)) await apply();
+          else await check();
         } else if (await layer.clear(NS)) await restart("LG's pre-loading back");
       } while (again);
     } catch (e) {

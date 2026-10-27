@@ -37,8 +37,14 @@ run(async () => {
     }
   }
   reconfigure();
+  // the preload manager: reads the list when it starts (or keeps LG's own, as it did on the owner's TV: honors false)
+  const pm = { honors: true, list: JSON.parse(JSON.stringify(BASE[PRE].supportAppList)) };
+  const pmRestart = () => {
+    pm.list = JSON.parse(JSON.stringify(pm.honors ? effective[LIST] : BASE[PRE].supportAppList));
+  };
   const luna = async (uri, p) => {
     calls.push(uri.replace('luna://', ''));
+    if (/preloadmanager\/getPreloadPolicy$/.test(uri)) return { returnValue: true, applications: pm.list };
     if (/config\/reconfigure$/.test(uri)) {
       if (!deaf) reconfigure();
       return { returnValue: true };
@@ -125,7 +131,9 @@ run(async () => {
       record: path.join(tmp, 'record2.json'),
       startMs: 5,
       checkMs: 100000,
-      restart: async () => (restarts++, { ok: true }),
+      settleMs: 5,
+      tries: 3,
+      restart: async () => (restarts++, pmRestart(), { ok: true }),
     }
   );
   const listNow = async () => (await cfg.get([LIST]))[LIST];
@@ -141,8 +149,8 @@ run(async () => {
     'with the debloat on: configd gives the list with only Home on, and the preload manager is restarted to read it'
   );
   ok(
-    pre.status().on && pre.status().set && /stopped \(3 apps off, Home kept\)/.test(pre.status().last),
-    'its status: ' + pre.status().last
+    pre.status().on && pre.status().set && /^LG pre-loading stopped \(3 apps off, Home kept\)$/.test(pre.status().last),
+    'and the preload manager follows it (its own policy says so): ' + pre.status().last
   );
   await pre.sync();
   ok(restarts === 1, 'nothing more while it is in place');
@@ -191,6 +199,38 @@ run(async () => {
   });
   await pre.sync();
   ok(restarts === 3, 'and switching it off then restarts nothing');
+  // a preload manager that keeps LG's own list after its restart (seen on the owner's TV): taken away again, no more restarts
+  conf.update('test', c => {
+    c.options.debloatOff = [];
+  });
+  pm.honors = false;
+  const rk = restarts;
+  const pre3 = G.create(
+    { config: conf, luna, profile: { get: () => prof } },
+    {
+      dir: layer,
+      record: path.join(tmp, 'record3.json'),
+      startMs: 1e6,
+      checkMs: 1e6,
+      settleMs: 5,
+      tries: 3,
+      restart: async () => (restarts++, pmRestart(), { ok: true }),
+    }
+  );
+  await pre3.sync();
+  ok(
+    restarts === rk + 1 && /kept its own list/.test(pre3.status().last) && !fs.existsSync(path.join(layer, 'USA', PRE + '.json')),
+    'a preload manager that keeps its own list: one restart, then the setting is taken away again: ' + pre3.status().last
+  );
+  await pre3.sync();
+  ok(restarts === rk + 1, 'and nothing more after that');
+  pm.honors = true;
+  await pre3.sync();
+  ok(restarts === rk + 1 && !fs.existsSync(path.join(layer, 'USA', PRE + '.json')), 'not tried again by itself');
+  conf.update('test', c => {
+    c.options.debloatOff = ['preload'];
+  });
+  await pre.sync();
   // the manager switching a debloat group reaches it through debloat.js, and tries again
   conf.update('test', c => {
     c.options.debloatOff = [];

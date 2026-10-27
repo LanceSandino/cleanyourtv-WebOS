@@ -63,7 +63,8 @@ clears all of it.
 **Stop LG pre-loading apps** also restarts one of LG's services, `preload-manager.service` (`systemctl restart`), because that
 service reads its app list only when it starts: once when the group is switched on or off, about a minute after every start of the
 TV, and when the setting was lost. Its list keeps Home (the launcher) and anything of the Homebrew Channel's switched on. If configd
-does not take the list on a TV, the file is taken away again and nothing is restarted. See [Debloat](debloat.md#lgs-pre-loading).
+does not take the list on a TV, or the preload manager keeps its own list after the restart (as on the webOS 25 TV it was tried on),
+the file is taken away again and nothing more is restarted. See [Debloat](debloat.md#lgs-pre-loading).
 
 ## Themes
 
