@@ -127,6 +127,8 @@ const photo = u =>
   '<text x="80" y="140" font-size="90" fill="#fff" font-family="sans-serif">' +
   u.split('/').pop() +
   '</text></svg>';
+const TOKEN = 'harness-token-0123456789abcdef',
+  noToken = []; // API calls a page made without the token
 const marks = []; // what the pages log (perf lines: tools/perf-tv.sh reads the same on a TV)
 function serve() {
   const srv = http.createServer((q, r) => {
@@ -136,6 +138,13 @@ function serve() {
     if (q.method === 'OPTIONS') return r.writeHead(204), r.end();
     const json = o => (r.writeHead(200, { 'content-type': 'application/json' }), r.end(JSON.stringify(o)));
     const p = PAGES.filter(x => '/' + x[0].replace(/ /g, '-') + '.html' === u)[0];
+    // the API token (apitoken.js): served next to the pages as on the TV, and every API call of a page must carry it
+    if (u === '/cytv-token.js')
+      return r.writeHead(200, { 'content-type': 'text/javascript' }), r.end("var CYTV_TOKEN = '" + TOKEN + "';\n");
+    if (/^\/api\/(apps|inputs|manager\/status|photofeed\/next|log)$/.test(u) && q.headers['x-cytv-token'] !== TOKEN) {
+      noToken.push(u);
+      return r.writeHead(403, { 'content-type': 'application/json' }), r.end('{"error":"token required"}');
+    }
     if (p) return (famN = 0), r.writeHead(200, { 'content-type': 'text/html' }), r.end(page(p[1], p[5])); // each page starts at p1
     if (u === '/qrcode.js')
       return (
@@ -246,6 +255,11 @@ function run(bin, url, extra, budget) {
                 '\n  browser: ' +
                 (r.stderr || '').slice(-600))
         );
+        ok(
+          !noToken.length,
+          e[0] + ': ' + p[0] + ' sends the API token with every call' + (noToken.length ? ': ' + noToken.join(', ') : '')
+        );
+        noToken.length = 0;
         const ready = marks.filter(m => /^perf launcher ready /.test(m)).pop();
         if (p[0] === 'launcher' && ready)
           console.log('     ' + e[0] + ': launcher ready ' + ready.split(' ').pop() + ' ms after the page load (this computer, not a TV)');

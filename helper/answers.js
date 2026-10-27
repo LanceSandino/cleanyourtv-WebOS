@@ -85,7 +85,7 @@ async function askLlm(text) {
     ].concat(turns);
     const r = await request(
       orApi() + '/chat/completions',
-      { authorization: 'Bearer ' + l.key, 'HTTP-Referer': 'https://github.com/lasharor/cleanyourtv-WebOS', 'X-Title': 'CleanYourTV' },
+      { authorization: 'Bearer ' + l.key, 'HTTP-Referer': 'https://github.com/LanceSandino/cleanyourtv-WebOS', 'X-Title': 'CleanYourTV' },
       { model: l.model, messages, max_tokens: 500, reasoning: { exclude: true } },
       60000
     );

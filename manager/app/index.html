@@ -275,7 +275,7 @@ body {
   unicode-bidi: plaintext;
   text-align: right;
 }
-</style><script src="qrcode.js"></script></head><body>
+</style><script src="qrcode.js"></script><script src="cytv-token.js"></script></head><body>
 <div id="head"><h1>CleanYourTV</h1><p id="sub"></p><div id="info"></div></div>
 <div id="panel"><div id="banner"></div><div id="listwrap"><div id="list"></div></div></div>
 <div id="share"><h2>Share the log</h2>
@@ -445,6 +445,7 @@ function api(p, body, ms) {
   return new Promise(function (res, rej) {
     var x = new XMLHttpRequest();
     x.open(body ? 'POST' : 'GET', API + p);
+    if (typeof CYTV_TOKEN === 'string') x.setRequestHeader('x-cytv-token', CYTV_TOKEN); // apitoken.js
     x.timeout = ms || 30000;
     x.onload = function () {
       try {

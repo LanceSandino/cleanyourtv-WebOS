@@ -15,7 +15,9 @@ const http = require('http'),
   https = require('https'),
   zlib = require('zlib'),
   crypto = require('crypto'),
-  fs = require('fs');
+  fs = require('fs'),
+  dns = require('dns'),
+  net = require('net');
 const nc = require('./netcompat'),
   { URL } = nc;
 const diag = require('./diag');
@@ -27,6 +29,32 @@ function fail(message, code, status) {
   return e;
 }
 const LOCAL = /^(localhost|127\.|0\.0\.0\.0|\[?::1\]?$)/i;
+// an address of the TV itself or of its link: loopback, unspecified, link-local, also written as IPv4 inside IPv6
+function localAddress(a) {
+  const s = String(a || '')
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '')
+    .replace(/^::ffff:(?=\d+\.)/, '');
+  if (net.isIPv4(s)) return /^(127\.|0\.|169\.254\.)/.test(s);
+  if (!net.isIPv6(s)) return false;
+  if (/^::ffff:[0-9a-f]{1,4}:[0-9a-f]{1,4}$/.test(s)) {
+    const p = s.split(':');
+    return localAddress([parseInt(p[3], 16) >> 8, parseInt(p[3], 16) & 255, parseInt(p[4], 16) >> 8, parseInt(p[4], 16) & 255].join('.'));
+  }
+  return s === '::1' || s === '::' || /^fe[89ab][0-9a-f]:/.test(s);
+}
+// the name is looked up as the connection is made, and an address of the TV itself is refused there (a name can point anywhere)
+function refusingLookup(host, opts, cb) {
+  if (typeof opts === 'function') {
+    cb = opts;
+    opts = {};
+  }
+  dns.lookup(host, opts, (err, addr, family) => {
+    const list = Array.isArray(addr) ? addr.map(x => x.address) : [addr];
+    if (!err && list.some(localAddress)) err = fail('the address must not point at the TV itself', 'local');
+    cb(err, addr, family);
+  });
+}
 
 // one request with its redirects; resolves {res, url} once a response with the wanted status has its headers
 function connect(url, o, hops) {
@@ -39,7 +67,8 @@ function connect(url, o, hops) {
     }
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return reject(fail('the address must start with http:// or https://', 'url'));
     if (u.protocol === 'http:' && !allowed(o.allowHttp)) return reject(fail('refusing a download over plain http', 'http'));
-    if (o.refuseLocal && LOCAL.test(u.hostname)) return reject(fail('the address must not point at the TV itself', 'local'));
+    if (o.refuseLocal && (LOCAL.test(u.hostname) || localAddress(u.hostname)))
+      return reject(fail('the address must not point at the TV itself', 'local'));
     let data = null;
     if (o.body !== undefined && o.body !== null)
       data = Buffer.isBuffer(o.body) ? o.body : Buffer.from(typeof o.body === 'string' ? o.body : JSON.stringify(o.body));
@@ -51,6 +80,7 @@ function connect(url, o, hops) {
     }
     const opts = { method, headers, timeout: o.idleMs || 20000 };
     if (o.insecure) opts.rejectUnauthorized = false;
+    if (o.refuseLocal) opts.lookup = refusingLookup;
     else if (o.ca) opts.ca = o.ca;
     diag.note('request', method + ' ' + u.protocol + '//' + u.host + u.pathname);
     const req = nc.request(u.protocol === 'https:' ? https : http, u, opts, res => {
@@ -198,4 +228,4 @@ function toFile(url, file, opts) {
   return within(work, o.totalMs, o.totalText);
 }
 
-module.exports = { read, open, toFile, within, fail };
+module.exports = { read, open, toFile, within, fail, localAddress, refusingLookup };

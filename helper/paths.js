@@ -9,6 +9,8 @@ const SERVICE_DIR = env.CYTV_SERVICE_DIR || '/media/developer/apps/usr/palm/serv
 module.exports = {
   D, // the service's own folder: helper files, config.json, the launcher (app/), Live TV data, themes
   SERVICE_DIR, // the installed package (the manager app's service folder)
+  // the installed apps (the manager and the picker): next to the services folder of the package
+  APPS: env.CYTV_APPS_DIR || path.resolve(SERVICE_DIR, '..', '..', 'applications'),
   CONF: D + '/config.json',
   USAGE: D + '/usage.json',
   TV: D + '/tv.json', // what tvprofile.js found out about this TV

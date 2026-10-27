@@ -35,6 +35,7 @@ function api(p, body, ms) {
   return new Promise(function (res, rej) {
     var x = new XMLHttpRequest();
     x.open(body ? 'POST' : 'GET', API + p);
+    if (typeof CYTV_TOKEN === 'string') x.setRequestHeader('x-cytv-token', CYTV_TOKEN); // apitoken.js
     x.timeout = ms || 30000;
     x.onload = function () {
       try {

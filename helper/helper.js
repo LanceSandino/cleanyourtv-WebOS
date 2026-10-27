@@ -17,6 +17,13 @@ const luna = require('./luna'),
   tvprofile = require('./tvprofile');
 
 const PORT = 8765;
+// the API token our apps send (apitoken.js); without it the service still runs, as before
+let apiToken = null;
+try {
+  apiToken = require('./apitoken').create();
+} catch (e) {
+  console.error('api token module failed: ' + ((e && e.stack) || e));
+}
 const loaded = [],
   failed = {};
 const ctx = {
@@ -25,6 +32,7 @@ const ctx = {
   luna,
   profile: tvprofile.create({ luna }),
   feature: name => loaded.filter(f => f.name === name)[0] || null,
+  apiToken,
 };
 function load(name, make) {
   try {
@@ -64,7 +72,7 @@ load('apps', () => require('./apps').create(ctx));
 load('running', () => require('./running').create(ctx));
 
 require('./server')
-  .create({ features: () => loaded })
+  .create({ features: () => loaded, guard: apiToken })
   .listen(PORT, '127.0.0.1', () => {
     // the files that hold addresses and keys are for root only
     /** @type {Array<[string, number]>} */
@@ -78,6 +86,7 @@ require('./server')
         fs.chmodSync(f, mode);
       } catch (_) {}
     }
+    if (apiToken) apiToken.writeAll(); // into the launcher, the manager and the picker
     for (const f of loaded) {
       try {
         if (f.start) f.start();

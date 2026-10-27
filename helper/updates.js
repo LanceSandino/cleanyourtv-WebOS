@@ -190,6 +190,7 @@ function create(ctx) {
     if (now !== seenPackage) return void (seenPackage = now);
     applied = true;
     const ver = now.split(' ')[0];
+    if (!/^\d+\.\d+\.\d+$/.test(ver)) return; // it goes into a shell command
     // bootstrap.sh writes this when the new version did not start and it went back: do not try the same package again and again
     if (readText(D + '/last-error.txt').indexOf('update to ' + ver + ' failed') >= 0) return;
     console.log('updates: the installed package is service ' + now.trim() + ', this is ' + version + '; applying it');
@@ -251,6 +252,7 @@ function create(ctx) {
         throw new Error('needs service ' + nv.minService + ' or newer; update the service first');
       setJob('working', 'Installing launcher ' + ver);
       frontendOk = null;
+      if (ctx.apiToken) ctx.apiToken.writeTo(T + '/app'); // the new launcher must reach the service as soon as it starts
       await swapIn(T + '/app');
       await reloadHome();
       setJob('working', 'Checking that the new launcher starts');

@@ -33,6 +33,7 @@ module.exports = [
         webOSSystem: 'readonly',
         PalmSystem: 'readonly',
         PalmServiceBridge: 'readonly',
+        CYTV_TOKEN: 'readonly', // cytv-token.js, written next to the page by the service (helper/apitoken.js)
         qrcode: 'readonly',
       }),
     },

@@ -15,7 +15,7 @@ disk, and a reboot without the boot scripts brings LG's Home back.
 | Symptom or feature | Look at |
 |---|---|
 | The launcher page (home screen, menus, Live TV player) | `app/src/` (CSS and ES5 script per area), built into `app/index.html` by `tools/build-pages.js` |
-| The root service: how the parts are wired | `helper/helper.js` (port 8765, loopback only), `helper/server.js`; one module per part (`docs/development/internals.md`) |
+| The root service: how the parts are wired | `helper/helper.js` (port 8765, loopback only), `helper/server.js` (origin, Host and API-token checks, `helper/apitoken.js`); one module per part (`docs/development/internals.md`) |
 | Settings (`config.json`) and who changed them | `helper/config.js`: change settings only with `config.update(source, fn)`; changes are logged |
 | Anything that differs between TVs (webOS version, firmware) | `helper/tvprofile.js`, also asked by `scripts/bootstrap.sh` |
 | Apps, icons, usage, launching, running apps (Back on Home) | `helper/apps.js`, `helper/running.js` |

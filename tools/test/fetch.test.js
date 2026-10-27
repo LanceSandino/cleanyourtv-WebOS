@@ -89,6 +89,17 @@ run(async () => {
   ok(e && e.code === 'url', 'an address that is not one');
   e = await err(fetch.read(u + '/plain', { refuseLocal: true }));
   ok(e && e.code === 'local', 'refuseLocal refuses the TV itself');
+  // the TV itself written another way, or a name that points at it (audit F2: the name alone was checked)
+  e = await err(fetch.read(u.replace('127.0.0.1', '[::ffff:7f00:1]') + '/plain', { refuseLocal: true }));
+  ok(e && e.code === 'local', 'refuseLocal refuses 127.0.0.1 written as IPv6');
+  const L = fetch.localAddress;
+  ok(
+    L('127.0.0.1') && L('::1') && L('[::ffff:127.0.0.2]') && L('::ffff:7f00:1') && L('169.254.10.1') && L('fe80::1') && L('0.0.0.0'),
+    'loopback, unspecified and link-local addresses count as the TV itself'
+  );
+  ok(!L('192.168.1.20') && !L('10.0.0.5') && !L('8.8.8.8') && !L('2001:db8::1'), 'other addresses (the LAN, the internet) do not');
+  const looked = await new Promise(r => fetch.refusingLookup('localhost', {}, x => r(x)));
+  ok(looked && looked.code === 'local', 'a name that resolves to the TV itself is refused after the lookup');
   r = await fetch.read(u + '/echo', { body: { a: 1 } });
   const echo = JSON.parse(r.body.toString());
   ok(echo.method === 'POST' && echo.type === 'application/json' && echo.body === '{"a":1}', 'a body is POSTed as JSON');

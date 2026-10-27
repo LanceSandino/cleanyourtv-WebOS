@@ -137,8 +137,14 @@ function oldSvc(v) {
   }
   return false;
 }
+/* the API token the service wrote next to this page (cytv-token.js): it tells our apps apart from a web page (apitoken.js) */
+function apiHeaders() {
+  return typeof CYTV_TOKEN === 'string' ? { 'x-cytv-token': CYTV_TOKEN } : {};
+}
 function api(p, body) {
-  return fetch(API + p, body ? { method: 'POST', body: JSON.stringify(body) } : {}).then(function (x) {
+  var o = body ? { method: 'POST', body: JSON.stringify(body) } : {};
+  o.headers = apiHeaders();
+  return fetch(API + p, o).then(function (x) {
     return x.json();
   });
 }
@@ -147,6 +153,7 @@ function logLine(m) {
   try {
     var x = new XMLHttpRequest();
     x.open('GET', API + '/api/log?m=' + encodeURIComponent(m));
+    if (typeof CYTV_TOKEN === 'string') x.setRequestHeader('x-cytv-token', CYTV_TOKEN);
     x.send();
   } catch (e) {}
 }

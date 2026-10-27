@@ -44,6 +44,7 @@ html,body{width:1920px;height:1080px;overflow:hidden;background:transparent;colo
   <div id="appsBox"><div class="cap" id="capA"></div><div class="row" id="apps"></div></div>
   <div><div class="cap" id="capI"></div><div class="row" id="inputs"></div><div id="msg"></div></div>
 </div>
+<script src="cytv-token.js"></script>
 <script>
 /* Inputs picker shown over whatever is playing, opened by the Input key (see the inputhook bind): the dock apps above,
    the inputs (HDMI ports, Live TV) below. The app stays running: starting a web app takes ~8 s before it gets the
@@ -186,10 +187,12 @@ function languages() {
 /* @i18n end */
 function $(i){return document.getElementById(i)}
 function call(uri,p){try{var b=new PalmServiceBridge();b.onservicecallback=function(){};b.call(uri,JSON.stringify(p));return true}catch(e){return false}}
-function log(m){try{var x=new XMLHttpRequest();x.open('GET',API+'/api/log?m='+encodeURIComponent('picker '+m));x.send()}catch(e){}}
+/* the API token the service wrote next to this page (apitoken.js) */
+function tok(x){if(typeof CYTV_TOKEN==='string')x.setRequestHeader('x-cytv-token',CYTV_TOKEN)}
+function log(m){try{var x=new XMLHttpRequest();x.open('GET',API+'/api/log?m='+encodeURIComponent('picker '+m));tok(x);x.send()}catch(e){}}
 function launch(id,params){
   log('launch '+id+' '+JSON.stringify(params||{}));
-  var x=new XMLHttpRequest();x.open('POST',API+'/api/launch');x.timeout=4000;
+  var x=new XMLHttpRequest();x.open('POST',API+'/api/launch');tok(x);x.timeout=4000;
   x.onload=function(){log('launch reply '+x.responseText.slice(0,120))};
   x.onerror=x.ontimeout=function(){log('helper did not answer; trying the system');call('luna://com.webos.applicationManager/launch',{id:id,params:params||{}})};
   x.send(JSON.stringify({id:id,params:params||{}}))}
@@ -244,7 +247,7 @@ function paint(){
 /* hold OK on an HDMI input pins it to Home (a tile in the launcher) or takes it off again; a short press opens it on release */
 var pins={},downAt=0,holdT=0,heldOk=false;
 function pinCur(){var r=cur()[col[row]];if(row!==1||!r||!/^com\.webos\.app\.hdmi/.test(r.id))return false;
-  var on=!pins[r.id],x=new XMLHttpRequest();x.open('POST',API+'/api/inputs/pin');x.timeout=4000;
+  var on=!pins[r.id],x=new XMLHttpRequest();x.open('POST',API+'/api/inputs/pin');tok(x);x.timeout=4000;
   x.onload=function(){var ok=false;try{ok=JSON.parse(x.responseText).returnValue===true}catch(e){}
     if(ok){if(on)pins[r.id]=1;else delete pins[r.id]}
     $('msg').textContent=ok?t(on?'%s added to Home':'%s removed from Home').replace('%s',r.label):t('Could not change Home')};
@@ -270,7 +273,7 @@ function setData(d,fresh){
   col[0]=Math.min(col[0],Math.max(0,apps.length-1));col[1]=Math.min(col[1],inputs.length-1);
   if(row===0&&!apps.length)row=1;
   paint()}
-function get(path,cb,fail){var x=new XMLHttpRequest();x.open('GET',API+path);x.timeout=4000;
+function get(path,cb,fail){var x=new XMLHttpRequest();x.open('GET',API+path);tok(x);x.timeout=4000;
   x.onload=function(){try{cb(JSON.parse(x.responseText))}catch(e){fail&&fail()}};x.onerror=x.ontimeout=function(){fail&&fail()};x.send()}
 function refresh(){
   var got={apps:null,inputs:null};

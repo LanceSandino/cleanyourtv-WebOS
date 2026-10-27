@@ -232,3 +232,21 @@ commit_ref: "feature/fork-next (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T05:37:40Z"
 ```
+
+```yaml
+id: CU-20261027-9
+type: fix
+title: "Audit fixes: an API token for our apps, local addresses checked after the lookup, safer update command, pinned actions"
+description: "F1 (rest): helper/apitoken.js keeps a random token (D/api-token, root only) and writes cytv-token.js into the launcher,
+  the manager and the picker (at each start, and into a new launcher before it is swapped in); the pages send it as x-cytv-token and
+  server.js refuses a request with origin null and no token once every app has it and one sent it back (never before, so a TV where it
+  cannot be handed out keeps working). OUR_APPS no longer trusts the unused com.cleanyourtv.live. F2: refuseLocal also refuses an
+  IPv6-written loopback and, through the connection's lookup, a name that resolves to the TV itself or link-local. The version put into
+  the bootstrap command must be digits and dots. The OpenRouter attribution names the fork. Every GitHub Action is pinned to a commit."
+impact: high
+affected_modules: ["helper/apitoken.js", "helper/server.js", "helper/helper.js", "helper/updates.js", "helper/fetch.js", "helper/paths.js", "helper/answers.js", "app/src/js/clock.js", "app/src/index.html", "manager/src/js/core.js", "manager/src/index.html", "picker/app/index.html", ".github/workflows"]
+related_tests: ["tools/test/apitoken.test.js", "tools/test/server.test.js", "tools/test/fetch.test.js", "tools/oldchrome.js (every page sends the token, Chromium 68 and 79)"]
+commit_ref: "feature/fork-next (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:46:47Z"
+```
