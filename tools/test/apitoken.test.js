@@ -20,7 +20,13 @@ run(async () => {
   ok(!a.writeAll(), 'the apps are not there: nothing is required');
 
   for (const d of dirs) nc.mkdirp(d);
-  ok(a.writeAll(), 'written into the launcher, the manager and the picker');
+  ok(a.writeAll(), "written into the launcher, the manager and the picker (a TV that keeps LG's Home has no overlay to write)");
+  const overlay = path.join(process.env.CYTV_DIR, 'home-overlay');
+  fs.mkdirSync(overlay);
+  ok(
+    a.writeAll() && fs.readFileSync(path.join(overlay, 'cytv-token.js'), 'utf8').indexOf(tok) >= 0,
+    "the copy mounted over LG's Home gets the token too, or the launcher could never send it"
+  );
   ok(
     dirs.every(d => fs.readFileSync(path.join(d, 'cytv-token.js'), 'utf8') === "var CYTV_TOKEN = '" + tok + "';\n"),
     'each app gets cytv-token.js with the token'

@@ -15,8 +15,11 @@ const FILE = 'cytv-token.js',
   HEADER = 'x-cytv-token';
 const TOKEN = P.D + '/api-token',
   ON = P.D + '/api-token-on';
-// the folders of our apps that call the service: the launcher (D/app, which also becomes LG's Home folder), the manager, the picker
+// the folders of our apps that call the service: the launcher (D/app), the manager, the picker. The launcher runs from the copy
+// stage-home.sh mounts over LG's Home (D/home-overlay), made when Home is taken over: it gets the token too, where it exists (a TV
+// that keeps LG's Home has none), or the launcher could never send it.
 const appDirs = () => [P.APP, path.join(P.APPS, 'com.cleanyourtv.manager'), path.join(P.APPS, 'com.cleanyourtv.picker')];
+const optionalDirs = () => [P.HOME_OVERLAY];
 
 function create() {
   let token = '',
@@ -50,7 +53,7 @@ function create() {
   }
   // into every app; a folder that could not be written stops the enforcing, so that app keeps working
   function writeAll() {
-    writesOk = appDirs().map(writeTo).every(Boolean);
+    writesOk = appDirs().map(writeTo).every(Boolean) && optionalDirs().every(d => !fs.existsSync(d) || writeTo(d));
     if (!writesOk && on) setOn(false);
     return writesOk;
   }

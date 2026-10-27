@@ -23,6 +23,7 @@ module.exports = {
   VOICE: D + '/voice',
   HOOK: D + '/inputhook',
   APP: D + '/app',
+  HOME_OVERLAY: D + '/home-overlay', // what stage-home.sh mounts over LG's Home: a copy of app/ with LG's appinfo.json
   COMPAT: [D + '/compat.json', SERVICE_DIR + '/compat.json'],
   INITD: '/var/lib/webosbrew/init.d',
   SETUP_LOG: '/media/developer/cytv-setup.log',

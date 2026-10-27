@@ -119,6 +119,20 @@ const WALLPICK_KEYS =
   'var bg=[].map.call(document.querySelectorAll(".wp.on"),function(x){return x.style.backgroundImage}).join();' +
   'var ok=cfg.wall&&cfg.wall.pick==="u/0000000000000002"&&!WALLPICK.open()&&bg.indexOf("u/0000000000000002")>=0;' +
   'document.body.setAttribute("data-pick",ok?"ok":"bad pick="+(cfg.wall&&cfg.wall.pick)+" open="+WALLPICK.open()+" bg="+bg)},2500)},800)},300)},500)})()</script>';
+// LG's screensaver while another app is in front (photos everywhere): a stand-in for the TV's service bus, Home hidden behind
+// com.telemachus.screen; LG asks, the launcher declines, brings Home forward, shows the photos, and a key goes back to that app.
+const SAVER_OVER =
+  '<script>(function(){var H=false,reg=null,calls=[],launched=[];' +
+  'Object.defineProperty(document,"hidden",{configurable:true,get:function(){return H}});' +
+  'window.PalmServiceBridge=function(){this.call=function(u,p){calls.push(u+" "+p);if(/registerScreenSaverRequest/.test(u))reg=this}};' +
+  'var L=window.launch;window.launch=function(id,pr){launched.push(id);return L(id,pr)};' +
+  'function vis(h){H=h;var e=document.createEvent("Event");e.initEvent("visibilitychange",true,true);document.dispatchEvent(e)}' +
+  'function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}' +
+  'var go=setInterval(function(){if(!reg||!document.querySelector(".tile"))return;clearInterval(go);vis(true);' +
+  'reg.onservicecallback(JSON.stringify({timestamp:42}));setTimeout(function(){vis(false);setTimeout(function(){var up=SAVER.active();key(40);' +
+  'var declined=calls.some(function(c){return /responseScreenSaverRequest/.test(c)&&/"ack":false/.test(c)&&/"timestamp":42/.test(c)});' +
+  'var ok=declined&&up&&!SAVER.active()&&launched.join()==="com.webos.app.home,com.telemachus.screen";' +
+  'document.body.setAttribute("data-over",ok?"ok":"bad declined="+declined+" up="+up+" launched="+launched.join())},1500)},1000)},500)})()</script>';
 // [name, file, what it draws, how many at least, milliseconds of page time to wait]
 const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
@@ -129,6 +143,7 @@ const PAGES = [
   // and its keys: Left and Right step through the photos, another key ends it without acting on Home
   ['saver keys', 'app/index.html', /data-keys="ok"/g, 1, 90000, SAVER_KEYS],
   ['wallpaper chooser', 'app/index.html', /data-pick="ok"/g, 1, 20000, WALLPICK_KEYS],
+  ['saver over an app', 'app/index.html', /data-over="ok"/g, 1, 30000, SAVER_OVER],
 ];
 let famN = 0;
 // a stand-in photo from the feed: a landscape picture with the photo's name on it
@@ -183,6 +198,7 @@ function serve() {
         ],
       });
     if (u === '/api/manager/status') return json(golden['manager status'].body);
+    if (u === '/api/foreground') return json({ returnValue: true, appId: 'com.telemachus.screen' }); // another app in front
     // three Wallpapers photos for the chooser (wallpick.js)
     if (u === '/api/wallpapers/list')
       return json({ photos: ['u/0000000000000001', 'u/0000000000000002', 'u/0000000000000003'], stamp: '3:test' });

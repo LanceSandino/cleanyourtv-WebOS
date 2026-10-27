@@ -3198,6 +3198,17 @@ var SAVER = (function () {
       l.p[0].className = l.p[1].className = 'svp';
     }, 900);
   }
+  /* The app that was in front when LG asked (another app idle, not Home): the photos were shown on Home instead of LG's clock, and
+     ending them by a key or the pointer goes back to that app. Ended any other way (Home key, Home hidden) it stays where it is. */
+  var from = '',
+    pending = 0;
+  function wake() {
+    stop();
+    if (!from) return;
+    var a = from;
+    from = '';
+    launch(a);
+  }
   /* Left and Right step through the photos; any other key ends it. That key (and the release of it) goes no further */
   function eat(e) {
     e.preventDefault();
@@ -3215,7 +3226,7 @@ var SAVER = (function () {
         swallow = true;
         return eat(e);
       }
-      stop();
+      wake();
       swallow = true;
       eat(e);
     },
@@ -3240,7 +3251,7 @@ var SAVER = (function () {
         my = e.clientY;
         if (first && on) return;
         idle = 0;
-        stop();
+        if (on) wake();
       }
     },
     true
@@ -3251,7 +3262,7 @@ var SAVER = (function () {
     function (e) {
       idle = 0;
       if (!on) return;
-      stop();
+      wake();
       ateDown = true;
       eat(e);
     },
@@ -3272,13 +3283,38 @@ var SAVER = (function () {
     'wheel',
     function () {
       idle = 0;
-      stop();
+      if (on) wake();
     },
     true
   );
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) stop();
-    else idle = 0;
+    if (document.hidden) {
+      if (!pending) {
+        from = '';
+        stop();
+      }
+      return;
+    }
+    idle = 0;
+    /* Home came forward for the photos (below) */
+    if (pending) {
+      clearTimeout(pending);
+      pending = 0;
+      setTimeout(function () {
+        if (from) start(true);
+      }, 300);
+    }
+  });
+  /* the Home key while the photos show: they end and Home stays */
+  document.addEventListener('webOSRelaunch', function () {
+    var p = {};
+    try {
+      p = JSON.parse(webOSSystem.launchParams || '{}');
+    } catch (e) {}
+    if (on && p && p.launchType === 'homeKey') {
+      from = '';
+      stop();
+    }
   });
   /* every five seconds: LG's question followed or not as the setting is now (also right after the launcher loaded it), and the idle
      time, counted in these ticks rather than from the clock, which can jump when the TV sets its time */
@@ -3304,14 +3340,33 @@ var SAVER = (function () {
           j = JSON.parse(m);
         } catch (e) {}
         if (!j || j.timestamp === undefined) return;
-        var mine = can();
+        /* ours whenever it is on and has photos: on Home at once, over another app by bringing Home forward (and back on a key) */
+        var mine = opts().on && photos() && !LIVE.on;
         call('luna://com.webos.service.tvpower/power/responseScreenSaverRequest', {
           clientName: 'cleanyourtv',
           ack: !mine,
           timestamp: j.timestamp,
         });
-        if (mine) start();
-        logLine('screensaver: LG asked, ' + (mine ? 'ours shown' : 'LG allowed'));
+        if (!mine) return logLine('screensaver: LG asked, LG allowed');
+        if (!document.hidden) {
+          start();
+          return logLine('screensaver: LG asked, ours shown on Home');
+        }
+        if (on || pending) return;
+        api('/api/foreground').then(
+          function (f) {
+            var id = (f && f.appId) || '';
+            if (!id || id === 'com.webos.app.home') return;
+            from = id;
+            pending = setTimeout(function () {
+              pending = 0; /* Home did not come forward: nothing more to do */
+              from = '';
+            }, 8000);
+            launch('com.webos.app.home');
+            logLine('screensaver: LG asked over ' + id + ', ours shown on Home');
+          },
+          function () {}
+        );
       };
       bridge.call(
         'luna://com.webos.service.tvpower/power/registerScreenSaverRequest',

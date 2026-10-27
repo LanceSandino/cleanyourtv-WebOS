@@ -13,11 +13,13 @@ is off until you switch it on in **Customise** > **Screensaver**.
 
 While it shows, **Left** and **Right** step back and forward through the last 50 photos (Right past the last one brings a new photo,
 and the timer starts again); right-to-left languages mirror them. Any other key or a move of the Magic Remote ends it, and that key
-does nothing else. Photos are shown whole on black (portrait photos too) and darker from ten at night to seven in the morning. The
-screensaver runs only on Home: not over an app, an input or Live TV.
+does nothing else. Photos are shown whole on black (portrait photos too) and darker from ten at night to seven in the morning. It does
+not start over Live TV.
 
 **LG's screensaver.** Before the TV starts its own screensaver it asks the apps that registered for it. While the screensaver is on
-and there are photos, the launcher answers no and shows the photos instead; otherwise LG's screensaver starts as before. Whether a
+and there are photos, the launcher answers no and shows the photos instead; otherwise LG's screensaver starts as before. When
+another app is on the screen (and idle), Home comes forward with the photos, and a key or the pointer goes straight back to that
+app; the Home key ends them and stays on Home. Whether a
 TV asks Home at all depends on the firmware: if LG's screensaver still appears, set **Starts after** shorter than LG's.
 
 ## Where the photos come from

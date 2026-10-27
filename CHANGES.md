@@ -285,3 +285,21 @@ commit_ref: "feature/wallpaper-chooser (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T06:40:17Z"
 ```
+
+```yaml
+id: CU-20261027-18
+type: fix
+title: "Photos instead of LG's clock over other apps too; the launcher can send its API token"
+description: "Seen on the owner's TV (webOS 25): LG asked the launcher before its screensaver, but another app (Telemachus) was in
+  front, so the launcher let LG's clock come. Now, while the screensaver is on and has photos, LG's screensaver is always declined:
+  on Home ours starts, over another app the launcher notes it (/api/foreground), brings Home forward with the photos, and a key or the
+  pointer goes back to that app (the Home key ends them and stays on Home). Also seen there: the API token never reached the launcher,
+  because stage-home.sh mounts a copy of app/ (D/home-overlay) over LG's Home; apitoken.js now writes the token there too when it
+  exists, so the token can be required once the launcher has loaded it."
+impact: medium
+affected_modules: ["app/src/js/saver.js", "helper/apitoken.js", "helper/paths.js"]
+related_tests: ["tools/oldchrome.js (saver over an app, Chromium 68 and 79)", "tools/test/apitoken.test.js"]
+commit_ref: "fix/token-home-overlay (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T06:53:30Z"
+```
