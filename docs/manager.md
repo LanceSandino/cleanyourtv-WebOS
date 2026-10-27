@@ -6,10 +6,10 @@
 
 | Row | Function |
 |---|---|
-| Launcher, Service | Installed version; offers an update when the latest release is newer. |
+| CleanYourTV | The installed release (and launcher); updates the service and the launcher together when a newer release is out. |
 | Check for updates | Asks GitHub for the latest release. |
 | Update channel | Follow the stable releases or the [dev builds](managing.md#dev-builds). |
-| Go back to launcher | Appears after a launcher update. |
+| Go back to the previous launcher | Appears after a launcher update; names the launcher and the release it came with. |
 | CleanYourTV as Home | **Use CleanYourTV as Home** (LG's Home or ours; the TV restarts) and the optional **Learn the Home key**. |
 | Wallpapers | Your own photos behind Home: the phone page (uploads and Immich), counts, **Sync now**, **Picture size**, **Remove all uploads** and **Disconnect Immich**. See [Wallpapers](wallpapers.md). |
 | Live TV | **Show Live TV** (off hides it in the launcher and Inputs list and leaves the Guide button to LG), the **Playlist** (set up from your phone with a QR code and a 6-digit code), **Refresh playlist and guide**, **Learn the Guide key**, **Clear recent channels** and **Remove the playlist**. See [Live TV](live-tv.md). |

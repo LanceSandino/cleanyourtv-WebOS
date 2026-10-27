@@ -1,13 +1,12 @@
 /* what each row does, shown on the left for the focused row */
 var INFO = {
-  'Launcher':
-    'The home screen you see. Updates come from GitHub releases and are checked against a SHA-256 file before they are installed. If a new launcher does not start, the previous one is put back.',
-  'Service':
-    'The background service behind the launcher: Live TV, picture notifications, the Input key, these updates. A failed update restores the previous files.',
+  'CleanYourTV':
+    'Updates both parts of a release together: the background service (Live TV, notifications, the Input key, these updates) and the launcher (the home screen). Updates come from GitHub releases and are checked against a SHA-256 file before they are installed. A service that does not start, or a launcher that does not start, is put back.',
   'Check for updates': 'Looks for a newer release on GitHub. Nothing is installed until you choose an update.',
   'Update channel':
-    'Stable releases are what most people want: at most one a day, made from the dev builds. Dev builds come with every change and can be less finished; choose Dev here, then use the Launcher and Service rows to install it. Going back to Stable offers the latest release again.',
-  'Go back to launcher': 'Swaps the previous launcher version back in. The newer one stays available as an update.',
+    'Stable releases are what most people want: at most one a day, made from the dev builds. Dev builds come with every change and can be less finished; choose Dev here, then use the CleanYourTV row to install it. Going back to Stable offers the latest release again.',
+  'Go back to the previous launcher':
+    'Swaps back the launcher that was installed before this one (the release it came with is shown when known). The newer one stays available as an update and is not installed again by itself.',
   'CleanYourTV as Home': 'Whether this launcher is Home, and learning the Home key.',
   'Debloat LG\u2019s ads and telemetry':
     'Stops LG\u2019s ad, recommendation and telemetry services and blocks a few ad servers. Nothing is uninstalled, and it only applies while this launcher is Home.',

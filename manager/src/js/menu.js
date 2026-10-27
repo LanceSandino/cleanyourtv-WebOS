@@ -824,24 +824,16 @@ function build() {
             : 'Cannot check'
           : 'Up to date';
   };
-  // updates, then the settings, then support; the destructive row last
+  // updates, then the settings, then support; the destructive row last. One row for both parts of a release: the service and the
+  // launcher are updated together (update-all; the new service installs its release's launcher)
+  var rel = st.release && (sv.updateTo || fe.updateTo) ? st.release.version : null;
   rows.push({
-    label: 'Launcher ' + fe.version,
-    sub: uptxt(fe.updateTo),
+    label: 'CleanYourTV ' + sv.version,
+    sub: rel ? uptxt(rel) : uptxt(null) + ' \u00B7 launcher ' + fe.version,
     dim: busy,
-    fn: fe.updateTo
+    fn: rel
       ? function () {
-          run('/api/manager/update-frontend', { version: fe.updateTo });
-        }
-      : null,
-  });
-  rows.push({
-    label: 'Service ' + sv.version,
-    sub: uptxt(sv.updateTo),
-    dim: busy,
-    fn: sv.updateTo
-      ? function () {
-          run('/api/manager/update-service', { version: sv.updateTo });
+          run('/api/manager/update-all', {});
         }
       : null,
   });
@@ -861,7 +853,8 @@ function build() {
   });
   if (fe.previous)
     rows.push({
-      label: 'Go back to launcher ' + fe.previous,
+      label: 'Go back to the previous launcher',
+      sub: 'launcher ' + fe.previous + (fe.previousRelease ? ', from ' + fe.previousRelease : ''),
       dim: busy,
       fn: function () {
         run('/api/manager/rollback-frontend', {});

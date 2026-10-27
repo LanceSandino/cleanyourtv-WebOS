@@ -194,11 +194,12 @@ function create(ctx) {
       exec.detached('sleep 1; sh ' + P.D + '/uninstall.sh');
       return json({ returnValue: true });
     }
-    if (['update-frontend', 'rollback-frontend', 'update-service'].includes(act)) {
+    if (['update-frontend', 'rollback-frontend', 'update-service', 'update-all'].includes(act)) {
       if (updates.busy()) return json({ error: 'busy', job: updates.job() }, 409);
       const ver = String(b.version || '').replace(/[^0-9.]/g, '');
       if (act === 'update-frontend') updates.updateFrontend(ver);
       else if (act === 'update-service') updates.updateService(ver);
+      else if (act === 'update-all') updates.updateAll();
       else updates.rollbackFrontend();
       return json({ returnValue: true, job: updates.job() });
     }
@@ -210,7 +211,17 @@ function create(ctx) {
     prefix: '/api/manager/',
     paths: ['/api/frontend-ok', '/api/undo'],
     handle,
-    start: () => setInterval(updates.watchPackage, 120000),
+    start: () => {
+      // a service that was just updated installs the launcher of its release (pairLauncher), once Home has had time to start, and
+      // while another app is in front, later
+      const pair = () => updates.pairLauncher().catch(() => {});
+      setInterval(() => {
+        updates.watchPackage();
+        pair();
+      }, 120000);
+      setTimeout(pair, 60000);
+    },
+    pairLauncher: updates.pairLauncher,
     check: updates.check,
     status,
     frontendLoaded: updates.frontendLoaded,

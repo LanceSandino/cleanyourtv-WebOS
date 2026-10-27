@@ -28,7 +28,7 @@
 - **Live TV shows the setup code again.** The playlist address was reset or never saved; run the pairing again, or send it with
   `POST /api/live/settings` ([Live TV](live-tv.md#setting-it-up)).
 - **Something is broken after an update.** A launcher or service that does not start is replaced by the previous version
-  automatically. **Go back to launcher** in the manager returns to the previous launcher by hand.
+  automatically. **Go back to the previous launcher** in the manager returns to the previous launcher by hand.
 - **Back to LG's Home right now.** In the manager, **CleanYourTV as Home** off, or `sh /media/developer/cleanyourtv/undo-home.sh`
   over SSH.
 

@@ -92,6 +92,34 @@ run(async () => {
   start('1.5.3');
   r = await ask('check', 'POST');
   ok(r.j.service.updateTo === null, 'stable without a dev build installed: no offer at the same version');
+
+  // the launcher follows the service (pairLauncher): a service that runs as the release on offer installs that release's launcher,
+  // only with Home (or the manager) in front, since the install brings Home forward, and each pair once
+  fs.mkdirSync(path.join(D, 'app'), { recursive: true });
+  fs.writeFileSync(path.join(D, 'app', 'version.json'), JSON.stringify({ version: '1.4.4' }));
+  const paired = path.join(D, 'paired');
+  if (fs.existsSync(paired)) fs.unlinkSync(paired);
+  let fg = 'netflix';
+  const mk = v =>
+    req('updates').create({
+      luna: async uri => (/getForegroundAppInfo/.test(uri) ? { returnValue: true, appId: fg } : {}),
+      config: memoryConfig({}),
+      version: v,
+    });
+  ok((await mk('1.5.2').pairLauncher()) === '', 'a service that is not the release on offer leaves the launcher alone');
+  const u1 = mk('1.5.3');
+  ok((await u1.pairLauncher()) === '' && !fs.existsSync(paired), 'not while another app is in front (Home would come forward)');
+  fg = 'com.webos.app.home';
+  const started = await u1.pairLauncher();
+  ok(
+    started === '1.4.5' && /launcher 1\.4\.5/.test(u1.job().message) && fs.readFileSync(paired, 'utf8').trim() === '1.5.3 - 1.4.5',
+    "with Home in front, the release's launcher is installed, and the pair is written down"
+  );
+  for (let i = 0; i < 100 && u1.busy(); i++) await new Promise(res => setTimeout(res, 100)); // the stand-in has no files: it fails
+  ok((await mk('1.5.3').pairLauncher()) === '', 'the same pair is not tried again (a launcher that did not start, or put back by hand)');
+  fs.unlinkSync(paired);
+  fs.writeFileSync(path.join(D, 'app', 'version.json'), JSON.stringify({ version: '1.4.5' }));
+  ok((await mk('1.5.3').pairLauncher()) === '' && !fs.existsSync(paired), "nothing to do when the release's launcher is there");
   api.server.close();
 
   // a connection that drops after the headers ends the update check with an error, never a hang (issue 5)

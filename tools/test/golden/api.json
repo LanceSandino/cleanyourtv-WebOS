@@ -387,6 +387,7 @@
       "frontend": {
         "build": "",
         "previous": null,
+        "previousRelease": null,
         "updateTo": "99.1.0",
         "version": "1.4.15"
       },
@@ -468,6 +469,7 @@
       "frontend": {
         "build": "",
         "previous": null,
+        "previousRelease": null,
         "updateTo": "99.1.0",
         "version": "1.4.15"
       },
@@ -567,6 +569,7 @@
       "frontend": {
         "build": "",
         "previous": null,
+        "previousRelease": null,
         "updateTo": "99.1.0",
         "version": "1.4.15"
       },

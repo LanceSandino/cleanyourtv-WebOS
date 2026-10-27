@@ -2,11 +2,17 @@
 
 ## Updating
 
-Open **CleanYourTV**. The **launcher** (the home screen) and the **service** (the background part) update separately from the
-latest GitHub release, each checked against its SHA-256 file.
+Open **CleanYourTV**. The **CleanYourTV** row updates both parts of the latest GitHub release together, the **service** (the
+background part) and the **launcher** (the home screen), each checked against its SHA-256 file. The two have their own version
+numbers (for example release 1.6.18 with launcher 1.5.13); the row shows the release, and the launcher's below it.
 
+- The service is updated first; once it runs, it installs the launcher of the same release. It does that by itself too after an
+  update from the Homebrew Channel or `ares-install`, but only while Home or this app is in front (installing a launcher brings Home
+  forward), and only once for each release, so a launcher put back by hand stays.
 - A launcher that does not start is replaced by the previous one, and a service that does not start by the previous files.
-- **Go back to launcher** returns to the previous launcher version after an update.
+- **Go back to the previous launcher** returns to the launcher that was installed before this one, and names the release it came
+  with (for launchers installed from 1.6.18 on). It is the previous *installed* launcher: before 1.6.18 a service updated alone
+  could leave the launcher several releases behind, so this could be an older one.
 - Before the setup, the app offers a newer package by itself.
 - Running the [install command](install.md#1-install-the-manager-app) again also updates.
 - An update from the [Homebrew Channel](install.md#from-the-homebrew-channel) (or `ares-install`) installs the package only; the
@@ -30,7 +36,7 @@ the **pre-release** named `dev`, replacing the one before. When a release is mad
 
 | | |
 |---|---|
-| Follow the dev builds | **Update channel** > **Dev builds** (it shows the commit and date), then install with the **Launcher** and **Service** rows. Expect updates several times a day. |
+| Follow the dev builds | **Update channel** > **Dev builds** (it shows the commit and date), then install with the **CleanYourTV** row. Expect updates several times a day. |
 | Back to the stable releases | **Update channel** > **Stable releases**. The stable release is offered again, also when it is older than the dev build. |
 | Install from scratch | `ssh root@<tv-ip> 'curl -fsSL https://raw.githubusercontent.com/LanceSandino/cleanyourtv-WebOS/main/install.sh \| CYTV_CHANNEL=dev sh'`. The manager then follows the dev builds. |
 | Same version number | A dev build records its commit in a `BUILD` file, so a newer push of the same version is still offered. |

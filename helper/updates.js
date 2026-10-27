@@ -130,6 +130,11 @@ function create(ctx) {
     frontendBuild = () => buildOf(D + '/app/BUILD');
   const frontendInfo = () => readJson(D + '/app/version.json', {});
   const prevInfo = () => readJson(D + '/app.prev/version.json', null);
+  // the release a launcher came with (written when the manager installs it; a launcher installed before 1.6.18 has none)
+  const releaseOf = dir => {
+    const v = readText(D + '/' + dir + '/RELEASE');
+    return /^\d+\.\d+\.\d+$/.test(v) ? v : '';
+  };
 
   async function check() {
     checking = true;
@@ -158,6 +163,7 @@ function create(ctx) {
         version: fe.version || '?',
         build: frontendBuild(),
         previous: (prevInfo() && prevInfo().version) || null,
+        previousRelease: (prevInfo() && releaseOf('app.prev')) || null,
         updateTo: lat && differs(lat.frontend, fe.version, lat.build, frontendBuild()) ? lat.frontend : null,
       },
       channel: channel(),
@@ -253,6 +259,7 @@ function create(ctx) {
       setJob('working', 'Installing launcher ' + ver);
       frontendOk = null;
       if (ctx.apiToken) ctx.apiToken.writeTo(T + '/app'); // the new launcher must reach the service as soon as it starts
+      if (/^\d+\.\d+\.\d+$/.test(release.version || '')) fs.writeFileSync(T + '/app/RELEASE', release.version + '\n');
       await swapIn(T + '/app');
       await reloadHome();
       setJob('working', 'Checking that the new launcher starts');
@@ -320,6 +327,46 @@ function create(ctx) {
     }
   }
 
+  // ---- both parts of a release together. The service and the launcher are released together but installed apart (the launcher is
+  // swapped in place, the service comes as the package), and a service updated alone (here, by the Homebrew Channel or ares-install)
+  // left the launcher of an older release behind. So the service, once it runs as the release on offer, installs that release's
+  // launcher if it is not there; each pair once (D/paired), so a launcher that did not start, or that was put back by hand, is not
+  // installed again and again. Installing reloads Home, which comes to the front: it waits while another app is in front (asked
+  // again with the package check, every 2 minutes). Returns the launcher version it started installing, or ''.
+  let pairDone = false;
+  async function pairLauncher() {
+    if (pairDone || busy()) return '';
+    if (!release || stale()) await check();
+    const lat = release;
+    if (!lat) return ''; // GitHub did not answer: asked again later
+    pairDone = true;
+    if (!lat.service || !lat.frontend || cmp(lat.service, version) !== 0) return ''; // this service is not that release
+    if (lat.build && lat.build !== serviceBuild()) return ''; // a dev build: another commit
+    if (!differs(lat.frontend, frontendInfo().version || '0.0.0', lat.build, frontendBuild())) return '';
+    const key = version + ' ' + (lat.build || '-') + ' ' + lat.frontend;
+    if (readText(D + '/paired') === key) return '';
+    const fg = await luna('luna://com.webos.applicationManager/getForegroundAppInfo', {});
+    if (!fg || !/^(com\.webos\.app\.home|com\.cleanyourtv\.manager)?$/.test(String(fg.appId || ''))) {
+      pairDone = false; // someone is watching something: not now
+      return '';
+    }
+    try {
+      fs.writeFileSync(D + '/paired', key + '\n');
+    } catch (_) {}
+    console.log('updates: service ' + version + ' is release ' + lat.version + '; installing its launcher ' + lat.frontend);
+    updateFrontend(lat.frontend);
+    return lat.frontend;
+  }
+  // the manager's one Update: the service when it changed (its new copy then installs the launcher, pairLauncher), else the launcher
+  async function updateAll() {
+    setJob('working', 'Checking for updates');
+    await check();
+    const s = status();
+    if (s.service.updateTo) return updateService(s.service.updateTo);
+    if (s.frontend.updateTo) return updateFrontend(s.frontend.updateTo);
+    setJob(release ? 'done' : 'error', release ? 'Up to date' : releaseErr || 'Cannot check');
+  }
+
   // the dev build on offer (the manager's Update channel list): the pre-release named dev, or none while it is being rebuilt
   async function tests() {
     try {
@@ -361,6 +408,8 @@ function create(ctx) {
     updateFrontend,
     rollbackFrontend,
     updateService,
+    updateAll,
+    pairLauncher,
     frontendLoaded: v => {
       frontendOk = v;
     },

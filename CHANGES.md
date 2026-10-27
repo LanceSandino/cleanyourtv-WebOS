@@ -510,3 +510,23 @@ commit_ref: "feature/plex-stremio (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T12:38:42Z"
 ```
+
+```yaml
+id: CU-20261027-30
+type: fix
+title: "Service and launcher update together; rollback names the release"
+description: "The owner updated the service row and the launcher stayed behind (they were two rows, and an update from the Homebrew
+  Channel installs only the package), so Go back to launcher offered 1.5.8 instead of the release before. updates.js pairLauncher():
+  a service whose version (and dev build) is the release on offer installs that release's launcher when it differs, once per pair
+  (D/paired), only with Home or the manager in front (installing reloads Home, which comes forward), asked 60 s after start and
+  with the 2-minute package check until it has an answer. POST /api/manager/update-all updates the service (whose new copy pairs
+  the launcher) or else the launcher; the manager shows one CleanYourTV row. A launcher installed by the manager gets a RELEASE
+  file; status.frontend.previousRelease names it, and the rollback row says Go back to the previous launcher with the launcher and
+  release. The recorded API replies gain frontend.previousRelease (null there)."
+impact: medium
+affected_modules: ["helper/updates.js", "helper/manager.js", "manager/src/js/menu.js", "manager/src/js/help.js", "docs/managing.md", "docs/manager.md", "docs/troubleshooting.md", "DECISIONS.md", "tools/test/golden/api.json"]
+related_tests: ["tools/test/updates.test.js", "tools/test/api.test.js"]
+commit_ref: "feature/plex-stremio (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T12:49:33Z"
+```
