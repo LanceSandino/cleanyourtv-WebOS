@@ -18,6 +18,7 @@ var TH0 = {
     hdr: false,
     wide: false,
     capH: 0,
+    shelfDock: null,
   },
   TH = TH0,
   themeKeys = [],
@@ -106,8 +107,32 @@ function applyTheme(t) {
     wide: tw / (t.tileH || 151) > 1.5,
     /* room kept under the lowest row for the name under the focused tile */
     capH: at.label === 'focus' ? 44 : 0,
+    shelfDock: t.shelf || null,
   };
   decoTheme();
+  /* the name follows the dock (shelf.dockAlign) only while that is on; otherwise it keeps the theme's own margin (--name-x) */
+  var sh = $('shelf');
+  sh.style.paddingLeft = '';
+  sh.style.paddingRight = '';
+}
+
+/* line the app name up with the left edge of the dock (shelf.dockAlign). The dock is centred on a width that depends on how many apps
+   are shown, so its left edge is not known until rebuild: work it out from the tile count (n), the tile width, the gap and the panel
+   padding, with no layout read, and set the name's leading padding to match. Exact for a centred dock in either text direction. */
+function placeShelf(n) {
+  var sh = $('shelf'),
+    s = TH.shelfDock;
+  sh.style.paddingLeft = '';
+  sh.style.paddingRight = '';
+  if (!s || !s.dock || n < 1) return;
+  var W = n * s.w + (n - 1) * s.gap + 2 * s.pad,
+    left;
+  if (s.align === 'left') left = s.x;
+  else if (s.align === 'right') left = 1920 - s.x - W;
+  else left = Math.round((1920 - W) / 2);
+  left = Math.max(0, left);
+  if (document.documentElement.getAttribute('dir') === 'rtl') sh.style.paddingRight = Math.max(0, 1920 - left - W) + 'px';
+  else sh.style.paddingLeft = left + 'px';
 }
 
 function setFocus(nr, nc, first) {

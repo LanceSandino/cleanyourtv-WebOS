@@ -214,6 +214,7 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `shelf.scale` | 0.4 to 1.6 | `1` | Scale of the name. |
 | `shelf.weight` | 100 to 900 | `700` | Weight of the name: 300 light, 400 regular, 700 bold. |
 | `shelf.motion` | `none`, `fade`, `slide` | `none` | How the name changes when the focus moves: `none` at once; `fade` the old name fades out as the new one fades in; `slide` they also slide a little, in the direction of reading. |
+| `shelf.dockAlign` | `true` or `false` | `false` | Line the name up with the left edge of the dock, even when the dock is centred and the number of apps changes its width. Overrides `shelf.x` (`shelf.align` still sets the text alignment). Set `shelf.show` off to hide the name instead. |
 | **dock** | | | |
 | `dock.anchor` | `top`, `bottom` | `top` | Which screen edge `dock.y` counts from. |
 | `dock.align` | `left`, `center`, `right` | `left` | Which side `dock.x` counts from; `center` centres the dock. |
