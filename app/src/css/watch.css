@@ -1,0 +1,69 @@
+/* Continue watching (watch.js): picture cards in the grid's first row, the title and the episode over a dark fade at the bottom, a
+   thin bar for how far it got. Apps opened last show their icon. */
+.wcard {
+  overflow: hidden;
+  border-radius: var(--tile-r);
+}
+.wcard .wimg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: #1a1c22 center / cover no-repeat;
+}
+.wcard.wicon .wimg {
+  background-size: 34%;
+  background-position: center 34%;
+}
+.wcard .wtx {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 26px 16px 12px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0));
+  text-align: left;
+}
+.wcard.wtext .wtx {
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: none;
+}
+.wcard .wt {
+  font-size: calc(22px * var(--fs));
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+}
+.wcard .ws {
+  margin-top: 2px;
+  font-size: calc(17px * var(--fs));
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #d4d6dc;
+}
+.wcard .wpg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.25);
+}
+.wcard .wpg i {
+  display: block;
+  height: 100%;
+  background: var(--acc);
+  transform-origin: left center;
+}
+[dir="rtl"] .wcard .wtx {
+  text-align: right;
+}

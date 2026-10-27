@@ -144,6 +144,17 @@ const HOME_KEY =
   'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);customizeMenu();var menu=!!document.getElementById("ov");home();' +
   'var menuClosed=menu&&!document.getElementById("ov")&&!stack.length;WALLPICK.start();var w=setInterval(function(){if(!WALLPICK.open())return;clearInterval(w);home();' +
   'var ok=menuClosed&&!WALLPICK.open();document.body.setAttribute("data-home",ok?"ok":"bad menu="+menu+" menuClosed="+menuClosed+" chooser="+WALLPICK.open())},300)},500)})()</script>';
+// Continue watching (watch.js): two cards in the grid's first row, the apps from the next row; Down into that row, Left to its first
+// card, OK opens
+// Telemachus at that episode
+const WATCH_KEYS =
+  '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}var launched=[],L=window.launch;window.launch=function(id,p){launched.push([id,p]);return L(id,p)};' +
+  'var go=setInterval(function(){if(document.querySelectorAll(".wcard").length<2)return;clearInterval(go);' +
+  'var first=document.querySelector("#grid .tile:not(.wcard)");var newRow=!!first&&first.style.gridColumnStart==="1";key(40);setTimeout(function(){' +
+  'key(37);key(37);key(37);var f=document.querySelector(".f");var onCard=!!f&&f.classList.contains("wcard");key(13);setTimeout(function(){var l=launched[0]||[];' +
+  'var ok=newRow&&onCard&&l[0]==="com.telemachus.screen"&&l[1]&&l[1].play&&l[1].play.episode===6;' +
+  'document.body.setAttribute("data-watch",ok?"ok":"bad newRow="+newRow+" onCard="+onCard+" launched="+JSON.stringify(launched))},800)},800)},300)})()</script>';
 // [name, file, what it draws, how many at least, milliseconds of page time to wait]
 const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
@@ -156,6 +167,7 @@ const PAGES = [
   ['wallpaper chooser', 'app/index.html', /data-pick="ok"/g, 1, 20000, WALLPICK_KEYS],
   ['saver over an app', 'app/index.html', /data-over="ok"/g, 1, 30000, SAVER_OVER],
   ['home key', 'app/index.html', /data-home="ok"/g, 1, 15000, HOME_KEY],
+  ['continue watching', 'app/index.html', /data-watch="ok"/g, 1, 15000, WATCH_KEYS],
 ];
 let famN = 0;
 // a stand-in photo from the feed: a landscape picture with the photo's name on it
@@ -179,7 +191,7 @@ function serve() {
     // the API token (apitoken.js): served next to the pages as on the TV, and every API call of a page must carry it
     if (u === '/cytv-token.js')
       return r.writeHead(200, { 'content-type': 'text/javascript' }), r.end("var CYTV_TOKEN = '" + TOKEN + "';\n");
-    if (/^\/api\/(apps|inputs|manager\/status|photofeed\/next|log)$/.test(u) && q.headers['x-cytv-token'] !== TOKEN) {
+    if (/^\/api\/(apps|inputs|manager\/status|photofeed\/next|watch\/rows|log)$/.test(u) && q.headers['x-cytv-token'] !== TOKEN) {
       noToken.push(u);
       return r.writeHead(403, { 'content-type': 'application/json' }), r.end('{"error":"token required"}');
     }
@@ -210,6 +222,30 @@ function serve() {
         ],
       });
     if (u === '/api/manager/status') return json(golden['manager status'].body);
+    if (u === '/api/watch/rows')
+      return json({
+        items: [
+          {
+            key: 'tm-a',
+            source: 'telemachus',
+            title: 'Show A',
+            sub: 'S2 E6',
+            img: '/api/watch/img/aaaaaaaaaaaaaaaa',
+            progress: 0.3,
+            launch: { id: 'com.telemachus.screen', params: { play: { show: 'Show A', season: 2, episode: 6 } } },
+          },
+          {
+            key: 'app-netflix',
+            source: 'recent',
+            title: 'Netflix',
+            sub: '',
+            img: '',
+            progress: null,
+            launch: { id: 'netflix', params: {} },
+          },
+        ],
+      });
+    if (/^\/api\/watch\/img\/[0-9a-f]{16}$/.test(u)) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(photo(u));
     if (u === '/api/foreground') return json({ returnValue: true, appId: 'com.telemachus.screen' }); // another app in front
     // three Wallpapers photos for the chooser (wallpick.js)
     if (u === '/api/wallpapers/list')

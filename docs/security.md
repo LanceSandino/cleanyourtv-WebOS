@@ -43,6 +43,13 @@ phone page. The service then reads that server's feed over HTTPS only, trusting 
 token that can only read the feed; it follows no redirects. The token is kept in `config.json` (root only) and is never returned by
 the service or given to the launcher. At most 30 photos (40 MB) are kept on the TV. See [Screensaver](screensaver.md).
 
+## Continue watching
+
+Home's first grid row reads Telemachus on the TV itself (`127.0.0.1:8770`, no key from the TV) and LG's recents list (luna). The show and
+film pictures it names come from `image.tmdb.org` (HTTPS only, no redirects, at most 1 MB each): the service fetches them when Home
+shows them and keeps at most 40 in memory, never on disk; the Home page only ever sees an id. Switch the row off in **Customise** >
+**Continue watching** and nothing is read.
+
 ## Voice
 
 Optional and off by default. Installing it downloads files over HTTPS from PyPI, Ubuntu's archive and Moonshine's model server;

@@ -527,6 +527,16 @@ function customizeMenu() {
       { label: t('Top buttons'), stay: true, fn: topButtonsMenu },
       { label: t('Hidden apps'), sub: nh ? String(nh) : '', stay: true, fn: hiddenMenu },
       {
+        label: t('Continue watching'),
+        sub: cfg.watch && cfg.watch.on === false ? t('Off') : t('On'),
+        stay: true,
+        fn: function () {
+          cfg.watch = { on: !!(cfg.watch && cfg.watch.on === false) };
+          saveCfg();
+          WATCH.refresh();
+        },
+      },
+      {
         label: t('App order'),
         sub: cfg.sort === 'alpha' ? t('A to Z') : t('Most used first'),
         stay: true,

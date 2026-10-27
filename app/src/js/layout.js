@@ -29,8 +29,14 @@ function rebuild() {
     fit(t, true);
     return t;
   });
-  var g = rest.map(function (a) {
+  /* Continue watching (watch.js) is the grid's first row; the apps begin on the next one */
+  var w = WATCH.cards();
+  w.forEach(function (t) {
+    gd.appendChild(t);
+  });
+  var g = rest.map(function (a, i) {
     var t = tile(a);
+    t.style.gridColumnStart = i === 0 && w.length % TH.cols ? '1' : '';
     gd.appendChild(t);
     fit(t, TH.wide);
     return t;
@@ -48,6 +54,7 @@ function rebuild() {
       return p;
     });
   rows = [tb, d.length ? d : tb];
+  if (w.length) rows.push(w);
   for (var i = 0; i < g.length; i += TH.cols) rows.push(g.slice(i, i + TH.cols));
   decoRebuild();
   var nr = Math.min(r, rows.length - 1),

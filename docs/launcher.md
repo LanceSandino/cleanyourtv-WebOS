@@ -66,6 +66,18 @@ with Home still in view on the left, so a change shows at once:
 Putting the dock, buttons, hidden apps, order and clock back to the defaults is in the manager app: **Reset Home customisation**.
 
 
+## Continue watching
+
+The first row of the app grid holds picture cards of what to go back to, in this order: what Telemachus is playing (with a bar for
+how far it got), what Telemachus plays next, the apps and inputs LG's recents list names (the ones opened last), then the rest of
+Telemachus's plan. OK opens a card where it is: Telemachus at that episode or film (once its app takes the `play` launch option; until
+then it opens Telemachus), an app or an input as it is. Your apps start on the row below. **Customise** > **Continue watching** switches
+the row off.
+
+The service reads Telemachus on the TV itself (`127.0.0.1:8770`, which answers programs on the TV and refuses web pages) and LG's
+recents list; the pictures are fetched by the service from TMDB's image server and served from memory, so the Home page contacts no
+other site. Nothing is shown when Telemachus is not installed.
+
 ## Uninstalling apps
 
 Holding OK on an app offers **Uninstall...** for the apps the TV lets go of: apps from LG's app store (also LG's own store apps, such

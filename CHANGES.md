@@ -374,3 +374,23 @@ commit_ref: "feature/uninstall-apps (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T07:30:55Z"
 ```
+
+```yaml
+id: CU-20261027-23
+type: feature
+title: "Continue watching on Home: Telemachus's now playing and up next, and LG's recent apps"
+description: "The owner asked for LG-style continue-watching rows without ads. Investigation on his TV (read-only): LG's recents list
+  (com.webos.service.recent/listRecents) holds only the apps opened last, with no show names or pictures, and LG's per-show rows
+  come from its cloud (sdx); Telemachus runs on the TV (127.0.0.1:8770) with /api/brief (now playing, the plan) and /api/shows
+  (posters, backdrops). helper/watch.js reads both from the root service (Telemachus refuses web pages) and fetches TMDB pictures
+  itself (image.tmdb.org only, HTTPS, no redirects, 1 MB, 40 in memory), giving the page ids only. app/src/js/watch.js puts the cards
+  in the grid's first row (the apps begin on the next one; the scrolling maths is unchanged), with the title, the episode and a
+  progress bar; OK launches Telemachus with {play: {show, season, episode}} / {play: {film, year, tmdb_id}} / {play: {resume: true}}
+  (the Telemachus app gains these in its PR #2) or the app as it is. Customise > Continue watching switches it off."
+impact: medium
+affected_modules: ["helper/watch.js", "helper/helper.js", "helper/apps.js", "helper/config.js", "app/src/js/watch.js", "app/src/css/watch.css", "app/src/js/layout.js", "app/src/js/config.js", "app/src/js/menus.js", "docs/launcher.md", "docs/security.md"]
+related_tests: ["tools/test/watch.test.js", "tools/oldchrome.js (continue watching: cards in the first row, Left to the first, OK opens Telemachus at the episode; Chromium 68 and 79)"]
+commit_ref: "feature/continue-watching (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T08:07:02Z"
+```

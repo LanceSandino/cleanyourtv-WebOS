@@ -78,6 +78,7 @@ function title(id) {
 /* ---------- actions ---------- */
 function act(e) {
   var a = e._a;
+  if (a && a.watch) return launch(a.watch.launch.id, a.watch.launch.params); /* Continue watching: opened where it is */
   if (a) {
     if (!a.sys) {
       e.classList.add('launching');

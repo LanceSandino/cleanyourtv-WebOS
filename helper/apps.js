@@ -222,6 +222,8 @@ function create(ctx) {
         clock: s.clock !== false,
       };
     }
+    // Continue watching on Home (watch.js): on unless switched off
+    if (b.watch && typeof b.watch === 'object') out.watch = { on: b.watch.on !== false };
     // the cards in the theme's slots (Customise > Cards), checked for shape only (cards.js)
     const cards = cardsShape.sanitize(b.cards);
     if (cards) out.cards = cards;
