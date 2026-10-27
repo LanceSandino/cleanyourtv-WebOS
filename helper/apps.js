@@ -14,6 +14,9 @@ const P = require('./paths'),
 
 const HALF_LIFE = 30 * 24 * 3600 * 1000; // usage counts halve every 30 days
 const WALL_SECS = [0, 10, 30, 60, 180, 300, 900, 3600]; // the photo-change intervals Customise > Wallpapers offers
+// Customise > Screensaver: how long Home is left alone before it starts, and how long each photo stays (seconds)
+const SAVER_AFTER = [60, 120, 300, 600, 900, 1800],
+  SAVER_SECS = [10, 15, 30, 60];
 const HOME = 'com.webos.app.home';
 
 function create(ctx) {
@@ -172,6 +175,16 @@ function create(ctx) {
       const secs = typeof b.wall.secs === 'number' ? b.wall.secs : typeof b.wall.every === 'number' ? b.wall.every * 60 : 900;
       out.wall = { on: b.wall.on === true, secs: WALL_SECS.indexOf(secs) >= 0 ? secs : 900 };
     }
+    // the screensaver: on or off, when it starts, how long a photo stays, the clock over the photos
+    if (b.saver && typeof b.saver === 'object') {
+      const s = b.saver;
+      out.saver = {
+        on: s.on === true,
+        after: SAVER_AFTER.indexOf(s.after) >= 0 ? s.after : 300,
+        secs: SAVER_SECS.indexOf(s.secs) >= 0 ? s.secs : 15,
+        clock: s.clock !== false,
+      };
+    }
     // the cards in the theme's slots (Customise > Cards), checked for shape only (cards.js)
     const cards = cardsShape.sanitize(b.cards);
     if (cards) out.cards = cards;
@@ -199,9 +212,12 @@ function create(ctx) {
     delete c.notifyApi;
     delete c.theme;
     delete c.wallpapers; // holds the Immich key; the launcher gets only a stamp that changes with the set of photos
+    delete c.photoFeed; // holds the photo feed's token; the launcher gets only whether there are photos
     const theme = ctx.feature('theme'),
-      wp = ctx.feature('wallpapers');
+      wp = ctx.feature('wallpapers'),
+      feed = ctx.feature('photofeed');
     if (wp) c.wallpapers = { stamp: wp.stamp() };
+    if (feed) c.photoFeed = { photos: feed.count() };
     return theme ? Object.assign(c, { theme: theme.resolved() }) : c;
   }
 

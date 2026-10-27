@@ -93,13 +93,40 @@ const theme = require(path.join(ROOT, 'helper', 'theme.js')).create({
 const PROBE =
   '<script>window.onerror=function(m,s,l){var h=document.documentElement;h.setAttribute("data-errors",(h.getAttribute("data-errors")||"")+m+" (line "+l+"); ")};' +
   'window.webOSSystem={launchParams:"{}",locale:"en-GB",hide:function(){},activate:function(){},platformBack:function(){},setInputRegion:function(){},setKeyMask:function(){}};</script>';
-const page = f => fs.readFileSync(path.join(ROOT, f), 'utf8').replace('<script>', PROBE + '<script>');
+const page = (f, extra) =>
+  fs
+    .readFileSync(path.join(ROOT, f), 'utf8')
+    .replace('<script>', PROBE + '<script>')
+    .replace('</body>', (extra || '') + '</body>');
+// the screensaver's remote keys, pressed once it shows its first photo: Right (a new photo), Left (back), Right (forward again, no new
+// photo), Right (a new one), then Down, which ends it and goes no further (the focus on Home stays). The outcome lands in data-keys.
+const SAVER_KEYS =
+  '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}' +
+  'function photo(){var p=document.querySelector("#sv .svp.on");return p?(/photo\\/(p\\d+)/.exec(p.style.backgroundImage)||[])[1]||"":""}' +
+  'function foc(){var f=document.querySelector(".f");return [].indexOf.call(document.querySelectorAll(".tile,.pill"),f)}' +
+  'var seen=[],steps=[39,37,39,39],f0=-1,go=setInterval(function(){if(!SAVER.active()||!photo())return;clearInterval(go);f0=foc();seen.push(photo());' +
+  '(function next(){if(!steps.length){key(40);var ok=seen.join()==="p1,p2,p1,p2,p3"&&!SAVER.active()&&foc()===f0;' +
+  'document.body.setAttribute("data-keys",ok?"ok":"bad "+seen.join()+" active="+SAVER.active()+" focus="+foc()+"/"+f0);return}' +
+  'key(steps.shift());setTimeout(function(){seen.push(photo());next()},1500)})()},500)})()</script>';
 // [name, file, what it draws, how many at least, milliseconds of page time to wait]
 const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
   ['manager', 'manager/app/index.html', /class="row[ "]/g, 5, 8000],
   ['picker', 'picker/app/index.html', /class="chip[ "]/g, 2, 3000],
+  // the launcher left alone for its screensaver's minute (virtual time): the screensaver is up with a photo from the feed drawn
+  ['saver', 'app/index.html', /class="svp on"/g, 1, 75000],
+  // and its keys: Left and Right step through the photos, another key ends it without acting on Home
+  ['saver keys', 'app/index.html', /data-keys="ok"/g, 1, 90000, SAVER_KEYS],
 ];
+let famN = 0;
+// a stand-in photo from the feed: a landscape picture with the photo's name on it
+const photo = u =>
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000"><rect width="1600" height="1000" fill="#3a6e8f"/>' +
+  '<circle cx="1200" cy="300" r="140" fill="#f4d35e"/><path d="M0 1000 L500 520 L900 820 L1250 600 L1600 1000Z" fill="#2d4a3e"/>' +
+  '<text x="80" y="140" font-size="90" fill="#fff" font-family="sans-serif">' +
+  u.split('/').pop() +
+  '</text></svg>';
 const marks = []; // what the pages log (perf lines: tools/perf-tv.sh reads the same on a TV)
 function serve() {
   const srv = http.createServer((q, r) => {
@@ -108,8 +135,8 @@ function serve() {
     r.setHeader('Access-Control-Allow-Headers', 'content-type');
     if (q.method === 'OPTIONS') return r.writeHead(204), r.end();
     const json = o => (r.writeHead(200, { 'content-type': 'application/json' }), r.end(JSON.stringify(o)));
-    const p = PAGES.filter(x => '/' + x[0] + '.html' === u)[0];
-    if (p) return r.writeHead(200, { 'content-type': 'text/html' }), r.end(page(p[1]));
+    const p = PAGES.filter(x => '/' + x[0].replace(/ /g, '-') + '.html' === u)[0];
+    if (p) return (famN = 0), r.writeHead(200, { 'content-type': 'text/html' }), r.end(page(p[1], p[5])); // each page starts at p1
     if (u === '/qrcode.js')
       return (
         r.writeHead(200, { 'content-type': 'text/javascript' }),
@@ -119,7 +146,12 @@ function serve() {
     if (u === '/api/apps')
       return json({
         apps: apps.map(a => ({ id: a.id, title: a.title })),
-        config: { dock: apps.slice(0, 4).map(a => a.id), theme: theme.resolved() },
+        config: {
+          dock: apps.slice(0, 4).map(a => a.id),
+          theme: theme.resolved(),
+          saver: { on: true, after: 60, secs: 15, clock: true },
+          photoFeed: { photos: 2 },
+        },
         usage: {},
         version: '9.9.9',
       });
@@ -131,6 +163,8 @@ function serve() {
         ],
       });
     if (u === '/api/manager/status') return json(golden['manager status'].body);
+    if (u === '/api/photofeed/next') return json({ id: 'p' + ++famN });
+    if (/^\/api\/photofeed\/photo\/p\d+$/.test(u)) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(photo(u));
     if (u === '/api/log') {
       marks.push(decodeURIComponent(q.url.split('m=')[1] || ''));
       return json({});
@@ -179,7 +213,7 @@ function run(bin, url, extra, budget) {
     for (const e of ENGINES) {
       const bin = engine(e[1], e[2]);
       for (const p of PAGES) {
-        const url = 'http://127.0.0.1:8765/' + p[0] + '.html';
+        const url = 'http://127.0.0.1:8765/' + p[0].replace(/ /g, '-') + '.html';
         // headless Chromium on Linux now and then fails to hand over the page ("Failed to serialize document"), hangs or hands it over
         // before the page drew its content: try again
         let r = null;

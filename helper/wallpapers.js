@@ -420,7 +420,11 @@ function create(ctx) {
     }
     touch();
     try {
-      if (u === '/api/state') return json(Object.assign(status(), { pair: null, uploadsList: idx().upload.map(x => x.id) }));
+      const feed = ctx.feature ? ctx.feature('photofeed') : null;
+      if (u === '/api/state')
+        return json(
+          Object.assign(status(), { pair: null, uploadsList: idx().upload.map(x => x.id), photoFeed: feed ? feed.status() : null })
+        );
       let m = /^\/api\/photo\/([ui])\/([0-9a-f-]{16,36})$/i.exec(u);
       if (m && req.method === 'GET') return sendPhoto(res, m[1], m[2], 'private, max-age=3600');
       if (req.method !== 'POST') return json({ error: 'not found' }, 404);
@@ -430,6 +434,9 @@ function create(ctx) {
       }
       const b = await web.body(req, 16384);
       if (u === '/api/upload/delete') return json({ ok: removeUpload(String(b.id || '')) });
+      // the photo feed for the screensaver (photofeed.js): the setup code is pasted here, it is too long for a remote
+      if (u === '/api/photofeed/setup') return json(feed ? await feed.setup(String(b.code || '')) : { error: 'not available' });
+      if (u === '/api/photofeed/disconnect') return json(feed ? feed.disconnect() : { error: 'not available' });
       if (u === '/api/immich/connect') return json(await connect(String(b.url || ''), String(b.key || '')));
       if (u === '/api/immich/albums') {
         if (Array.isArray(b.ids)) {
@@ -551,8 +558,14 @@ function upload(files){var list=[].slice.call(files),n=0,okN=0,errs=[];$('prog')
    x.onerror=function(){errs.push(t('The TV did not answer.'));n++;next()};x.send(b)})})()}
 $('f').onchange=function(){if(this.files.length)upload(this.files);this.value=''};
 $('ug').onclick=function(e){var d=e.target.getAttribute('data-d');if(d)api('upload/delete',{id:d}).then(state)};
-$('tu').onclick=function(){$('tu').className='on';$('ti').className='';$('up').className='';$('im').className='hide'};
-$('ti').onclick=function(){$('ti').className='on';$('tu').className='';$('im').className='';$('up').className='hide';if(S.immich&&S.immich.configured){loadAlbums();loadPhotos()}};
+function tab(n){['tu','ti','tf'].forEach(function(b,i){$(b).className=i===n?'on':''});['up','im','fa'].forEach(function(s,i){$(s).className=i===n?'':'hide'})}
+$('tu').onclick=function(){tab(0)};
+$('ti').onclick=function(){tab(1);if(S.immich&&S.immich.configured){loadAlbums();loadPhotos()}};
+$('tf').onclick=function(){tab(2);famState()};
+function famState(){var f=S.photoFeed;$('fst').innerHTML='';if(!f)return;var p=document.createElement('p');
+ p.textContent=f.configured?fm('Connected to %s · %d photos · last read %s',f.host,f.photos,ago(f.lastSync))+(f.error?' · '+t(f.error):''):t('Not set up.');$('fst').appendChild(p);$('fd').className=f.configured?'':'hide'}
+$('fs').onclick=function(){msg(t('Checking the setup code…'));api('photofeed/setup',{code:$('fc').value}).then(function(r){if(r.error)return msg(t(r.error),1);$('fc').value='';msg(fm('Connected: %d photos in the feed.',r.photos));state().then(famState)})};
+$('fd').onclick=function(){if(confirm(t('Disconnect the photo feed? Its photos are removed from the TV.')))api('photofeed/disconnect',{}).then(function(){msg(t('Photo feed disconnected.'));state().then(famState)})};
 function loadAlbums(){api('immich/albums',{}).then(function(r){if(r.error)return msg(t(r.error),1);var h='';(r.albums||[]).forEach(function(a){h+='<label class=al><input type=checkbox value="'+a.id+'"'+(a.on?' checked':'')+'><span></span><small>'+a.count+'</small></label>'});
  $('al').innerHTML=h;var sp=$('al').querySelectorAll('span');(r.albums||[]).forEach(function(a,i){sp[i].textContent=a.name});$('albox').className=''},function(e){msg(e.error||t('Could not read the albums'),1)})}
 function loadPhotos(){api('immich/photos',{}).then(function(r){var ps=r.photos||[];$('iphb').className=ps.length?'':'hide';var g='';ps.forEach(function(p){g+='<div class="ph'+(p.hidden?' off':'')+'" data-h="'+p.id+'"><img loading=lazy src="" data-s="i/'+p.id+'"></div>'});$('ipg').innerHTML=g;thumbs($('ipg'))})}
@@ -570,8 +583,8 @@ function phonePage(lang) {
     `<!doctype html><html lang=${lang}><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Wallpapers</title>
 <style>*{box-sizing:border-box}body{font:17px -apple-system,system-ui,sans-serif;background:#0d0e12;color:#eee;margin:0;padding:20px 16px 60px;max-width:640px;margin:0 auto}
 h1{font-size:26px;margin:4px 0 4px}h2{font-size:20px;margin:28px 0 10px}p{color:#aaa;margin:6px 0}.m{padding:12px 14px;border-radius:12px;background:#1d2a1f;margin:12px 0}.m.e{background:#3a1717}
-button,input,label.b{font:inherit;display:block;width:100%;padding:14px;border-radius:12px;border:1px solid #333;background:#1a1b21;color:#eee;margin:8px 0;text-align:center}
-button.p,label.b{background:#f5f6f8;color:#111;font-weight:600;border:0}input{text-align:left}.row{display:flex;gap:10px}.row>*{flex:1}
+button,input,textarea,label.b{font:inherit;display:block;width:100%;padding:14px;border-radius:12px;border:1px solid #333;background:#1a1b21;color:#eee;margin:8px 0;text-align:center}
+button.p,label.b{background:#f5f6f8;color:#111;font-weight:600;border:0}input,textarea{text-align:left}textarea{font:13px ui-monospace,monospace;word-break:break-all}.row{display:flex;gap:10px}.row>*{flex:1}
 .tabs{display:flex;gap:8px;margin:16px 0}.tabs button{margin:0}.tabs .on{background:#f5f6f8;color:#111}.hide{display:none}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.ph{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#222}
 .ph img{width:100%;height:100%;object-fit:cover;display:block}.ph button{position:absolute;right:4px;top:4px;width:32px;height:32px;padding:0;margin:0;border-radius:16px;background:rgba(0,0,0,.7);border:0;color:#fff}
@@ -580,7 +593,7 @@ button.p,label.b{background:#f5f6f8;color:#111;font-weight:600;border:0}input{te
 <h1>Wallpapers</h1><p id=sum>${T('Connecting to the TV…')}</p>
 <div id=login class=hide><p>${T('Enter the code shown on the TV.')}</p><input id=code inputmode=numeric autocomplete=one-time-code><button class=p id=go>${T('Continue')}</button></div>
 <div id=main class=hide>
-<div class=tabs><button id=tu class=on>${T('Upload photos')}</button><button id=ti>${T('Configure Immich')}</button></div>
+<div class=tabs><button id=tu class=on>${T('Upload photos')}</button><button id=ti>${T('Configure Immich')}</button><button id=tf>${T('Photo feed')}</button></div>
 <div id=msg></div>
 <section id=up><label class=b for=f>${T('Choose photos')}</label><input id=f type=file accept="image/*" multiple class=hide>
 <div id=prog class=hide><div class=bar><i id=pb></i></div><p id=pt></p></div>
@@ -592,7 +605,11 @@ button.p,label.b{background:#f5f6f8;color:#111;font-weight:600;border:0}input{te
 <div id=albox class=hide><h2>${T('Albums')}</h2><div id=al></div><button class=p id=as>${T('Save albums and sync')}</button></div>
 <div id=ist></div>
 <div id=iphb class=hide><h2>${T('Synced photos')} <small>${T('tap to hide or show one')}</small></h2><div class=grid id=ipg></div></div>
-<button id=isy>${T('Sync now')}</button><button id=idc>${T('Disconnect Immich')}</button></section></div>
+<button id=isy>${T('Sync now')}</button><button id=idc>${T('Disconnect Immich')}</button></section>
+<section id=fa class=hide>
+<p>${T('The screensaver shows the photo feed one photo at a time; the TV keeps only the next few. Paste the setup code from the server that offers the feed (in family-calendar: Admin > Photo feeds).')}</p>
+<textarea id=fc rows=5 placeholder="cyfp1.…" autocomplete=off autocapitalize=off spellcheck=false></textarea>
+<button class=p id=fs>${T('Check and save')}</button><div id=fst></div><button id=fd class=hide>${T('Disconnect the photo feed')}</button></section></div>
 ` +
     i18n.script(lang, PHONE_JS) +
     '<script>' +

@@ -607,5 +607,41 @@
  "Your firmware is not in the compatibility list and LG’s Home looks different. This tries it anyway; a failed start restarts the TV with LG’s Home.": "Your firmware is not in the compatibility list and LG’s Home looks different. This tries it anyway; a failed start restarts the TV with LG’s Home.",
  "Your M3U playlist and its XMLTV guide. Choose it to set up: a QR code opens a page on your phone where you enter the playlist address and the 6-digit code shown here.": "Your M3U playlist and its XMLTV guide. Choose it to set up: a QR code opens a page on your phone where you enter the playlist address and the 6-digit code shown here.",
  "Your own photos behind Home: uploaded from a phone, or synced from Immich albums. Switch them on in the launcher: Customise > Wallpapers.": "Your own photos behind Home: uploaded from a phone, or synced from Immich albums. Switch them on in the launcher: Customise > Wallpapers.",
- "Your playlist": "Your playlist"
+ "Your playlist": "Your playlist",
+ "Screensaver": "Screensaver",
+ "Use the screensaver": "Use the screensaver",
+ "Wallpapers photos": "Wallpapers photos",
+ "Starts after": "Starts after",
+ "1 minute": "1 minute",
+ "Time and date": "Time and date",
+ "Show it now": "Show it now",
+ "set up on a phone": "set up on a phone",
+ "%d minutes": {
+  "one": "%d minute",
+  "other": "%d minutes"
+ },
+ "Check and save": "Check and save",
+ "Not set up.": "Not set up.",
+ "Connected to %s · %d photos · last read %s": "Connected to %s · %d photos · last read %s",
+ "Checking the setup code…": "Checking the setup code…",
+ "The setup code is damaged. Copy it again.": "The setup code is damaged. Copy it again.",
+ "The setup code has no valid address.": "The setup code has no valid address.",
+ "The setup code has no valid token.": "The setup code has no valid token.",
+ "The certificate in the setup code is damaged.": "The certificate in the setup code is damaged.",
+ "%d photos from the feed": {
+  "one": "%d photo from the feed",
+  "other": "%d photos from the feed"
+ },
+ "Photo feed": "Photo feed",
+ "Photo feed...": "Photo feed...",
+ "Disconnect the photo feed": "Disconnect the photo feed",
+ "The screensaver shows the photo feed one photo at a time; the TV keeps only the next few. Paste the setup code from the server that offers the feed (in family-calendar: Admin > Photo feeds).": "The screensaver shows the photo feed one photo at a time; the TV keeps only the next few. Paste the setup code from the server that offers the feed (in family-calendar: Admin > Photo feeds).",
+ "Connected: %d photos in the feed.": "Connected: %d photos in the feed.",
+ "Disconnect the photo feed? Its photos are removed from the TV.": "Disconnect the photo feed? Its photos are removed from the TV.",
+ "Photo feed disconnected.": "Photo feed disconnected.",
+ "This is not a photo feed setup code.": "This is not a photo feed setup code.",
+ "The photo feed must use https.": "The photo feed must use https.",
+ "The photo feed refused the token. Set it up again with a new setup code.": "The photo feed refused the token. Set it up again with a new setup code.",
+ "The photo feed's certificate does not match the setup code.": "The photo feed's certificate does not match the setup code.",
+ "The photo feed did not answer.": "The photo feed did not answer."
 }

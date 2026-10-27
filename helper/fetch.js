@@ -7,10 +7,10 @@
 //   toFile(url, file, opts)  -> {sha256} of what was written
 // Options: headers, method, body (sent as is, or JSON for an object), idleMs (no data for this long: 'timed out', default 20 s),
 // totalMs (the whole request, default none), maxBytes, redirects (how many to follow, default 5; never for a POST), allowHttp
-// (default true), insecure (accept any TLS certificate), refuseLocal (refuse addresses of the TV itself), anyStatus (resolve with
-// any status instead of rejecting what is not 200), statusText(status) for the message of a refused status, unzip: 'header'
-// (default) or 'sniff' (also unpack a body that starts like gzip). Errors carry .code: url, http, local, redirects, status (with
-// .status), lost, timeout, big.
+// (default true), insecure (accept any TLS certificate), ca (PEM: trust only this certificate authority, for a server with its own),
+// refuseLocal (refuse addresses of the TV itself), anyStatus (resolve with any status instead of rejecting what is not 200),
+// statusText(status) for the message of a refused status, unzip: 'header' (default) or 'sniff' (also unpack a body that starts
+// like gzip). Errors carry .code: url, http, local, redirects, status (with .status), lost, timeout, big.
 const http = require('http'),
   https = require('https'),
   zlib = require('zlib'),
@@ -51,6 +51,7 @@ function connect(url, o, hops) {
     }
     const opts = { method, headers, timeout: o.idleMs || 20000 };
     if (o.insecure) opts.rejectUnauthorized = false;
+    else if (o.ca) opts.ca = o.ca;
     diag.note('request', method + ' ' + u.protocol + '//' + u.host + u.pathname);
     const req = nc.request(u.protocol === 'https:' ? https : http, u, opts, res => {
       const st = res.statusCode;

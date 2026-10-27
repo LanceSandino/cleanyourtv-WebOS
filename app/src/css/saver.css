@@ -1,0 +1,67 @@
+/* Screensaver (saver.js): over everything, two photo layers cross-faded with opacity only, a dim layer (darker at night), the time
+   and the date. The photo is fitted whole on black: Frameo photos are often portrait. */
+#sv {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  background: #000;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.8s ease,
+    visibility 0s linear 0.8s;
+}
+#sv.on {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.8s ease;
+}
+#sv .svp {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: #000 center / contain no-repeat;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+#sv .svp.on {
+  opacity: 1;
+}
+#svn {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  opacity: 0.08;
+}
+#svc {
+  position: absolute;
+  left: 96px;
+  bottom: 72px;
+  color: #fff;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7);
+}
+#svt {
+  font-size: 104px;
+  font-weight: 300;
+  line-height: 1;
+}
+#svd {
+  font-size: 34px;
+  margin-top: 14px;
+  color: #d8dade;
+}
+#sv.noclock #svc {
+  display: none;
+}
+[dir="rtl"] #svc {
+  left: auto;
+  right: 96px;
+}

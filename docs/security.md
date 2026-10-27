@@ -36,6 +36,13 @@ limits the sizes (theme 32 KB, wallpaper 1.5 MB, screenshot 600 KB), checks that
 no script or CSS in a theme. Anything merged into `main` becomes available to every TV, which is the same trust you place in the
 releases of this repository; there is no signature.
 
+## Photo feed (screensaver)
+
+Optional and off until a setup code from a server that offers a photo feed (for example family-calendar) is pasted on the Wallpapers
+phone page. The service then reads that server's feed over HTTPS only, trusting only the root certificate in the setup code, with a
+token that can only read the feed; it follows no redirects. The token is kept in `config.json` (root only) and is never returned by
+the service or given to the launcher. At most 30 photos (40 MB) are kept on the TV. See [Screensaver](screensaver.md).
+
 ## Voice
 
 Optional and off by default. Installing it downloads files over HTTPS from PyPI, Ubuntu's archive and Moonshine's model server;

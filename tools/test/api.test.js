@@ -43,6 +43,8 @@ fs.writeFileSync(
       options: { debloat: false, inputKey: false, liveTv: true },
       keys: { input: '241', learned: true },
       theme: { id: 'classic' },
+      // a photo feed set up (photofeed.js): the launcher must get whether there are photos, never this token or address
+      photoFeed: { url: 'https://127.0.0.1:9', token: 'SECRET-feed-token-0123456789', ca: '' },
     },
     null,
     2
@@ -277,13 +279,33 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   if (!/^1\.5\./.test(version)) {
     const tv = JSON.parse((await request('GET', '/api/tv', undefined, 'null')).body);
     const sv = JSON.parse((await request('GET', '/api/service', undefined, 'null')).body);
-    const want = ['core', 'notify', 'voice', 'live', 'theme', 'wallpapers', 'inputkey', 'notifyapi', 'manager', 'apps', 'running'];
+    const want = [
+      'core',
+      'notify',
+      'voice',
+      'live',
+      'theme',
+      'wallpapers',
+      'photofeed',
+      'inputkey',
+      'notifyapi',
+      'manager',
+      'apps',
+      'running',
+    ];
     const okTv = tv.sdk === '10.2.2' && tv.pickerMode === 'overlay' && tv.notifyWindow === 'topui';
     const okSv = JSON.stringify(sv.features) === JSON.stringify(want) && !Object.keys(sv.failed).length;
     console.log((okTv ? 'ok   ' : 'FAIL ') + 'api: /api/tv gives the TV profile');
     console.log((okSv ? 'ok   ' : 'FAIL ') + 'api: /api/service lists every part as running: ' + JSON.stringify(sv));
     if (!okTv) failed++;
     if (!okSv) failed++;
+    const appsBody = (await request('GET', '/api/apps', undefined, 'null')).body;
+    const okFam =
+      appsBody.indexOf('SECRET-feed-token') < 0 && appsBody.indexOf('127.0.0.1:9') < 0 && /"photoFeed":\{"photos":0\}/.test(appsBody);
+    console.log(
+      (okFam ? 'ok   ' : 'FAIL ') + 'api: the launcher gets whether there are photos in the feed, never the feed token or address'
+    );
+    if (!okFam) failed++;
   }
   console.log(failed ? failed + ' API contract check(s) failed' : 'the API answers as recorded');
   finish(failed ? 1 : 0);

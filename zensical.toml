@@ -21,6 +21,7 @@ nav = [
     { "The launcher" = "launcher.md" },
     { "Themes" = "themes.md" },
     { "Wallpapers" = "wallpapers.md" },
+    { "Screensaver" = "screensaver.md" },
     { "Live TV" = "live-tv.md" },
     { "The Input key" = "input-key.md" },
     { "Picture notifications" = "notifications.md" },

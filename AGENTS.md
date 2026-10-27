@@ -28,6 +28,7 @@ disk, and a reboot without the boot scripts brings LG's Home back.
 | Voice (Moonshine, OpenRouter, Home Assistant) | `helper/voice.js` (microphone, recogniser), `helper/answers.js` (Assist, OpenRouter, your server), `voice/` |
 | Themes | `helper/themeschema.js` (the schema), `helper/theme.js` (downloads), `themes/` (read from GitHub), `docs/themes.md` |
 | Wallpapers | `helper/wallpapers.js` (library, phone page, Immich sync), `app/src/js/wall.js` (rotation on Home), `docs/wallpapers.md` |
+| Screensaver, photo feed | `app/src/js/saver.js` (idle, LG's screensaver request, Left/Right), `helper/photofeed.js` (a server's read-only photo feed, small cache, saved round), `docs/screensaver.md` (with the feed contract) |
 | The report people attach to issues | `helper/sharelog.js` (`node sharelog.js --print` prints it) |
 | Node 8 compatibility helpers, diagnostics | `helper/netcompat.js`, `helper/diag.js` |
 | Build and checks | `ipk/build.py`, `tools/build-pages.js`, `tools/check.sh`, the tests in `tools/test/` |

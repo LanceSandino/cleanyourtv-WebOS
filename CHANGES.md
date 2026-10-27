@@ -149,3 +149,86 @@ commit_ref: "feature/ui-polish (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T05:25:45Z"
 ```
+
+```yaml
+id: CU-20261027-3
+type: feature
+title: "Family photos for the screensaver from a family-calendar photo feed"
+description: "helper/familyphotos.js reads a family-calendar server's read-only photo feed (setup code cyfp1.: https address, a
+  photos:read token, the server's root certificate, which becomes the only one trusted). The ids are read hourly with an ETag; photos
+  are fetched one at a time at 1920 px into a cache of at most 30 photos / 40 MB, hidden or deleted photos leave the TV at the next read,
+  and the cache keeps the screensaver going with the server away. The token stays in config.json and is removed from what the
+  launcher gets (apps.js gives only family.photos). helper/fetch.js gains a ca option. The Wallpapers phone page gets a Family photos
+  tab for the setup code."
+impact: medium
+affected_modules: ["helper/familyphotos.js", "helper/fetch.js", "helper/apps.js", "helper/config.js", "helper/helper.js", "helper/wallpapers.js"]
+related_tests: ["tools/test/family.test.js", "tools/test/api.test.js", "tools/test/wallpapers.test.js"]
+commit_ref: "feature/family-saver (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:02:29Z"
+```
+
+```yaml
+id: CU-20261027-4
+type: feature
+title: "Screensaver on Home instead of LG's clock"
+description: "app/src/js/saver.js: after Customise > Screensaver > Starts after (1-30 min, counted in its own 5 s ticks, not the
+  clock) without a key or pointer move on Home, or when the TV asks before starting LG's screensaver (tvpower
+  registerScreenSaverRequest, declined only while ours has photos), the family photos (else the Wallpapers photos) full screen with
+  the time and date, cross-faded with opacity, darker at night. The first key or a pointer move ends it and goes no further."
+impact: medium
+affected_modules: ["app/src/js/saver.js", "app/src/css/saver.css", "app/src/js/menus.js", "app/src/js/config.js", "app/src/index.html"]
+related_tests: ["tools/oldchrome.js (saver page in Chromium 68 and 79)", "tools/test/pages.test.js", "tools/test/api.test.js"]
+commit_ref: "feature/family-saver (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:02:29Z"
+```
+
+```yaml
+id: CU-20261027-6
+type: fix
+title: "Family photos offline: never the same photo twice in a row"
+description: "Found by the end-to-end run against the real family-calendar feed (token revoked, part of the library cached): a photo
+  that could not be fetched replaced the one on screen as 'last', so the offline pick could repeat it, and after an offline pick the
+  shuffled order could bring the same photo straight back. next() now keeps the shown photo on a failure, excludes it from the
+  offline pick, and pick() moves it off the front of the order."
+impact: low
+affected_modules: ["helper/familyphotos.js"]
+related_tests: ["tools/test/family.test.js"]
+commit_ref: "feature/family-saver (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:15:44Z"
+```
+
+```yaml
+id: CU-20261027-7
+type: feature
+title: "Screensaver: Left and Right step through the photos"
+description: "app/src/js/saver.js keeps the last 50 photos shown. Left goes back, Right goes forward (and past the last one fetches a
+  new photo); the photo timer restarts after a step and, after stepping back, moves forward through the history before fetching new
+  photos. Mirrored for right-to-left languages. Every other key still ends the screensaver and is swallowed. The Wallpapers fallback
+  is now a shuffled deck too (each photo once before any repeats) instead of a random pick."
+impact: low
+affected_modules: ["app/src/js/saver.js", "docs/screensaver.md"]
+related_tests: ["tools/oldchrome.js ('saver keys': Right, Left, Right, Right, then Down, in Chromium 68 and 79)"]
+commit_ref: "feature/saver-arrows (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:20:43Z"
+```
+
+```yaml
+id: CU-20261027-8
+type: refactor
+title: "Family photos become the Photo feed: a documented contract any server can offer; the round survives a restart"
+description: "Renamed for other people's servers: helper/familyphotos.js -> helper/photofeed.js, /api/family/* -> /api/photofeed/*,
+  config key family -> photoFeed (the launcher gets photoFeed.photos), the phone page tab and texts say Photo feed, and
+  docs/screensaver.md documents the two feed calls and the setup code as a contract (family-calendar and its Frameo import are one
+  server). The shuffled round is saved with the photo list (at once on a new round or a list change, else at most every 10 minutes
+  to spare the flash), so a restart goes on where it was; new photos join the current round, removed ones leave it."
+impact: medium
+affected_modules: ["helper/photofeed.js", "helper/apps.js", "helper/helper.js", "helper/wallpapers.js", "app/src/js/saver.js", "app/src/js/menus.js", "docs/screensaver.md"]
+related_tests: ["tools/test/photofeed.test.js", "tools/test/api.test.js", "tools/test/wallpapers.test.js", "tools/oldchrome.js"]
+commit_ref: "feature/fork-next (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-27T05:37:40Z"
+```

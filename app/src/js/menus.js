@@ -528,6 +528,12 @@ function customizeMenu() {
         stay: true,
         fn: wallMenu,
       },
+      {
+        label: t('Screensaver'),
+        sub: cfg.saver && cfg.saver.on ? t('On') : t('Off'),
+        stay: true,
+        fn: saverMenu,
+      },
       { label: t('Accent colour'), stay: true, fn: accentMenu },
       { sep: true },
       {
@@ -589,6 +595,80 @@ function wallMenu() {
         },
       },
     ];
+  });
+}
+/* Screensaver (saver.js): the photo feed's photos, or the Wallpapers photos, when Home is left alone, instead of LG's screensaver. The
+   photo feed is set up on a phone (the Wallpapers phone page, Photo feed), since the setup code is too long for a remote. */
+function saverMenu() {
+  openBuilt(t('Screensaver'), function () {
+    var s = cfg.saver || {},
+      after = s.after || 300,
+      secs = s.secs || 15,
+      AF = [60, 120, 300, 600, 900, 1800],
+      SE = [10, 15, 30, 60],
+      fam = (cfg.photoFeed && cfg.photoFeed.photos) || 0,
+      wall = +String((cfg.wallpapers && cfg.wallpapers.stamp) || '0').split(':')[0] || 0,
+      set = function (k, v) {
+        var o = { on: s.on === true, after: after, secs: secs, clock: s.clock !== false };
+        o[k] = v;
+        cfg.saver = o;
+        saveCfg();
+      };
+    return [
+      {
+        label: t('Use the screensaver'),
+        sub:
+          (s.on ? t('On') : t('Off')) +
+          ' \u00B7 ' +
+          (fam ? t(fam + ' photos from the feed') : wall ? t('Wallpapers photos') : t('no photos yet')),
+        stay: true,
+        fn: function () {
+          set('on', !s.on);
+        },
+      },
+      {
+        label: t('Starts after'),
+        sub: after === 60 ? t('1 minute') : t(after / 60 + ' minutes'),
+        stay: true,
+        fn: function () {
+          set('after', AF[(AF.indexOf(after) + 1) % AF.length]);
+        },
+      },
+      {
+        label: t('New photo'),
+        sub: t('Every %s s').replace('%s', secs),
+        stay: true,
+        fn: function () {
+          set('secs', SE[(SE.indexOf(secs) + 1) % SE.length]);
+        },
+      },
+      {
+        label: t('Time and date'),
+        sub: s.clock !== false ? t('On') : t('Off'),
+        stay: true,
+        fn: function () {
+          set('clock', s.clock === false);
+        },
+      },
+      { sep: true },
+      fam || wall
+        ? {
+            label: t('Show it now'),
+            fn: function () {
+              SAVER.start(true);
+            },
+          }
+        : null,
+      {
+        label: t('Photo feed...'),
+        sub: fam ? t(fam + ' photos') : t('set up on a phone'),
+        fn: function () {
+          launch('com.cleanyourtv.manager', { open: 'wallpapers' });
+        },
+      },
+    ].filter(function (it) {
+      return it;
+    });
   });
 }
 /* the apps that can go in the dock or on a button: not hidden, not Live TV, A to Z */

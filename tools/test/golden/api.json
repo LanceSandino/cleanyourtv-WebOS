@@ -38,6 +38,9 @@
           "inputKey": false,
           "liveTv": true
         },
+        "photoFeed": {
+          "photos": 0
+        },
         "sort": "usage",
         "theme": {
           "attrs": {
@@ -258,6 +261,9 @@
           "debloat": false,
           "inputKey": false,
           "liveTv": true
+        },
+        "photoFeed": {
+          "photos": 0
         },
         "sort": "alpha",
         "theme": {
@@ -832,6 +838,11 @@
       "debloat": false,
       "inputKey": false,
       "liveTv": false
+    },
+    "photoFeed": {
+      "ca": "",
+      "token": "SECRET-feed-token-0123456789",
+      "url": "https://127.0.0.1:9"
     },
     "sort": "alpha",
     "theme": {

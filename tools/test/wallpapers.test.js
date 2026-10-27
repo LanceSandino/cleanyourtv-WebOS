@@ -46,7 +46,14 @@ run(async () => {
   );
 
   const config = memoryConfig({});
-  const wp = W.create({ config });
+  // the photo feed part (photofeed.js) as a stand-in: the phone page only passes the setup code on and shows the status
+  const famCalls = [];
+  const famStub = {
+    status: () => ({ configured: famCalls.length > 0, host: 'photos.lan', photos: 7 }),
+    setup: c => (famCalls.push(c), { configured: true, photos: 7 }),
+    disconnect: () => (famCalls.push('disconnect'), { configured: false }),
+  };
+  const wp = W.create({ config, feature: n => (n === 'photofeed' ? famStub : null) });
   let r = await call(wp, '/api/wallpapers/status');
   ok(r.j.total === 0 && r.j.size === '4k' && !r.j.immich.configured, 'no photos at first; the picture size is 4K');
 
@@ -62,6 +69,12 @@ run(async () => {
   );
   p = await phone('GET', '/api/state', undefined, '000000');
   ok(p.code === 403, 'the API needs the code');
+  p = await phone('POST', '/api/photofeed/setup', { code: 'cyfp1.abc' }, code);
+  const fst = (await phone('GET', '/api/state', undefined, code)).j;
+  ok(
+    p.j.photos === 7 && famCalls[0] === 'cyfp1.abc' && fst.photoFeed.configured && /id=tf/.test((await phone('GET', '/')).text),
+    'the phone page has a Photo feed tab that passes the setup code to the service and shows its status'
+  );
   p = await phone('POST', '/api/upload', JPEG, code, 'image/jpeg');
   ok(p.code === 200 && p.j.uploads === 1, 'a JPEG is uploaded');
   p = await phone('POST', '/api/upload', Buffer.from('<html>not a picture</html>'), code, 'image/jpeg');
