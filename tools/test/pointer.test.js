@@ -1,0 +1,103 @@
+// The Magic Remote on the launcher (app/src/js/menus.js): hoverDir() says when hovering a menu row scrolls the list, and homeStep() moves
+// the focus on the home screen one tile per wheel notch, in reading order. menus.js starts listeners when it loads, so the two functions
+// are cut out of it as they are and run with a stand-in for the focus (rows, r, c and setFocus of the launcher).
+const fs = require('fs'),
+  path = require('path'),
+  vm = require('vm');
+const { root, ok, run } = require('./lib');
+
+// the source of one top-level function, from "function name(" to its closing brace
+function source(js, name) {
+  const start = js.indexOf('function ' + name + '(');
+  if (start < 0) return '';
+  let depth = 0;
+  for (let i = js.indexOf('{', start); i < js.length; i++) {
+    if (js[i] === '{') depth++;
+    else if (js[i] === '}' && --depth === 0) return js.slice(start, i + 1);
+  }
+  return '';
+}
+
+run(async () => {
+  const js = fs.readFileSync(path.join(root, 'app', 'src', 'js', 'menus.js'), 'utf8');
+
+  // ---- hovering a menu row ----
+  const hv = {};
+  vm.runInNewContext(source(js, 'hoverDir'), hv, { filename: 'hoverDir' });
+  ok(typeof hv.hoverDir === 'function', 'menus.js has hoverDir');
+  ok(hv.hoverDir(3, 0, 8, 20) === 0, 'hovering a row in the middle does not scroll');
+  ok(hv.hoverDir(7, 0, 8, 20) === 1, 'hovering the last visible row scrolls down by one when there are more below');
+  ok(hv.hoverDir(15, 8, 8, 20) === 1, 'also when the window is not at the top');
+  ok(hv.hoverDir(19, 12, 8, 20) === 0, 'the last visible row of the last window does not scroll');
+  ok(hv.hoverDir(5, 5, 8, 20) === -1, 'hovering the first visible row scrolls up by one when there are more above');
+  ok(hv.hoverDir(0, 0, 8, 20) === 0, 'the first visible row of the first window does not scroll');
+  ok(hv.hoverDir(6, 0, 8, 7) === 0, 'a list shorter than the window never scrolls');
+  ok(hv.hoverDir(7, 0, 8, 8) === 0, 'a list as long as the window never scrolls');
+
+  // ---- the wheel on the home screen ----
+  const calls = [];
+  const sb = {
+    rows: [],
+    r: 1,
+    c: 0,
+    setFocus(nr, nc) {
+      calls.push([nr, nc]);
+      sb.r = nr;
+      sb.c = nc;
+    },
+  };
+  vm.createContext(sb);
+  vm.runInContext(source(js, 'homeStep'), sb, { filename: 'homeStep' });
+  ok(typeof sb.homeStep === 'function', 'menus.js has homeStep');
+  const tiles = (n, p) => Array.from({ length: n }, (_, i) => p + i);
+  const top = tiles(4, 't'),
+    dock = tiles(2, 'd');
+  const withDock = () => [top, dock, tiles(10, 'g'), tiles(1, 'h')];
+  function step(rows, r, c, dir) {
+    sb.rows = rows;
+    sb.r = r;
+    sb.c = c;
+    calls.length = 0;
+    sb.homeStep(dir);
+    return calls.length ? calls[calls.length - 1] : null;
+  }
+  const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+  ok(eq(step(withDock(), 1, 0, 1), [1, 1]), 'a notch down goes to the next tile of the dock');
+  ok(eq(step(withDock(), 1, 1, 1), [2, 0]), 'at the end of the dock it continues on the first grid row');
+  ok(eq(step(withDock(), 2, 4, 1), [2, 5]), 'in the grid it goes to the next tile of the row');
+  ok(eq(step(withDock(), 2, 9, 1), [3, 0]), 'at the end of a grid row it continues on the next row');
+  ok(step(withDock(), 3, 0, 1) === null, 'at the last tile a notch down does nothing');
+  ok(eq(step(withDock(), 3, 0, -1), [2, 9]), 'a notch up from the start of a row goes to the end of the row above');
+  ok(eq(step(withDock(), 2, 0, -1), [1, 1]), 'from the first grid tile it goes back to the end of the dock');
+  ok(eq(step(withDock(), 1, 1, -1), [1, 0]), 'a notch up goes to the previous tile of the dock');
+  ok(step(withDock(), 1, 0, -1) === null, 'at the first tile a notch up does nothing');
+  ok(eq(step(withDock(), 0, 2, 1), [1, 0]), 'from the top buttons a notch down goes to the first tile');
+  ok(step(withDock(), 0, 2, -1) === null, 'from the top buttons a notch up does nothing');
+
+  // without a dock row 1 is the row of buttons again: the tiles start at row 2
+  const noDock = () => [top, top, tiles(10, 'g'), tiles(3, 'h')];
+  ok(step(noDock(), 2, 0, -1) === null, 'without a dock the first grid tile is the first tile (not the buttons)');
+  ok(eq(step(noDock(), 0, 1, 1), [2, 0]), 'without a dock, from the top buttons a notch down goes to the first grid tile');
+  ok(eq(step(noDock(), 2, 9, 1), [3, 0]), 'without a dock a grid row still continues on the next');
+
+  // a whole walk: every tile once, in order, then back, and the ends hold
+  sb.rows = withDock();
+  sb.r = 1;
+  sb.c = 0;
+  const seen = ['1,0'];
+  for (let i = 0; i < 20; i++) {
+    const before = sb.r + ',' + sb.c;
+    sb.homeStep(1);
+    if (sb.r + ',' + sb.c !== before) seen.push(sb.r + ',' + sb.c);
+  }
+  ok(seen.length === 13 && seen[12] === '3,0', 'twenty notches down visit all 13 tiles once and stop at the last (' + seen.length + ')');
+  const back = [];
+  for (let i = 0; i < 20; i++) {
+    const before = sb.r + ',' + sb.c;
+    sb.homeStep(-1);
+    if (sb.r + ',' + sb.c !== before) back.push(sb.r + ',' + sb.c);
+  }
+  ok(back.length === 12 && sb.r === 1 && sb.c === 0, 'twenty notches up go back through every tile and stop at the first');
+  ok(back[0] === seen[11], 'the way back starts at the tile before the last');
+});
