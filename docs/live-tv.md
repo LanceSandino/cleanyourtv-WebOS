@@ -53,6 +53,15 @@ button's code; afterwards it opens the Live TV channel guide over whatever is ru
 **Clear** gives LG's guide back. The button is only taken over while Live TV is on and a code is learned. It uses the same hook as
 the [Input key](input-key.md).
 
+## With the pointer
+
+The Magic Remote's pointer works on every Live TV screen, with the same actions as the keys:
+
+- **Watching:** a click opens the guide, the wheel changes channel, holding a click opens the player menu, and moving the pointer shows what is on.
+- **Guide:** pointing at a channel selects it, a click plays it, the wheel scrolls the list, a click on a neighbouring tab changes the
+  category, and holding a click on a channel adds or removes it from the favourites.
+- **Filters and the player menu:** pointing selects a row, a click uses it (in Filters it steps to the next value), and a click outside closes the panel.
+
 ## How it plays
 
 - The TV's own player plays **HLS** (`.m3u8`).

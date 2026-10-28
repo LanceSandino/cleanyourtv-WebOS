@@ -32,6 +32,11 @@
 #lv .layer.on {
   opacity: 1;
 }
+#lv-guide.on,
+#lv-filter.on,
+#lv-menu.on {
+  pointer-events: auto; /* the pointer works on them while they are open */
+}
 /* channel banner: a floating panel in the launcher's style */
 #lv-osd {
   left: 96px;

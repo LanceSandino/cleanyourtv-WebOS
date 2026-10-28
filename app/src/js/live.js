@@ -505,15 +505,31 @@ var LIVE = (function () {
     if (Q) a.push('“' + Q + '”');
     return a.join('  ·  ');
   }
-  function drawList() {
+  function drawList(keepWindow) {
     var now = Math.floor(Date.now() / 1000),
       names = tabNames();
     $('lv-gtitle').textContent = t('Live TV');
     var d = new Date(),
       tabs = '';
-    if (L.g > 0) tabs += '<div class="ctab m">‹</div><div class="ctab">' + lesc(names[L.g - 1]) + '</div>';
+    if (L.g > 0)
+      tabs +=
+        '<div class="ctab m" data-g="' +
+        (L.g - 1) +
+        '">‹</div><div class="ctab" data-g="' +
+        (L.g - 1) +
+        '">' +
+        lesc(names[L.g - 1]) +
+        '</div>';
     tabs += '<div class="ctab on">' + lesc(names[L.g]) + '</div>';
-    if (L.g < names.length - 1) tabs += '<div class="ctab">' + lesc(names[L.g + 1]) + '</div><div class="ctab m">›</div>';
+    if (L.g < names.length - 1)
+      tabs +=
+        '<div class="ctab" data-g="' +
+        (L.g + 1) +
+        '">' +
+        lesc(names[L.g + 1]) +
+        '</div><div class="ctab m" data-g="' +
+        (L.g + 1) +
+        '">›</div>';
     var ft = filterText();
     if (ft) tabs += '<div class="ctab f">' + lesc(t('Filters') + ': ' + ft) + '</div>';
     setHtml($('lv-gtabs'), tabs);
@@ -522,6 +538,8 @@ var LIVE = (function () {
     var N = 7,
       cs = Math.max(0, Math.min(L.ci - 3, L.list.length - N)),
       h = '';
+    if (keepWindow && L.cs !== undefined) cs = Math.max(0, Math.min(L.cs, L.list.length - N)); // hovering must not slide the rows under the pointer
+    L.cs = cs;
     for (var j = cs; j < Math.min(L.list.length, cs + N); j++) {
       var c = L.list[j],
         e = epgNow[c.id],
@@ -530,6 +548,8 @@ var LIVE = (function () {
         '<div class="crow' +
         (j === L.ci ? ' f' : '') +
         (c.num === cur ? ' cur' : '') +
+        '" data-j="' +
+        j +
         '"><div class="n">' +
         c.num +
         '</div>' +
@@ -680,6 +700,8 @@ var LIVE = (function () {
       h +=
         '<div class="mrow' +
         (i === FP.i ? ' f' : '') +
+        '" data-i="' +
+        i +
         '"><div class="ml">' +
         lesc(r[i].label) +
         '</div><div class="mv">' +
@@ -774,6 +796,8 @@ var LIVE = (function () {
       h +=
         '<div class="mrow' +
         (i === M.i ? ' f' : '') +
+        '" data-i="' +
+        i +
         '"><div class="ml">' +
         lesc(M.items[i].label) +
         '</div><div class="mv">' +
@@ -1144,5 +1168,172 @@ var LIVE = (function () {
     else if (k >= 96 && k <= 105) digit(k - 96);
     else if (k === 461 || k === 27 || k === 8) o.exit();
   };
+
+  /* ---- the pointer (Magic Remote): the same actions as the keys, on every screen ----
+     hover selects, a click opens or picks, the wheel scrolls (or zaps while watching), holding a click is the options: a channel's
+     favourite in the guide, the player menu on the picture. A click outside a panel closes it. */
+  var lvEl = $('lv'),
+    holdP = 0,
+    heldP = false,
+    wheelAt = 0,
+    pX = -1,
+    pY = -1;
+  function near(ev, sel) {
+    return ev.target && ev.target.closest ? ev.target.closest(sel) : null;
+  }
+  function num(el, a) {
+    return +el.getAttribute(a);
+  }
+  lvEl.addEventListener('mousemove', function (ev) {
+    if (!o.on || !loaded || searching || Date.now() - lastKey < 1500) return;
+    if (pX < 0) {
+      pX = ev.clientX;
+      pY = ev.clientY;
+      return;
+    }
+    if (Math.abs(ev.clientX - pX) + Math.abs(ev.clientY - pY) < 24) return; // real movement only, as on the home screen
+    pX = ev.clientX;
+    pY = ev.clientY;
+    var el;
+    if (FP.open) {
+      el = near(ev, '#lv-filter .mrow');
+      if (el && num(el, 'data-i') !== FP.i) {
+        FP.i = num(el, 'data-i');
+        drawFilter();
+      }
+    } else if (M.open) {
+      el = near(ev, '#lv-menu .mrow');
+      if (el && num(el, 'data-i') !== M.i) {
+        M.i = num(el, 'data-i');
+        drawMenu();
+      }
+    } else if (L.open) {
+      el = near(ev, '.crow');
+      if (el && num(el, 'data-j') !== L.ci) {
+        L.ci = num(el, 'data-j');
+        drawList(true);
+        fetchVisible();
+      }
+    } else showOsd();
+  });
+  lvEl.addEventListener('mousedown', function (ev) {
+    heldP = false;
+    clearTimeout(holdP);
+    if (!o.on || !loaded || searching || FP.open || M.open) return;
+    var el = L.open ? near(ev, '.crow') : null;
+    if (L.open && !el) return;
+    holdP = setTimeout(function () {
+      heldP = true;
+      if (el) toggleFav(L.list[num(el, 'data-j')]);
+      else openMenu();
+    }, 650);
+  });
+  lvEl.addEventListener('mouseup', function () {
+    clearTimeout(holdP);
+  });
+  lvEl.addEventListener('click', function (ev) {
+    if (heldP) {
+      heldP = false;
+      return;
+    }
+    if (!o.on) return;
+    if (searching) {
+      if (ev.target.id !== 'lv-search') endSearch(true);
+      return;
+    }
+    if (!loaded) return;
+    var el;
+    if (FP.open) {
+      el = near(ev, '#lv-filter .mrow');
+      if (!el) {
+        FP.open = false;
+        layer('lv-filter', false);
+        drawList();
+        return;
+      }
+      FP.i = num(el, 'data-i');
+      var r = filterRows()[FP.i];
+      if (r.k === 'clear') {
+        F = { cc: '', lang: '', q: '' };
+        relist();
+        drawFilter();
+      } else stepFilter(r.k, 1);
+      return;
+    }
+    if (M.open) {
+      el = near(ev, '#lv-menu .mrow');
+      if (!el) {
+        M.open = false;
+        layer('lv-menu', false);
+        return;
+      }
+      M.i = num(el, 'data-i');
+      M.items[M.i].fn();
+      return;
+    }
+    if (L.open) {
+      el = near(ev, '.crow');
+      if (el) {
+        var ch = L.list[num(el, 'data-j')];
+        if (ch) {
+          closeList();
+          play(ch.num);
+        }
+        return;
+      }
+      el = near(ev, '.ctab');
+      if (el && el.hasAttribute('data-g')) {
+        L.g = num(el, 'data-g');
+        L.list = listFor(L.g);
+        L.ci = 0;
+        drawList();
+        fetchVisible();
+      } else if (el && el.classList.contains('f')) {
+        FP.open = true;
+        FP.i = 0;
+        drawFilter();
+        layer('lv-filter', true);
+      }
+      return;
+    }
+    if (failed) play(cur);
+    else openList();
+  });
+  lvEl.addEventListener(
+    'wheel',
+    function (ev) {
+      if (!o.on || searching || !ev.deltaY) return;
+      ev.preventDefault();
+      lastKey = Date.now(); // lastKey also keeps the pointer from taking the selection back while rows slide under it
+      var now = lastKey,
+        d = ev.deltaY > 0 ? 1 : -1;
+      if (FP.open) {
+        if (now - wheelAt < 90) return;
+        wheelAt = now;
+        FP.i = Math.max(0, Math.min(3, FP.i + d));
+        drawFilter();
+        return;
+      }
+      if (M.open) {
+        if (now - wheelAt < 90) return;
+        wheelAt = now;
+        M.i = Math.max(0, Math.min(M.items.length - 1, M.i + d));
+        drawMenu();
+        return;
+      }
+      if (L.open) {
+        if (now - wheelAt < 70) return;
+        wheelAt = now;
+        L.ci = Math.max(0, Math.min(L.list.length - 1, L.ci + d));
+        drawList();
+        fetchVisible();
+        return;
+      }
+      if (!loaded || now - wheelAt < 300) return;
+      wheelAt = now;
+      step(d > 0 ? -1 : 1);
+    },
+    { passive: false }
+  );
   return o;
 })();
