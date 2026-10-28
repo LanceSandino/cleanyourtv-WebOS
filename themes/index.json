@@ -70,6 +70,13 @@
    "preview": "horizon/preview.jpg"
   },
   {
+   "id": "lake-dock",
+   "name": "Lake Dock",
+   "author": "Reveal80",
+   "description": "Classic on a dimmed moonlit lake: no big app name, the dock right under the top buttons, dark pills that stay readable over any wallpaper.",
+   "preview": "lake-dock/preview.jpg"
+  },
+  {
    "id": "large",
    "name": "Large print",
    "author": "CleanYourTV",

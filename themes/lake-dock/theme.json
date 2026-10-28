@@ -1,0 +1,4 @@
+{ "name": "Lake Dock", "author": "Reveal80",
+  "description": "Classic on a dimmed moonlit lake: no big app name, the dock right under the top buttons, dark pills that stay readable over any wallpaper.",
+  "shelf": { "show": false }, "dock": { "y": 190 }, "grid": { "clipTop": 130 }, "tile": { "ringWidth": 4, "ringOffset": 4 },
+  "effects": { "wallpaper": "moon-lake.jpg", "wallpaperDim": 0.3 }, "colors": { "pill": "#000000" }, "surface": { "pillAlpha": 0.35 } }
