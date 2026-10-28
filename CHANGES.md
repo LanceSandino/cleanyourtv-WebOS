@@ -798,3 +798,22 @@ commit_ref: "feature/no-takeover-hdmi (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-28T02:18:33Z"
 ```
+
+```yaml
+id: CU-20261028-1
+type: fix
+title: "Telemachus: one card per show, the latest it watched, and a switch for it"
+description: "The owner: the Telemachus row should show only the latest episode watched, one per show; it showed many (the plan loop
+  added up to four of the channel's next, e.g. S8E10-E13 of one show). watch.js now reads Telemachus's GET /api/continue (its PR #4:
+  a row per show, newest first, with resume or next): the episode in the middle (progress percent/100; {play: {resume: true}} when it
+  is what plays now, else {show, season, episode}), else the next one when it has aired (marked next); a film by filmPlay; a show
+  caught up is left out; 6 at most. An older Telemachus (no /api/continue, 404) gives what is playing and each show's latest started
+  episode from /api/brief, never the plan. cfg.watch.tm false (Customise > Continue watching > Telemachus, checked by apps.js)
+  stops reading it."
+impact: low
+affected_modules: ["helper/watch.js", "helper/apps.js", "app/src/js/watch.js", "app/src/js/menus.js", "tools/oldchrome.js", "docs/launcher.md"]
+related_tests: ["tools/test/watch.test.js"]
+commit_ref: "feature/telemachus-continue (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-28T22:52:21Z"
+```

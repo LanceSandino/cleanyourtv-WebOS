@@ -205,12 +205,12 @@ const HOLD_OK =
   'var left=document.querySelectorAll("#grid .wcard").length,saved=cfg.watch&&cfg.watch.hide&&cfg.watch.hide.join();' +
   'var ok=app&&onCard&&card&&left===0&&saved==="plex:7";' +
   'document.body.setAttribute("data-hold",ok?"ok":"bad app="+app+" onCard="+onCard+" card="+card+" left="+left+" saved="+saved+" menu="+ov().slice(0,160))},800)})},1000)},600)})},2500)},300)})()</script>';
-// linking Plex (Customise > Continue watching): Down twice to Link Plex..., OK; the menu shows the code for plex.tv/link, then, once the
+// linking Plex (Customise > Continue watching): Down three times to Link Plex..., OK; the menu shows the code for plex.tv/link, then, once the
 // stand-in says the code was entered, the server it is linked to
 const WATCH_LINK =
   '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
   'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}function ov(){var o=document.getElementById("ov");return o?o.textContent:""}' +
-  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);watchMenu();setTimeout(function(){key(40);key(40);key(13);' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);watchMenu();setTimeout(function(){key(40);key(40);key(40);key(13);' +
   'var n=0,code=false,w=setInterval(function(){if(/plex\\.tv\\/link and enter AB12/.test(ov()))code=true;if(++n<60&&!/Linked to Home server/.test(ov()))return;clearInterval(w);' +
   'var ok=code&&/Linked to Home server/.test(ov());document.body.setAttribute("data-link",ok?"ok":"bad code="+code+" menu="+ov().slice(0,200))},250)},800)},300)})()</script>';
 // LG's row of another app (lgrows.js): highlighting the second dock app opens its row; OK opens the video the way LG's Home does

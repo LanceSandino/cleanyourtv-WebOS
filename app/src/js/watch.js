@@ -27,9 +27,14 @@ var WATCH = (function () {
   function removed() {
     return (cfg.watch && cfg.watch.hide) || [];
   }
-  function save(on, hide, lg) {
+  /* the switches kept with the removed list: on (all rows), lg (LG's rows of the other apps), tm (Telemachus's row) */
+  function tmOn() {
+    return !(cfg.watch && cfg.watch.tm === false);
+  }
+  function save(on, hide, lg, tm) {
     cfg.watch = { on: on };
     if (!lg) cfg.watch.lg = false;
+    if (tm === undefined ? !tmOn() : !tm) cfg.watch.tm = false;
     if (hide.length) cfg.watch.hide = hide.slice(-100);
     saveCfg();
   }
@@ -38,7 +43,7 @@ var WATCH = (function () {
     var gone = removed();
     if (!on() || gone.indexOf('app:' + appId) >= 0) return [];
     return items.filter(function (it) {
-      return cardOf(it, appId) && gone.indexOf(it.group) < 0 && (it.source !== 'lg' || lgOn());
+      return cardOf(it, appId) && gone.indexOf(it.group) < 0 && (it.source !== 'lg' || lgOn()) && (it.source !== 'telemachus' || tmOn());
     });
   }
   /* a card of its own kind, kept like the app tiles (tiles[], focus, the pointer) and rebuilt only when what it shows changed. Plex's
@@ -161,6 +166,12 @@ var WATCH = (function () {
     },
     setLg: function (v) {
       save(on(), removed(), v);
+    },
+    tmOn: tmOn,
+    /* Telemachus's row: the service stops reading Telemachus (helper/watch.js) */
+    setTm: function (v) {
+      save(on(), removed(), lgOn(), v);
+      refresh();
     },
     /* a show or film (its group), or an app's whole row ('app:<id>') */
     remove: function (g) {

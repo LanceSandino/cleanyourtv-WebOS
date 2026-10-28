@@ -71,8 +71,9 @@ Putting the dock, buttons, hidden apps, order and clock back to the defaults is 
 
 Highlight an app on Home and, a moment later, a row of its episodes, films or videos opens under that app's row:
 
-- **Telemachus, Plex (or PLX), Stremio:** what you started and did not finish, with a bar for how far you got, and for Telemachus
-  what its channel plays next (marked **Up next on Telemachus**).
+- **Telemachus:** one card per show, the latest it watched: the episode you are in the middle of (with a bar for how far you got),
+  or else the next one to watch (marked **Up next on Telemachus**). Never its channel's whole lineup.
+- **Plex (or PLX), Stremio:** what you started and did not finish, with a bar for how far you got.
 - **The other apps** (YouTube, Disney+, Apple TV and the like): the row LG's own Home shows for that app, as LG keeps it on the TV,
   without LG's advertisements. Which apps have one is LG's choice; an app LG has nothing for shows no row.
  Down goes into the row; OK opens it in that app: Telemachus at that episode or film (an older Telemachus app
@@ -88,6 +89,7 @@ next episode does not come back), **Hide the row of** that app, and the settings
 **Customise** > **Continue watching**:
 
 - **Show on Home** switches the rows off (nothing is then read).
+- **Telemachus** switches Telemachus's cards off (it is not read then).
 - **Rows from LG for other apps** switches LG's rows off, keeping Telemachus, Plex and Stremio.
 - **Show removed cards again** (when you removed some) brings them all back.
 - **Link Plex...** shows a 4-character code: open `plex.tv/link` on a phone or a computer, signed in to Plex, and enter it. The TV

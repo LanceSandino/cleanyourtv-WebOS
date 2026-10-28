@@ -20,7 +20,7 @@ const TELEMACHUS = process.env.CYTV_TELEMACHUS || 'http://127.0.0.1:8770', // an
   IMG_MAX = 200, // pictures named (an address each)
   IMG_BYTES = 1024 * 1024, // one picture at most
   IMG_TOTAL = 12 * 1024 * 1024, // the pictures kept in memory at most (the oldest are dropped, fetched again when shown)
-  NEXT_MAX = 4; // Telemachus's next episodes and films
+  TM_MAX = 6; // Telemachus's cards: one per show
 // pictures only from TMDB's image host, in a TV-sized width
 const TMDB = /^https:\/\/image\.tmdb\.org\/t\/p\/[a-z0-9]+\/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$/,
   METAHUB = /^https:\/\/images\.metahub\.space\/[a-z]+\/[a-z]+\/tt\d+\/img$/,
@@ -105,7 +105,10 @@ function create(ctx) {
     res.end(im.buf);
   }
 
-  // ---- Telemachus: GET /api/brief (now playing, the plan) and /api/shows (pictures), from loopback with no origin ----
+  // ---- Telemachus: one card per show, the latest it watched: GET /api/continue gives a row per show, newest first, with the episode
+  // it is in the middle of (resume) or the next one to watch (next). A Telemachus without that call gives what is playing and the
+  // episode each show is in the middle of (/api/brief). Never the channel's lineup: that listed many episodes of one show. Read from
+  // loopback with no origin (Telemachus answers programs on the TV and refuses web pages).
   const tm = path =>
     fetch
       .read(TELEMACHUS + path, { totalMs: 4000, idleMs: 3000, maxBytes: 2 * 1024 * 1024, redirects: 0 })
@@ -113,56 +116,86 @@ function create(ctx) {
   let shows = {},
     showsAt = 0;
   async function telemachus() {
-    let brief;
+    let cont = null,
+      brief = null;
+    try {
+      cont = await tm('/api/continue');
+    } catch (_) {}
     try {
       brief = await tm('/api/brief');
-    } catch (_) {
-      return []; // not installed, or not running
-    }
-    if (Date.now() - showsAt > SHOWS_MS) {
-      try {
-        const s = await tm('/api/shows');
-        shows = {};
-        for (const x of (s && s.shows) || []) if (x && x.show) shows[x.show] = x;
-        showsAt = Date.now();
-      } catch (_) {}
-    }
+    } catch (_) {}
+    if (!cont && !brief) return []; // not installed, or not running
     const st = (brief && brief.state) || {},
-      plan = Array.isArray(st.plan) ? st.plan : [],
-      out = [],
-      seen = {};
-    const picOf = (show, poster) => (shows[show] && pic(shows[show].backdrop, 'w780')) || pic(poster, 'w342');
-    const titleOf = (show, s, e) => (plan.filter(p => p && p.show === show && p.season === s && p.episode === e)[0] || {}).title || '';
-    const card = (show, s, e, title, poster, progress, play, next) => ({
+      np = st.now_playing,
+      out = [];
+    const playing = (show, s, e) => !!np && np.show === show && np.season === s && np.episode === e;
+    const card = (show, s, e, title, img, progress, play, next) => ({
       key: 'tm-' + show + '-' + s + '-' + e,
       group: 'tm:' + show,
       source: 'telemachus',
       title: show,
       sub: ep(show, s, e, title),
-      img: picOf(show, poster),
+      img,
       progress: progress > 0 ? Math.min(1, progress) : null,
       next: !!next,
       launch: { id: TELEMACHUS_APP, params: { play } },
     });
-    // what the player has
-    const np = st.now_playing;
+    if (cont && Array.isArray(cont.continue)) {
+      for (const r of cont.continue) {
+        if (!r || !r.show || out.length >= TM_MAX) continue;
+        const img = pic(r.backdrop, 'w780') || pic(r.poster, 'w342');
+        if (r.kind === 'movie') {
+          const p = r.resume;
+          out.push({
+            key: 'tm-film-' + (r.tmdb_id || r.show),
+            group: 'tm:film:' + (r.tmdb_id || r.show),
+            source: 'telemachus',
+            title: String(r.show),
+            sub: '',
+            img,
+            progress: p && p.percent > 0 ? Math.min(1, p.percent / 100) : null,
+            next: false,
+            launch: { id: TELEMACHUS_APP, params: { play: filmPlay(r.show, r.year, r.tmdb_id) } },
+          });
+          continue;
+        }
+        // the episode it is in the middle of, else the next one (when it has aired); a show caught up with nothing next is left out
+        const x = r.resume || (r.next && r.next.aired !== false ? r.next : null);
+        if (!x || !(x.season >= 0) || !(x.episode > 0)) continue;
+        const play = playing(r.show, x.season, x.episode) ? { resume: true } : { show: r.show, season: x.season, episode: x.episode };
+        out.push(card(r.show, x.season, x.episode, x.title, img, r.resume ? (+x.percent || 0) / 100 : 0, play, !r.resume));
+      }
+      return out;
+    }
+    // an older Telemachus (no /api/continue): what is playing, then the episode each other show is in the middle of
+    if (Date.now() - showsAt > SHOWS_MS) {
+      try {
+        const s2 = await tm('/api/shows');
+        shows = {};
+        for (const x of (s2 && s2.shows) || []) if (x && x.show) shows[x.show] = x;
+        showsAt = Date.now();
+      } catch (_) {}
+    }
+    const picOf = (show, poster) => (shows[show] && pic(shows[show].backdrop, 'w780')) || pic(poster, 'w342');
+    const seen = {};
     if (np && np.show) {
       const len = +np.length_seconds || 0,
         pos = +np.position_seconds || 0;
       out.push(
-        card(np.show, np.season, np.episode, np.title, np.poster, len > 0 ? pos / len : (+np.percent_complete || 0) / 100, { resume: true })
+        card(np.show, np.season, np.episode, np.title, picOf(np.show, np.poster), len > 0 ? pos / len : (+np.percent_complete || 0) / 100, {
+          resume: true,
+        })
       );
       seen[np.show] = 1;
     }
-    // the episode each other show is in the middle of (the latest one, when there are several)
     for (const sh of Array.isArray(st.shows) ? st.shows : []) {
-      if (!sh || !sh.show || seen[sh.show] || out.length >= 4) continue;
+      if (!sh || !sh.show || seen[sh.show] || out.length >= TM_MAX) continue;
       const ip = (Array.isArray(sh.in_progress) ? sh.in_progress : [])
         .filter(x => x && x.season > 0 && x.episode > 0)
         .sort((a, b) => b.season - a.season || b.episode - a.episode)[0];
       if (!ip) continue;
       out.push(
-        card(sh.show, ip.season, ip.episode, titleOf(sh.show, ip.season, ip.episode), sh.poster, (+ip.percent || 0) / 100, {
+        card(sh.show, ip.season, ip.episode, '', picOf(sh.show, sh.poster), (+ip.percent || 0) / 100, {
           show: sh.show,
           season: ip.season,
           episode: ip.episode,
@@ -170,42 +203,15 @@ function create(ctx) {
       );
       seen[sh.show] = 1;
     }
-    // what the channel plays next (its lineup, in its order), without the episodes already here
-    const here = {};
-    for (const o of out) here[o.key] = 1;
-    let nx = 0;
-    for (const p of plan) {
-      if (!p || nx >= NEXT_MAX) break;
-      if (!p.film && (!p.show || here['tm-' + p.show + '-' + p.season + '-' + p.episode])) continue;
-      // an episode queued without its show (one_off) cannot be started by show and episode (Telemachus refuses it: not in the
-      // catalogue); only what is playing can be resumed, so such an episode is left out
-      if (!p.film && p.one_off === true) continue;
-      nx++;
-      if (!p.film) {
-        out.push(card(p.show, p.season, p.episode, p.title, p.poster, 0, { show: p.show, season: p.season, episode: p.episode }, true));
-        continue;
-      }
-      const name = p.film_title || p.title || p.show;
-      out.push({
-        key: 'tm-film-' + (p.tmdb_id || name),
-        group: 'tm:film:' + (p.tmdb_id || name),
-        source: 'telemachus',
-        title: name,
-        sub: p.year ? String(p.year) : '',
-        img: pic(p.poster, 'w342'),
-        progress: null,
-        next: true,
-        launch: { id: TELEMACHUS_APP, params: { play: filmPlay(name, p.year, p.tmdb_id) } },
-      });
-    }
     return out;
   }
 
   async function rows() {
     if (cache && Date.now() - cacheAt < ROWS_MS) return cache;
-    const lgOn = !((ctx.config.get().watch || {}).lg === false);
+    const wc = ctx.config.get().watch || {},
+      lgOn = wc.lg !== false;
     const [t, px, st, l] = await Promise.all([
-      telemachus(),
+      wc.tm === false ? [] : telemachus(),
       plex.items(plexPic).catch(() => []),
       stremio.items(metahubPic).catch(() => []),
       lgOn ? lg.items(lgPic).catch(() => []) : [],

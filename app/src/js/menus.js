@@ -807,6 +807,14 @@ function watchMenu() {
             },
           },
           {
+            label: t('Telemachus'),
+            sub: WATCH.tmOn() ? t('On') : t('Off'),
+            stay: true,
+            fn: function () {
+              WATCH.setTm(!WATCH.tmOn());
+            },
+          },
+          {
             label: t('Rows from LG for other apps'),
             sub: WATCH.lgOn() ? t('On') : t('Off'),
             stay: true,
