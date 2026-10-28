@@ -5,18 +5,21 @@ const { ok, call, sleep, serve, req, memoryConfig, run } = require('./lib');
 
 function phone(method, p, body, code) {
   return new Promise((resolve, reject) => {
-    const r = http.request({ host: '127.0.0.1', port: 8792, path: p, method, headers: { 'x-code': code || '' } }, res => {
-      const b = [];
-      res.on('data', c => b.push(c));
-      res.on('end', () => {
-        const t = Buffer.concat(b).toString();
-        let j = null;
-        try {
-          j = JSON.parse(t);
-        } catch (_) {}
-        resolve({ code: res.statusCode, text: t, j });
-      });
-    });
+    const r = http.request(
+      { host: '127.0.0.1', port: +process.env.CYTV_CARDS_PORT, path: p, method, headers: { 'x-code': code || '' } },
+      res => {
+        const b = [];
+        res.on('data', c => b.push(c));
+        res.on('end', () => {
+          const t = Buffer.concat(b).toString();
+          let j = null;
+          try {
+            j = JSON.parse(t);
+          } catch (_) {}
+          resolve({ code: res.statusCode, text: t, j });
+        });
+      }
+    );
     r.on('error', reject);
     r.end(body === undefined ? undefined : JSON.stringify(body));
   });
@@ -61,7 +64,10 @@ run(async () => {
   const cards = C.create({ config, feature: n => (n === 'theme' ? theme : null) });
   let r = await call(cards, '/api/cards/pair', 'POST', {});
   const code = r.j.code;
-  ok(/^\d{6}$/.test(code) && /:8792\/#\d{6}$/.test(r.j.qr), 'the cards page opens with a 6-digit code, which the QR code carries');
+  ok(
+    /^\d{6}$/.test(code) && new RegExp(':' + process.env.CYTV_CARDS_PORT + '/#\\d{6}$').test(r.j.qr),
+    'the cards page opens with a 6-digit code, which the QR code carries'
+  );
   await sleep(100);
   let p = await phone('GET', '/');
   ok(

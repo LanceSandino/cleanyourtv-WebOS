@@ -817,3 +817,26 @@ commit_ref: "feature/telemachus-continue (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-28T22:52:21Z"
 ```
+
+```yaml
+id: CU-20261028-2
+type: feature
+title: "Merge upstream's work since the fork (to their 1.6.10 and dev): cards, icon colours, webOS 4, themes"
+description: "The owner asked to review what lasharor/cleanyourtv-WebOS changed since the fork and take what is useful. Taken, by
+  cherry-pick with the authors kept (-x names each source commit): Cards steps 2 to 6 and their manager screens (a phone page for
+  card options on port 8792, Text, Weather from Open-Meteo only when a weather card is chosen, Home Assistant entity, entities and
+  camera cards using Voice's Home Assistant address and token, OLED care, cards that OK can switch in the top row), the Lock Screen
+  dock and name alignment (dock.tileFrost, shelf.dockAlign), launcher icon colours (a picture on a flat background, a dark logo),
+  the Inputs picker's Magic Remote wheel, the bare file:// origin of webOS 4's Chromium 53 (kept to our app list: no live app; the
+  API token still applies), the Lake Dock theme and tested-TV notes. Skipped: their app uninstalling (we have ours), their particle
+  animation (the owner wants nothing that moves) and their 1.6.10 version commit. Merged by hand: cards in the top row with our
+  Continue watching row, our Good night greeting in their cards, both phone pages in the manager's open handler, docs and test lists;
+  Customise > Cards opens the manager's Cards screen. The phone pages' ports can be changed for the tests (CYTV_WALL_PORT,
+  CYTV_CARDS_PORT; tools/test/lib.js uses 38791 and 38792), since a development machine may have something else on 8791/8792."
+impact: medium
+affected_modules: ["helper/cards.js", "helper/weather.js", "helper/hacards.js", "helper/server.js", "helper/themeschema.js", "helper/wallpapers.js", "app/src/js/cards.js", "app/src/js/layout.js", "app/src/js/theme.js", "app/src/js/menus.js", "app/src/js/core.js", "manager/src/", "picker/app/index.html", "themes/", "docs/", "tools/test/lib.js"]
+related_tests: ["tools/test/cards.test.js", "tools/test/theme.test.js", "tools/test/server.test.js", "tools/test/wallpapers.test.js", "tools/test/api.test.js", "tools/oldchrome.js"]
+commit_ref: "feature/upstream-1.6.10 (the commits named in their (cherry picked from ...) lines and the one that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-28T23:19:23Z"
+```

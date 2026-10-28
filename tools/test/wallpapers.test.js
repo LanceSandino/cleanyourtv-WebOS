@@ -9,13 +9,13 @@ const { ok, call, serve, req, memoryConfig, run, sleep } = require('./lib');
 const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 7)]);
 const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(50, 1)]);
 
-// a request to the phone page on 127.0.0.1:8791
+// a request to the phone page on 127.0.0.1 (port 8791 on the TV; lib.js gives the tests their own)
 function phone(method, p, body, code, type) {
   return new Promise((resolve, reject) => {
     const r = http.request(
       {
         host: '127.0.0.1',
-        port: 8791,
+        port: +process.env.CYTV_WALL_PORT,
         path: p,
         method,
         headers: Object.assign({ 'x-code': code || '' }, type ? { 'content-type': type } : {}),
@@ -72,7 +72,10 @@ run(async () => {
   // ---- the phone page ----
   r = await call(wp, '/api/wallpapers/pair', 'POST', {});
   let code = r.j.code;
-  ok(/^\d{6}$/.test(code) && /:8791\/#\d{6}$/.test(r.j.qr), 'the phone page opens with a 6-digit code, which the QR code carries');
+  ok(
+    /^\d{6}$/.test(code) && new RegExp(':' + process.env.CYTV_WALL_PORT + '/#\\d{6}$').test(r.j.qr),
+    'the phone page opens with a 6-digit code, which the QR code carries'
+  );
   const feedQr = await call(wp, '/api/wallpapers/pair', 'POST', { tab: 'feed' });
   ok(/#\d{6}:feed$/.test(feedQr.j.qr), 'the screensaver opens the phone page on its Photo feed tab (the QR code says so)');
   code = (await call(wp, '/api/wallpapers/pair', 'POST', {})).j.code; // a new page, a new code

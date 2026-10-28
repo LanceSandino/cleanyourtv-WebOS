@@ -140,6 +140,7 @@
 }
 [dir="rtl"] #ov.ws {
   background: var(--menu-bg);
+}
 [dir="rtl"] .wx-i svg {
   margin: 0 0 0 16px;
 }

@@ -179,6 +179,7 @@ run(async () => {
     !untouched.length && !LATER_VARS.some(k => k in plain.vars) && !LATER_ATTRS.some(k => k in plain.attrs),
     'the themes that do not use the new settings resolve without them (their look and reply are unchanged)' +
       (untouched.length ? ': ' + untouched.join(', ') : '')
+  );
   // dock.tileFrost and dock.tileFrostColor: a tint over the resting tiles, its colour resolved to an rgb triple
   const frost = themeMod.resolve(themeMod.normalize({ dock: { tileFrost: 0.4, tileFrostColor: '#ffffff' } }, 'frost'));
   ok(

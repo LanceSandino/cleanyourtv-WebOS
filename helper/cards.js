@@ -146,7 +146,7 @@ const TYPES = [
 ];
 // the usual slot ids, named as in the launcher
 const SLOT_NAMES = { greeting: 'Above the clock', 'clock-side': 'Beside the clock', side: 'Right column', row: 'Above the dock' };
-const PAIR_PORT = 8792, // after the Wallpapers page (8791)
+const PAIR_PORT = +process.env.CYTV_CARDS_PORT || 8792, // after the Wallpapers page (8791); another port only in the tests
   PAIR_MS = 10 * 60 * 1000;
 
 function create(ctx) {
