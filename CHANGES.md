@@ -778,3 +778,23 @@ commit_ref: "feature/holiday-frames (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T23:00:16Z"
 ```
+
+```yaml
+id: CU-20261027-37
+type: fix
+title: "No screensaver over an HDMI input, and the volume bar's window does not stay over one"
+description: "The owner found Warzone on the PS5 (HDMI 4, HDR Game, HDR with ALLM) darker than before. Read on the TV: the picture
+  settings are at their brightest for HDR Game (backlight and contrast 100, peak brightness high, dynamic tone mapping on), nothing
+  of ours writes picture settings, and the debloat stops no picture service; but the service log showed 'LG asked over
+  com.webos.app.hdmi4, ours shown on Home' 7 minutes before: LG's idle screensaver request (a controller is not remote activity)
+  brought Home with photos over the game. saver.js now asks which app is in front before it answers LG: an HDMI input is left to LG
+  (ack true), as before this launcher; the answer is sent after that lookup, and LG decides when the service does not answer. Also,
+  since 1.6.20 the volume bar's notify window stayed open, empty, for 10 minutes after a change; an open window over the picture may
+  make the TV lower its HDR brightness, so sonos.js sends stay 0 when an HDMI input is in front (getForegroundAppInfo, a read)."
+impact: medium
+affected_modules: ["app/src/js/saver.js", "helper/sonos.js", "tools/oldchrome.js", "docs/screensaver.md", "docs/sonos.md"]
+related_tests: ["tools/oldchrome.js (saver over hdmi: LG's request answered yes, Home not brought forward; saver over an app)", "tools/test/sonos.test.js"]
+commit_ref: "feature/no-takeover-hdmi (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-28T02:18:33Z"
+```

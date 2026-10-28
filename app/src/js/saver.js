@@ -319,22 +319,35 @@ var SAVER = (function () {
           j = JSON.parse(m);
         } catch (e) {}
         if (!j || j.timestamp === undefined) return;
-        /* ours whenever it is on and has photos: on Home at once, over another app by bringing Home forward (and back on a key) */
-        var mine = opts().on && photos() && !LIVE.on;
-        call('luna://com.webos.service.tvpower/power/responseScreenSaverRequest', {
-          clientName: 'cleanyourtv',
-          ack: !mine,
-          timestamp: j.timestamp,
-        });
-        if (!mine) return logLine('screensaver: LG asked, LG allowed');
+        /* ours whenever it is on and has photos: on Home at once, over another app by bringing Home forward (and back on a key).
+           Never over an HDMI input: a game console or a set-top box is in use even when the remote is not (a controller does not
+           count for LG), so there LG decides, as it did before this launcher. */
+        var mine = opts().on && photos() && !LIVE.on,
+          answer = function (ack) {
+            call('luna://com.webos.service.tvpower/power/responseScreenSaverRequest', {
+              clientName: 'cleanyourtv',
+              ack: ack,
+              timestamp: j.timestamp,
+            });
+          };
+        if (!mine) {
+          answer(true);
+          return logLine('screensaver: LG asked, LG allowed');
+        }
         if (!document.hidden) {
+          answer(false);
           start();
           return logLine('screensaver: LG asked, ours shown on Home');
         }
-        if (on || pending) return;
+        if (on || pending) return answer(false);
         api('/api/foreground').then(
           function (f) {
             var id = (f && f.appId) || '';
+            if (/^com\.webos\.app\.hdmi\d+$/.test(id)) {
+              answer(true);
+              return logLine('screensaver: LG asked over ' + id + ', left to LG (an HDMI input)');
+            }
+            answer(false);
             if (!id || id === 'com.webos.app.home') return;
             from = id;
             pending = setTimeout(function () {
@@ -344,7 +357,9 @@ var SAVER = (function () {
             launch('com.webos.app.home');
             logLine('screensaver: LG asked over ' + id + ', ours shown on Home');
           },
-          function () {}
+          function () {
+            answer(true); /* the service did not answer: LG decides */
+          }
         );
       };
       bridge.call(

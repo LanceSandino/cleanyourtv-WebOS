@@ -63,7 +63,8 @@ rm /var/run/tvconfig/rmm/*/com.webos.surfacemanager.json && \
 4. **Showing it.** A change starts the hidden notify app (the one that shows [picture notifications](notifications.md)) with the
    new volume. It does not take the remote. Starting that app takes 1 to 2 seconds on webOS 25, so after the bar fades its window
    stays open, empty and transparent, for ten minutes: a change in that time shows at once. The first change after a pause of more
-   than ten minutes (or after a restart) still waits for the app to start.
+   than ten minutes (or after a restart) still waits for the app to start. Over an HDMI input (a console, a set-top box) the window
+   closes as soon as the bar fades: an open window over the picture may make the TV lower its HDR brightness.
 
 No Sonos account, no internet and no Sonos app are involved: everything stays on your local network.
 

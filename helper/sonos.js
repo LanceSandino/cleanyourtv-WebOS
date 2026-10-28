@@ -29,8 +29,11 @@ const THEATER = /\b(Playbar|Playbase|Beam|Arc|Ray|Amp)\b/i;
 const MAX_BYTES = 256 * 1024,
   SECONDS_SHOWN = 3,
   // the notify app stays open, empty, this long after the bar fades: the next change then shows at once instead of after the app's
-  // 1 to 2 s start (seen on webOS 25 in LG's log: launch to visible 0.9-1.9 s cold, 0.07 s when it was still open)
-  STAY_SECONDS = 600;
+  // 1 to 2 s start (seen on webOS 25 in LG's log: launch to visible 0.9-1.9 s cold, 0.07 s when it was still open). Not over an HDMI
+  // input (a console, a set-top box): an open window over the picture may make the TV lower its HDR brightness, so there it closes
+  // as soon as the bar has faded.
+  STAY_SECONDS = 600,
+  HDMI = /^com\.webos\.app\.hdmi\d+$/;
 
 // one request to a speaker; resolves {status, headers, body, local} (local: this TV's address on that connection) or {error}, never
 // rejects, always ends (time limit) and reads at most MAX_BYTES
@@ -301,14 +304,14 @@ function create(ctx, opts) {
   // the bar over the running app: one launch of the notify app at a time, then the latest value
   let showing = false,
     queued = null;
-  function overlay() {
+  function overlay(fg) {
     queued = {
       kind: 'volume',
       volume: st.volume,
       muted: !!st.muted,
       seconds: SECONDS_SHOWN,
       position: cfg().position,
-      stay: STAY_SECONDS,
+      stay: HDMI.test(fg || '') ? 0 : STAY_SECONDS,
     };
     if (showing) return;
     showing = true;
@@ -331,7 +334,11 @@ function create(ctx, opts) {
     if (typeof r.muted === 'boolean') st.muted = r.muted;
     if (vol === null || (st.volume === vol && st.muted === mut)) return;
     screenOk().then(ok => {
-      if (ok && st.state === 'listening') overlay();
+      if (!ok || st.state !== 'listening') return;
+      luna('luna://com.webos.applicationManager/getForegroundAppInfo', {}).then(
+        f => overlay((f && f.appId) || ''),
+        () => overlay('')
+      );
     });
   }
 

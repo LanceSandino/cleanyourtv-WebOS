@@ -19,7 +19,8 @@ not start over Live TV.
 **LG's screensaver.** Before the TV starts its own screensaver it asks the apps that registered for it. While the screensaver is on
 and there are photos, the launcher answers no and shows the photos instead; otherwise LG's screensaver starts as before. When
 another app is on the screen (and idle), Home comes forward with the photos, and a key or the pointer goes straight back to that
-app; the Home key ends them and stays on Home. Whether a
+app; the Home key ends them and stays on Home. Never over an HDMI input: a game console or a set-top box is in use even when the
+remote is not (LG does not count a game controller), so there the launcher answers yes and LG decides, as it did before. Whether a
 TV asks Home at all depends on the firmware: if LG's screensaver still appears, set **Starts after** shorter than LG's.
 
 ## Where the photos come from

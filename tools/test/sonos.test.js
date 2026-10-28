@@ -209,6 +209,7 @@ run(async () => {
 
   let power = 'Active',
     output = 'external_arc',
+    fg = 'netflix',
     lunaCalls = 0;
   const shows = [];
   const conf = memoryConfig({});
@@ -218,6 +219,7 @@ run(async () => {
       lunaCalls++;
       if (/getPowerState/.test(uri)) return { returnValue: true, state: power };
       if (/getSoundOutput/.test(uri)) return { returnValue: true, soundOutput: output };
+      if (/getForegroundAppInfo/.test(uri)) return { returnValue: true, appId: fg };
       return { returnValue: true };
     },
     notify: { show: async (p, internal) => shows.push(Object.assign({ internal }, p)) },
@@ -308,6 +310,15 @@ run(async () => {
   await sleep(40);
   await bar.change(16, false);
   ok((await until(() => shows.length === 3)) && shows[2].volume === 16, 'shown again with the screen on and the sound on the soundbar');
+  // over an HDMI input (a console) the bar's window does not stay open after the bar fades: an open window over the picture may
+  // make the TV lower its HDR brightness
+  fg = 'com.webos.app.hdmi4';
+  await bar.change(17, false);
+  ok(
+    (await until(() => shows.length === 4)) && shows[3].stay === 0 && shows[2].stay === 600,
+    'over an HDMI input the window closes when the bar fades; over an app it stays ready'
+  );
+  fg = 'netflix';
   ok(lunaCalls > 0, 'the power state and the sound output come from the TV');
 
   // ---- a burst of changes: one launch at a time, and the last value always arrives
@@ -518,7 +529,7 @@ run(async () => {
   lcalls.forEach(u => (lgUris[u] = 1));
   ok(
     Object.keys(lgUris).every(u =>
-      /^(com\.webos\.service\.audio\/getSoundOutput|com\.webos\.service\.tvpower\/power\/getPowerState|com\.webos\.service\.config\/reconfigure)$/.test(
+      /^(com\.webos\.service\.audio\/getSoundOutput|com\.webos\.service\.tvpower\/power\/getPowerState|com\.webos\.service\.config\/reconfigure|com\.webos\.applicationManager\/getForegroundAppInfo)$/.test(
         u
       )
     ),

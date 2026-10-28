@@ -160,6 +160,18 @@ const SAVER_OVER =
   'var declined=calls.some(function(c){return /responseScreenSaverRequest/.test(c)&&/"ack":false/.test(c)&&/"timestamp":42/.test(c)});' +
   'var ok=declined&&up&&!SAVER.active()&&launched.join()==="com.webos.app.home,com.telemachus.screen";' +
   'document.body.setAttribute("data-over",ok?"ok":"bad declined="+declined+" up="+up+" launched="+launched.join())},100)},100)},500)})()</script>';
+// LG's screensaver while an HDMI input is in front (a console): left to LG (ack true), Home is not brought forward, no photos
+const SAVER_HDMI =
+  '<script>(function(){var H=false,reg=null,calls=[],launched=[];' +
+  'Object.defineProperty(document,"hidden",{configurable:true,get:function(){return H}});' +
+  'window.PalmServiceBridge=function(){this.call=function(u,p){calls.push(u+" "+p);if(/registerScreenSaverRequest/.test(u))reg=this}};' +
+  'var L=window.launch;window.launch=function(id,pr){launched.push(id);return L(id,pr)};' +
+  'var A=window.api;window.api=function(p,b){return p==="/api/foreground"?Promise.resolve({returnValue:true,appId:"com.webos.app.hdmi4"}):A(p,b)};' +
+  'var go=setInterval(function(){if(!reg||!document.querySelector(".tile"))return;clearInterval(go);H=true;' +
+  'reg.onservicecallback(JSON.stringify({timestamp:43}));setTimeout(function(){' +
+  'var allowed=calls.some(function(c){return /responseScreenSaverRequest/.test(c)&&/"ack":true/.test(c)&&/"timestamp":43/.test(c)});' +
+  'var ok=allowed&&!launched.length&&!SAVER.active();' +
+  'document.body.setAttribute("data-hdmi",ok?"ok":"bad allowed="+allowed+" launched="+launched.join()+" active="+SAVER.active())},1500)},500)})()</script>';
 // the remote's Home key over a menu and over the photo chooser: the TV relaunches Home with launchType homeKey (webOS 6 to 24), or
 // with plain {keepAlive: true} (webOS 25, over the chooser here); both close
 const HOME_KEY =
@@ -249,6 +261,7 @@ const PAGES = [
   ['wallpaper chooser', 'app/index.html', /data-pick="ok"/g, 1, 20000, WALLPICK_KEYS],
   ['saver over an app', 'app/index.html', /data-over="ok"/g, 1, 30000, SAVER_OVER],
   ['home key', 'app/index.html', /data-home="ok"/g, 1, 15000, HOME_KEY],
+  ['saver over hdmi', 'app/index.html', /data-hdmi="ok"/g, 1, 20000, SAVER_HDMI],
   ['continue watching', 'app/index.html', /data-watch="ok"/g, 1, 15000, WATCH_KEYS],
   ['linking plex', 'app/index.html', /data-link="ok"/g, 1, 20000, WATCH_LINK],
   ['hold ok', 'app/index.html', /data-hold="ok"/g, 1, 20000, HOLD_OK],
