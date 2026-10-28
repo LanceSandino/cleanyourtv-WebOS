@@ -68,11 +68,7 @@ function closeShare() {
   if (shareMode === 'cards') {
     api('/api/cards/pair', { stop: true }).catch(function () {});
     pop();
-    /* opened from the launcher: back to Home, where the cards show what was saved */
-    if (cardsFromHome) {
-      cardsFromHome = false;
-      api('/api/launch', { id: 'com.webos.app.home' }).catch(function () {});
-    }
+    openCards();
     return;
   }
   if (shareMode === 'wall') {

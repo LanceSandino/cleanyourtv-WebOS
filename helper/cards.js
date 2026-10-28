@@ -1,5 +1,5 @@
-// Cards: small widgets in the slots a theme declares (themeschema.js: slots), chosen per slot in the launcher (Customise > Cards). The
-// launcher saves them with its other settings as config.cards, {<slot id>: {type, ...options}}, keyed by slot so a card stays when
+// Cards: small widgets in the slots a theme declares (themeschema.js: slots), chosen per slot in the manager app (Cards;
+// POST /api/cards/status and /api/cards/set) and kept as config.cards, {<slot id>: {type, ...options}}, keyed by slot so a card stays when
 // another theme has a slot with the same id. {type: 'none'} leaves a slot empty that the theme would fill by default.
 // Only the shape is checked here (sanitize); the launcher draws the cards (app/src/js/cards.js), so a newer launcher can bring a card
 // type without a service update. The options are typed on a phone page (create: POST /api/cards/pair, a short-lived server on the LAN,
@@ -171,6 +171,18 @@ function create(ctx) {
       })),
     };
   }
+  // the manager's Cards screen: a card type for one slot ('none' leaves it empty); the options stay when the same type is chosen again
+  function setType(slot, type) {
+    if (!slots().some(sl => sl.id === slot)) return { error: 'this theme has no such place' };
+    if (type !== 'none' && !TYPES.some(ty => ty.type === type)) return { error: 'unknown card type' };
+    config.update('cards (manager)', conf => {
+      const c = Object.assign({}, conf.cards || {}),
+        old = c[slot] || {};
+      c[slot] = old.type === type ? old : { type };
+      conf.cards = c;
+    });
+    return { ok: true };
+  }
   function save(cards) {
     const c = sanitize(cards) || {};
     config.update('cards (phone)', conf => {
@@ -260,6 +272,9 @@ function create(ctx) {
     if (req.method !== 'POST') return web.notFound(res);
     const b = await body(req);
     if (u === '/api/cards/pair') return web.json(res, b.stop ? (stopPair(), {}) : await startPair());
+    // the manager's Cards screen: the theme's places with their cards, and a card type picked for one of them
+    if (u === '/api/cards/status') return web.json(res, state(i18n.lang(req, config.get().lang)));
+    if (u === '/api/cards/set') return web.json(res, setType(String(b.slot || ''), String(b.type || '')));
     // the weather card: {lat, lon, unit} -> the weather there (Open-Meteo, at most every 30 minutes)
     if (u === '/api/cards/weather') return web.json(res, await weather.get(b.lat, b.lon, b.unit));
     // Home Assistant cards: {ids} -> their states (kept 20 s); {id} -> switched (lights, switches, fans, scenes, scripts)
@@ -292,7 +307,7 @@ function fields(f,c){f.innerHTML='';var ty=typeOf(c.type);if(!ty)return;ty.field
   if(fd.kind==='choice'){i=el('select',{'data-k':fd.key});fd.choices.forEach(function(ch){i.appendChild(el('option',{value:ch[0]},ch[1]))})}
   else if(fd.kind==='long'){i=el('textarea',{'data-k':fd.key,rows:4})}else if(fd.kind==='place'){f.appendChild(l);place(f,c);return}else if(fd.kind==='entities'){i=el('textarea',{'data-k':fd.key,rows:5,list:'ents',autocapitalize:'off',spellcheck:'false'})}else if(fd.kind==='entity'){i=el('input',{'data-k':fd.key,type:'text',list:fd.only==='camera'?'cams':'ents',autocomplete:'off',autocapitalize:'off'})}else i=el('input',{'data-k':fd.key,type:'text',autocomplete:'off'});
   i.value=c[fd.key]===undefined?'':String(c[fd.key]);f.appendChild(l);f.appendChild(i)});
- if(ty.ha&&!S.ha)f.insertBefore(el('p',{'class':'m e'},t('Home Assistant is not set up yet: set its address and token in the manager app, More > Voice > Set up from your phone.')),f.firstChild);
+ if(ty.ha&&!S.ha)f.insertBefore(el('p',{'class':'m e'},t('Home Assistant is not set up yet: set its address and token in the manager app, More > Home Assistant.')),f.firstChild);
  if(c.type==='template')f.appendChild(el('p',{'class':'h'},t('Use {{greeting}}, {{time}}, {{date}} and {{weekday}} for what changes, and {{weather.temp}} and {{weather.text}} when a weather card is on Home; **bold**, *italic* and a line starting with # for a heading.')))}
 /* a place for the weather: searched by name (Open-Meteo, through the TV), its coordinates kept in two hidden fields */
 function place(f,c){var i=el('input',{'data-k':'place',type:'search',autocomplete:'off',placeholder:t('City or town')}),la=el('input',{'data-k':'lat','data-n':'1',type:'hidden'}),lo=el('input',{'data-k':'lon','data-n':'1',type:'hidden'}),

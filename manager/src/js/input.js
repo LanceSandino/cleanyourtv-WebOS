@@ -51,7 +51,7 @@ function wantView() {
   if (p && p.open === 'photofeed') openWallPair('feed');
   if (p && p.open === 'cards') {
     cardsFromHome = true;
-    openCardsPair();
+    openCards();
   }
 }
 document.addEventListener('webOSRelaunch', function () {

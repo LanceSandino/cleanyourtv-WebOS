@@ -496,6 +496,8 @@ function applySet(b) {
       h.url = u ? haBase(u) : '';
     }
     if (typeof b.ha.token === 'string' && b.ha.token.trim()) h.token = b.ha.token.trim().slice(0, 2000);
+    // a token without an address was saved silently before, and the Home Assistant cards then stayed empty
+    if (typeof b.ha.token === 'string' && b.ha.token.trim() && !h.url) return 'set the Home Assistant address too';
     if (typeof b.ha.selfSigned === 'boolean') h.selfSigned = b.ha.selfSigned;
     if (typeof b.ha.route === 'string') {
       if (!HA_ROUTES.includes(b.ha.route)) return 'the routing must be one of ' + HA_ROUTES.join(', ');
@@ -522,41 +524,52 @@ let pair = null,
   pairedAt = 0;
 const esc = web.esc,
   lanIp = web.lanIp;
-function pairPage(msg, done, list, token, lang) {
+// only 'ha': the Home Assistant page of the manager (More > Home Assistant), just the address, the token and the certificate; the
+// voice page itself only chooses which answers first. Home Assistant stays in voice.ha: Voice and the cards (hacards.js) both use it.
+function pairPage(msg, done, list, token, lang, only) {
   const T = x => esc(i18n.tr(lang, x)); // the phone's language (i18n.js)
   const l = llmCfg(),
     c = cfg(),
-    ha = haCfg();
+    ha = haCfg(),
+    title = only === 'ha' ? 'Home Assistant' : 'Voice setup';
   const opts = (list || [])
     .map(m => `<option value="${esc(m.id)}">${esc(m.name)}${m.price != null ? ' · $' + m.price + '/M' : ''}</option>`)
     .join('');
-  return `<!doctype html><html lang=${lang}><meta name=viewport content="width=device-width,initial-scale=1"><title>${T('Voice setup')}</title>
+  return `<!doctype html><html lang=${lang}><meta name=viewport content="width=device-width,initial-scale=1"><title>${T(title)}</title>
 <style>body{font:18px system-ui,sans-serif;background:#111;color:#eee;max-width:560px;margin:32px auto;padding:0 18px}label{display:block;color:#aaa;font-size:15px;margin-top:14px}input,textarea,select,button{font:inherit;width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border-radius:10px;border:1px solid #444;background:#1b1b1f;color:#eee}button{background:#f5f6f8;color:#111;font-weight:600;margin-top:20px}.m{padding:12px;border-radius:10px;background:#1f2a1f}small{color:#888}h2{margin:0 0 8px}.c{display:flex;gap:10px;align-items:center}.c input{width:auto;margin:0}</style>
-<h2>${T('Voice setup')}</h2>${msg ? `<p class=m>${T(msg)}</p>` : ''}${
+<h2>${T(title)}</h2>${msg ? `<p class=m>${T(msg)}</p>` : ''}${
     done
       ? ''
-      : `<form method=post action="/${token}/save">
+      : only === 'ha'
+        ? `<form method=post action="/${token}/save">
+<label>${T('Home Assistant address')}</label><input name=haurl type=url placeholder="http://homeassistant.local:8123" value="${esc(ha.url)}">
+<label>${T('Home Assistant access token')} <small>(${T('a long-lived token from your profile page')}${ha.token ? '; ' + T('one is saved, leave empty to keep it') : ''})</small></label><input name=hatoken type=password autocomplete=off>
+<label class=c><input type=checkbox name=hass value=1 ${ha.selfSigned ? 'checked' : ''}> ${T('Accept a self-signed certificate')}</label>
+<button>${T('Save')}</button></form>`
+        : `<form method=post action="/${token}/save">
 <label>${T('OpenRouter key')} ${l.key ? T('(one is saved; leave empty to keep it)') : ''}</label><input name=key type=password autocomplete=off placeholder="sk-or-...">
 <label>${T('Model')} <small>${T('choose from the list or type any OpenRouter model name')}</small></label><input name=model list=ml value="${esc(l.model)}" autocomplete=off><datalist id=ml>${opts}</datalist>
 <label class=c><input type=checkbox name=enabled value=1 ${l.enabled ? 'checked' : ''}> ${T('Answer with the AI')}</label>
 <label>${T('Instructions for the AI')} <small>${T('(empty: short plain answers)')}</small></label><textarea name=system rows=3>${esc(l.system)}</textarea>
-<label>${T('Home Assistant address')} <small>${T('(optional, Assist)')}</small></label><input name=haurl type=url placeholder="http://homeassistant.local:8123" value="${esc(ha.url)}">
-<label>${T('Home Assistant access token')} <small>(${T('a long-lived token from your profile page')}${ha.token ? '; ' + T('one is saved, leave empty to keep it') : ''})</small></label><input name=hatoken type=password autocomplete=off>
-<label class=c><input type=checkbox name=hass value=1 ${ha.selfSigned ? 'checked' : ''}> ${T('Accept a self-signed certificate')}</label>
-<label>${T('Which answers first')}</label><select name=haroute>${[
-          ['ha-first', 'Home Assistant first, then the AI'],
-          ['ha-only', 'Home Assistant only'],
-          ['ai-only', 'The AI only'],
-        ]
-          .map(x => `<option value="${x[0]}"${ha.route === x[0] ? ' selected' : ''}>${T(x[1])}</option>`)
-          .join('')}</select>
+<label>${T('Which answers first')}${
+            haReady(ha)
+              ? ''
+              : ` <small>${T('Home Assistant is not set up yet: set its address and token in the manager app, More > Home Assistant.')}</small>`
+          }</label><select name=haroute>${[
+            ['ha-first', 'Home Assistant first, then the AI'],
+            ['ha-only', 'Home Assistant only'],
+            ['ai-only', 'The AI only'],
+          ]
+            .map(x => `<option value="${x[0]}"${ha.route === x[0] ? ' selected' : ''}>${T(x[1])}</option>`)
+            .join('')}</select>
 <label>${T('Send the text to your own server')} <small>${T('(optional)')}</small></label><input name=url type=url placeholder="http://..." value="${esc(c.url)}">
 <label>${T('Server token')} <small>(${T('optional')}${c.token ? '; ' + T('one is saved, leave empty to keep it') : ''})</small></label><input name=token type=password autocomplete=off>
 <button>${T('Save')}</button></form>`
   }`;
 }
-function startPair() {
+function startPair(only) {
   stopPair();
+  only = only === 'ha' ? 'ha' : '';
   const token = crypto.randomBytes(16).toString('hex');
   let hits = 0,
     list = [];
@@ -568,7 +581,7 @@ function startPair() {
     if (++hits > 120) return send(429, 'Too many requests');
     const p = req.url.split('?')[0];
     const lg = i18n.lang(req, ctx.config.get().lang);
-    if (req.method === 'GET' && p === '/' + token) return send(200, pairPage('', false, list, token, lg));
+    if (req.method === 'GET' && p === '/' + token) return send(200, pairPage('', false, list, token, lg, only));
     if (req.method === 'POST' && p === '/' + token + '/save') {
       let b = '';
       req.on('data', c => {
@@ -576,20 +589,25 @@ function startPair() {
         if (b.length > 16384) req.destroy();
       });
       req.on('end', () => {
-        const f = new URLSearchParams(b),
+        const f = new URLSearchParams(b);
+        /** @type {any} */
+        let set;
+        if (only === 'ha') {
+          set = { ha: { url: f.get('haurl') || '', selfSigned: f.get('hass') === '1' } };
+          if (f.get('hatoken')) set.ha.token = f.get('hatoken');
+        } else {
           set = {
             llm: { model: f.get('model') || '', system: f.get('system') || '', enabled: f.get('enabled') === '1' },
             url: f.get('url') || '',
+            ha: { route: f.get('haroute') || 'ha-first' },
           };
-        set.ha = { url: f.get('haurl') || '', selfSigned: f.get('hass') === '1', route: f.get('haroute') || 'ha-first' };
-        if (f.get('hatoken')) set.ha.token = f.get('hatoken');
-        if (f.get('key')) set.llm.key = f.get('key');
-        if (f.get('token')) set.token = f.get('token');
-        if (!set.url) set.url = '';
+          if (f.get('key')) set.llm.key = f.get('key');
+          if (f.get('token')) set.token = f.get('token');
+        }
         const err = applySet(set);
-        if (err) return send(400, pairPage(err, false, list, token, lg));
+        if (err) return send(400, pairPage(err, false, list, token, lg, only));
         pairedAt = Date.now();
-        send(200, pairPage('Saved. You can close this page.', true, [], token, lg));
+        send(200, pairPage('Saved. You can close this page.', true, [], token, lg, only));
         setTimeout(stopPair, 2000);
       });
       return;
@@ -704,7 +722,7 @@ async function handle(req, res, u, body) {
     answers.forget();
     return json({ returnValue: true });
   }
-  if (act === 'pair') return json(startPair());
+  if (act === 'pair') return json(startPair((await body(req)).only));
   if (act === 'pair-stop') {
     stopPair();
     return json({ returnValue: true });

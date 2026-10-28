@@ -181,10 +181,10 @@ function build() {
       label: 'Home Assistant (Assist)',
       sub: haOk
         ? ha.url.replace(/^https?:\/\//, '').replace(/\/.*/, '') + ' \u00B7 ' + HR[ha.route]
-        : 'not set \u00B7 set up from your phone',
+        : 'not set \u00B7 More > Home Assistant',
       fn: function () {
         if (!haOk) {
-          openPair();
+          openHa();
           return;
         }
         haTest();
@@ -255,7 +255,7 @@ function build() {
       },
     });
     rows.push({ sep: true });
-    rows.push({ label: 'Set up from your phone', sub: 'key, model, Home Assistant, server', fn: openPair });
+    rows.push({ label: 'Set up from your phone', sub: 'key, model, server', fn: openPair });
     rows.push({
       label: 'Set up with commands',
       sub: 'for scripts and ssh',
@@ -629,7 +629,126 @@ function build() {
     rows.push({ label: 'Back', fn: pop });
     return;
   }
+  if (view === 'ha') {
+    var h = (vo || {}).ha || {},
+      hOk = !!h.configured;
+    rows.push({
+      label: 'Set up from your phone',
+      sub: hOk ? h.url.replace(/^https?:\/\//, '') : 'address and access token',
+      fn: openHaPair,
+    });
+    rows.push({
+      label: 'Test the connection',
+      sub: hOk ? '' : 'set up Home Assistant first',
+      dim: !hOk,
+      fn: function () {
+        if (hOk) haTest();
+      },
+    });
+    rows.push({ label: 'Cards', sub: 'entities and cameras on Home', fn: openCards });
+    rows.push({ sep: true });
+    rows.push({
+      label: 'Forget Home Assistant',
+      sub: hOk ? 'Voice and the cards stop using it' : 'not set up',
+      dim: !hOk,
+      fn: function () {
+        if (hOk) push('confirm-ha-forget');
+      },
+    });
+    rows.push({ sep: true });
+    rows.push({ label: 'Back', fn: pop });
+    return;
+  }
+  if (view === 'confirm-ha-forget') {
+    rows.push({ label: 'Cancel', fn: pop });
+    rows.push({
+      label: 'Yes, forget Home Assistant',
+      sub: 'the address and the token are removed from the TV',
+      fn: function () {
+        api('/api/voice/set', { ha: { clear: true } }).then(
+          function (x) {
+            if (x.error) {
+              banner(x.error, 'err');
+              return;
+            }
+            vo = x;
+            banner('Home Assistant forgotten', 'ok');
+            pop();
+          },
+          function () {
+            banner('The service did not answer', 'err');
+          }
+        );
+      },
+    });
+    return;
+  }
+  if (view === 'cards') {
+    var sls = (cs && cs.slots) || [];
+    if (!sls.length) rows.push({ label: 'This theme has no places for cards', sub: 'Lock Screen, Bloom and Horizon have them', fn: null });
+    sls.forEach(function (sl) {
+      var ty = cardTypeOf(sl);
+      rows.push({
+        label: sl.name,
+        sub: ty ? cardTypeName(ty) : 'Empty',
+        fn: function () {
+          cardSlot = sl;
+          push('cardtype');
+        },
+      });
+    });
+    rows.push({ sep: true });
+    rows.push({
+      label: 'Set up from your phone',
+      sub: 'names, texts, card options',
+      dim: !sls.length,
+      fn: sls.length ? openCardsPair : null,
+    });
+    rows.push({
+      label: 'Home Assistant',
+      sub: cs && cs.ha ? 'set up' : 'not set up',
+      fn: openHa,
+    });
+    rows.push({ sep: true });
+    rows.push({
+      label: 'Back',
+      fn: function () {
+        /* opened from the launcher's Customise > Cards: back to Home, where the cards show what was chosen */
+        if (cardsFromHome) {
+          cardsFromHome = false;
+          api('/api/launch', { id: 'com.webos.app.home' }).catch(function () {});
+        }
+        pop();
+      },
+    });
+    return;
+  }
+  if (view === 'cardtype') {
+    var curT = cardTypeOf(cardSlot) || 'none';
+    rows.push({
+      label: 'Empty',
+      sub: curT === 'none' ? 'selected' : '',
+      fn: function () {
+        setCardType('none');
+      },
+    });
+    ((cs && cs.types) || []).forEach(function (x) {
+      rows.push({
+        label: x.name,
+        sub:
+          (curT === x.type ? 'selected' : '') +
+          (/^ha-/.test(x.type) && !cs.ha ? (curT === x.type ? ' \u00B7 ' : '') + 'needs Home Assistant' : ''),
+        fn: function () {
+          setCardType(x.type);
+        },
+      });
+    });
+    rows.push({ sep: true });
+    rows.push({ label: 'Back', fn: pop });
+    return;
+  }
   if (view === 'more') {
+    rows.push({ label: 'Home Assistant', sub: st.voice && st.voice.ha ? 'set up' : 'not set up', fn: openHa });
     rows.push({
       label: 'Voice',
       sub: st.voice ? (st.voice.installed ? onoff(st.voice.enabled) : 'not installed') : '',
@@ -883,6 +1002,7 @@ function build() {
     sub: st.wallpapers ? st.wallpapers.total + ' photos' : '',
     fn: openWallpapers,
   });
+  rows.push({ label: 'Cards', sub: 'small widgets on Home', fn: openCards });
   rows.push({
     label: 'Input key',
     sub: st.inputhook && st.inputhook.hook && !st.inputhook.hook.attached ? 'not available' : onoff(st.options.inputKey),
@@ -904,7 +1024,7 @@ function build() {
   });
   rows.push({
     label: 'More',
-    sub: 'voice, language, network notifications',
+    sub: 'Home Assistant, voice, language, network notifications',
     fn: function () {
       sonosLoad();
       push('more');

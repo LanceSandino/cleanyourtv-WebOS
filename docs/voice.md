@@ -93,14 +93,17 @@ recognition; **Switch off LG's voice assistant** pauses it while voice is on.
 The recognised text can go to [Home Assistant's Assist](https://www.home-assistant.io/voice_control/) (`POST /api/conversation/process`),
 which turns on lights, answers questions about your home and so on. Its answer is shown as text on the card. Answers are not spoken.
 
-In **Voice**, **Set up from your phone** also asks for:
+Home Assistant has its own screen in the manager app, **More** > **Home Assistant**, because the [cards](launcher.md#cards) use it
+too. Its **Set up from your phone** asks for:
 
 - the **address** of Home Assistant, for example `http://homeassistant.local:8123`,
 - a **long-lived access token** (your Home Assistant profile page, under Security),
-- whether to accept a **self-signed certificate** (only matters for `https://` addresses),
-- **which answers first**.
+- whether to accept a **self-signed certificate** (only matters for `https://` addresses).
 
-Choosing **Home Assistant (Assist)** in the menu tests the connection and shows the name and version of your Home Assistant.
+A token without an address is refused. **Test the connection** there, or **Home Assistant (Assist)** in **Voice**, shows the name and
+version of your Home Assistant; **Forget Home Assistant** removes the address and the token. **Which answers first** is set in **Voice**,
+in the menu or on its phone page.
+
 
 | Setting | Behaviour |
 |---|---|

@@ -91,6 +91,22 @@ run(async () => {
   );
   await phone('POST', '/api/save', { cards: {} }, code);
   ok(config.get().cards === undefined, 'saving no cards removes them');
+  // the manager's Cards screen: the places and a card type for one of them
+  r = await call(cards, '/api/cards/status', 'POST', {});
+  ok(r.j.slots.length === 3 && r.j.types.some(t => t.type === 'ha-camera'), 'the manager gets the places and the card types');
+  r = await call(cards, '/api/cards/set', 'POST', { slot: 'side', type: 'ha-camera' });
+  ok(r.j.ok && config.get().cards.side.type === 'ha-camera', 'the manager picks a card for a place');
+  config.update('test', c => {
+    c.cards.side.entity = 'camera.door';
+  });
+  await call(cards, '/api/cards/set', 'POST', { slot: 'side', type: 'ha-camera' });
+  ok(config.get().cards.side.entity === 'camera.door', 'picking the same type again keeps its options');
+  await call(cards, '/api/cards/set', 'POST', { slot: 'greeting', type: 'none' });
+  ok(config.get().cards.greeting.type === 'none', 'a place the theme fills can be left empty');
+  r = await call(cards, '/api/cards/set', 'POST', { slot: 'nowhere', type: 'greeting' });
+  const bad = await call(cards, '/api/cards/set', 'POST', { slot: 'side', type: 'rocket' });
+  ok(r.j.error && bad.j.error && config.get().cards.side.type === 'ha-camera', 'an unknown place or card type is refused');
+  await phone('POST', '/api/save', { cards: {} }, code);
   p = await phone('POST', '/api/places', { q: 'Utrecht' }, code);
   ok(
     p.j.places.length === 1 && p.j.places[0].lat === 52.09 && p.j.places[0].area === 'Utrecht, Nederland',

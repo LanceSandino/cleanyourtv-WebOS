@@ -1,5 +1,5 @@
 // Voice answers (voice.js): Home Assistant (Assist) and a language model, against local stand-ins for both.
-const { ok, call, serve, req, memoryConfig, run } = require('./lib');
+const { ok, call, serve, req, memoryConfig, run, sleep } = require('./lib');
 
 run(async () => {
   const haLog = [],
@@ -123,6 +123,58 @@ run(async () => {
   }
   r = await vask('pair-stop');
   ok(r.code === 200, 'the setup page stops');
+  r = await vask('set', { ha: { token: 'tok' } });
+  ok(r.code === 400 && /address too/.test(r.j.error), 'a Home Assistant token without an address is refused');
+  // the Home Assistant page (More > Home Assistant): only the address, the token and the certificate; it leaves the AI alone
+  await vask('set', { llm: { key: 'k', model: 'm/one', enabled: true } });
+  const form = (path, data) =>
+    new Promise(res => {
+      const q = require('http').request({ host: '127.0.0.1', port: 8769, path, method: 'POST' }, rs => {
+        let b = '';
+        rs.on('data', c => (b += c));
+        rs.on('end', () => res({ code: rs.statusCode, body: b }));
+      });
+      q.on('error', e => res({ code: 0, body: String(e) }));
+      q.end(new (require('url').URLSearchParams)(data).toString());
+    });
+  r = await vask('pair', { only: 'ha' });
+  await sleep(100);
+  const hp = r.j.url.replace(/^http:\/\/[^/]+/, '');
+  const hpage = await new Promise(res => {
+    require('http')
+      .get('http://127.0.0.1:8769' + hp, rs => {
+        let b = '';
+        rs.on('data', c => (b += c));
+        rs.on('end', () => res(b));
+      })
+      .on('error', e => res(String(e)));
+  });
+  ok(
+    /name=haurl/.test(hpage) && /name=hatoken/.test(hpage) && !/OpenRouter/.test(hpage),
+    'the Home Assistant page asks only for Home Assistant'
+  );
+  let sv = await form(hp + '/save', { hatoken: 'tok' });
+  ok(sv.code === 400 && /address too/.test(sv.body), 'the page refuses a token without an address');
+  await sleep(100);
+  r = await vask('pair', { only: 'ha' });
+  await sleep(100);
+  sv = await form(r.j.url.replace(/^http:\/\/[^/]+/, '') + '/save', { haurl: ha.url, hatoken: 'tok' });
+  r = await vask('status', null, 'GET');
+  ok(
+    sv.code === 200 && r.j.ha.configured && r.j.ha.url === ha.url && r.j.llm.enabled && r.j.llm.model === 'm/one',
+    'saving it sets Home Assistant and keeps the AI settings'
+  );
+  await sleep(2100); // the page closes itself two seconds after saving
+  // the Voice page no longer has the address and token, so saving it keeps them
+  r = await vask('pair');
+  await sleep(100);
+  sv = await form(r.j.url.replace(/^http:\/\/[^/]+/, '') + '/save', { model: 'm/two', enabled: '1', haroute: 'ha-only' });
+  r = await vask('status', null, 'GET');
+  ok(
+    sv.code === 200 && r.j.ha.url === ha.url && r.j.ha.hasToken && r.j.ha.route === 'ha-only',
+    'saving the Voice page keeps Home Assistant'
+  );
+  await sleep(2100);
   ha.server.close();
   ai.server.close();
 });

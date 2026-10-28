@@ -460,6 +460,7 @@
       },
       "voice": {
         "enabled": false,
+        "ha": false,
         "installed": false
       },
       "wallpapers": {
@@ -542,6 +543,7 @@
       },
       "voice": {
         "enabled": false,
+        "ha": false,
         "installed": false
       },
       "wallpapers": {
@@ -642,6 +644,7 @@
       },
       "voice": {
         "enabled": false,
+        "ha": false,
         "installed": false
       },
       "wallpapers": {

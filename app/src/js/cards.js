@@ -356,12 +356,34 @@ var CARD_TYPES = {
         el.firstChild.textContent = t('Choose a camera from your phone');
         return;
       }
-      var im = document.createElement('img');
+      var im = document.createElement('img'),
+        n = document.createElement('div');
       im.alt = '';
+      n.className = 'ha-n';
+      n.style.display = 'none';
+      /* no picture: say why (Home Assistant not set up, token refused, camera unavailable) instead of an empty card; the
+         refresh above keeps trying */
+      im.onerror = function () {
+        im.style.display = 'none';
+        n.style.display = '';
+        api('/api/cards/ha', { ids: [id] })
+          .then(function (r) {
+            var e = (r.states || [])[0];
+            n.textContent = r.error ? t(r.error) : (e ? e.name : id) + ': ' + t('not available');
+          })
+          .catch(function () {
+            n.textContent = id + ': ' + t('not available');
+          });
+      };
+      im.onload = function () {
+        im.style.display = '';
+        n.style.display = 'none';
+      };
       im._at = Date.now();
       im.src = API + '/api/cards/ha/camera/' + encodeURIComponent(id) + '?t=' + im._at;
       el.textContent = '';
       el.appendChild(im);
+      el.appendChild(n);
     },
   },
   /* text from the phone page, with what changes filled in */
@@ -378,16 +400,6 @@ var CARD_TYPES = {
     },
   },
 };
-/* the usual slot ids have a name in every language; another id shows as it is */
-function slotName(id) {
-  var N = {
-    greeting: t('Above the clock'),
-    'clock-side': t('Beside the clock'),
-    side: t('Right column'),
-    row: t('Above the dock'),
-  };
-  return N[id] || id;
-}
 function cardFor(sl) {
   var c = (cfg.cards || {})[sl.id];
   if (c && c.type) return c.type === 'none' || !CARD_TYPES[c.type] ? null : c;
@@ -444,69 +456,6 @@ function cardAct(el) {
   var ty = CARD_TYPES[el._card.type];
   if (ty.can && !ty.can(el._card)) return;
   ty.act(el, el._card);
-}
-function setCard(id, type) {
-  var c = {};
-  for (var k in cfg.cards || {}) c[k] = cfg.cards[k];
-  var old = c[id] || {};
-  /* the options of a card stay when the same type is chosen again */
-  c[id] = old.type === type ? old : { type: type };
-  cfg.cards = c;
-  saveCfg();
-}
-function cardsMenu() {
-  openBuilt(t('Cards'), function () {
-    var rows = (TH.slots || []).map(function (sl) {
-      var c = cardFor(sl);
-      return {
-        label: slotName(sl.id),
-        sub: c ? CARD_TYPES[c.type].name() : t('Empty'),
-        stay: true,
-        fn: function () {
-          slotMenu(sl);
-        },
-      };
-    });
-    /* names, texts and the other options are typed on a phone page, opened from the manager app with a QR code */
-    return rows.concat([
-      { sep: true },
-      {
-        label: t('Set up from your phone'),
-        sub: t('names, texts, card options'),
-        fn: function () {
-          launch('com.cleanyourtv.manager', { open: 'cards' });
-        },
-      },
-    ]);
-  });
-}
-function slotMenu(sl) {
-  openBuilt(slotName(sl.id), function () {
-    var c = cardFor(sl),
-      cur = c ? c.type : 'none',
-      rows = [
-        {
-          label: t('Empty'),
-          sub: cur === 'none' ? t('Selected') : '',
-          stay: true,
-          fn: function () {
-            setCard(sl.id, 'none');
-          },
-        },
-      ];
-    for (var k in CARD_TYPES)
-      (function (k) {
-        rows.push({
-          label: CARD_TYPES[k].name(),
-          sub: cur === k ? t('Selected') : '',
-          stay: true,
-          fn: function () {
-            setCard(sl.id, k);
-          },
-        });
-      })(k);
-    return rows;
-  });
 }
 /* OLED care: after three minutes without a key the cards dim, and every few minutes they shift a few pixels, so a card that stays on
    screen for hours does not leave its outline in the panel */

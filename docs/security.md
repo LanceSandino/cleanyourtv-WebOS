@@ -116,7 +116,7 @@ nothing else. Searching a place on the phone page sends the name you type to `ge
 
 ## Home Assistant cards
 
-They use the Home Assistant address and token that Voice already has; nothing new is stored. The service reads the states with one
+They use the Home Assistant address and token set under **More** > **Home Assistant**, the same ones Voice uses; nothing else is stored. The service reads the states with one
 request every 20 seconds at most, switches only lights, switches, fans, input booleans and automations (and runs scenes and scripts)
 when you press OK on a card, and passes a camera's picture to the launcher. Locks, alarms and covers are never switched.
 

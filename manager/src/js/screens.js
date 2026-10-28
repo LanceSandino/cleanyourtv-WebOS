@@ -138,7 +138,68 @@ function openWallPair(tab) {
     }
   );
 }
-/* Cards: the options of the cards in the theme's slots, typed on a phone page (helper/cards.js); opened from the launcher's Customise > Cards */
+function openHaPair() {
+  openPair('ha');
+}
+/* More > Home Assistant: its address and token live with Voice's settings (/api/voice/status), Voice and the cards both use them */
+function openHa() {
+  api('/api/voice/status').then(
+    function (v) {
+      vo = v;
+      push('ha');
+    },
+    function () {
+      banner('The service did not answer', 'err');
+    }
+  );
+}
+/* Cards: a card for each place of the theme (/api/cards/status, /api/cards/set); also opened from the launcher's Customise > Cards */
+var cs = null,
+  cardSlot = null;
+function openCards() {
+  api('/api/cards/status', {}).then(
+    function (r) {
+      cs = r;
+      if (view !== 'cards') push('cards');
+      else {
+        build();
+        draw();
+      }
+    },
+    function () {
+      banner('The service did not answer', 'err');
+    }
+  );
+}
+/* the card type a place shows: the one chosen, else the theme's own; null when it stays empty */
+function cardTypeOf(sl) {
+  var c = ((cs && cs.cards) || {})[sl.id];
+  var ty = c && c.type ? c.type : sl.card || 'none';
+  return ty === 'none' ? null : ty;
+}
+function cardTypeName(ty) {
+  var n = ty;
+  ((cs && cs.types) || []).forEach(function (x) {
+    if (x.type === ty) n = x.name;
+  });
+  return n;
+}
+function setCardType(ty) {
+  api('/api/cards/set', { slot: cardSlot.id, type: ty }).then(
+    function (r) {
+      if (r.error) {
+        banner(r.error, 'err');
+        return;
+      }
+      pop();
+      openCards();
+    },
+    function () {
+      banner('The service did not answer', 'err');
+    }
+  );
+}
+/* Cards: the options of the cards in the theme's slots, typed on a phone page (helper/cards.js) */
 function openCardsPair() {
   shareMode = 'cards';
   push('share');
@@ -360,19 +421,25 @@ function pickModel(id) {
     }
   );
 }
-function openPair() {
+/* the phone page of Voice, or with only 'ha' the one for Home Assistant (address and token, used by Voice and the cards) */
+function openPair(only) {
   shareMode = 'pair';
   pairBase = (vo && vo.pairedAt) || 0;
   push('share');
   $('share').style.display = 'block';
   $('shareurl').textContent = '';
   $('qrbox').style.visibility = 'hidden';
-  $('share').querySelector('h2').textContent = tr('Set up from your phone');
-  $('share').querySelector('ol').innerHTML = tr(
-    '<li>Phone on the <b>same Wi-Fi</b> as the TV.</li><li>Scan the code with the camera.</li><li>Enter your <b>OpenRouter key</b> and model, or your <b>Home Assistant</b> address and access token, and tap <b>Save</b>.</li>'
-  );
+  $('share').querySelector('h2').textContent = tr(only === 'ha' ? 'Home Assistant' : 'Set up from your phone');
+  $('share').querySelector('ol').innerHTML =
+    only === 'ha'
+      ? tr(
+          '<li>Phone on the <b>same Wi-Fi</b> as the TV.</li><li>Scan the code with the camera.</li><li>Enter the <b>address</b> of Home Assistant and a <b>long-lived access token</b>, and tap <b>Save</b>.</li>'
+        )
+      : tr(
+          '<li>Phone on the <b>same Wi-Fi</b> as the TV.</li><li>Scan the code with the camera.</li><li>Enter your <b>OpenRouter key</b> and model, and tap <b>Save</b>.</li>'
+        );
   $('sharemsg').textContent = tr('Preparing\u2026');
-  api('/api/voice/pair', {}).then(
+  api('/api/voice/pair', only === 'ha' ? { only: 'ha' } : {}).then(
     function (r) {
       if (view !== 'share') return;
       drawQr(r.url);
@@ -423,7 +490,7 @@ function voiceRefresh() {
       else if (j.state === 'error') banner(j.message, 'err');
       else if (v.listening) banner('Listening…', 'work');
       else banner('');
-      if (view === 'voice') {
+      if (view === 'voice' || view === 'ha') {
         build();
         if (idx >= rows.length) idx = 0;
         draw();

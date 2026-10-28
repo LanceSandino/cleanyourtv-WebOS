@@ -111,9 +111,10 @@ hidden. CleanYourTV, the Homebrew Channel (it keeps the TV rooted) and LG Input 
 **Customise** > **Hidden apps**, holding OK on a hidden app uninstalls it too.
 ## Cards
 
-Themes with places for cards (**Lock Screen**, **Bloom** and **Horizon**) have a **Cards** row in **Customise**. It lists the places (above the clock,
-beside the clock, a column on the right, above the dock); choose one to put a card there or leave it empty. A card you chose stays
-when you switch to another theme with the same place.
+Cards are set up in the [manager app](manager.md), **Cards**. Themes with places for cards (**Lock Screen**, **Bloom** and **Horizon**)
+also have a **Cards** row in **Customise** that opens it. It lists the places (above the clock, beside the clock, a column on the right,
+above the dock); choose one to put a card there or leave it empty. A card you chose stays when you switch to another theme with the
+same place.
 
 | Card | What it shows |
 |---|---|
@@ -124,11 +125,12 @@ when you switch to another theme with the same place.
 | Home Assistant camera | A camera's picture, renewed every 10, 30 or 60 seconds while Home is shown. |
 | Text | Your own text. `{{greeting}}`, `{{time}}`, `{{date}}` and `{{weekday}}` are filled in and kept up to date, and `{{weather.temp}}` and `{{weather.text}}` with a weather card on Home; `**bold**`, `*italic*` and a line starting with `#` for a heading. In three sizes. |
 
-Names, texts and the other options are typed on your phone: **Customise** > **Cards** > **Set up from your phone** opens the manager
-app with a QR code. The page shows a form for each place, and **Edit as JSON** shows all cards at once, for example
+Names, texts and the other options are typed on your phone: **Cards** > **Set up from your phone** in the manager app shows a QR
+code. The page shows a form for each place, and **Edit as JSON** shows all cards at once, for example
 `{"greeting": {"type": "greeting", "name": "Sam"}}`. It stays open while you use it, at most an hour, and needs the code shown on
-the TV. The Home Assistant cards use the address and the long-lived access token you set for [Voice](voice.md) (manager app, **More** >
-**Voice** > **Set up from your phone**); the TV asks Home Assistant for the states every 30 seconds while Home is shown. The phone page
+the TV. The Home Assistant cards use the address and the long-lived access token set in the manager app under **More** >
+**Home Assistant** > **Set up from your phone**, the same ones [Voice](voice.md) uses. Without them a Home Assistant card says that
+Home Assistant is not set up; the TV asks Home Assistant for the states every 30 seconds while Home is shown. The phone page
 offers your entities while you type.
 
 Cards dim after three minutes without a key press and shift by a few pixels every few minutes, so nothing stays in one place on an
