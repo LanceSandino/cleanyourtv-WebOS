@@ -1139,13 +1139,13 @@ function watchCardMenu(it) {
     })
   );
 }
-/* Continue watching (watch.js): shown on Home or not, and Plex and Stremio linked with their own TV sign-in: a code entered on a phone
-   (plex.tv/link) or a link opened there (Stremio), never a password on the TV. The service keeps the keys; this menu sees only whether
+/* Continue watching (watch.js): shown on Home or not, and Plex, Stremio and Disney+ linked with their own TV sign-in: a code entered on
+   a phone (plex.tv/link, disneyplus.com/begin) or a link opened there (Stremio), never a password on the TV. The service keeps the keys; this menu sees only whether
    a service is linked, and asks again every 3 s while a code waits. */
 function watchMenu() {
   var acc = {},
     timer = 0,
-    NAMES = { plex: 'Plex', stremio: 'Stremio' },
+    NAMES = { plex: 'Plex', stremio: 'Stremio', disney: 'Disney+' },
     build = function () {
       var on = WATCH.on(),
         gone = WATCH.removed().length,
@@ -1195,10 +1195,38 @@ function watchMenu() {
           fn: WATCH.restore,
         });
       items.push({ head: t('Accounts') });
-      ['plex', 'stremio'].forEach(function (k) {
+      ['plex', 'stremio', 'disney'].forEach(function (k) {
         var a = acc[k] || {},
           n = NAMES[k];
-        if (a.linked)
+        /* a code shown (also when linking again) */
+        if (a.state === 'waiting') {
+          items.push({
+            label: n,
+            sub: t('Waiting for the code...'),
+            stay: true,
+            fn: function () {
+              call('/api/watch/link', k); /* a new code */
+            },
+          });
+          items.push({
+            note:
+              k === 'plex'
+                ? t('On a phone or a computer, open plex.tv/link and enter %s').replace('%s', a.code)
+                : k === 'disney'
+                  ? t('On a phone or a computer, open disneyplus.com/begin and enter %s').replace('%s', a.code)
+                  : t('On a phone or a computer, open %s and sign in to Stremio').replace('%s', a.url),
+          });
+        } else if (a.linked && a.error)
+          /* linked, but the service refuses the TV's sign-in now (Disney+ after a password change): a new code */
+          items.push({
+            label: n,
+            sub: t('Signed out: link again'),
+            stay: true,
+            fn: function () {
+              call('/api/watch/link', k);
+            },
+          });
+        else if (a.linked)
           items.push({
             label: n,
             sub: a.server ? t('Linked to %s').replace('%s', a.server) : t('Linked'),
@@ -1218,22 +1246,7 @@ function watchMenu() {
               ]);
             },
           });
-        else if (a.state === 'waiting') {
-          items.push({
-            label: n,
-            sub: t('Waiting for the code...'),
-            stay: true,
-            fn: function () {
-              call('/api/watch/link', k); /* a new code */
-            },
-          });
-          items.push({
-            note:
-              k === 'plex'
-                ? t('On a phone or a computer, open plex.tv/link and enter %s').replace('%s', a.code)
-                : t('On a phone or a computer, open %s and sign in to Stremio').replace('%s', a.url),
-          });
-        } else
+        else
           items.push({
             label: t('Link %s...').replace('%s', n),
             sub:
@@ -1243,7 +1256,9 @@ function watchMenu() {
                   ? t('Could not link: try again')
                   : k === 'plex'
                     ? t('a code for plex.tv/link')
-                    : t('a link to open on a phone'),
+                    : k === 'disney'
+                      ? t('a code for disneyplus.com/begin')
+                      : t('a link to open on a phone'),
             stay: true,
             fn: function () {
               call('/api/watch/link', k);
@@ -1269,7 +1284,12 @@ function watchMenu() {
             WATCH.refresh();
           }
           /* asked again only while this menu is open and a code waits */
-          if (shown() && ((acc.plex && acc.plex.state === 'waiting') || (acc.stremio && acc.stremio.state === 'waiting')))
+          if (
+            shown() &&
+            ['plex', 'stremio', 'disney'].some(function (k) {
+              return acc[k] && acc[k].state === 'waiting';
+            })
+          )
             timer = setTimeout(load, 3000);
         },
         function () {}

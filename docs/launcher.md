@@ -82,15 +82,17 @@ Highlight an app on Home and, a moment later, a row of its episodes, films or vi
 
 - **Telemachus:** one card per show, the latest it watched: the episode you are in the middle of (with a bar for how far you got),
   or else the next one to watch (marked **Up next on Telemachus**). Never its channel's whole lineup.
-- **Plex (or PLX), Stremio:** what you started and did not finish, with a bar for how far you got.
-- **The other apps** (YouTube, Disney+, Apple TV and the like): the row LG's own Home shows for that app, as LG keeps it on the TV,
+- **Plex (or PLX), Stremio, Disney+:** what you started and did not finish, with a bar for how far you got. Disney+'s next episode
+  of a show you are following is marked **Up next on Disney+**.
+- **The other apps** (YouTube, Apple TV, Disney+ until it is linked, and the like): the row LG's own Home shows for that app, as LG keeps it on the TV,
   without LG's advertisements. Which apps have one is LG's choice; an app LG has nothing for shows no row. Netflix and Prime Video
   keep their own row there, from the profile last used in the app: their **Continue watching** comes first (Prime Video with the
   season and episode), then their suggestions. These rows are as fresh as the app last made them; there is no bar for how far you
   got, because the apps do not give it.
  Down goes into the row; OK opens it in that app: Telemachus at that episode or film (an older Telemachus app
 without the `play` launch option just opens), Plex, PLX or Stremio at their own Home, where their Continue Watching row has
-the same item first, and the other apps at that video or film, as LG's Home opens it. For an app in the dock, Home slides up to show the row under the dock (as it does when you go down
+the same item first, Disney+ playing the film or at the show's page (where Disney+ offers to continue the episode), and the other
+apps at that video or film, as LG's Home opens it. For an app in the dock, Home slides up to show the row under the dock (as it does when you go down
 into the apps), and back when the row closes. The row closes when you move on along that app's row or above it; going down past it
 keeps it. Nothing is
 shown for apps without episodes, and there are no app shortcuts (your apps are on Home already).
@@ -102,7 +104,7 @@ next episode does not come back), **Hide the row of** that app, and the settings
 
 - **Show on Home** switches the rows off (nothing is then read).
 - **Telemachus** switches Telemachus's cards off (it is not read then).
-- **Rows from LG for other apps** switches LG's rows off, keeping Telemachus, Plex and Stremio. Under it, each app LG has a row for
+- **Rows from LG for other apps** switches LG's rows off, keeping Telemachus, Plex, Stremio and Disney+. Under it, each app LG has a row for
   (YouTube, Disney+, Netflix and the like) can be switched off on its own: YouTube's row, for one, is LG's pick of videos, not what
   you watched. It is the same as **Hide the row of** that app when holding OK on one of its cards.
 - **Show removed cards again** (when you removed some) brings them all back, also the rows switched off.
@@ -111,6 +113,9 @@ next episode does not come back), **Hide the row of** that app, and the settings
   your network first).
 - **Link Stremio...** shows a link: open it on a phone or a computer and sign in to Stremio there. The TV then reads your Stremio
   library and shows what you started and did not finish, newest first.
+- **Link Disney+...** shows an 8-digit code: open `disneyplus.com/begin` on a phone or a computer, sign in to Disney+ there, and enter
+  it. The TV then shows Disney+'s Continue Watching (the profile Disney+ picks for a new device), newest first, in place of LG's row
+  for Disney+. If Disney+ later asks for a new sign-in (after a password change, for one), the row says **Signed out: link again**.
 - A linked service shows its name; OK on it offers **Unlink**. A code is valid for ten minutes.
 
 No password is typed on the TV. The service reads Telemachus on the TV itself (`127.0.0.1:8770`, which answers programs on the TV and

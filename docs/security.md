@@ -110,7 +110,7 @@ the service over HTTPS from the app's own image server, or from LG's (`aic.image
 LG uses them), images only, at most 1 MB each and 12 MB in memory all together, never on disk; **Customize** > **Continue watching** >
 **Rows from LG for other apps** switches this off.
 
-Plex and Stremio are read only once you link them there, with their own TV sign-in (no password on the TV):
+Plex, Stremio and Disney+ are read only once you link them there, with their own TV sign-in (no password on the TV):
 
 - **Plex:** the service asks `plex.tv` for a code (HTTPS), then every 3 s for at most ten minutes whether it was entered. It keeps the
   account's key and your server's own key in `config.json` (readable by root only), and asks `plex.tv` once for the server's
@@ -123,9 +123,18 @@ Plex and Stremio are read only once you link them there, with their own TV sign-
 - **Stremio:** the service asks `link.stremio.com` for a link (HTTPS), then every 3 s for at most ten minutes whether it was used. It
   keeps the key it gets in `config.json` and reads your library from `api.strem.io` (HTTPS); pictures come from
   `images.metahub.space` (HTTPS only, Stremio's image server).
+- **Disney+:** Disney+ has no sign-in for other programs, so the service signs in the way Disney's own web player does (all HTTPS). It
+  reads the web player's public key from `www.disneyplus.com/begin` (kept in memory only, never in this project) and registers the TV
+  as a device with Disney (`disney.api.edge.bamgrid.com`). Then it opens Disney's socket (`disney.connections.edge.bamgrid.com`) and asks
+  for an 8-digit code. You enter the code at `disneyplus.com/begin`, signed in there. Disney says so on the socket, and the service
+  trades that for the account's keys. It keeps the account's refresh key and a 4-hour access key in `config.json`. It reads Continue
+  watching from Disney's feed for TV makers (`partner/continueWatching`) and renews the access key with the refresh key when it runs
+  out. Pictures come from `disney.images.edge.bamgrid.com` (HTTPS only, Disney's image server). The socket is open only while a code
+  waits. This is not an interface Disney offers to others: it can stop working when Disney changes its web player, and it uses your
+  account as the web player would.
 - The keys are never returned by the service: not in `/api/apps`, not in `/api/watch/accounts` (linked or not, and the server's name).
-  **Unlink** forgets them; the access stays listed in your Plex account (Authorized Devices) or Stremio account until you remove it
-  there.
+  **Unlink** forgets them. The access stays listed in your Plex account (Authorized Devices), Stremio account or Disney+ account
+  until you remove it there (Disney+: Account > Log out of all devices).
 ## Weather card
 
 Only with a weather card on Home. The service asks `api.open-meteo.com` over HTTPS for the weather at the card's place, at most every

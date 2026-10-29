@@ -1261,3 +1261,16 @@ commit_ref: "feature/plex-link (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T15:33:47Z"
 ```
+
+```yaml
+id: CU-20261029-21
+type: feature
+title: "Continue watching: Disney+ linked with its TV code (disneyplus.com/begin), its Continue Watching under Disney+ on Home"
+description: "Lance asked for Disney+'s Continue watching; LG has nothing personal of it (its Disney+ row is LG's seasonal picks). helper/disney.js signs the TV in the way Disney's web player does. It reads the web player's public key from www.disneyplus.com/begin at run time (never in the repo), registers the TV as a device (registerDevice), opens Disney's socket (wss://disney.connections.edge.bamgrid.com, authentication frame with the device key) and asks for an 8-digit code (requestLicensePlate). Once the code is entered at disneyplus.com/begin, Disney sends urn:dss:event:offDeviceLogin:refresh(:v2) on the socket, traded with exchangeAccountDelegationRefreshToken for the account's keys. Those are kept in config.json watchAccounts.disney (refresh key and a 4-hour access key, renewed with refreshToken). Cards come from explore/v1.21 (else v1.4)/partner/continueWatching: series, episode, progress, Disney's next episode marked next, the wide tile through watch.js's image ids (disney.images.edge.bamgrid.com only). A film opens playing and an episode opens its series' page, with LG's own contentTarget deep links. Once linked, LG's Disney+ row is left out. helper/wsclient.js is a small RFC 6455 client (Node 8 has none): text, continued messages, ping/pong, close codes. The menu gains Link Disney+... with the code note and Signed out: link again when Disney refuses the refresh key. Checked against Disney itself from the Mac (Node 8.12) on 2026-10-29. A probe making the same calls did the full sign-in, with the owner entering the code, and read 30 items. This module itself got its code from Disney: the key read from the page, the device registered, the socket authenticated, then the code expired unused after 10 minutes. Not yet checked live: the module's own trade and read once a code is entered, and the 4-hour renewal (refreshToken)."
+impact: medium
+affected_modules: ["helper/disney.js", "helper/wsclient.js", "helper/watch.js", "app/src/js/watch.js", "app/src/js/menus.js", "app/index.html", "i18n/en.json", "docs/launcher.md", "docs/security.md"]
+related_tests: ["tools/test/disney.test.js (stand-ins for disneyplus.com/begin, Disney's API and socket: code, socket authentication, ping, continued message, a dropped socket taken up again, one trade for Disney's two messages, keys kept and never handed out, linking again while linked shows the new code, renewal of an expired key, cards and deep links, LG's Disney+ row left out once linked, refused refresh key, unlink, expired code, wsclient close codes and a refused upgrade)"]
+commit_ref: "feature/disney-link (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T16:36:58Z"
+```

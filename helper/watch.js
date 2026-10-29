@@ -1,17 +1,18 @@
 // Continue watching: the episodes and films a highlighted app on Home shows in a row under it (app/src/js/watch.js), things started
 // and not finished, never app shortcuts. From Telemachus on this TV (what is playing, or the episode each show is in the middle of,
-// then what its channel plays next), Plex and Stremio once linked (plex.js, stremio.js: what is partly watched), and for the other apps
-// the row LG's own Home shows under them (lgrows.js, without LG's advertisements). Read here, by the root service:
+// then what its channel plays next), Plex, Stremio and Disney+ once linked (plex.js, stremio.js, disney.js: what is partly watched), and
+// for the other apps the row LG's own Home shows under them (lgrows.js, without LG's advertisements; not Disney+'s once it is linked). Read here, by the root service:
 // Telemachus answers programs on the TV but refuses web pages, and the pictures are fetched here and served from memory, so the Home
 // page never contacts another site.
 //   GET /api/watch/rows        {items: [{key, group, title, sub, img, progress, next, launch: {id, params}, source}]}
 //                              (group: what Remove on Home takes away, a whole show or a film; the launcher keeps that list)
 //   GET /api/watch/img/<id>    a picture named in items, from memory
-//   GET /api/watch/accounts    {plex: {linked, server, state, code, url, error}, stremio: {...}} (never a key)
-//   POST /api/watch/link {service: 'plex'|'stremio'}  -> {code, url}    POST /api/watch/unlink {service}
+//   GET /api/watch/accounts    {plex: {linked, server, state, code, url, error}, stremio: {...}, disney: {...}} (never a key)
+//   POST /api/watch/link {service: 'plex'|'stremio'|'disney'}  -> {code, url}    POST /api/watch/unlink {service}
 const crypto = require('crypto');
 const web = require('./web'),
-  fetch = require('./fetch');
+  fetch = require('./fetch'),
+  DISNEY_APP = require('./disney').APP;
 
 const TELEMACHUS = process.env.CYTV_TELEMACHUS || 'http://127.0.0.1:8770', // another address only for the tests
   TELEMACHUS_APP = 'com.telemachus.screen',
@@ -24,6 +25,8 @@ const TELEMACHUS = process.env.CYTV_TELEMACHUS || 'http://127.0.0.1:8770', // an
 // pictures only from TMDB's image host, in a TV-sized width
 const TMDB = /^https:\/\/image\.tmdb\.org\/t\/p\/[a-z0-9]+\/[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$/,
   METAHUB = /^https:\/\/images\.metahub\.space\/[a-z]+\/[a-z]+\/tt\d+\/img$/,
+  DISNEY_IMG =
+    /^https:\/\/disney\.images\.edge\.bamgrid\.com\/ripcut-delivery\/v2\/variant\/disney\/[0-9a-f-]{36}\/scale\?width=\d+&aspectRatio=1\.78&format=jpeg$/,
   LG_IMG = /^https?:\/\/(aic\.imagesvc\.lgtvcommon\.com|ngfts\.lge\.com)\//;
 // "S8 E9 · The Simple Intimacy of the Near Touch"; Telemachus's titles can be file names ("The Vampire Diaries S08E09 - The Simple...")
 const esc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -71,6 +74,7 @@ function create(ctx) {
         ? remember(url4k)
         : '';
   const plexPic = url => (typeof url === 'string' && /^https?:\/\//.test(url) ? remember(url) : '');
+  const disneyPic = url => (typeof url === 'string' && DISNEY_IMG.test(url) ? remember(url) : '');
   // a newly linked account shows on the next read, not after the 20 s cache
   const sub = Object.assign({}, ctx, {
     changed: () => {
@@ -79,6 +83,7 @@ function create(ctx) {
   });
   const plex = require('./plex').create(sub),
     stremio = require('./stremio').create(sub),
+    disney = require('./disney').create(sub),
     lg = require('./lgrows').create(sub);
   async function sendImg(res, id) {
     const im = imgs[id];
@@ -210,30 +215,34 @@ function create(ctx) {
     if (cache && Date.now() - cacheAt < ROWS_MS) return cache;
     const wc = ctx.config.get().watch || {},
       lgOn = wc.lg !== false;
-    const [t, px, st, l] = await Promise.all([
+    const [t, px, st, dn, l] = await Promise.all([
       wc.tm === false ? [] : telemachus(),
       plex.items(plexPic).catch(() => []),
       stremio.items(metahubPic).catch(() => []),
+      disney.items(disneyPic).catch(() => []),
       lgOn ? lg.items(lgPic).catch(() => []) : [],
     ]);
-    // what Telemachus has started, what Plex and Stremio have partly watched, Telemachus's next, then LG's rows of the other apps
+    // a linked Disney+ replaces LG's row for it (LG's picks of the season, nothing of the account's)
+    const lgRows = disney.status().linked ? l.filter(i => i.app !== DISNEY_APP) : l;
+    // what Telemachus has started, what Plex, Stremio and Disney+ have partly watched, Telemachus's next, then LG's rows of the other apps
     cache = {
       items: /** @type {any[]} */ ([]).concat(
         t.filter(i => !i.next),
         px,
         st,
+        dn,
         t.filter(i => i.next),
-        l
+        lgRows
       ),
     };
     cacheAt = Date.now();
     return cache;
   }
 
-  const services = { plex, stremio };
+  const services = { plex, stremio, disney };
   async function handle(req, res, u, body) {
     if (u === '/api/watch/rows') return web.json(res, await rows());
-    if (u === '/api/watch/accounts') return web.json(res, { plex: plex.status(), stremio: stremio.status() });
+    if (u === '/api/watch/accounts') return web.json(res, { plex: plex.status(), stremio: stremio.status(), disney: disney.status() });
     if ((u === '/api/watch/link' || u === '/api/watch/unlink') && req.method === 'POST') {
       const sv = services[String((await body(req)).service || '')];
       if (!sv) return web.json(res, { error: 'unknown service' }, 400);

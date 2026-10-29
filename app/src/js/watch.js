@@ -1,12 +1,17 @@
-/* ---------- Continue watching (the service's /api/watch/rows: what Telemachus has started and plays next, what Plex and Stremio have
-   partly watched once linked, and LG's own rows of the other apps: YouTube's videos, Disney+'s films). The cards are shown only where
+/* ---------- Continue watching (the service's /api/watch/rows: what Telemachus has started and plays next, what Plex, Stremio and Disney+
+   have partly watched once linked, and LG's own rows of the other apps: YouTube's videos, Disney+'s films until Disney+ is linked). The cards are shown only where
    they belong: when an app that has some is highlighted on Home, a row of its cards opens under that app's row a moment later; Down goes into it, OK opens one in that app (act
    in config.js), hold OK has its options (watchCardMenu). The row closes when the focus moves on along that row or above it. Read when
    Home is shown and every minute while it is; Customize > Continue watching switches it off. ---------- */
 /* where a card comes from, named on it (a card of Telemachus's channel says it plays next), and the apps that show it */
-var SOURCE_NAMES = { telemachus: 'Telemachus', plex: 'Plex', stremio: 'Stremio' },
-  SOURCE_APPS = { telemachus: ['com.telemachus.screen'], plex: ['cdp-30', 'com.beb.plxnative'], stremio: ['io.strem.tv'] },
-  SOURCE_TINT = { telemachus: '120,150,255', plex: '229,160,13', stremio: '123,91,245' };
+var SOURCE_NAMES = { telemachus: 'Telemachus', plex: 'Plex', stremio: 'Stremio', disney: 'Disney+' },
+  SOURCE_APPS = {
+    telemachus: ['com.telemachus.screen'],
+    plex: ['cdp-30', 'com.beb.plxnative'],
+    stremio: ['io.strem.tv'],
+    disney: ['com.disney.disneyplus-prod'],
+  },
+  SOURCE_TINT = { telemachus: '120,150,255', plex: '229,160,13', stremio: '123,91,245', disney: '64,110,230' };
 /* a card belongs to the app LG named (its rows), or to the apps of its source */
 function cardOf(it, appId) {
   return it.app ? it.app === appId : !!SOURCE_APPS[it.source] && SOURCE_APPS[it.source].indexOf(appId) >= 0;
@@ -61,7 +66,7 @@ var WATCH = (function () {
     var w = {};
     for (var k in it) w[k] = it[k];
     w.owner = appId;
-    /* Plex and Stremio open in the app they are under (no deep link); Telemachus and LG's rows open the item itself */
+    /* Plex and Stremio open in the app they are under (no deep link); Telemachus, Disney+ and LG's rows open the item itself */
     if (it.source === 'plex' || it.source === 'stremio') w.launch = { id: appId, params: {} };
     d._sig = s;
     d._a = { id: id, title: it.title, sys: true, watch: w };
