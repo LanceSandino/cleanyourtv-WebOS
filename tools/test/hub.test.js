@@ -151,6 +151,60 @@ run(async () => {
   await sleep(200);
   ok(r.j.sent === true && packets.length === 2, 'later it wakes again');
 
+  // the TV's own link (the TV listening on nothing): requests go down it, answers come back by POST /link/reply
+  const K1 = 'a'.repeat(43),
+    K2 = 'b'.repeat(43);
+  const lines = [];
+  const linkRes = await new Promise(resolve => {
+    const rq = http.request(
+      { host: '127.0.0.1', port, path: '/link', method: 'GET', agent: false, headers: { 'x-link-key': K1 } },
+      resolve
+    );
+    rq.end();
+  });
+  let lbuf = '';
+  linkRes.setEncoding('utf8');
+  linkRes.on('data', d => {
+    lbuf += d;
+    let i;
+    while ((i = lbuf.indexOf('\n')) >= 0) {
+      const l = lbuf.slice(0, i);
+      lbuf = lbuf.slice(i + 1);
+      if (l.trim()) lines.push(JSON.parse(l));
+    }
+  });
+  await sleep(100);
+  const pinned = fs.readFileSync(path.join(data, 'link-key'), 'utf8').trim();
+  const asked = ask(port, 'POST', '/press', { key: 'OK' }, { 'x-remote-key': 'k'.repeat(43), origin: 'http://hub.test:' + port });
+  await sleep(150);
+  const sent = lines[0];
+  await ask(
+    port,
+    'POST',
+    '/link/reply',
+    { id: sent.id, status: 200, headers: { 'content-type': 'application/json' }, body: Buffer.from('{"ok":true}').toString('base64') },
+    { 'x-link-key': K1 }
+  );
+  const got = await asked;
+  ok(
+    linkRes.statusCode === 200 &&
+      /^[0-9a-f]{64}$/.test(pinned) &&
+      pinned.indexOf(K1) < 0 &&
+      sent.url === '/press' &&
+      sent.headers['x-remote-key'] === 'k'.repeat(43) &&
+      Buffer.from(sent.body, 'base64').toString() === '{"key":"OK"}' &&
+      got.code === 200 &&
+      got.j.ok === true,
+    "the TV's link: its key pinned as a hash, a phone's request goes down it with its key and body, and the TV's answer comes back"
+  );
+  const wrong = await ask(port, 'GET', '/link', undefined, { 'x-link-key': K2 });
+  const wrongReply = await ask(port, 'POST', '/link/reply', { id: 'x', status: 200 }, { 'x-link-key': K2 });
+  ok(wrong.code === 403 && wrongReply.code === 403, 'a link or an answer with another key is refused');
+  linkRes.destroy();
+  await sleep(150);
+  r = await ask(port, 'GET', '/ping', undefined, { 'x-remote-key': 'k'.repeat(43) });
+  ok(r.code === 503 && r.j.off === true, 'the link gone (the TV asleep): off at once');
+
   hub.close();
   udp.close();
   fs.rmSync(dir, { recursive: true, force: true });

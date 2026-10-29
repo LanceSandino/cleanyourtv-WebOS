@@ -17,12 +17,16 @@
 //   GET  /api/remote/status    {on, url, devices: [{id, name, added, used}], pairing: {until} | null}
 //   POST /api/remote/pair      {} opens pairing: {url, code, qr, seconds}; {stop: true} closes it
 //   POST /api/remote/forget {id}    POST /api/remote/on {on}
+//   POST /api/remote/via {via}      'hub': the TV listens on nothing for the phones; it keeps one connection to the hub (GET /link,
+//                                   with its own link key) and answers the requests the hub passes down it with the same handler;
+//                                   'tv' (the default): the LAN server on 8794
 //   POST /api/remote/helper {url}   the address of a hub on the home network (hub/server.js: 'http://<private address>:<port>', ''
 //                                   to clear) that stays on when the TV sleeps: the QR code and the address shown then point there, so
 //                                   phones pair through it and it can wake the TV
 // On the LAN server: GET / (the phone page), POST /pair {code, name} -> {key, id}; with the key: POST /press {key}, /move {dx, dy},
 // /click, /scroll {dy}, /hold {key}, /text {text}, /backspace, /enter, /launch {id}, /power, GET /apps, GET /icon/<id>, GET /ping.
 const http = require('http'),
+  stream = require('stream'),
   net = require('net'),
   crypto = require('crypto');
 const web = require('./web'),
@@ -323,7 +327,151 @@ function create(ctx) {
       () => json({ error: 'bad request' }, 400)
     );
   }
+  // ---- through the hub (via 'hub'): no server on the LAN; one connection out to the hub, the phones' requests coming down it ----
+  const via = () => (conf().via === 'hub' && helper() ? 'hub' : 'tv');
+  let link = null,
+    linkState = 'off',
+    linkTimer = null,
+    linkWait = 1000;
+  const replyAgent = new http.Agent({ keepAlive: true, maxSockets: 4 });
+  function linkKey() {
+    let k = String(conf().linkKey || '');
+    if (!/^[A-Za-z0-9_-]{43}$/.test(k)) {
+      k = crypto.randomBytes(32).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      config.update('remote (hub link key)', c => {
+        c.remote = Object.assign({}, c.remote, { linkKey: k });
+      });
+    }
+    return k;
+  }
+  function linkUp() {
+    if (link || via() !== 'hub' || !(isOn() || pairing)) return;
+    const h = new URL(helper());
+    linkState = 'connecting';
+    const r = http.request({
+      host: h.hostname,
+      port: +h.port,
+      path: '/link',
+      method: 'GET',
+      headers: { 'x-link-key': linkKey() },
+      agent: false,
+    });
+    link = r;
+    r.on('response', res => {
+      if (res.statusCode !== 200) {
+        res.resume();
+        return linkDrop('the hub refused the link (' + res.statusCode + ')');
+      }
+      linkState = 'linked';
+      linkWait = 1000;
+      console.log('remote: linked to the hub');
+      let buf = '';
+      res.setEncoding('utf8');
+      res.on('data', d => {
+        buf += d;
+        let i;
+        while ((i = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, i);
+          buf = buf.slice(i + 1);
+          if (line.trim()) linked(line);
+        }
+      });
+      res.on('end', () => linkDrop('the hub closed it'));
+      res.on('error', () => linkDrop('error'));
+    });
+    r.on('error', () => linkDrop('no answer'));
+    r.end();
+  }
+  function linkDrop(why) {
+    const was = linkState;
+    if (link) {
+      try {
+        link.destroy();
+      } catch (_) {}
+    }
+    link = null;
+    linkState = 'off';
+    if (was === 'linked') console.log('remote: the hub link dropped (' + why + ')');
+    clearTimeout(linkTimer);
+    if (via() === 'hub' && (isOn() || pairing)) {
+      linkTimer = setTimeout(linkUp, linkWait);
+      linkWait = Math.min(15000, linkWait * 2);
+    }
+  }
+  function linkStop() {
+    clearTimeout(linkTimer);
+    const l = link;
+    link = null;
+    linkState = 'off';
+    if (l) {
+      try {
+        l.destroy();
+      } catch (_) {}
+    }
+  }
+  // one phone request from the hub, answered by the same handler as on the LAN (its checks too: the phone's key, the home network,
+  // the page's origin), the answer posted back
+  function linked(line) {
+    let m = null;
+    try {
+      m = JSON.parse(line);
+    } catch (_) {}
+    if (!m || typeof m.id !== 'string') return;
+    const body = Buffer.from(String(m.body || ''), 'base64'),
+      req = /** @type {any} */ (new stream.Readable({ read() {} }));
+    if (body.length) req.push(body);
+    req.push(null);
+    req.method = String(m.method || 'GET');
+    req.url = String(m.url || '/');
+    req.headers = Object.assign({}, m.headers || {});
+    req.socket = { remoteAddress: String(m.ip || '') };
+    const out = [],
+      headers = {};
+    let code = 200;
+    const res = /** @type {any} */ (
+      new stream.Writable({
+        write(c, e, cb) {
+          out.push(Buffer.from(c));
+          cb();
+        },
+      })
+    );
+    res.headersSent = false;
+    res.setHeader = (k, v) => {
+      headers[String(k).toLowerCase()] = v;
+    };
+    res.getHeader = k => headers[String(k).toLowerCase()];
+    res.writeHead = (c, h) => {
+      code = c;
+      for (const k of Object.keys(h || {})) headers[k.toLowerCase()] = h[k];
+      res.headersSent = true;
+      return res;
+    };
+    res.on('finish', () => {
+      const data = JSON.stringify({ id: m.id, status: code, headers, body: Buffer.concat(out).toString('base64') }),
+        h = new URL(helper()),
+        r = http.request(
+          {
+            host: h.hostname,
+            port: +h.port,
+            path: '/link/reply',
+            method: 'POST',
+            agent: replyAgent,
+            headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data), 'x-link-key': linkKey() },
+          },
+          x => x.resume()
+        );
+      r.on('error', () => {});
+      r.end(data);
+    });
+    lan(req, res);
+  }
   function listen() {
+    if (via() === 'hub') {
+      if (srv) unlisten();
+      linkUp();
+      return Promise.resolve();
+    }
     if (srv) return Promise.resolve();
     return new Promise(resolve => {
       const s = http.createServer(lan);
@@ -343,6 +491,7 @@ function create(ctx) {
     });
   }
   function unlisten() {
+    linkStop();
     if (!srv) return;
     try {
       srv.close();
@@ -360,8 +509,10 @@ function create(ctx) {
   function status() {
     return {
       on: isOn(),
-      url: srv ? helper() || 'http://' + web.lanIp() + ':' + PORT : '',
+      url: srv || via() === 'hub' ? helper() || 'http://' + web.lanIp() + ':' + PORT : '',
       helper: helper(),
+      via: via(),
+      link: via() === 'hub' ? linkState : '',
       devices: devices().map(d => ({ id: d.id, name: d.name, added: d.added || 0, used: d.used || 0 })),
       pairing: pairing ? { until: pairing.until } : null,
     };
@@ -395,6 +546,23 @@ function create(ctx) {
         else delete r.helper;
         c.remote = r;
       });
+      // a cleared hub goes back to the LAN server; a new one gets the link
+      unlisten();
+      if (isOn() || pairing) await listen();
+      return web.json(res, status());
+    }
+    if (u === '/api/remote/via') {
+      const v = b.via === 'hub' ? 'hub' : 'tv';
+      if (v === 'hub' && !helper()) return web.json(res, { error: 'set the hub first' }, 400);
+      config.update('remote (through ' + (v === 'hub' ? 'the hub' : 'the TV') + ')', c => {
+        const r = Object.assign({}, c.remote);
+        if (v === 'hub') r.via = 'hub';
+        else delete r.via;
+        c.remote = r;
+      });
+      // the other way down, then this way up when a phone is paired or pairing is open
+      unlisten();
+      if (isOn() || pairing) await listen();
       return web.json(res, status());
     }
     if (u === '/api/remote/on') {
@@ -413,7 +581,7 @@ function create(ctx) {
 
   return {
     name: 'remote',
-    paths: ['/api/remote/status', '/api/remote/pair', '/api/remote/forget', '/api/remote/on', '/api/remote/helper'],
+    paths: ['/api/remote/status', '/api/remote/pair', '/api/remote/forget', '/api/remote/on', '/api/remote/helper', '/api/remote/via'],
     handle,
     start: () => {
       if (isOn()) listen();

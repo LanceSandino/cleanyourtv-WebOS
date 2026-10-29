@@ -1346,3 +1346,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T18:48:30Z"
 ```
+
+```yaml
+id: CU-20261029-28
+type: feature
+title: "Phone remote through the hub with the TV listening on nothing, and feedback on each press"
+description: "The owner asked whether the hub could carry the remote so the TV need not listen, as an easy setting, and for feedback on presses (vibration, or a sound when chosen). remote.js: via 'hub' (POST /api/remote/via; the manager's Phone remote > Through the hub, shown once a hub is set): the LAN server on 8794 closes; the TV keeps one connection out to the hub (GET /link with its own link key, made once and kept in its settings), runs each request the hub writes down it through the same lan() handler on a stand-in request and answer (the phone's key, the home network, the page's origin checked as before), and posts the answer back (POST /link/reply); it links again with a growing wait (1 to 15 s) when the link drops. hub/server.js: the link only from TV_HOST and with the key pinned on first use (SHA-256 in data/link-key; another key refused for the link and the answers); with the link up, phones' requests (their key, origin, host, content type and language, 64 KB at most) go down it and wait 8 s at most; the link gone means off at once; without a link it passes requests to the TV's server as before. remotepage.js: a gear beside the status sets vibration (on) and a click sound (off; a few milliseconds of WebAudio) per phone; a key lights green when the TV took the press, red when not."
+impact: medium
+affected_modules: ["helper/remote.js", "helper/remotepage.js", "hub/server.js", "manager/src/js/menu.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (through the hub the TV listens on nothing, links out with its own key and answers the hub's requests with the same checks, an address off the home network refused; back to the TV the LAN server answers again)", "tools/test/hub.test.js (the link's key pinned as a hash; a phone's request goes down it with its key and body and the TV's answer comes back; a link or an answer with another key is refused; the link gone means off at once)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T19:03:21Z"
+```

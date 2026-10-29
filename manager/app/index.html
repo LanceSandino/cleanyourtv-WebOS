@@ -1234,7 +1234,25 @@ function build() {
   /* Phone remote (helper/remote.js): pair a phone with a QR code, the phones paired (OK removes one), on or off */
   if (view === 'remote') {
     var rd = (rs && rs.devices) || [];
-    rows.push({ label: 'Pair a phone', sub: 'shows a code for two minutes', fn: openRemotePair });
+    rows.push({ label: 'Pair a phone', sub: 'shows a code for five minutes', fn: openRemotePair });
+    /* the hub (hub/server.js on a computer that stays on): through it the TV can be woken, and the TV need not listen at all */
+    if (rs && rs.helper)
+      rows.push({
+        label: 'Through the hub',
+        sub:
+          (rs.via === 'hub' ? 'On' : 'Off') +
+          ' \u00B7 ' +
+          rs.helper.replace(/^http:\/\//, '') +
+          (rs.via === 'hub' ? ' \u00B7 ' + (rs.link === 'linked' ? 'linked' : 'connecting\u2026') : ' \u00B7 the TV listens on port 8794'),
+        fn: function () {
+          api('/api/remote/via', { via: rs.via === 'hub' ? 'tv' : 'hub' }).then(function (r) {
+            if (r.error) return banner(r.error, 'err');
+            rs = r;
+            build();
+            draw();
+          });
+        },
+      });
     if (rd.length)
       rows.push({
         label: 'Phone remote',

@@ -26,9 +26,32 @@ function note(s, bad) {
   if (s && $('login').className === 'hide') noteT = setTimeout(function () { note(''); }, 6000);
 }
 $('msg').onclick = function () { note(''); };
+/* feedback on each press, as this phone's owner chose it (the gear by the status): a vibration (on by default) and a click sound
+   (off by default, a few milliseconds made here, no file) */
+var FB = 'cytv-remote-feedback', fb = { vibrate: true, sound: false };
+try { var fbs = JSON.parse(localStorage.getItem(FB) || 'null'); if (fbs) fb = { vibrate: fbs.vibrate !== false, sound: !!fbs.sound }; } catch (e) {}
+var actx = null;
+function tick() {
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    var o = actx.createOscillator(), g = actx.createGain(), t0 = actx.currentTime;
+    o.type = 'square';
+    o.frequency.setValueAtTime(1800, t0);
+    o.frequency.exponentialRampToValueAtTime(500, t0 + 0.03);
+    g.gain.setValueAtTime(0.07, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.045);
+    o.connect(g);
+    g.connect(actx.destination);
+    o.start(t0);
+    o.stop(t0 + 0.05);
+  } catch (e) {}
+}
 /* a short buzz: vibrate where there is one; Safari on the iPhone has none, but a switch toggled through its label taps (iOS 18 on) */
 var hap = null;
 function buzz() {
+  if (fb.sound) tick();
+  if (!fb.vibrate) return;
   try {
     if (navigator.vibrate) { navigator.vibrate(8); return; }
     var a = document.activeElement;
@@ -85,9 +108,16 @@ function send(path, body) {
     return r;
   }, function () { state(false); });
 }
-function press(k) {
+/* a press, and the key it came from lit briefly: green when the TV took it, red when it did not */
+function press(k, b) {
   buzz();
-  send('/press', { key: k });
+  send('/press', { key: k }).then(function (r) { if (b) ack(b, !!r && r.status === 200 && !r.error); });
+}
+function ack(b, good) {
+  b.classList.remove('ack', 'nak');
+  void b.offsetWidth;
+  b.classList.add(good ? 'ack' : 'nak');
+  setTimeout(function () { b.classList.remove('ack', 'nak'); }, 260);
 }
 function login(why) {
   key = '';
@@ -131,7 +161,7 @@ document.addEventListener('click', function (e) {
   if (b._long) { b._long = false; return; }
   var k = b.getAttribute('data-k');
   if (COLOURS[k] && ck[k]) { buzz(); send('/launch', { id: ck[k].id }); }
-  else press(k);
+  else press(k, b);
 });
 var rep = 0, held = null, longT = 0;
 function lift() {
@@ -160,8 +190,8 @@ function lift() {
     if (!b.hasAttribute('data-hold')) return;
     e.preventDefault();
     var k = b.getAttribute('data-k'), n = 0;
-    press(k);
-    rep = setInterval(function () { if (++n > 3) press(k); }, 120);
+    press(k, b);
+    rep = setInterval(function () { if (++n > 3) press(k, b); }, 120);
   }, { passive: false });
 });
 ['touchend', 'touchcancel', 'mouseup'].forEach(function (ev) { document.addEventListener(ev, lift); });
@@ -312,6 +342,7 @@ function colourPick(k) {
     if (!r || !r.apps) return;
     var sh = $('sheet'), list = $('sheetlist');
     $('sheettitle').textContent = t('%s key').replace('%s', COLOUR_NAMES[k]);
+    $('sheetp').textContent = t('Hold a colour key to give it an app; a tap then opens it.');
     list.textContent = '';
     var add = function (label, fn, on) {
       var b = document.createElement('button');
@@ -326,6 +357,27 @@ function colourPick(k) {
   });
 }
 $('sheetno').onclick = function () { $('sheet').className = 'hide'; };
+/* the gear: vibration and sound on each press, kept on this phone */
+function feedbackSheet() {
+  var list = $('sheetlist');
+  $('sheettitle').textContent = t('Feedback');
+  $('sheetp').textContent = t('Kept on this phone.');
+  list.textContent = '';
+  [['vibrate', t('Vibrate on each press')], ['sound', t('Click sound on each press')]].forEach(function (x) {
+    var b = document.createElement('button');
+    b.className = 'key opt' + (fb[x[0]] ? ' on' : '');
+    b.textContent = x[1] + ': ' + (fb[x[0]] ? t('On') : t('Off'));
+    b.onclick = function () {
+      fb[x[0]] = !fb[x[0]];
+      try { localStorage.setItem(FB, JSON.stringify(fb)); } catch (e) {}
+      buzz();
+      feedbackSheet();
+    };
+    list.appendChild(b);
+  });
+  $('sheet').className = '';
+}
+$('fbset').onclick = feedbackSheet;
 colourLabels();
 $('off').onclick = function () { if (asleep) return wake(); buzz(); if (confirm(t('Turn the TV off?'))) send('/power'); };
 $('wakeb').onclick = wake;
@@ -441,7 +493,9 @@ small{display:block;margin-top:${u(16)};font-size:${u(12)};line-height:1.45;colo
 #login small{max-width:${u(280)};margin-top:${u(22)}}
 #msg{position:fixed;z-index:9;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 8px);width:calc(100% - 32px);max-width:380px;padding:12px 16px;border-radius:16px;transform:translateX(-50%);font-size:15px;line-height:1.35;color:#e9f7ec;background:#1e3425;box-shadow:0 10px 30px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.06)}
 #msg.e{color:#ffe9e7;background:#4a1a1a}
-.hap{position:fixed;left:-60px;top:0;opacity:0;pointer-events:none}`;
+.hap{position:fixed;left:-60px;top:0;opacity:0;pointer-events:none}
+.ack{box-shadow:0 0 0 3px rgba(48,209,88,.9)!important}.nak{box-shadow:0 0 0 3px rgba(255,69,58,.9)!important}
+.gear{margin-right:${u(8)}}.gear svg{width:${u(20)};height:${u(20)}}`;
 
 // the icons, drawn on a 24 px grid in the text's colour (the filled ones with class f)
 const ICONS = {
@@ -523,7 +577,7 @@ function html(lang) {
 <small>${T('Works on the same Wi-Fi as the TV. Add it to the Home Screen to open it like an app.')}</small></div>
 <div id=main class=hide>
 <div class=top><button class="key pw" id=off aria-label="${T('Turn the TV off')}">${icon('power')}</button><div id=st><i id=dot></i><span id=tv></span></div>
-<button class="key nb" id=nb aria-label="${T('Numbers')}">123</button></div>
+<button class="key nb gear" id=fbset aria-label="${T('Feedback')}">${icon('gear')}</button><button class="key nb" id=nb aria-label="${T('Numbers')}">123</button></div>
 <button class="key p" id=wakeb>${icon('power')}<span>${T('Turn the TV on')}</span></button>
 <nav><button class=on data-p=keys>${T('Remote')}</button><button data-p=touch>${T('Touchpad')}</button><button data-p=type>${T('Type')}</button><button data-p=apps>${T('Apps')}</button></nav>
 <section id=keys>
@@ -543,7 +597,7 @@ ${k('ENTER', '', 'OK', { cls: 'ok' })}</div></div>
 <div class=row><button class="key p" id=send>${T('Send')}</button><button class=key id=bs>${T('Delete')}</button><button class=key id=ent>${T('Enter')}</button></div>
 <small>${T('Open a search box on the TV first; the text goes where its cursor is.')}</small></section>
 <section id=apps class=hide><div id=grid></div><small>${T('Works on the same Wi-Fi as the TV. Add it to the Home Screen to open it like an app.')}</small></section></div>
-<div id=sheet class=hide><div class=sh><h2 id=sheettitle></h2><p>${T('Hold a colour key to give it an app; a tap then opens it.')}</p><div id=sheetlist></div>
+<div id=sheet class=hide><div class=sh><h2 id=sheettitle></h2><p id=sheetp></p><div id=sheetlist></div>
 <button class=key id=sheetno>${T('Cancel')}</button></div></div>
 ` +
     i18n.script(lang, JS) +

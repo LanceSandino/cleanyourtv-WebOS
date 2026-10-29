@@ -7,7 +7,7 @@ const http = require('http'),
   fs = require('fs'),
   os = require('os'),
   path = require('path');
-const { ok, call, sleep, req, memoryConfig, run } = require('./lib');
+const { ok, call, sleep, serve, req, memoryConfig, run } = require('./lib');
 
 function lan(method, p, body, headers) {
   return new Promise((resolve, reject) => {
@@ -227,6 +227,66 @@ run(async () => {
     'a hub on the home network is where the QR code and the address point; any other address is refused'
   );
   await call(R, '/api/remote/pair', 'POST', { stop: true });
+  // through the hub: the LAN server closes, the TV links out to the hub and answers what comes down the link with the same handler
+  const replies = [];
+  let linkKeys = [];
+  const fakeHub = await serve((rq, rs) => {
+    if (rq.url === '/link') {
+      linkKeys.push(rq.headers['x-link-key']);
+      rs.writeHead(200, { 'content-type': 'application/x-ndjson' });
+      rs.write('\n');
+      rs.write(
+        JSON.stringify({ id: 'a1', method: 'GET', url: '/', headers: { host: 'hub.test:8794' }, ip: '192.168.4.30', body: '' }) + '\n'
+      );
+      rs.write(
+        JSON.stringify({
+          id: 'a2',
+          method: 'POST',
+          url: '/press',
+          headers: { host: 'hub.test:8794', 'x-remote-key': p1.j.key },
+          ip: '8.8.8.8',
+          body: Buffer.from('{"key":"UP"}').toString('base64'),
+        }) + '\n'
+      );
+      return;
+    }
+    const b = [];
+    rq.on('data', d => b.push(d));
+    rq.on('end', () => {
+      replies.push(JSON.parse(Buffer.concat(b).toString()));
+      rs.end('{}');
+    });
+  });
+  const hubPort = fakeHub.url.split(':').pop();
+  // the fake hub listens on 127.0.0.1, a home address the hub setting accepts
+  await call(R, '/api/remote/helper', 'POST', { url: 'http://127.0.0.1:' + hubPort });
+  r = await call(R, '/api/remote/via', 'POST', { via: 'hub' });
+  await sleep(400);
+  const lanGone = await lan('GET', '/').then(
+    () => false,
+    () => true
+  );
+  const page = replies.filter(x => x.id === 'a1')[0],
+    far = replies.filter(x => x.id === 'a2')[0];
+  ok(
+    r.j.via === 'hub' &&
+      lanGone &&
+      /^[A-Za-z0-9_-]{43}$/.test(linkKeys[0] || '') &&
+      !!page &&
+      page.status === 200 &&
+      /TV remote/.test(Buffer.from(page.body, 'base64').toString()) &&
+      !!far &&
+      far.status === 403,
+    "through the hub the TV listens on nothing, links out with its own key, and answers the hub's requests with the same checks (an address off the home network refused)"
+  );
+  r = await call(R, '/api/remote/via', 'POST', { via: 'tv' });
+  await sleep(200);
+  const back = await lan('GET', '/').then(
+    x => x.code,
+    () => 0
+  );
+  ok(r.j.via === 'tv' && back === 200, 'back to the TV: the LAN server answers again');
+  fakeHub.server.close();
   r = await call(R, '/api/remote/helper', 'POST', { url: '' });
   ok(r.j.helper === '' && r.j.url.indexOf('http://192.168.4.4:') !== 0, 'clearing the hub points back at the TV');
   // off on the TV: the phone is refused; on again; removed: the key no longer works and the server stops

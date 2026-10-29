@@ -56,3 +56,12 @@ with `TV_HOST=<the TV's address>` and `WAKE_ADDR=<the network's broadcast addres
 96 MB at most. Then on the TV (a shell, or the API): `curl -X POST localhost:8765/api/remote/helper -d '{"url":"http://<hub>:8794"}'`;
 from then on the QR code and the address on the TV's Phone remote screen point at the hub. Pair each phone again through it (a
 phone keeps its key per address).
+
+**Through the hub** (the CleanYourTV app > Phone remote, once a hub is set): the TV then listens on nothing for the phones (port 8794
+closes). It keeps one connection out to the hub instead, with a link key of its own; the hub accepts that link only from the TV's
+address and pins the key the first time (a SHA-256 in its data folder), and passes each phone's request down it. The TV answers them
+with the same handler and the same checks as before (the phone's key, the home network, the page's origin). When the TV sleeps the
+link drops, so the hub knows at once that it is off. Switch it off to go back to the TV's own server.
+
+**Feedback.** The gear beside the status sets what each press does on this phone: a vibration (on by default; on an iPhone the tap
+of iOS 18 and later) and a click sound (off by default). A key also lights green when the TV took the press, red when it did not.

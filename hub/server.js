@@ -7,9 +7,14 @@
 // It answers only addresses of the home network, forwards only to the TV, and keeps one connection open to the TV for the touchpad.
 //   TV_HOST (required) the TV's address · TV_PORT (8794) · HUB_PORT (8794) · HUB_DATA (/data) · WAKE_ADDR (255.255.255.255; a LAN's
 //   broadcast address such as 192.168.7.255 is better) · WAKE_PORTS (9,7) · TV_MAC (instead of learning it) · ARP_FILE (/proc/net/arp)
-//   GET /hub/status -> {tv: 'on' | 'off', mac: known?, page: cached?}    POST /wake -> {sent: true} | {error}
+// With the TV's Phone remote set to go through the hub (remote.js: via 'hub'), the TV listens on nothing: it keeps one connection to
+// the hub (GET /link, only from TV_HOST, with a link key the hub pins the first time it sees one, as a SHA-256 in its data folder), and
+// the hub writes each phone's request down it as a line of JSON; the TV answers with POST /link/reply. Without that link the hub passes
+// requests to the TV's own LAN server, as before.
+//   GET /hub/status -> {tv: 'on' | 'off', link: bool, mac: known?, page: cached?}    POST /wake -> {sent: true} | {error}
 'use strict';
 const http = require('http'),
+  crypto = require('crypto'),
   dgram = require('dgram'),
   fs = require('fs'),
   path = require('path');
@@ -68,6 +73,7 @@ function create(opts) {
       return '';
     }
   };
+  const keyFile = path.join(o.data, 'link-key');
   let mac = MAC.test(o.mac) ? o.mac : read(macFile).trim(),
     page = read(pageFile),
     manifest = '',
@@ -97,6 +103,113 @@ function create(opts) {
     res.writeHead(code, { 'content-type': 'application/json', 'cache-control': 'no-store' });
     res.end(JSON.stringify(obj));
   };
+  // ---- the TV's own link: one stream the phones' requests go down, answered with POST /link/reply ----
+  const sha = k => crypto.createHash('sha256').update(String(k)).digest('hex');
+  let tvLink = null,
+    beat = null;
+  const pending = new Map();
+  // only the TV's address, and the key pinned the first time (a later link with another key is refused)
+  function linkAllowed(req) {
+    if (String(req.socket.remoteAddress || '').replace(/^::ffff:/, '') !== o.tv) return false;
+    const k = String(req.headers['x-link-key'] || '');
+    if (!/^[A-Za-z0-9_-]{43}$/.test(k)) return false;
+    const pinned = read(keyFile).trim();
+    if (!pinned) {
+      try {
+        fs.writeFileSync(keyFile + '.tmp', sha(k) + '\n', { mode: 0o600 });
+        fs.renameSync(keyFile + '.tmp', keyFile);
+      } catch (_) {}
+      console.log('hub: the TV linked for the first time; its link key is pinned');
+      return true;
+    }
+    const a = Buffer.from(pinned, 'hex'),
+      b = Buffer.from(sha(k), 'hex');
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  }
+  function openLink(req, res) {
+    if (!linkAllowed(req)) return json(res, 403, { error: 'not the TV' });
+    if (tvLink) tvLink.end();
+    res.writeHead(200, { 'content-type': 'application/x-ndjson', 'cache-control': 'no-store' });
+    res.write('\n');
+    tvLink = res;
+    tvOn = true;
+    if (!mac) learn();
+    clearInterval(beat);
+    beat = setInterval(() => tvLink && tvLink.write('\n'), 20000);
+    console.log('hub: the TV is linked');
+    res.on('close', () => {
+      if (tvLink !== res) return;
+      tvLink = null;
+      tvOn = false;
+      clearInterval(beat);
+      console.log('hub: the TV link closed');
+      for (const [, p] of pending) {
+        clearTimeout(p.timer);
+        off(p.req, p.res);
+      }
+      pending.clear();
+    });
+  }
+  const PASS = ['x-remote-key', 'origin', 'host', 'content-type', 'accept-language'];
+  function viaLink(req, res) {
+    const b = [];
+    let size = 0;
+    req.on('data', d => {
+      size += d.length;
+      if (size <= 65536) b.push(d);
+    });
+    req.on('end', () => {
+      if (size > 65536) return json(res, 413, { error: 'too large' });
+      const id = crypto.randomBytes(9).toString('base64').replace(/[+/=]/g, ''),
+        headers = {};
+      for (const h of PASS) if (req.headers[h] !== undefined) headers[h] = String(req.headers[h]);
+      const timer = setTimeout(() => {
+        pending.delete(id);
+        json(res, 504, { error: 'the TV did not answer in time' });
+      }, 8000);
+      pending.set(id, { req, res, timer });
+      tvLink.write(
+        JSON.stringify({
+          id,
+          method: req.method,
+          url: req.url,
+          headers,
+          ip: String(req.socket.remoteAddress || ''),
+          body: Buffer.concat(b).toString('base64'),
+        }) + '\n'
+      );
+    });
+  }
+  function linkReply(req, res) {
+    if (!linkAllowed(req)) return json(res, 403, { error: 'not the TV' });
+    const b = [];
+    let size = 0;
+    req.on('data', d => {
+      size += d.length;
+      if (size <= 8 << 20) b.push(d);
+    });
+    req.on('end', () => {
+      let m = null;
+      try {
+        m = JSON.parse(Buffer.concat(b).toString('utf8'));
+      } catch (_) {}
+      const p = m && pending.get(String(m.id));
+      if (!p) return json(res, 404, { error: 'no such request' });
+      pending.delete(String(m.id));
+      clearTimeout(p.timer);
+      const body = Buffer.from(String(m.body || ''), 'base64'),
+        u = p.req.url.split('?')[0],
+        status = +m.status || 502;
+      if (p.req.method === 'GET' && status === 200 && u === '/') keepPage(body.toString('utf8'));
+      if (p.req.method === 'GET' && status === 200 && u === '/manifest.json') manifest = body.toString('utf8');
+      const h = {};
+      for (const k of Object.keys(m.headers || {})) if (/^[a-z0-9-]{1,40}$/.test(k)) h[k] = String(m.headers[k]);
+      h['content-length'] = String(body.length);
+      p.res.writeHead(status, h);
+      p.res.end(body);
+      json(res, 200, { ok: true });
+    });
+  }
   function wake(req, res) {
     const origin = req.headers.origin;
     if (origin && origin !== 'http://' + req.headers.host) return json(res, 403, { error: 'not from this page' });
@@ -164,8 +277,11 @@ function create(opts) {
   const server = http.createServer((req, res) => {
     if (!homeAddress(req.socket.remoteAddress)) return json(res, 403, { error: 'only for the home network' });
     const u = req.url.split('?')[0];
+    if (u === '/link' && req.method === 'GET') return openLink(req, res);
+    if (u === '/link/reply' && req.method === 'POST') return linkReply(req, res);
     if (u === '/wake' && req.method === 'POST') return wake(req, res);
-    if (u === '/hub/status') return json(res, 200, { tv: tvOn ? 'on' : 'off', mac: !!mac, page: !!page });
+    if (u === '/hub/status') return json(res, 200, { tv: tvOn ? 'on' : 'off', link: !!tvLink, mac: !!mac, page: !!page });
+    if (tvLink) return viaLink(req, res);
     forward(req, res);
   });
   const timer = setInterval(learn, 60000);
@@ -175,6 +291,8 @@ function create(opts) {
     server,
     close: () => {
       clearInterval(timer);
+      clearInterval(beat);
+      if (tvLink) tvLink.destroy();
       agent.destroy();
       server.close();
     },
