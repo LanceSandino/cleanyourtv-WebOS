@@ -1,0 +1,102 @@
+/* Search (search.js): over Home and its menus, under the toasts, Live TV and the screensaver; the field at the top, the results under
+   it in groups, a hint at the foot. It fades and rises in once; only transform and opacity animate. */
+#sr {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 35;
+  background: rgba(var(--night-rgb), 0.94);
+  display: none;
+}
+#sr.on {
+  display: block;
+}
+@keyframes sr-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+#sr.on .box {
+  animation: sr-in calc(0.22s * var(--spd)) cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+#sr .box {
+  width: 1120px;
+  margin: 96px auto 0;
+}
+#sr-field {
+  display: flex;
+  align-items: center;
+  height: 96px;
+  padding: 0 34px;
+  border-radius: var(--row-r);
+  background: var(--panel2);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+#sr-field.f {
+  box-shadow: inset 0 0 0 3px var(--acc);
+}
+#sr-field svg {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  opacity: 0.8;
+}
+#sr-q {
+  flex: 1;
+  min-width: 0;
+  margin-inline-start: 24px; /* the other side in a right-to-left language */
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: calc(38px * var(--fs));
+  font-weight: 500;
+}
+#sr-q::placeholder {
+  color: var(--ink2);
+}
+#sr-list {
+  margin-top: 22px;
+}
+#sr-list > * + * {
+  margin-top: 10px;
+}
+/* a group's heading (In your apps, Search in, Look in): text only, the focus skips it */
+#sr .srh {
+  padding: 16px 34px 2px;
+  font-size: calc(20px * var(--fs));
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+#sr .srow img {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 10px;
+  object-fit: contain;
+}
+#sr-note {
+  padding: 20px 34px;
+  font-size: calc(28px * var(--fs));
+  line-height: 1.35;
+  color: var(--ink2);
+}
+#sr-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 52px;
+  text-align: center;
+  font-size: 24px;
+  color: var(--ink2);
+}

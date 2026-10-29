@@ -93,5 +93,6 @@ function act(e) {
   if (o.action === 'customize') return customizeMenu();
   if (o.action === 'live') return LIVE.enter();
   if (o.action === 'inputs') return inputsMenu();
+  if (o.action === 'search') return SEARCH.show();
   if (o.app) launch(o.app, o.params);
 }

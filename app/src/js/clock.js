@@ -13,15 +13,17 @@ function useLang(code) {
 function barLabel(o) {
   return o.action === 'inputs'
     ? t('Inputs')
-    : o.app === 'com.palm.app.settings'
-      ? t('Settings')
-      : o.action === 'customize'
-        ? t('Customize')
-        : o.action === 'live'
-          ? t('Live TV')
-          : o.app === 'com.webos.app.livetv'
-            ? t('LG TV')
-            : o.label || '';
+    : o.action === 'search'
+      ? t('Search')
+      : o.app === 'com.palm.app.settings'
+        ? t('Settings')
+        : o.action === 'customize'
+          ? t('Customize')
+          : o.action === 'live'
+            ? t('Live TV')
+            : o.app === 'com.webos.app.livetv'
+              ? t('LG TV')
+              : o.label || '';
 }
 /* the parts of a formatted time (Intl formatToParts) as [the time, its day period (AM/PM, or ''), whether the day period comes first].
    Chromium 68 (webOS 5) calls that part "dayperiod", Chromium 79 "dayPeriod". */

@@ -207,6 +207,7 @@ document.addEventListener('webOSRelaunch', function () {
   if (homeKey(p) && !(guarded() && liveBlip)) {
     if (stack.length) closeMenus();
     WALLPICK.close();
+    SEARCH.close();
   }
   if (LIVE.on && p && p.guide && liveOn()) {
     LIVE.toggleGuide();
@@ -231,6 +232,7 @@ document.addEventListener('visibilitychange', function () {
     WALL.hidden();
     if (LIVE.on) LIVE.exit();
     closeRunningMenu();
+    SEARCH.close(); /* an app opened from it, or the TV went elsewhere */
   } else if (guarded()) LIVE.resume();
   else {
     /* hidden in those 5 s and only shown again later: the TV really went elsewhere */

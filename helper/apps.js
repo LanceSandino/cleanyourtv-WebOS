@@ -36,12 +36,20 @@ function create(ctx) {
   // a moment ago shows up on the next opening of Home ----
   let appCache = null,
     appCacheAt = 0,
-    asking = null;
+    asking = null,
+    // the apps that open their own search with words: appinfo inAppSearchParams as the app manager lists it (YouTube's
+    // '{ "contentTarget" : "q=$SEARCH_KEYWORD"}'), for search.js; kept apart from the list the launcher gets
+    searchable = {};
   function askApps() {
     if (!asking)
       asking = luna('luna://com.webos.applicationManager/listApps', {}).then(r => {
         asking = null;
         if (!Array.isArray(r.apps)) return appCache || [];
+        const found = {};
+        for (const a of r.apps)
+          if (a && typeof a.id === 'string' && a.inAppSearchParams && /^(string|object)$/.test(typeof a.inAppSearchParams))
+            found[a.id] = a.inAppSearchParams;
+        searchable = found;
         appCache = r.apps
           .filter(a => a.visible !== false && a.id !== HOME && !pushed(a))
           .map(a => ({
@@ -98,6 +106,12 @@ function create(ctx) {
   }
   async function apps() {
     return (await installed()).concat(pinned());
+  }
+  // the installed apps with an in-app search: [{id, title, params}] (params as the app manager gave them)
+  async function inAppSearch() {
+    return (await installed())
+      .filter(a => searchable[a.id] !== undefined)
+      .map(a => ({ id: a.id, title: a.title, params: searchable[a.id] }));
   }
   // ---- uninstalling (hold OK on an app > Uninstall): what the app manager calls removable (LG's store apps, developer apps), never
   // LG's system apps, this project's own apps, the Homebrew Channel (root) or the input hook the Input key uses ----
@@ -344,6 +358,8 @@ function create(ctx) {
     handle,
     start: () => setInterval(pollForeground, 4000),
     apps,
+    installed, // the apps without the pinned inputs (search.js)
+    inAppSearch,
     onScreen: () => onScreen,
     foreground: onForeground, // the poll's handler, for the tests
   };

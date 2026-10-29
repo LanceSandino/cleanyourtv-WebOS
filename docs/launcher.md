@@ -10,8 +10,9 @@ same on every supported webOS version.
 - **Dock.** Up to four apps, large, on the first row.
 - **Top shelf.** The name of the focused app and an ambient glow taken from its icon.
 - **Grid.** All other apps, sorted by how often you use each one (or A to Z).
-- **Top buttons.** Inputs, Live TV, Settings and Customize, and a clock. The buttons you see are yours to change; **Add a button**
-  also offers **LG TV**, LG's own TV from the antenna or cable (Live TV is the playlist player).
+- **Top buttons.** Search, Inputs, Live TV, Settings and Customize, and a clock. The buttons you see are yours to change; **Add a
+  button** also offers **LG TV**, LG's own TV from the antenna or cable (Live TV is the playlist player).
+- **Search.** Finds a film, show or video in the apps on this TV and opens it there (see [Search](#search)); nothing is sent anywhere.
 - **No pushed apps.** The placeholder apps LG pushes onto Home (a "stub" that downloads the real app when opened) and the
   promotions it pushes as apps (Rakuten TV's `ui30`, Streaming Week) are left out of the dock and the grid.
 - **Open apps.** Optionally a green dot on the tile of every app that is open, as on the active input in the Inputs list: off by
@@ -26,6 +27,7 @@ same on every supported webOS version.
 | Move between the rows | Up and Down go to the app or button above or below; the opposite key right after goes straight back to where the focus was |
 | App options (dock, hide, uninstall) | Hold OK on an app |
 | Move or remove a top button | Hold OK on it |
+| Find a title and open it | The **Search** button: type it with the TV's keyboard, Down to the results, OK opens one |
 | Customize | The **Customize** button |
 | Live TV | The **Live TV** button or tile |
 | Switch input | The **Inputs** button |
@@ -60,7 +62,7 @@ theme's screenshot, and the Screensaver its frame, mat and photos as an example 
 
 - the **dock**: each app in it can be replaced (an app already in the dock swaps places), moved or removed, and **Add an app...**
   fills a free place. Holding OK on an app gives **Add to dock**, **Move left**, **Move right**, **Remove from dock** and **Hide app**;
-- the **top buttons**: move one left or right, remove it, or add Inputs, Settings, Live TV or any app;
+- the **top buttons**: move one left or right, remove it, or add Search, Inputs, Settings, Live TV or any app;
 - **hidden apps** (show them again);
 - the **app order** (most used first, or A to Z);
 - **mark running apps** (a green dot on their tiles, or none);
@@ -125,6 +127,29 @@ next episode does not come back), **Hide the row of** that app, and the settings
 No password is typed on the TV. The service reads Telemachus on the TV itself (`127.0.0.1:8770`, which answers programs on the TV and
 refuses web pages) and the linked services; it fetches the pictures and serves them from memory, so the Home page
 contacts no other site. Nothing is shown from Telemachus when it is not installed.
+
+## Search
+
+**Search** in the top bar finds a film, a show or a video in the apps on this TV ("where to watch"). Type the title with the TV's
+keyboard, or with the [phone remote](remote.md)'s **Type**; the results follow what you type, in up to three groups:
+
+- **In your apps:** the titles in the rows Home already has (see [Continue watching](#continue-watching)): what Telemachus, Plex,
+  Stremio and Disney+ have started, the rows Netflix and Prime Video write themselves, and LG's picks while they are on. OK opens the
+  title where its card opens: Telemachus at that episode or film, Netflix or Prime Video at that title, Disney+ playing it, Plex (or
+  PLX) and Stremio at their Home. Upper or lower case, punctuation, a leading "The", accents and a year in brackets make no
+  difference, and one typo is forgiven.
+- **Search in:** the installed apps that can open their own search with words (YouTube and YouTube TV do). OK opens that app's
+  search for what you typed.
+- **Look in:** when none of your apps has the title, Telemachus, Plex (or PLX) and Stremio, opened at their Home to look there.
+
+OK or Down goes from the field to the results, Up from the first result back to the field, OK opens a result, Back closes. The
+titles are the ones Home has already read for Continue watching, with the same switches: with **Show on Home** off, a row switched
+off or a card removed, those titles are not found either. Not yet: Netflix's and Prime Video's own search (they take only LG's voice
+commands, not words), and Telemachus's, Plex's and Stremio's own libraries. For a search nothing is sent anywhere, and the service
+reads nothing new: see [Security](security.md#search).
+
+The Search button is in the top bar of a new installation. If you changed your top buttons before, add it with **Customize** >
+**Top buttons** > **Add a button...** > **Search**.
 
 ## Uninstalling apps
 

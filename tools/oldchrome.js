@@ -423,6 +423,31 @@ const FX_CHECK =
   'var still=!!cs&&cs.animationName==="none"&&!document.getElementById("fx");' +
   'var ok=!!fr&&behind&&pic&&still&&cs.pointerEvents==="none";' +
   'document.body.setAttribute("data-fx",ok?"ok":"bad frame="+!!fr+" behind="+behind+" pic="+pic+" still="+still)},800)},300)})()</script>';
+// Search (search.js): the Search button in the default top bar opens it with the field focused (the TV's keyboard); Left there stays
+// in the text; the words typed bring the stand-in's results in two groups; Down goes into them, Up from the first back to the field;
+// OK opens a result when it is let go (Telemachus at that episode) and closes the search; opened again it keeps the words, and Back
+// closes it without reaching Home (no Running apps menu, the focus where it was). The outcome lands in data-search.
+const SEARCH_KEYS =
+  '<script>(function(){function key(c,only){(only?[only]:["keydown","keyup"]).forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}var launched=[],L=window.launch;window.launch=function(id,p){launched.push([id,p]);return L(id,p)};' +
+  'function out(v){document.body.setAttribute("data-search",v)}function on(){var s=document.getElementById("sr");return !!s&&s.className==="on"}' +
+  'function inField(){return document.activeElement===document.getElementById("sr-q")}' +
+  'function fi(){var f=document.querySelector("#sr .srow.f");return f?[].indexOf.call(document.querySelectorAll("#sr .srow"),f):-1}' +
+  'function wait(test,then,what){var n=0,w=setInterval(function(){if(test()){clearInterval(w);then()}else if(++n>40){clearInterval(w);out("bad waiting for "+what)}},150)}' +
+  'wait(function(){return document.querySelector(".tile")},function(){var pill=[].filter.call(document.querySelectorAll(".pill"),function(p){return p._o&&p._o.action==="search"})[0];' +
+  'if(!pill)return out("bad no Search button");var label=pill.textContent,p=posOf(pill);setFocus(p[0],p[1]);var home=[r,c];key(13);var opened=on()&&inField();' +
+  'key(37);var stay=on()&&inField()&&r===home[0]&&c===home[1];var q=document.getElementById("sr-q");q.value="show a";q.dispatchEvent(new Event("input"));' +
+  'wait(function(){return document.querySelectorAll("#sr .srow").length===2},function(){' +
+  'var heads=[].map.call(document.querySelectorAll("#sr .srh"),function(h){return h.textContent}).join("|");' +
+  'var rows=[].map.call(document.querySelectorAll("#sr .srow"),function(x){return x.textContent});' +
+  'var texts=/^Show A/.test(rows[0])&&/Telemachus$/.test(rows[0])&&/^Video/.test(rows[1])&&/show a/.test(rows[1]);' +
+  'key(40);var first=fi()===0&&!inField();key(40);var second=fi()===1;key(40);var last=fi()===1;key(38);key(38);var back=inField()&&fi()===-1;' +
+  'key(40);key(13,"keydown");var held=on()&&!launched.length;key(13,"keyup");setTimeout(function(){var l=launched[0]||[];' +
+  'var opens=l[0]==="com.telemachus.screen"&&!!l[1]&&!!l[1].play&&l[1].play.episode===6&&!on();SEARCH.show();var again=on()&&q.value==="show a";key(461);' +
+  'setTimeout(function(){var closed=!on()&&!document.getElementById("ov")&&!stack.length&&r===home[0]&&c===home[1];' +
+  'var ok=label==="Search"&&opened&&stay&&heads==="In your apps|Search in"&&texts&&first&&second&&last&&back&&held&&opens&&again&&closed;' +
+  'out(ok?"ok":"bad label="+label+" opened="+opened+" stay="+stay+" heads="+heads+" rows="+rows.join("|")+" first="+first+" second="+second+" last="+last+' +
+  '" back="+back+" held="+held+" opens="+opens+" again="+again+" closed="+closed+" launched="+JSON.stringify(launched))},500)},500)},"the results")},"the tiles")})()</script>';
 // [name, file, what it draws, how many at least, milliseconds of page time to wait, a script to run in it, a theme id]; a name is its
 // address too (spaces as dashes), so letters, digits and spaces only: Chromium 120 sends an apostrophe as %27
 const PAGES = [
@@ -458,6 +483,7 @@ const PAGES = [
   ['manager closes when left', 'manager/app/index.html', /data-left="ok"/g, 1, 150000, MANAGER_LEFT],
   ['tv health', 'manager/app/index.html', /data-health="ok"/g, 1, 30000, TV_HEALTH],
   ['weather in a short place', 'app/index.html', /data-slim="ok"/g, 1, 12000, SLIM_WX, 'glass'],
+  ['search', 'app/index.html', /data-search="ok"/g, 1, 15000, SEARCH_KEYS],
 ];
 let famN = 0,
   plexState = 'idle',
@@ -504,7 +530,7 @@ function serve() {
     if (u === '/cytv-token.js')
       return r.writeHead(200, { 'content-type': 'text/javascript' }), r.end("var CYTV_TOKEN = '" + TOKEN + "';\n");
     if (
-      /^\/api\/(apps|inputs|manager\/status|photofeed\/next|watch\/(rows|accounts|link)|log)$/.test(u) &&
+      /^\/api\/(apps|inputs|manager\/status|photofeed\/next|watch\/(rows|accounts|link)|search|log)$/.test(u) &&
       q.headers['x-cytv-token'] !== TOKEN
     ) {
       noToken.push(u);
@@ -603,6 +629,36 @@ function serve() {
           },
         ],
       });
+    // Search: Telemachus has "Show A", and one app searches itself (the words in its launch parameters); nothing for other words
+    if (u === '/api/search') {
+      const words = new URL(q.url, 'http://127.0.0.1').searchParams.get('q') || '';
+      if (!/^show a$/i.test(words)) return json({ q: words, groups: [] });
+      return json({
+        q: words,
+        groups: [
+          {
+            id: 'have',
+            items: [
+              {
+                key: 'have-tm-a',
+                app: 'com.telemachus.screen',
+                appTitle: 'Telemachus',
+                title: 'Show A',
+                sub: 'S2 E6',
+                source: 'telemachus',
+                launch: { id: 'com.telemachus.screen', params: { play: { show: 'Show A', season: 2, episode: 6 } } },
+              },
+            ],
+          },
+          {
+            id: 'search',
+            items: [
+              { key: 'search-app.1', app: 'app.1', appTitle: 'Video', launch: { id: 'app.1', params: { contentTarget: 'q=' + words } } },
+            ],
+          },
+        ],
+      });
+    }
     // Plex's TV sign-in: a code, entered (says the stand-in) by the second time the menu asks
     if (u === '/api/watch/link') return (plexState = 'waiting'), (plexAsks = 0), json({ code: 'AB12', url: 'plex.tv/link' });
     if (u === '/api/watch/accounts') {

@@ -68,6 +68,7 @@ load('theme', () => require('./theme').create(ctx));
 load('wallpapers', () => require('./wallpapers').create(ctx));
 load('photofeed', () => require('./photofeed').create(ctx));
 load('watch', () => require('./watch').create(ctx));
+load('search', () => require('./search').create(ctx));
 load('cards', () => require('./cards').create(ctx));
 load('remote', () => require('./remote').create(ctx));
 const inputkey = load('inputkey', () => require('./inputkey').create(ctx));

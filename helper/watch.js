@@ -10,6 +10,7 @@
 //                              (pick: on LG's rows, true for what LG's servers chose, false for a row the app wrote itself)
 //                              (group: what Remove on Home takes away, a whole show or a film; the launcher keeps that list)
 //   GET /api/watch/img/<id>    a picture named in items, from memory
+//   known()                    the items of the last read, without reading (search.js looks titles up in them)
 //   GET /api/watch/accounts    {plex: {linked, server, state, code, url, error}, stremio: {...}, disney: {...}} (never a key)
 //   POST /api/watch/link {service: 'plex'|'stremio'|'disney'}  -> {code, url}    POST /api/watch/unlink {service}
 const crypto = require('crypto');
@@ -52,7 +53,8 @@ function create(ctx) {
   const imgs = {}, // id -> {url, buf, type, at}
     imgOrder = [];
   let cache = /** @type {any} */ (null),
-    cacheAt = 0;
+    cacheAt = 0,
+    last = /** @type {any[]} */ ([]); // the cards of the last read, kept for search.js (it never reads them itself)
   // a picture's id for the page; the address (with a Plex server's key in it) stays here
   function remember(u) {
     const id = crypto.createHash('sha1').update(u).digest('hex').slice(0, 16);
@@ -239,6 +241,7 @@ function create(ctx) {
       ),
     };
     cacheAt = Date.now();
+    last = cache.items;
     return cache;
   }
 
@@ -247,11 +250,13 @@ function create(ctx) {
     if (u === '/api/watch/rows') return web.json(res, await rows());
     if (u === '/api/watch/accounts') return web.json(res, { plex: plex.status(), stremio: stremio.status(), disney: disney.status() });
     if ((u === '/api/watch/link' || u === '/api/watch/unlink') && req.method === 'POST') {
-      const sv = services[String((await body(req)).service || '')];
+      const name = String((await body(req)).service || ''),
+        sv = services[name];
       if (!sv) return web.json(res, { error: 'unknown service' }, 400);
       cache = null;
       if (u === '/api/watch/unlink') {
         sv.unlink();
+        last = last.filter(i => i.source !== name); // its cards are not found by a search any more either
         return web.json(res, { ok: true });
       }
       return web.json(res, await sv.link());
@@ -260,7 +265,9 @@ function create(ctx) {
     if (m) return sendImg(res, m[1]);
     web.notFound(res);
   }
-  return { name: 'watch', prefix: '/api/watch/', handle, rows };
+  // the cards of the last read (Home reads them when it is shown and every minute), without reading anything
+  const known = () => last.slice();
+  return { name: 'watch', prefix: '/api/watch/', handle, rows, known };
 }
 
 module.exports = { create, TMDB };

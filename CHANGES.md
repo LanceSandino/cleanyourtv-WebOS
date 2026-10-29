@@ -1424,3 +1424,31 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T20:10:00Z"
 ```
+
+```yaml
+id: CU-20261029-34
+type: feature
+title: "Search on Home: a title found in the apps on this TV and opened there, or searched in YouTube; nothing leaves the TV"
+description: "The owner asked for a cross-app \"where to watch\" search (D-20261029-8). helper/search.js answers GET /api/search?q=
+  from what the service already has in memory: the titles of the rows it last read for Continue watching (watch.js known(), the
+  items of the last rows() read; no read of its own), with Home's switches and removed cards (Continue watching off: none; LG's
+  picks only while they are on; Telemachus off; removed shows and hidden rows), each opened the way its card opens (Plex's in PLX
+  when only PLX is installed); and the installed apps whose app manager entry has inAppSearchParams (read only on the owner's TV,
+  webOS 25: listApps returns it, YouTube and YouTube TV '{ \"contentTarget\" : \"q=$SEARCH_KEYWORD\"}'), launched with the words in
+  place of $SEARCH_KEYWORD (spaces as typed, as LG's own search passes them through the app manager's replaceParams; %, &, # and +
+  as %XX). When no app has the title, Telemachus, Plex (or PLX) and Stremio are offered, opened plainly. Matching ignores case,
+  punctuation, accents, a leading The and a year in brackets, ranks a year typed at the end a little lower, and forgives one typo.
+  apps.js keeps the apps' inAppSearchParams apart from /api/apps; unlinking Plex, Stremio or Disney+ also drops their cards from
+  what a search finds. The launcher: a Search top button (action search; in the default
+  bar and in Customize > Top buttons > Add a button), a search screen (app/src/js/search.js) with a field that brings up the TV's
+  keyboard, results in groups (In your apps, Search in, Look in), OK opening a result when it is let go, Back closing it; the Home
+  key and leaving Home close it. Netflix's and Prime Video's inAppVoiceIntent, Telemachus's, Plex's and Stremio's libraries are left
+  for later. Not yet seen on the TV: the screen with LG's keyboard, and YouTube opened with q=<words> (launching apps on the TV needs
+  the owner's OK)."
+impact: medium
+affected_modules: ["helper/search.js", "helper/helper.js", "helper/watch.js", "helper/apps.js", "app/src/js/search.js", "app/src/css/search.css", "app/src/js/core.js", "app/src/js/clock.js", "app/src/js/config.js", "app/src/js/input.js", "app/src/index.html", "app/index.html", "i18n/en.json", "docs/launcher.md", "docs/security.md", "docs/api.md", "README.md", "AGENTS.md", "DECISIONS.md"]
+related_tests: ["tools/test/search.test.js (matching: case, punctuation, a leading The, accents, a year, a typo; the in-app search parameters filled and refused; the route with the service's own watch.js and apps.js: hits open as their cards, Home's switches and removed cards, hidden and invisible apps left out, the libraries only without a hit; a linked Plex server's film opens in PLX and is not found once Plex is unlinked; no request or connection and no luna call but listApps during searches, even with the rows' cache dropped; the origin, Host and API-token checks)", "tools/test/api.test.js (the search part runs; YouTube's search with the words; a web page refused; /api/apps without the search parameters)", "tools/oldchrome.js (search: the Search button, the field focused, Left stays in the text, the groups, Down and Up, OK opens on release, Back closes without reaching Home; Chromium 120)"]
+commit_ref: "feature/search (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T19:31:47Z"
+```

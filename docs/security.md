@@ -181,6 +181,16 @@ Plex, Stremio and Disney+ are read only once you link them there, with their own
 - The keys are never returned by the service: not in `/api/apps`, not in `/api/watch/accounts` (linked or not, and the server's name).
   **Unlink** forgets them. The access stays listed in your Plex account (Authorized Devices), Stremio account or Disney+ account
   until you remove it there (Disney+: Account > Log out of all devices).
+## Search
+
+**Search** on Home ([Search](launcher.md#search)) sends the words nowhere. The service looks them up in what it already has in
+memory: the titles of the rows it last read for Continue watching (above), with Home's switches and removed cards, and the app
+manager's list of apps on the TV (`com.webos.applicationManager/listApps`, a read), whose `inAppSearchParams` say which apps open
+their own search with words (YouTube's `{"contentTarget": "q=$SEARCH_KEYWORD"}`). A search reads nothing anew: no row, no
+picture, no account, no address; the words reach only the app you open, as its own launch parameters, like a search typed in that
+app. LG's search and voice services, search aggregators (JustWatch, Reelgood), the streaming services' web APIs and Google's are
+never asked. `GET /api/search` has the same origin, Host and API-token checks as every other route.
+
 ## Weather card
 
 Only with a weather card on Home. The service asks `api.open-meteo.com` over HTTPS for the weather at the card's place, at most every

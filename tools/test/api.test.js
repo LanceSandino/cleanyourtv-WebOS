@@ -96,7 +96,15 @@ const LUNA = {
     returnValue: true,
     apps: [
       { id: 'netflix', title: 'Netflix', icon: 'icon.png', folderPath: path.join(APPS, 'netflix'), type: 'web', visible: true },
-      { id: 'youtube.leanback.v4', title: 'YouTube', icon: 'missing.png', folderPath: path.join(APPS, 'youtube'), type: 'web' },
+      // with its in-app search (as webOS 25's app manager lists it): for /api/search only, never in /api/apps
+      {
+        id: 'youtube.leanback.v4',
+        title: 'YouTube',
+        icon: 'missing.png',
+        folderPath: path.join(APPS, 'youtube'),
+        type: 'web',
+        inAppSearchParams: '{ "contentTarget" : "q=$SEARCH_KEYWORD"}',
+      },
       { id: 'com.webos.app.home', title: 'Home', icon: 'x.png', folderPath: APPS, visible: true },
       { id: 'com.webos.app.hidden', title: 'Hidden', icon: 'x.png', folderPath: APPS, visible: false },
     ],
@@ -370,6 +378,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       'wallpapers',
       'photofeed',
       'watch',
+      'search',
       'cards',
       'remote',
       'inputkey',
@@ -396,6 +405,41 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       (okFam ? 'ok   ' : 'FAIL ') + 'api: the launcher gets whether there are photos in the feed, never the feed token or address'
     );
     if (!okFam) failed++;
+    // Search (search.js, added after 1.6.32): YouTube's own search with the words, nothing else on this TV; the same checks as the
+    // other routes (a web page is refused); the launcher's app list does not carry the apps' search parameters
+    const sr = await request('GET', '/api/search?q=' + encodeURIComponent('  Cats & dogs  '), undefined, 'null');
+    let srJ = null;
+    try {
+      srJ = JSON.parse(sr.body.toString());
+    } catch (_) {}
+    const okSearch =
+      sr.status === 200 &&
+      JSON.stringify(srJ) ===
+        JSON.stringify({
+          q: 'Cats & dogs',
+          groups: [
+            {
+              id: 'search',
+              items: [
+                {
+                  key: 'search-youtube.leanback.v4',
+                  app: 'youtube.leanback.v4',
+                  appTitle: 'YouTube',
+                  launch: { id: 'youtube.leanback.v4', params: { contentTarget: 'q=Cats %26 dogs' } },
+                },
+              ],
+            },
+          ],
+        });
+    console.log((okSearch ? 'ok   ' : 'FAIL ') + 'api: /api/search gives YouTube searching for the words: ' + sr.status + ' ' + sr.body);
+    if (!okSearch) failed++;
+    const srWeb = await request('GET', '/api/search?q=cats', undefined, 'http://evil.example');
+    const okWeb = srWeb.status === 403 && srWeb.body.indexOf('groups') < 0;
+    console.log((okWeb ? 'ok   ' : 'FAIL ') + 'api: /api/search refuses a web page');
+    if (!okWeb) failed++;
+    const okHidden = appsBody.indexOf('SEARCH_KEYWORD') < 0 && appsBody.indexOf('inAppSearch') < 0;
+    console.log((okHidden ? 'ok   ' : 'FAIL ') + "api: /api/apps does not carry the apps' search parameters");
+    if (!okHidden) failed++;
   }
   console.log(failed ? failed + ' API contract check(s) failed' : 'the API answers as recorded');
   finish(failed ? 1 : 0);
