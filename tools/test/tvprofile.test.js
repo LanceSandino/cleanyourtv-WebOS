@@ -16,27 +16,37 @@ run(async () => {
     [
       'webOS 25 (G2, the tested TV)',
       { sdk: '10.2.2', firmware: '33.23.05', home: 'com.webos.app.home flutter', node: 'v16.20.2' },
-      { pickerMode: 'overlay', notifyWindow: 'topui', homeSupported: true, tested: true, legacyNode: false },
+      { pickerMode: 'overlay', notifyWindow: 'topui', homeSupported: true, tested: true, legacyNode: false, supported: true },
     ],
     [
       'webOS 26 (SDK 11): the hidden picker was not tried there (issue 6)',
       { sdk: '11.2.0', firmware: '43.21.77', home: 'com.webos.app.home web', node: 'v16.20.2' },
-      { pickerMode: 'ondemand', notifyWindow: 'topui', homeSupported: true, tested: false },
+      { pickerMode: 'ondemand', notifyWindow: 'topui', homeSupported: true, tested: false, supported: true },
+    ],
+    [
+      'webOS 24 (SDK 9, Node.js 16, Chromium 108): below the floor',
+      { sdk: '9.2.4', firmware: '23.23.30', home: 'com.webos.app.home flutter', node: 'v16.19.1' },
+      { notifyWindow: 'overlay', homeSupported: true, supported: false },
+    ],
+    [
+      'an SDK 10 report with an older Node.js: below the floor',
+      { sdk: '10.2.2', firmware: '33.23.05', home: 'com.webos.app.home flutter', node: 'v12.22.2' },
+      { tested: true, supported: false },
     ],
     [
       'webOS 6.5 (issue 5)',
       { sdk: '6.5.3', firmware: '03.53.45', home: 'com.webos.app.home native', node: 'v8.12.0' },
-      { pickerMode: 'ondemand', notifyWindow: 'overlay', homeSupported: false, tested: true, legacyNode: true },
+      { pickerMode: 'ondemand', notifyWindow: 'overlay', homeSupported: false, tested: true, legacyNode: true, supported: false },
     ],
     [
       'webOS 5 (issue 4)',
       { sdk: '5.6.2', firmware: '04.41.35', home: 'com.webos.app.home native', node: 'v8.12.0' },
-      { pickerMode: 'ondemand', notifyWindow: 'overlay', tested: true, testedNote: 'a prefix' },
+      { pickerMode: 'ondemand', notifyWindow: 'overlay', tested: true, testedNote: 'a prefix', supported: false },
     ],
     [
       'SDK unknown',
       { sdk: '', firmware: '', home: '' },
-      { pickerMode: 'ondemand', notifyWindow: 'overlay', homeSupported: false, tested: false, sdkMajor: 0 },
+      { pickerMode: 'ondemand', notifyWindow: 'overlay', homeSupported: false, tested: false, sdkMajor: 0, supported: false },
     ],
   ];
   for (const c of cases) {
@@ -87,6 +97,18 @@ run(async () => {
     "from the shell: is the firmware in the repository's compat.json"
   );
   ok(cli(['get', 'homeSupported', '--home', 'com.webos.app.home flutter']) === '1', "from the shell: LG's Home kind");
+  // the oldest webOS this fork runs on (DECISIONS.md D-20261029-2): bootstrap.sh asks, install.sh has the same numbers
+  ok(
+    tv.FLOOR.sdk === 10 && tv.FLOOR.node === 16 && tv.decide({}).floor === 'webOS 25 (SDK 10)',
+    'the floor is webOS 25: SDK 10 with Node.js 16 (and Chromium 120)'
+  );
+  ok(
+    cli(['get', 'supported', '--sdk', '10.3.2']) === '1' &&
+      cli(['get', 'supported', '--sdk', '11.2.0']) === '1' &&
+      ['9.2.4', '6.5.3', '5.4.3', ''].every(v => cli(['get', 'supported', '--sdk', v]) === '0') &&
+      cli(['get', 'floor']) === 'webOS 25 (SDK 10)',
+    'from the shell: is the TV at least the floor (the Node.js running it counts too), and what the floor is'
+  );
   ok(
     cli(['get', 'afterSam', '--sdk', arc.sdk, '--home', arc.home]) === 'arccontroller',
     'from the shell: webOS 26 restarts the ARC controller'

@@ -14,6 +14,7 @@ D=$MD/cleanyourtv
 INITD=$R/var/lib/webosbrew/init.d
 J="node $S/scripts/jtool.js"          # JSON helper (node, not python3)
 TV="node $S/helper/tvprofile.js"      # per-TV decisions
+MIN_NODE=16                           # the Node.js of the oldest supported TV (helper/tvprofile.js FLOOR), checked before tvprofile.js runs
 HOME_DIR=$R/usr/palm/applications/com.webos.app.home
 
 MODE=${1:-install}; [ $# -gt 0 ] && shift
@@ -43,9 +44,11 @@ preflight() {
   [ -d "$INITD" ] || die "$INITD not found: root with the Homebrew Channel is required (https://rootmy.tv)"
   [ -w $MD ] || die "/media/developer is not writable"
   for t in tar node; do command -v $t >/dev/null || die "missing tool: $t"; done
-  # hard requirements: --force does not skip these (older webOS has no systemd and an old Node that cannot run the service)
-  command -v systemctl >/dev/null || die "this TV has no systemd (webOS older than 5): CleanYourTV needs a newer webOS and cannot be set up here. Nothing was changed."
-  node -e '(()=>1)()' >/dev/null 2>&1 || die "this TV's Node.js ($(node -v 2>&1 | head -1)) is too old for the service: CleanYourTV needs a newer webOS and cannot be set up here. Nothing was changed."
+  # hard requirements: --force does not skip these (older webOS has no systemd, and a Node.js older than 16 cannot run the service)
+  command -v systemctl >/dev/null || die "this TV has no systemd (webOS older than 5): CleanYourTV needs webOS 25 (SDK 10) or newer and cannot be set up here. Nothing was changed."
+  nv=$(node -v 2>/dev/null | head -1); nmajor=${nv#v}; nmajor=${nmajor%%.*}
+  case "$nmajor" in ''|*[!0-9]*) nmajor=0 ;; esac
+  [ "$nmajor" -ge $MIN_NODE ] || die "this TV's Node.js (${nv:-unknown}) is too old for the service: this version of CleanYourTV needs webOS 25 (SDK 10) or newer and cannot be set up here. Nothing was changed."
   [ -f $S/helper/helper.js ] && [ -f $S/scripts/10-cleanyourtv-home ] || die "the service files are incomplete in $S"
   [ -f $HOME_DIR/appinfo.json ] || die "stock Home app not found at $HOME_DIR"
   if grep -q " $HOME_DIR " /proc/mounts && [ ! -f $D/backup/home-appinfo.orig.json ]; then
@@ -59,6 +62,26 @@ detect() {
   model=$(echo "$info" | sed -n 's/.*"modelName": *"\([^"]*\)".*/\1/p')
   fw=$(echo "$info" | sed -n 's/.*"firmwareVersion": *"\([^"]*\)".*/\1/p')
   sdk=$(echo "$info" | sed -n 's/.*"sdkVersion": *"\([^"]*\)".*/\1/p')
+}
+
+# ---- the oldest TV this version runs on (tvprofile.js: supported, floor; DECISIONS.md D-20261029-2) ----
+# Below it nothing is changed, --force or not. A TV whose version could not be read is set up only with --force ("Set up anyway"); an
+# update there goes on, because the TV was set up before and its Node.js passed the check above. A refused update leaves the running
+# service as it is and notes it in last-error.txt, so updates.js does not apply the same package again.
+check_floor() {
+  [ "$($TV get supported --sdk "$sdk")" = 1 ] && return 0
+  floor=$($TV get floor); [ -n "$floor" ] || floor="webOS 25 (SDK 10)"
+  if [ -z "$sdk" ]; then
+    if [ $FORCE = 1 ]; then warn "could not read this TV's webOS version; continuing because of --force (CleanYourTV needs $floor or newer)"; return 0; fi
+    if [ "$MODE" = update ]; then warn "could not read this TV's webOS version; continuing with the update of a TV that was set up (CleanYourTV needs $floor or newer)"; return 0; fi
+    die "could not read this TV's webOS version (CleanYourTV needs $floor or newer). If this TV has $floor or newer, use 'Set up anyway' in the app, or run bootstrap.sh install --force. Nothing was changed."
+  fi
+  why="this TV runs webOS SDK $sdk ($(node -v 2>/dev/null)): this version of CleanYourTV needs $floor or newer"
+  if [ "$MODE" = update ]; then
+    [ -d $D ] && echo "update to $WANT failed at $(date): $why" > $D/last-error.txt
+    die "$why. Nothing was changed: the service that is running stays at its version."
+  fi
+  die "$why and cannot be set up here. Nothing was changed."
 }
 
 # The notification app's window type (tvprofile.js: "topui" from SDK 10, "overlay" before and when the SDK is unknown). The package
@@ -246,6 +269,7 @@ finish() {
 # ---- the order ----
 preflight
 detect
+check_floor
 fix_notify_window
 [ "$MODE" = install ] && check_compat
 backup

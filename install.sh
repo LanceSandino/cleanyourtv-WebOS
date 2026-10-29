@@ -9,6 +9,22 @@
 #   CYTV_CHANNEL=dev  install the dev build (the pre-release dev, rebuilt on every change) and keep following it; the manager app
 #   can switch back to the stable releases (Update channel). CYTV_BRANCH=<anything>, from before the dev builds, means the same.
 
+# The oldest TV this release runs on: webOS 25 (SDK 10) with Node.js 16 (DECISIONS.md D-20261029-2; the same numbers as FLOOR in
+# helper/tvprofile.js, which is not on the TV yet). Prints why this TV is older and succeeds, or fails when it is not; a version that
+# cannot be read is left to the setup (bootstrap.sh), which asks for "Set up anyway" then.
+MIN_SDK=10
+MIN_NODE=16
+too_old() {
+  nv=$(node -v 2>/dev/null | head -1); n=${nv#v}; n=${n%%.*}
+  case "$n" in ''|*[!0-9]*) n=0 ;; esac
+  [ "$n" -ge $MIN_NODE ] || { echo "its Node.js (${nv:-unknown}) is older than $MIN_NODE"; return 0; }
+  sdk=$(luna-send -n 1 -w 5000 -f luna://com.webos.service.tv.systemproperty/getSystemInfo '{"keys":["sdkVersion"]}' </dev/null 2>/dev/null | sed -n 's/.*"sdkVersion": *"\([^"]*\)".*/\1/p' | head -1)
+  s=${sdk%%.*}
+  case "$s" in ''|*[!0-9]*) return 1 ;; esac
+  [ "$s" -ge $MIN_SDK ] || { echo "it runs webOS SDK $sdk"; return 0; }
+  return 1
+}
+
 main() {
   REPO="${CYTV_REPO:-LanceSandino/cleanyourtv-WebOS}"
   ID=com.cleanyourtv.manager
@@ -22,7 +38,7 @@ main() {
   [ -d /var/lib/webosbrew/init.d ] || die "/var/lib/webosbrew/init.d not found: root with the Homebrew Channel is required (https://rootmy.tv)"
   for t in curl node; do command -v $t >/dev/null || die "missing tool: $t"; done
 
-  command -v systemctl >/dev/null && node -e '(()=>1)()' >/dev/null 2>&1 || die "this TV is too old (webOS 4 or earlier: no systemd, old Node.js). CleanYourTV needs webOS 5 or newer."
+  if why=$(too_old); then die "this TV is too old for this version of CleanYourTV: $why. It needs webOS 25 (SDK $MIN_SDK) or newer. Nothing was installed."; fi
   T=$(mktemp -d /tmp/cytv.XXXXXX) || die "mktemp failed"
   trap 'rm -rf "$T"' EXIT
   if [ -n "$CYTV_IPK" ]; then

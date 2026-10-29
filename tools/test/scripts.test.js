@@ -120,29 +120,75 @@ run(async () => {
   const NA = path.join(R, 'media/developer/apps/usr/palm/applications/com.cleanyourtv.notify/appinfo.json');
   write(NA, JSON.stringify({ id: 'com.cleanyourtv.notify', defaultWindowType: 'topui' }));
   cp.spawnSync('mkdir', ['-p', path.join(R, 'var/lib/webosbrew/init.d')]);
+  // what the TV's luna answers (getSystemInfo); each case below writes its own
+  const reply = path.join(tmp, 'luna-reply.json'),
+    tvInfo = sdk =>
+      fs.writeFileSync(
+        reply,
+        JSON.stringify(
+          Object.assign({ returnValue: true, modelName: 'OLED65G26LA', firmwareVersion: '33.99.10' }, sdk ? { sdkVersion: sdk } : {})
+        )
+      );
+  write(path.join(BIN, 'luna-send'), '#!/bin/sh\ncat "' + reply + '"\n', 0o755);
+  write(path.join(BIN, 'systemctl'), '#!/bin/sh\nexit 0\n', 0o755);
+  // a Node.js that says it is 8.12 (webOS 5 and 6), ahead of the real one on PATH; bootstrap.sh puts /usr/bin and /bin first
+  const NODE8 = path.join(tmp, 'node8');
   write(
-    path.join(BIN, 'luna-send'),
-    '#!/bin/sh\necho \'{"returnValue": true, "modelName": "OLED55CX3LA", "firmwareVersion": "04.30.10", "sdkVersion": "5.4.3"}\'\n',
+    path.join(NODE8, 'node'),
+    '#!/bin/sh\ncase "$1" in -v|--version) echo v8.12.0; exit 0 ;; esac\nexec "' + process.execPath + '" "$@"\n',
     0o755
   );
-  write(path.join(BIN, 'systemctl'), '#!/bin/sh\nexit 0\n', 0o755);
-  const boot = args =>
+  const systemNode = ['/usr/bin/node', '/usr/sbin/node', '/bin/node', '/sbin/node'].some(f => fs.existsSync(f));
+  const boot = (args, node8) =>
     cp.spawnSync('sh', [path.join(S, 'bootstrap.sh')].concat(args), {
       encoding: 'utf8',
-      env: Object.assign({}, process.env, { PATH: process.env.PATH + ':' + BIN, CYTV_TEST_ROOT: R }),
+      env: Object.assign({}, process.env, {
+        PATH: (node8 ? NODE8 + ':' : '') + process.env.PATH + ':' + BIN,
+        CYTV_TEST_ROOT: R,
+      }),
       timeout: 60000,
     });
   const D = path.join(R, 'media/developer/cleanyourtv');
-  let b = boot(['install', '--no-start', '--no-input-key']);
+  // below the floor (webOS 25, SDK 10, Node.js 16: DECISIONS.md D-20261029-2) the setup stops before it changes anything,
+  // --force or not; only a TV whose version could not be read can be set up anyway
+  let b;
+  for (const c of [
+    ['webOS 5 (SDK 5.4.3)', '5.4.3', []],
+    ['webOS 6 (SDK 6.5.3)', '6.5.3', ['--force']],
+    ['webOS 24 (SDK 9.2.4), also with --force', '9.2.4', ['--force']],
+  ]) {
+    tvInfo(c[1]);
+    b = boot(['install', '--no-start'].concat(c[2]));
+    const refused =
+      b.status !== 0 &&
+      new RegExp('webOS SDK ' + c[1].replace(/\./g, '\\.') + '.*needs webOS 25 \\(SDK 10\\) or newer').test(b.stderr) &&
+      /Nothing was changed/.test(b.stderr) &&
+      !fs.existsSync(D);
+    ok(refused, c[0] + ': the setup refuses the TV and changes nothing' + (refused ? '' : ': ' + (b.stdout + b.stderr).trim().slice(-300)));
+  }
+  tvInfo('10.3.2');
+  if (systemNode) console.log('     skipped: a Node.js in /usr/bin or /bin comes before the stand-in Node.js 8.12');
+  else {
+    b = boot(['install', '--no-start', '--force'], true);
+    const refused =
+      b.status !== 0 && /Node\.js \(v8\.12\.0\) is too old/.test(b.stderr) && /Nothing was changed/.test(b.stderr) && !fs.existsSync(D);
+    ok(refused, 'Node.js 8.12 is refused before anything else, also with --force' + (refused ? '' : ': ' + b.stderr.trim().slice(-300)));
+  }
+  tvInfo('');
+  b = boot(['install', '--no-start']);
+  const unread = b.status !== 0 && /could not read this TV's webOS version/.test(b.stderr) && /--force/.test(b.stderr) && !fs.existsSync(D);
+  ok(unread, 'a TV whose webOS version cannot be read is not set up without --force' + (unread ? '' : ': ' + b.stderr.trim().slice(-300)));
+  tvInfo('10.3.2');
+  b = boot(['install', '--no-start', '--no-input-key']);
   const out1 = b.stdout + b.stderr;
   ok(b.status === 0, 'bootstrap.sh install runs to the end (' + (b.status === 0 ? 'ok' : out1.slice(-400)) + ')');
   ok(
-    /webOS SDK 5\.4\.3/.test(out1) && /not in the compatibility list; continuing because LG's Home is the flutter or web kind/.test(out1),
+    /webOS SDK 10\.3\.2/.test(out1) && /not in the compatibility list; continuing because LG's Home is the flutter or web kind/.test(out1),
     'it reads the TV and accepts a flutter Home that is not in the list'
   );
   ok(
-    JSON.parse(fs.readFileSync(NA, 'utf8')).defaultWindowType === 'overlay' && /use the overlay window/.test(out1),
-    'on SDK 5 the notification app gets the overlay window (tvprofile.js)'
+    JSON.parse(fs.readFileSync(NA, 'utf8')).defaultWindowType === 'topui' && !/use the .* window/.test(out1),
+    'on SDK 10 the notification app keeps the topui window it ships with (tvprofile.js)'
   );
   ok(
     fs.existsSync(path.join(D, 'helper.js')) &&
@@ -166,6 +212,30 @@ run(async () => {
     'an update keeps the Input key switched off (issues 6 and 7)'
   );
   ok(fs.existsSync(path.join(D, 'backup', 'service-prev.tgz')), 'an update keeps the previous service files for a rollback');
+  // an update that arrives on a TV below the floor (the package was installed anyway): the running service's files stay, and the
+  // note in last-error.txt keeps updates.js from applying the same package again and again
+  const svcFile = path.join(D, 'helper.js'),
+    then = new Date(2020, 0, 1);
+  fs.utimesSync(svcFile, then, then);
+  tvInfo('6.5.3');
+  b = boot(['update', '1.6.1', '--no-start']);
+  const kept =
+    b.status !== 0 &&
+    /needs webOS 25 \(SDK 10\) or newer/.test(b.stderr) &&
+    fs.statSync(svcFile).mtime.getTime() === then.getTime() &&
+    fs.existsSync(path.join(D, 'last-error.txt')) &&
+    /update to 1\.6\.1 failed/.test(fs.readFileSync(path.join(D, 'last-error.txt'), 'utf8'));
+  ok(
+    kept,
+    'an update below the floor is refused, the service files stay and last-error.txt says so' +
+      (kept ? '' : ': ' + b.stderr.trim().slice(-300))
+  );
+  if (fs.existsSync(path.join(D, 'last-error.txt'))) fs.unlinkSync(path.join(D, 'last-error.txt'));
+  // an update where the version cannot be read goes on (the TV was set up, and Node.js was checked)
+  tvInfo('');
+  b = boot(['update', '1.6.0', '--no-start']);
+  ok(b.status === 0 && /could not read this TV's webOS version/.test(b.stderr), 'an update on a TV whose version cannot be read goes on');
+  tvInfo('10.3.2');
   // the input hook is loaded in lginput2 on the TV: an update must never write over it in place (a truncated mapped library crashed
   // lginput2, and LG rebooted the TV at the next standby). Held open here as lginput2 holds it: an unchanged hook is left alone, a
   // changed one replaces it by a rename, so the open copy keeps its bytes; the rollback's archive leaves the hook out
@@ -178,14 +248,14 @@ run(async () => {
   const held = fs.openSync(hook, 'r');
   write(path.join(S, 'inputhook', 'libinputhookpp.so'), 'NEW HOOK');
   b = boot(['update', '1.6.0', '--no-start']);
-  const kept = Buffer.alloc(14);
-  fs.readSync(held, kept, 0, 14, 0);
+  const hookKept = Buffer.alloc(14);
+  fs.readSync(held, hookKept, 0, 14, 0);
   fs.closeSync(held);
   const listed = cp.spawnSync('tar', ['tzf', path.join(D, 'backup', 'service-prev.tgz')], { encoding: 'utf8' }).stdout || '';
   ok(
     b.status === 0 &&
       same &&
-      kept.toString() === 'OLD HOOK BYTES' &&
+      hookKept.toString() === 'OLD HOOK BYTES' &&
       fs.readFileSync(hook, 'utf8') === 'NEW HOOK' &&
       !fs.existsSync(hook + '.new') &&
       (fs.statSync(path.join(D, 'inputhook', 'ezinject')).mode & 0o111) !== 0 &&
@@ -205,6 +275,16 @@ run(async () => {
   );
   b = boot(['install', '--no-start', '--force']);
   ok(b.status === 0 && /continuing because of --force/.test(b.stderr), 'with --force it continues');
+  // with --force a TV whose version could not be read is set up, with the notification window older TVs need
+  tvInfo('');
+  b = boot(['install', '--no-start', '--force']);
+  ok(
+    b.status === 0 &&
+      /could not read this TV's webOS version; continuing because of --force/.test(b.stderr) &&
+      JSON.parse(fs.readFileSync(NA, 'utf8')).defaultWindowType === 'overlay',
+    'with --force a TV of unknown version is set up, and its notification app gets the overlay window (tvprofile.js)'
+  );
+  tvInfo('10.3.2');
 
   // bootstrap.sh asks tvprofile.js for the per-TV decisions instead of deciding itself
   const bootText = fs.readFileSync(path.join(root, 'scripts', 'bootstrap.sh'), 'utf8');
@@ -293,6 +373,61 @@ run(async () => {
       !/TESTED_SDK/.test(bootText),
     'the setup takes the window type and the compatibility list from tvprofile.js'
   );
+  // the floor: bootstrap.sh asks tvprofile.js; its own Node.js check (before tvprofile.js runs) and install.sh (which runs before the
+  // package is on the TV) have the same numbers
+  const tvp = require(path.join(root, 'helper', 'tvprofile.js')),
+    installText = fs.readFileSync(path.join(root, 'install.sh'), 'utf8'),
+    num = (t, k) => parseInt((new RegExp('\\b' + k + '=(\\d+)').exec(t) || [])[1], 10);
+  ok(
+    /\$TV get supported/.test(bootText) &&
+      num(bootText, 'MIN_NODE') === tvp.FLOOR.node &&
+      num(installText, 'MIN_NODE') === tvp.FLOOR.node &&
+      num(installText, 'MIN_SDK') === tvp.FLOOR.sdk,
+    'bootstrap.sh and install.sh refuse below the floor of tvprofile.js (SDK ' + tvp.FLOOR.sdk + ', Node.js ' + tvp.FLOOR.node + ')'
+  );
+  // install.sh's own check, run with stand-ins for the TV's luna-send and node (the rest of install.sh needs root and downloads)
+  {
+    const I = path.join(tmp, 'inst'),
+      ib = path.join(I, 'bin'),
+      rep = path.join(I, 'reply.json');
+    write(path.join(ib, 'luna-send'), '#!/bin/sh\ncat "' + rep + '"\n', 0o755);
+    write(
+      path.join(I, 'check.sh'),
+      installText.replace(/\nmain "\$@"\s*$/, '\n') + '\nif why=$(too_old); then echo "old: $why"; else echo fine; fi\n'
+    );
+    const tooOld = (sdk, nodeV) => {
+      fs.writeFileSync(rep, JSON.stringify(Object.assign({ returnValue: true }, sdk ? { sdkVersion: sdk } : {})));
+      write(
+        path.join(ib, 'node'),
+        '#!/bin/sh\ncase "$1" in -v|--version) echo ' + nodeV + '; exit 0 ;; esac\nexec "' + process.execPath + '" "$@"\n',
+        0o755
+      );
+      return cp
+        .spawnSync('sh', [path.join(I, 'check.sh')], {
+          encoding: 'utf8',
+          env: Object.assign({}, process.env, { PATH: ib + ':' + process.env.PATH }),
+        })
+        .stdout.trim();
+    };
+    const res = [
+      tooOld('10.3.2', 'v16.20.2'),
+      tooOld('11.2.0', 'v20.12.2'),
+      tooOld('', 'v16.20.2'),
+      tooOld('9.2.4', 'v16.19.1'),
+      tooOld('6.5.3', 'v8.12.0'),
+      tooOld('10.3.2', 'v12.22.2'),
+    ];
+    ok(
+      res[0] === 'fine' &&
+        res[1] === 'fine' &&
+        res[2] === 'fine' &&
+        /^old: .*webOS SDK 9\.2\.4/.test(res[3]) &&
+        /^old: .*Node\.js \(v8\.12\.0\)/.test(res[4]) &&
+        /^old: .*Node\.js \(v12\.22\.2\)/.test(res[5]),
+      'install.sh installs nothing on a TV below webOS 25 or with a Node.js older than 16; an unread version is left to the setup: ' +
+        res.join(' | ')
+    );
+  }
 
   // the watchdog (watchdog.sh) starts a service that has stopped again, keeps the log of the run that ended, and stops when
   // CleanYourTV is gone. A stand-in service that only counts its starts; the address it asks answers nothing.

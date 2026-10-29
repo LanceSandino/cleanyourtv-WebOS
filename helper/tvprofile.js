@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 // What differs between TVs, in one place. The facts about a TV (model, firmware, webOS SDK version, LG's Home app, Node.js version)
 // go in, the decisions every other part follows come out:
+//   supported      the TV is at least FLOOR, the oldest webOS this fork runs on: webOS 25 (SDK 10), with Node.js 16 and Chromium 120
+//                  (DECISIONS.md D-20261029-2). Below it bootstrap.sh stops before it changes anything; a TV whose SDK version could not
+//                  be read is not supported either (bootstrap.sh lets "Set up anyway" through for that case only). install.sh, which runs
+//                  before the package is on the TV, and bootstrap.sh's own Node.js check have the same numbers.
+//   floor          FLOOR in words, for the messages: "webOS 25 (SDK 10)".
 //   pickerMode     how the Input key shows the Inputs by default: 'overlay' (the picker over the running app, kept ready) on webOS 25
 //                  (SDK 10), the only version where that was tried; 'ondemand' (started on the key, closed after use) everywhere else: on
 //                  webOS 6.5 a hidden overlay app kept the remote and showed a loading circle (issues 5 and 6), and SDK 11 (webOS 26) has
@@ -33,6 +38,10 @@
 //   node tvprofile.js get <decision> [--sdk 10.2.2] [--firmware 33.23.05] [--home "com.webos.app.home flutter"] [--compat f.json ...]
 //   node tvprofile.js show [same options]      prints the whole profile as JSON
 const fs = require('fs');
+
+// the oldest TV this fork runs on: webOS 25 = SDK 10, which ships Node.js 16.20 and Chromium 120 (webOS 24 has Node.js 16.19 and
+// Chromium 108, webOS 22 and 23 Node.js 12)
+const FLOOR = { name: 'webOS 25', sdk: 10, node: 16 };
 
 function sdkMajor(sdk) {
   const n = parseInt(String(sdk || '').split('.')[0], 10);
@@ -78,6 +87,8 @@ function decide(facts, compat) {
     homeTakeover: /^com\.webos\.app\.home native$/.test(homeKind) ? 'standin' : 'mount',
     lgVolumeBar: major === 10 ? 'configd' : '',
     lgPreload: major === 10 ? 'api' : '',
+    supported: major >= FLOOR.sdk && nodeMajor >= FLOOR.node,
+    floor: FLOOR.name + ' (SDK ' + FLOOR.sdk + ')',
   };
 }
 const readJson = (file, d) => {
@@ -122,7 +133,7 @@ function create(ctx) {
   return { get: () => profile, refresh };
 }
 
-module.exports = { decide, create, sdkMajor, compatMatch, compatEntries, homeKindOf };
+module.exports = { FLOOR, decide, create, sdkMajor, compatMatch, compatEntries, homeKindOf };
 
 if (require.main === module) {
   const a = process.argv.slice(2);
