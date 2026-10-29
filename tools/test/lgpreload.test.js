@@ -127,4 +127,46 @@ run(async () => {
     req('debloat').GROUPS.indexOf('preload') >= 0 && req('debloat').cleanOff(['preload', 'x']).join() === 'preload',
     'preload is a debloat group'
   );
+  // the copies LG already started in the background are closed (closeByAppId, then the web app manager's killApp where that did not
+  // take); an app that was on the screen in its process (someone opened it) is never closed
+  {
+    const cc = [];
+    const running = [
+      { id: 'netflix', processid: '1001' },
+      { id: 'com.webos.app.lgchannels', processid: '1002' },
+      { id: 'com.webos.app.browser', processid: '1003' },
+    ];
+    const luna2 = async (uri, p) => {
+      if (/applicationManager\/running$/.test(uri)) return { returnValue: true, running };
+      if (/closeByAppId$/.test(uri)) {
+        cc.push('close ' + p.id);
+        return { returnValue: p.id !== 'com.webos.app.lgchannels' };
+      }
+      if (/killApp$/.test(uri)) {
+        cc.push('kill ' + p.appId);
+        return { returnValue: true };
+      }
+      return luna(uri, p);
+    };
+    const apps = { onScreen: () => ({ 'com.webos.app.browser': '1003' }) };
+    pmRestart();
+    const rec2 = path.join(tmp, 'lgpreload2.json');
+    const pre2 = G.create(
+      {
+        config: memoryConfig({ options: { debloat: true } }),
+        luna: luna2,
+        profile: { get: () => ({ lgPreload: 'api' }) },
+        feature: n => (n === 'apps' ? apps : null),
+      },
+      { record: rec2, startMs: 1e6, checkMs: 1e6 }
+    );
+    await pre2.sync();
+    ok(
+      cc.join() === 'close netflix,close com.webos.app.lgchannels,kill com.webos.app.lgchannels',
+      'the pre-loaded copies are closed (killApp where closeByAppId did not take); the browser someone opened stays: ' + cc.join()
+    );
+    try {
+      fs.unlinkSync(rec2);
+    } catch (_) {}
+  }
 });

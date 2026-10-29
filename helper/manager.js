@@ -80,6 +80,7 @@ function create(ctx) {
     const next = Object.assign({}, cur);
     for (const k of ['debloat', 'inputKey', 'liveTv']) if (typeof o[k] === 'boolean') next[k] = o[k];
     if (Array.isArray(o.debloatOff)) next.debloatOff = debloat.cleanOff(o.debloatOff);
+    if (Array.isArray(o.debloatOn)) next.debloatOn = debloat.cleanOn(o.debloatOn);
     config.update('manager', c => {
       // the language of every screen: a two-letter code, or '' to follow the TV
       if (typeof o.lang === 'string' && /^([a-z]{2})?$/.test(o.lang)) {

@@ -72,6 +72,8 @@ const inputkey = load('inputkey', () => require('./inputkey').create(ctx));
 if (notify) load('notifyapi', () => require('./notifyapi').create(ctx));
 if (notify) load('sonos', () => require('./sonos').create(ctx));
 load('lgpreload', () => require('./lgpreload').create(ctx));
+load('lgsettings', () => require('./lgsettings').create(ctx));
+load('debloatcheck', () => require('./debloatcheck').create(ctx));
 const manager = load('manager', () => require('./manager').create(ctx));
 load('apps', () => require('./apps').create(ctx));
 load('running', () => require('./running').create(ctx));

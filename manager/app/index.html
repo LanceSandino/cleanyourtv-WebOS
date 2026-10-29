@@ -1085,6 +1085,20 @@ function build() {
     rows.push({ label: 'Back', fn: pop });
     return;
   }
+  /* Debloat > Check that it works: each group that is on, working or what is not in place (helper/debloatcheck.js) */
+  if (view === 'debloatcheck') {
+    var dc = dcheck || { groups: [] };
+    if (!dc.on) rows.push({ label: 'The debloat is off', fn: null });
+    dc.groups.forEach(function (g) {
+      var d = DEBLOAT.filter(function (x) {
+        return x.id === g.id;
+      })[0];
+      rows.push({ label: d ? d.label : g.id, sub: g.ok ? 'Working' : 'Not in place: ' + g.notes.join(', '), fn: null });
+    });
+    rows.push({ sep: true });
+    rows.push({ label: 'Back', fn: pop });
+    return;
+  }
   if (view === 'debloat') {
     DEBLOAT.forEach(function (g) {
       rows.push({
@@ -1096,9 +1110,10 @@ function build() {
       });
     });
     rows.push({ sep: true });
-    var anyOff = DEBLOAT.some(function (g) {
+    var anyOff = DEBLOAT_MAIN().some(function (g) {
       return !debloatOn(g.id);
     });
+    rows.push({ label: 'Check that it works', sub: 'looks at the TV now: stubs, daemons, ad servers, settings', fn: openDebloatCheck });
     rows.push({
       label: anyOff ? 'Switch all on' : 'Switch all off',
       fn: function () {
@@ -1575,10 +1590,11 @@ function build() {
   rows.push({
     label: 'Debloat',
     sub: (function () {
-      var n = DEBLOAT.filter(function (g) {
-        return debloatOn(g.id);
-      }).length;
-      return n === DEBLOAT.length ? onoff(true) : n ? n + ' of ' + DEBLOAT.length + ' on' : onoff(false);
+      var main = DEBLOAT_MAIN(),
+        n = main.filter(function (g) {
+          return debloatOn(g.id);
+        }).length;
+      return n === main.length ? onoff(true) : n ? n + ' of ' + main.length + ' on' : onoff(false);
     })(),
     fn: function () {
       push('debloat');
@@ -1642,27 +1658,60 @@ var DEBLOAT = [
   { id: 'logs', label: 'Telemetry logs', what: 'remotelogger, service-logger' },
   { id: 'suggestions', label: 'Suggestions and nudges', what: 'contentminer, nudge, sportsalarm' },
   { id: 'preload', label: 'Stop LG pre-loading apps', what: 'LG Channels, Netflix, YouTube and others; Home stays quick' },
+  {
+    id: 'lgads',
+    label: "LG's ad and promotion settings",
+    what: 'home promotions, screensaver ads, tips, sports alerts, Live TV promotions; put back when off',
+  },
+  { id: 'hbbtv', label: 'HbbTV red-button pages', what: "off, with Do Not Track; broadcasters' extras stop", optIn: true },
 ];
+/* the groups that are on with the debloat unless switched off (not the opt-in ones) */
+function DEBLOAT_MAIN() {
+  return DEBLOAT.filter(function (g) {
+    return !g.optIn;
+  });
+}
 function debloatOn(id) {
   var o = st.options || {};
+  if (id === 'hbbtv') return o.debloat !== false && (o.debloatOn || []).indexOf(id) >= 0;
   return o.debloat !== false && (o.debloatOff || []).indexOf(id) < 0;
 }
 /* switching the last group off switches the debloat off; one group on while it is off switches it on with only that group */
 function debloatToggle(id) {
   var o = st.options || {},
     off = (o.debloatOff || []).slice();
+  /* an opt-in group (HbbTV): listed in debloatOn while it is on; switching it on switches the debloat on with only it */
+  if (id === 'hbbtv') {
+    var onList = (o.debloatOn || []).filter(function (g) {
+      return g !== id;
+    });
+    if (debloatOn(id)) return opt({ debloatOn: onList });
+    if (o.debloat === false)
+      return opt({
+        debloat: true,
+        debloatOn: [id],
+        debloatOff: DEBLOAT.filter(function (g) {
+          return !g.optIn;
+        }).map(function (g) {
+          return g.id;
+        }),
+      });
+    return opt({ debloatOn: onList.concat([id]) });
+  }
   if (debloatOn(id)) {
     off.push(id);
-    return opt(off.length >= DEBLOAT.length ? { debloat: false, debloatOff: [] } : { debloatOff: off });
+    return opt(off.length >= DEBLOAT_MAIN().length ? { debloat: false, debloatOff: [] } : { debloatOff: off });
   }
   if (o.debloat === false)
     return opt({
       debloat: true,
-      debloatOff: DEBLOAT.map(function (g) {
-        return g.id;
-      }).filter(function (g) {
-        return g !== id;
-      }),
+      debloatOff: DEBLOAT_MAIN()
+        .map(function (g) {
+          return g.id;
+        })
+        .filter(function (g) {
+          return g !== id;
+        }),
     });
   opt({
     debloatOff: off.filter(function (g) {
@@ -1679,6 +1728,21 @@ function releasedOn(d) {
     txt = x.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   } catch (e) {}
   return t('Released %s').replace('%s', txt);
+}
+/* Debloat > Check that it works */
+var dcheck = null;
+function openDebloatCheck() {
+  banner('Checking\u2026', 'work');
+  api('/api/debloat/check').then(
+    function (r) {
+      banner('');
+      dcheck = r;
+      push('debloatcheck');
+    },
+    function () {
+      banner('The service did not answer', 'err');
+    }
+  );
 }
 /* what each row does, shown on the left for the focused row */
 var INFO = {

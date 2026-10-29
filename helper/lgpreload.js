@@ -4,7 +4,9 @@
 // preload manager restarts (with the TV), and is not saved. While this is on, every app it would pre-load (isEnabled and isAllowed in
 // getPreloadPolicy) is switched off except com.webos.app.home (our launcher: its preload keeps Home quick) and anything of the Homebrew
 // Channel's; shortly after the service starts and every two minutes it switches off what came back. Switching off switches those apps on
-// again (only the ones this switched off). Apps it already started stay until closed or until the TV restarts.
+// again (only the ones this switched off). The copies it already started in the background (running, never on the screen in that
+// process: apps.js onScreen) are closed then, so their memory is free at once; an app someone opened is never closed. It looks again
+// when the TV wakes from standby (the service's clock jumps: it was asleep with the TV), as LG pre-loads again then.
 // Found on webOS 25: setPreloadPolicy also marks every app it is called for as allowed, which the preload manager saves in
 // /var/preferences/webos-preload-manager-conf.json, so it is only called for apps that are allowed already (the file stays as it is). The
 // app list in configd (supportAppList) is not what it follows while it runs: it keeps its own state.
@@ -24,7 +26,7 @@ const toStop = apps => apps.filter(a => a && a.id && a.isEnabled === true && a.i
 
 // ctx: {config, luna, profile}; o: {record, startMs, checkMs} (tests)
 function create(ctx, opts) {
-  const o = Object.assign({ record: RECORD, startMs: 5000, checkMs: 2 * 60 * 1000 }, opts);
+  const o = Object.assign({ record: RECORD, startMs: 5000, checkMs: 2 * 60 * 1000, tickMs: 10000, wakeGapMs: 60000 }, opts);
   const luna = ctx.luna;
   const supported = () => {
     const p = ctx.profile && ctx.profile.get ? ctx.profile.get() : {};
@@ -65,17 +67,36 @@ function create(ctx, opts) {
   };
   const setApp = (id, on) => luna(SVC + 'setPreloadPolicy', { application: { id, isEnabled: on } });
 
+  // the pre-loaded copies of the apps switched off: running, and never on the screen in the process they have now
+  async function closeLoaded(ids) {
+    const a = ctx.feature && ctx.feature('apps'),
+      seen = a && a.onScreen ? a.onScreen() : null;
+    if (!seen || !ids.length) return;
+    const r = await luna('luna://com.webos.applicationManager/running', {});
+    const loaded = (Array.isArray(r.running) ? r.running : []).filter(
+      x => x && ids.indexOf(x.id) >= 0 && seen[x.id] !== String(x.processid)
+    );
+    const closed = [];
+    for (const x of loaded) {
+      // closeByAppId answers yes and leaves some apps running (own-your-glass saw it on webOS 25): the web app manager's killApp then
+      let c = await luna('luna://com.webos.applicationManager/closeByAppId', { id: x.id });
+      if (!c || c.returnValue !== true) c = await luna('luna://com.palm.webappmanager/killApp', { appId: x.id });
+      if (c && c.returnValue === true) closed.push(x.id);
+    }
+    if (closed.length) note('closed the pre-loaded ' + closed.join(', '));
+  }
   async function stop() {
     const apps = await policy();
     if (!apps) return; // the preload manager does not answer (yet)
     const ids = toStop(apps);
-    if (!ids.length) return;
+    if (!ids.length) return closeLoaded(readRec());
     const rec = readRec();
     for (const id of ids) {
       const r = await setApp(id, false);
       if (r && r.returnValue !== false && rec.indexOf(id) < 0) rec.push(id);
     }
     writeRec(rec);
+    await closeLoaded(rec);
     const left = toStop((await policy()) || []).filter(id => ids.indexOf(id) >= 0);
     note(
       left.length
@@ -116,6 +137,16 @@ function create(ctx, opts) {
       .catch(() => {});
     setTimeout(sync, o.startMs);
     setInterval(sync, o.checkMs);
+    // the TV woke from standby: the service slept with it, so its clock jumped; LG pre-loads again on waking, so look again now
+    let tick = Date.now();
+    setInterval(() => {
+      const now = Date.now();
+      if (now - tick > o.wakeGapMs) {
+        note('the TV woke up: looking again');
+        sync();
+      }
+      tick = now;
+    }, o.tickMs);
     require('./debloat').onChange(sync); // the manager switched the debloat or a group
   }
   return { name: 'lgpreload', start, sync, status };

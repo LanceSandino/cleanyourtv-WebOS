@@ -1,11 +1,13 @@
 // Switching the debloat on and off while the TV runs (the boot script 15-cleanyourtv-debloat applies it at every start). What it
 // stops and blocks is in scripts/debloat-stop.sh; scripts/debloat-undo.sh reverses it. Its groups can be switched off one by
 // one: options.debloatOff in config.json lists those, and debloat-stop.sh reads it. The group "preload" (LG's app pre-loading) is
-// the service's own (lgpreload.js, which hears of every change through onChange); the scripts leave it alone.
+// the service's own (lgpreload.js, which hears of every change through onChange); the scripts leave it alone, and so are "lgads"
+// (LG's ad and promotion settings) and the opt-in "hbbtv" (lgsettings.js), which is on only when listed in options.debloatOn.
 const P = require('./paths'),
   exec = require('./exec');
 
-const GROUPS = ['ads', 'adapps', 'tracking', 'logs', 'suggestions', 'preload'];
+const GROUPS = ['ads', 'adapps', 'tracking', 'logs', 'suggestions', 'preload', 'lgads'],
+  OPT_IN = ['hbbtv'];
 
 // parts of the service that follow the debloat settings (lgpreload.js); told after every switch, once config.json has the change
 const hooks = [];
@@ -37,5 +39,7 @@ async function change(offBefore, offAfter) {
 
 // the groups that are off, from a request: known names only, each once
 const cleanOff = list => GROUPS.filter(g => Array.isArray(list) && list.indexOf(g) >= 0);
+// the opt-in groups that are on
+const cleanOn = list => OPT_IN.filter(g => Array.isArray(list) && list.indexOf(g) >= 0);
 
-module.exports = { apply, change, cleanOff, onChange, GROUPS };
+module.exports = { apply, change, cleanOff, cleanOn, onChange, GROUPS, OPT_IN };
