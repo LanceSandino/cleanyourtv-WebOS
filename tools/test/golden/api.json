@@ -454,6 +454,18 @@
         "version": "99.1.0"
       },
       "repo": "LanceSandino/cleanyourtv-WebOS",
+      "security": {
+        "source": {
+          "ours": true,
+          "repo": "LanceSandino/cleanyourtv-WebOS"
+        },
+        "telnet": {
+          "off": false
+        },
+        "token": {
+          "enforced": false
+        }
+      },
       "service": {
         "build": "",
         "updateTo": "99.1.0",
@@ -538,6 +550,18 @@
         "version": "99.1.0"
       },
       "repo": "LanceSandino/cleanyourtv-WebOS",
+      "security": {
+        "source": {
+          "ours": true,
+          "repo": "LanceSandino/cleanyourtv-WebOS"
+        },
+        "telnet": {
+          "off": false
+        },
+        "token": {
+          "enforced": false
+        }
+      },
       "service": {
         "build": "",
         "updateTo": "99.1.0",
@@ -640,6 +664,18 @@
         "version": "99.1.0"
       },
       "repo": "LanceSandino/cleanyourtv-WebOS",
+      "security": {
+        "source": {
+          "ours": true,
+          "repo": "LanceSandino/cleanyourtv-WebOS"
+        },
+        "telnet": {
+          "off": false
+        },
+        "token": {
+          "enforced": false
+        }
+      },
       "service": {
         "build": "",
         "updateTo": "99.1.0",
