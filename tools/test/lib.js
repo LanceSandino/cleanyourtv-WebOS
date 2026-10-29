@@ -20,6 +20,7 @@ process.env.CYTV_ONSCREEN = path.join(tmp, 'onscreen.json');
 // the phone pages on ports of their own: on a development machine 8791 and 8792 may be taken by something else (Telemachus)
 process.env.CYTV_WALL_PORT = process.env.CYTV_WALL_PORT || '38791';
 process.env.CYTV_CARDS_PORT = process.env.CYTV_CARDS_PORT || '38792';
+process.env.CYTV_REMOTE_PORT = process.env.CYTV_REMOTE_PORT || '38794';
 process.env.CYTV_PROC = path.join(tmp, 'proc');
 for (const d of [process.env.CYTV_DIR, process.env.CYTV_SERVICE_DIR, process.env.CYTV_PROC]) fs.mkdirSync(d);
 

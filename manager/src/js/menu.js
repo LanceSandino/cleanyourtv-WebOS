@@ -683,6 +683,41 @@ function build() {
     });
     return;
   }
+  /* Phone remote (helper/remote.js): pair a phone with a QR code, the phones paired (OK removes one), on or off */
+  if (view === 'remote') {
+    var rd = (rs && rs.devices) || [];
+    rows.push({ label: 'Pair a phone', sub: 'shows a code for two minutes', fn: openRemotePair });
+    if (rd.length)
+      rows.push({
+        label: 'Phone remote',
+        sub: rs.on ? 'On' : 'Off',
+        fn: function () {
+          api('/api/remote/on', { on: !rs.on }).then(function (r) {
+            rs = r;
+            build();
+            draw();
+          });
+        },
+      });
+    rd.forEach(function (d) {
+      rows.push({
+        label: d.name,
+        sub: 'paired ' + new Date(d.added).toLocaleDateString() + ' \u00B7 OK removes it',
+        fn: function () {
+          api('/api/remote/forget', { id: d.id }).then(function (r) {
+            rs = r;
+            build();
+            if (idx >= rows.length) idx = rows.length - 1;
+            draw();
+          });
+        },
+      });
+    });
+    if (!rd.length) rows.push({ label: 'No phone is paired', sub: 'the remote stays off until one is', fn: null });
+    rows.push({ sep: true });
+    rows.push({ label: 'Back', fn: remoteBack });
+    return;
+  }
   if (view === 'cards') {
     var sls = (cs && cs.slots) || [];
     if (!sls.length) rows.push({ label: 'This theme has no places for cards', sub: 'Lock Screen, Bloom and Horizon have them', fn: null });
@@ -1014,6 +1049,7 @@ function build() {
     fn: openWallpapers,
   });
   rows.push({ label: 'Cards', sub: 'small widgets on Home', fn: openCards });
+  rows.push({ label: 'Phone remote', sub: 'a phone on the Wi-Fi as the remote', fn: openRemote });
   rows.push({
     label: 'Input key',
     sub: st.inputhook && st.inputhook.hook && !st.inputhook.hook.attached ? 'not available' : onoff(st.options.inputKey),

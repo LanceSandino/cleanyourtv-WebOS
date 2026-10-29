@@ -640,6 +640,14 @@ function customizeMenu() {
       },
       { head: t('More') },
       {
+        label: t('Phone remote...'),
+        icon: 'phone',
+        sub: t('in the CleanYourTV app'),
+        fn: function () {
+          launch('com.cleanyourtv.manager', { open: 'remote' });
+        },
+      },
+      {
         label: t('More settings...'),
         icon: 'more',
         sub: t('Home, Live TV, Debloat, updates'),

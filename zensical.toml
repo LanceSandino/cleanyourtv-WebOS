@@ -27,6 +27,7 @@ nav = [
     { "The Input key" = "input-key.md" },
     { "Picture notifications" = "notifications.md" },
     { "Sonos volume on screen" = "sonos.md" },
+    { "Phone remote" = "remote.md" },
     { "Voice (optional)" = "voice.md" },
     { "Debloat" = "debloat.md" },
     { "The manager app" = "manager.md" },

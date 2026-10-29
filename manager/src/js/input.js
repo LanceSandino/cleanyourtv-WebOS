@@ -53,6 +53,10 @@ function wantView() {
     cardsFromHome = true;
     openCards();
   }
+  if (p && p.open === 'remote') {
+    remoteFromHome = true;
+    openRemote();
+  }
 }
 document.addEventListener('webOSRelaunch', function () {
   view = 'main';

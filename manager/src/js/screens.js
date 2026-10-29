@@ -231,6 +231,87 @@ function openCardsPair() {
     }
   );
 }
+/* Phone remote: the phones paired and the QR code that pairs another (helper/remote.js) */
+var rs = null,
+  remoteFromHome = false;
+function openRemote() {
+  api('/api/remote/status').then(
+    function (r) {
+      rs = r;
+      if (view !== 'remote') push('remote');
+      else {
+        build();
+        draw();
+      }
+    },
+    function () {
+      banner('The service did not answer', 'err');
+    }
+  );
+}
+/* opened from the launcher's Customize > Phone remote: Back goes to Home */
+function remoteBack() {
+  if (remoteFromHome) {
+    remoteFromHome = false;
+    api('/api/launch', { id: 'com.webos.app.home' }).catch(function () {});
+  }
+  pop();
+}
+function openRemotePair() {
+  shareMode = 'remote';
+  push('share');
+  $('share').style.display = 'block';
+  $('shareurl').textContent = '';
+  $('qrbox').style.visibility = 'hidden';
+  $('share').querySelector('h2').textContent = tr('Phone remote');
+  $('share').querySelector('ol').innerHTML = tr(
+    '<li>Phone on the <b>same Wi-Fi</b> as the TV.</li><li>Scan the code with the camera.</li><li>The remote opens on the phone. Add it to the Home Screen to open it like an app.</li>'
+  );
+  $('sharemsg').textContent = tr('Preparing\u2026');
+  api('/api/remote/pair', {}).then(
+    function (r) {
+      if (view !== 'share' || shareMode !== 'remote') return;
+      if (r.error) {
+        $('sharemsg').textContent = tr(r.error);
+        return;
+      }
+      drawQr(r.qr);
+      $('qrbox').style.visibility = 'visible';
+      $('shareurl').textContent = tr(r.url + '   code ' + r.code);
+      $('sharemsg').textContent = tr(
+        'The code works for two minutes. Each phone gets its own key, and you can remove a phone here. Only for the home network.'
+      );
+      watchRemotePair();
+    },
+    function () {
+      $('sharemsg').textContent = tr('The service did not answer.');
+    }
+  );
+}
+/* once a phone has paired, the code goes and the list shows the new phone */
+function watchRemotePair() {
+  var had = ((rs && rs.devices) || []).length;
+  (function poll() {
+    setTimeout(function () {
+      if (view !== 'share' || shareMode !== 'remote') return;
+      api('/api/remote/status').then(
+        function (r) {
+          if (view !== 'share' || shareMode !== 'remote') return;
+          if (r.devices.length <= had && r.pairing) return poll();
+          rs = r;
+          $('share').style.display = 'none';
+          pop();
+          build();
+          draw();
+          if (r.devices.length > had) banner('Paired: ' + r.devices[r.devices.length - 1].name, '');
+        },
+        function () {
+          poll();
+        }
+      );
+    }, 2000);
+  })();
+}
 /* once the phone page saves, this screen goes: back to Home when it was opened from Customize > Cards (the cards show there), else
    to the Cards list. The phone page stays usable for more changes (at most an hour). */
 function watchCardsSave() {

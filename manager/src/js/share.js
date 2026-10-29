@@ -65,6 +65,18 @@ function closeShare() {
     liveRefresh();
     return;
   }
+  if (shareMode === 'remote') {
+    api('/api/remote/pair', { stop: true }).then(
+      function (r) {
+        rs = r;
+        build();
+        draw();
+      },
+      function () {}
+    );
+    pop();
+    return;
+  }
   if (shareMode === 'cards') {
     api('/api/cards/pair', { stop: true }).catch(function () {});
     pop();

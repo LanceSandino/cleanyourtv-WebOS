@@ -291,6 +291,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       'photofeed',
       'watch',
       'cards',
+      'remote',
       'inputkey',
       'notifyapi',
       'sonos',

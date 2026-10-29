@@ -1022,4 +1022,27 @@ related_tests: ["tools/oldchrome-container.sh ubuntu:26.04 --engine 68 with CYTV
 commit_ref: "fix/ci-shots (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T04:18:32Z"
+
+id: CU-20261029-1
+type: feature
+title: "Phone remote: a paired phone on the Wi-Fi as the TV's remote (keys, touchpad, typing, apps)"
+description: "The owner asked to use a phone as a remote, like LG's or Telemachus's, securely with a QR code or a code. remote.js:
+  pairing opens for two minutes with a six-digit code on the TV and in the QR code (#p=<code>), five wrong codes close it; a phone that
+  gives it gets its own 32-byte key, the TV keeps only its SHA-256 (config.remote.devices, at most ten), compared in constant time; the
+  LAN server (port 8794) runs only while a phone is paired or pairing is open, answers only private and link-local addresses, refuses
+  requests whose Origin is another site, sends no CORS headers, may not be framed (CSP, x-frame-options), and ends the phones' open
+  connections when switched off or when a phone is removed. Presses go to LG's network input as its own messages on the socket
+  getPointerInputSocket gives (/tmp/netinput.pointer.sock on the owner's TV: button name, move dx/dy held to 300, click, scroll), text
+  to com.webos.service.ime (insertText, deleteCharacters, sendEnterKey), power to networkinput controls/power, apps (the dock's order,
+  no hidden apps or inputs) to the app manager. remotepage.js: the phone page (Remote, Touchpad, Type and Apps tabs; holds repeat;
+  installs to the Home Screen with a manifest). The manager's Phone remote screen pairs (QR, closes when the phone has paired), lists
+  the phones (OK removes one) and switches it on or off; the launcher's Customize > Phone remote... opens it. Read-only checks on the
+  owner's TV (with his OK) found the network input service, its socket, /dev/uinput, LG's ports 3000/3001 and wake on Wi-Fi on; no key
+  has been pressed on the TV yet, so the message form is LG's documented one, not yet seen working on it."
+impact: medium
+affected_modules: ["helper/remote.js", "helper/remotepage.js", "helper/helper.js", "manager/src/js/menu.js", "manager/src/js/screens.js", "manager/src/js/share.js", "manager/src/js/input.js", "app/src/js/menus.js", "app/src/js/core.js", "docs/remote.md", "docs/security.md", "zensical.toml", "AGENTS.md", "tools/test/lib.js", "tools/test/api.test.js"]
+related_tests: ["tools/test/remote.test.js (pairing with the code, five wrong codes, a key per phone kept as its hash, presses in LG's message form on a stand-in socket, unknown keys / no key / wrong key / another site refused, typing through the keyboard service, the apps in dock order, off stops the server, a removed phone loses access)", "tools/test/api.test.js (the service lists the remote part)"]
+commit_ref: "feature/phone-remote (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T04:04:02Z"
 ```
