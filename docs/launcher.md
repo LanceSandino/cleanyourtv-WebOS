@@ -154,10 +154,11 @@ keyboard, or with the [phone remote](remote.md)'s **Type**; the results follow w
   a film in Telemachus starts as a Continue watching card does. The other apps (Hulu, Peacock, Stremio, Plex and the like) open at
   their Home, to find the title there: the hint at the foot says which. Nothing is asked of a service that is not linked or not
   installed.
-- **Search in:** the installed apps that can open their own search with words (YouTube and YouTube TV do). OK opens that app's
+- **Search in:** the installed apps that can open their own search with words (YouTube and YouTube TV do; Telemachus opens its search
+  page with them, from its version with the search launch; Stremio is handed its own `stremio:///search` link). OK opens that app's
   search for what you typed.
-- **Look in:** only while Where to watch is switched off: Telemachus, Plex (or PLX) and Stremio, opened at their Home to look there
-  (none of them can be handed the words; with Where to watch on, those three are asked for the title instead).
+- **Look in:** only while Where to watch is switched off: Plex (or PLX), opened at its Home to look there (it cannot be handed the
+  words; with Where to watch on, Plex is asked for the title instead).
 
 ![Search with words typed: In your apps, Where to watch with the apps on this TV as chips and the other services named, Search in](screenshots/search-where.jpg)
 

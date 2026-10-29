@@ -1673,3 +1673,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T23:35:00Z"
 ```
+
+```yaml
+id: CU-20261029-50
+type: feature
+title: "Search: Telemachus and Stremio get the words (Search in), and Where to watch's Stremio opens the title's page"
+description: "The owner: Telemachus and Stremio under Look in only opened the app. helper/search.js OWN_SEARCH: Telemachus is launched with {play: {search: <words>}} (the search launch added to Telemachus's tvlaunch.ts; an older Telemachus rejects the shape and opens as it is) and Stremio with {contentTarget: 'stremio:///search?search=<words>'} (its appinfo declares contentTarget 'stremio'; the link format is Stremio's documented deep link, stremio-addon-sdk docs/deep-links.md); both now in Search in, and Look in keeps only Plex. helper/where.js: a Stremio offer from Cinemeta carries its IMDb id, and its chip launches stremio:///detail/series/<id> or stremio:///detail/movie/<id>/<id> (exact stays false until seen on a TV). Read on the owner's TV: Stremio, already open and playing, gets the launchParams (WAM PALMSYSTEM Update launchParams, SEND_RELAUNCHEVENT) and stays on what it plays; a cold start was not tried, as it would have stopped the show on screen. Static: stremio-web (the open web app) has no webOS launch code, the LG app's own files are encrypted (NCG)."
+impact: medium
+affected_modules: ["helper/search.js", "helper/where.js", "docs/launcher.md"]
+related_tests: ["tools/test/search.test.js (YouTube opens its search with the words, Telemachus its search page, Stremio its search link; groups with Telemachus and Stremio under Search in, Plex under Look in)", "tools/test/where.test.js (Stremio gets the series' page link)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T23:58:00Z"
+```
