@@ -119,7 +119,7 @@
 #ov .msep {
   height: 6px;
 }
-/* a menu with pictures (Customise > Theme): the list moves right, the focused row's picture and description are on the left */
+/* a menu with pictures (Customize > Theme): the list moves right, the focused row's picture and description are on the left */
 #ov.ws {
   justify-content: flex-end;
   padding-right: 150px;
@@ -169,7 +169,7 @@
   color: var(--ink2);
   white-space: normal;
 }
-/* a heading in a menu (Customise: Home, Look, Photos, More): text only, the focus skips it */
+/* a heading in a menu (Customize: Home, Look, Photos, More): text only, the focus skips it */
 #ov .mhead {
   padding: 16px 34px 0;
   font-size: calc(20px * var(--fs));
@@ -177,4 +177,130 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink2);
+}
+/* inside a section (menus.js): the list it came from on the left, the open section lit; the section's rows on the right, with
+   pictures and ticks in the rows and a hint at the foot. Here the background is solid; a menu on its own keeps Home in view. */
+#ov.two {
+  display: block;
+  padding: 0;
+  background: radial-gradient(ellipse 60% 70% at 0 0, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0)), rgb(var(--night-rgb));
+}
+#ov.two .secs {
+  position: absolute;
+  left: 110px;
+  top: 92px;
+  width: 470px;
+}
+#ov.two .secs h2 {
+  font-size: 44px;
+  margin-bottom: 30px;
+}
+#ov .sec {
+  display: flex;
+  align-items: center;
+  height: 60px;
+  padding: 0 18px 0 12px;
+  border-radius: var(--row-r);
+  font-size: calc(26px * var(--fs));
+  font-weight: 500;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+#ov .sec + .sec {
+  margin-top: 6px;
+}
+#ov .sec .si {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  margin-right: 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+}
+#ov .sec .si svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+#ov .sec .lb {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#ov .sec.on {
+  background: rgba(255, 255, 255, 0.11);
+  color: var(--ink);
+}
+#ov.two .panel {
+  position: absolute;
+  left: 650px;
+  top: 92px;
+  width: 1160px;
+}
+#ov.two .panel h2 {
+  font-size: 38px;
+  margin-bottom: 8px;
+}
+#ov.two .row {
+  height: 66px;
+  padding: 0 28px;
+  font-size: calc(27px * var(--fs));
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: none;
+}
+#ov.two .row.f {
+  background: var(--acc);
+}
+#ov .row .th {
+  flex: none;
+  width: 92px;
+  height: 52px;
+  margin-left: -12px;
+  border-radius: 10px;
+  background: var(--panel2) center / cover no-repeat;
+}
+/* a tick (the chosen one of a list): a green disc */
+#ov .row .ck {
+  flex: none;
+  width: 34px;
+  height: 34px;
+}
+#ov .row .ck svg {
+  width: 34px;
+  height: 34px;
+  fill: none;
+  stroke: none;
+}
+#ov .row .ck circle {
+  fill: #2fb45a;
+}
+#ov .row .ck path {
+  stroke: #fff;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+#ov .hint {
+  margin-top: 22px;
+  padding-left: 28px;
+  font-size: calc(20px * var(--fs));
+  color: var(--ink2);
+}
+[dir="rtl"] #ov.two .secs {
+  left: auto;
+  right: 110px;
+}
+[dir="rtl"] #ov.two .panel {
+  left: auto;
+  right: 650px;
+}
+[dir="rtl"] #ov .sec .si {
+  margin-right: 0;
+  margin-left: 18px;
 }

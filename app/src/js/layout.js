@@ -52,7 +52,7 @@ function rebuild() {
   });
   if (w.length && at * TH.cols >= rest.length) put();
   var tb = shownBar()
-    .concat([{ label: 'Customise', icon: 'edit', action: 'customize', fixed: true }])
+    .concat([{ label: 'Customize', icon: 'edit', action: 'customize', fixed: true }])
     .map(function (o) {
       var p = document.createElement('div');
       p.className = 'pill';

@@ -228,7 +228,7 @@ verify() {
 
 finish() {
   ensure_apps
-  say "done. Hold OK on an app to customise the dock, or use the Customise button at the top right."
+  say "done. Hold OK on an app to customize the dock, or use the Customize button at the top right."
   [ -d $R/usr/palm/applications/com.webos.app.fullhome ] && say "This TV also has LG's full-screen Home. If the Home button opens that instead of CleanYourTV: TV Settings > General > Home Settings > Home Style > Basic."
   say "Back to LG's Home any time: switch off 'CleanYourTV as Home' in the manager app, or run: sh $D/undo-home.sh"
 }

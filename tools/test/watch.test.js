@@ -116,7 +116,7 @@ run(async () => {
     'an older Telemachus: what is playing and the latest started episode per show (' + old.join() + ')'
   );
   hasContinue = true;
-  // switched off (Customise > Continue watching > Telemachus): Telemachus is not read
+  // switched off (Customize > Continue watching > Telemachus): Telemachus is not read
   config.update('test', cf => {
     cf.watch = { on: true, tm: false };
   });

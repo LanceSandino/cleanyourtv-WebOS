@@ -56,7 +56,7 @@ var WALL = (function () {
     };
     im.src = url;
   }
-  /* the photo chosen in Customise > Wallpapers > Choose a photo (wallpick.js), while it is still one of the photos */
+  /* the photo chosen in Customize > Wallpapers > Choose a photo (wallpick.js), while it is still one of the photos */
   function picked() {
     var p = cfg.wall && cfg.wall.pick;
     return p && list.indexOf(p) >= 0 ? p : '';

@@ -24,8 +24,8 @@ LG webOS 25 on a 65 inch OLED, viewed from about 3 m. The launcher is a plain we
 
 ## Capabilities and Constraints
 
-- Home screen with a dock of four apps, a top shelf for the focused app, an app grid sorted by use (or A to Z), top buttons for Inputs, Live TV, Settings and Customise.
-- Customisation happens in the launcher with the remote (hold OK on an app, the Customise button); no config file is required.
+- Home screen with a dock of four apps, a top shelf for the focused app, an app grid sorted by use (or A to Z), top buttons for Inputs, Live TV, Settings and Customize.
+- Customization happens in the launcher with the remote (hold OK on an app, the Customize button); no config file is required.
 - Live TV: user-supplied M3U and XMLTV guide, HLS playback in the TV's own player, channel list and guide, number entry. No recording, pause or favourites yet.
 - Picture notifications: a transparent `topui` overlay app, triggered through the helper's API; it must never take the remote.
 - Debloat: stops LG ad and telemetry services; it must lift itself when LG's Home is restored, because LG's Home does not start without those services.
@@ -42,7 +42,7 @@ Public name: "CleanYourTV for LG webOS". The home-screen design follows the Andr
 
 ## Evidence on Hand
 
-- Screenshots of the real launcher in `docs/screenshots/` (home, grid, options, customise, inputs, Live TV guide).
+- Screenshots of the real launcher in `docs/screenshots/` (home, grid, options, customize, inputs, Live TV guide).
 - A tested install on the owner's TV, a working Live TV player on the owner's playlist (about 1,050 channels, XMLTV guide), picture notifications verified over Plex, Prime Video (DRM) and an HDMI input.
 - A critique of the layout (score 25/40) saved in `.impeccable/critique/` (local, not for the repository).
 - Absent: usage data from other users, feedback from other owners, tests on any other TV model.

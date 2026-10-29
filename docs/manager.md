@@ -18,7 +18,7 @@
 | Debloat | The five groups of the [debloat](debloat.md) (ads, viewing tracking, telemetry logs, suggestions, LG's pre-loading of apps), each on or off, and **Switch all on** / **Switch all off**. |
 | More | **Home Assistant**: its address and long-lived access token (set up from your phone), **Test the connection** and **Forget Home Assistant**; Voice and the Home Assistant cards use it. **Language**: the language of every screen, Automatic (the TV's) or one of the translations with how complete it is; see [Translations](https://github.com/LanceSandino/cleanyourtv-WebOS/tree/dev/i18n). **Voice**: optional; installs the speech recogniser (about 80 MB), learns the voice button, tries it, sets where the text goes (see [Voice](voice.md)). **Network notifications**: switch, address, token (also as a QR code for a phone) and an example for sending [picture notifications](notifications.md) from other devices. **Sonos volume on screen**: shows a Sonos soundbar's volume over any app when it changes, the speaker (automatic or from a search), the place on screen and whether LG's own volume bar is hidden meanwhile; see [Sonos volume on screen](sonos.md). |
 | Share log | A QR code that opens a masked diagnostic report on a phone, with a **Copy** button. |
-| Reset Home customisation | Puts the launcher's dock, top buttons, hidden apps, app order and clock back to the defaults, after a confirmation. The theme stays. |
+| Reset Home customization | Puts the launcher's dock, top buttons, hidden apps, app order and clock back to the defaults, after a confirmation. The theme stays. |
 | Uninstall | Removes everything and restarts the TV. |
 
 ## When the service is not running

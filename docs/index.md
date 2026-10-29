@@ -49,7 +49,7 @@ services you choose (update checks go to GitHub). See [What it changes on the TV
 | | |
 |---|---|
 | ![App grid](screenshots/grid.jpg) | ![App options](screenshots/options.jpg) |
-| ![Customise menu](screenshots/customise.jpg) | ![Inputs menu](screenshots/inputs.jpg) |
+| ![Customize menu](screenshots/customize.jpg) | ![Inputs menu](screenshots/inputs.jpg) |
 | ![Live TV guide](screenshots/live.jpg) | ![Inputs picker on the Input key](screenshots/picker.jpg) |
 | ![Manager app](screenshots/manager.jpg) | |
 

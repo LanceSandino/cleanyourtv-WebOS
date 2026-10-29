@@ -713,7 +713,7 @@ function build() {
     rows.push({
       label: 'Back',
       fn: function () {
-        /* opened from the launcher's Customise > Cards: back to Home, where the cards show what was chosen */
+        /* opened from the launcher's Customize > Cards: back to Home, where the cards show what was chosen */
         if (cardsFromHome) {
           cardsFromHome = false;
           api('/api/launch', { id: 'com.webos.app.home' }).catch(function () {});
@@ -1033,7 +1033,7 @@ function build() {
   rows.push({ sep: true });
   rows.push({ label: 'Share log', sub: 'QR code for your phone', fn: openShare });
   rows.push({
-    label: 'Reset Home customisation',
+    label: 'Reset Home customization',
     fn: function () {
       push('confirm-reset');
     },

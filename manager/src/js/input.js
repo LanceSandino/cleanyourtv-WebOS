@@ -38,9 +38,9 @@ document.addEventListener('wheel', function (e) {
   if (e.deltaY > 0) next(1);
   else if (e.deltaY < 0) next(-1);
 }); /* the Magic Remote wheel */
-/* opened with {"open":"wallpapers"} (the launcher's Customise > Wallpapers): straight to that screen; {"open":"photofeed"} (Customise >
+/* opened with {"open":"wallpapers"} (the launcher's Customize > Wallpapers): straight to that screen; {"open":"photofeed"} (Customize >
    Screensaver > Photo feed...): straight to the QR code that opens the phone page on its Photo feed tab */
-/* opened with {"open":"wallpapers"} or {"open":"cards"} (the launcher's Customise menu): straight to that screen */
+/* opened with {"open":"wallpapers"} or {"open":"cards"} (the launcher's Customize menu): straight to that screen */
 var cardsFromHome = false;
 function wantView() {
   var p = {};

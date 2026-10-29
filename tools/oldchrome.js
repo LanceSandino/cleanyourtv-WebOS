@@ -222,7 +222,7 @@ const HOLD_OK =
   'var left=document.querySelectorAll("#grid .wcard").length,saved=cfg.watch&&cfg.watch.hide&&cfg.watch.hide.join();' +
   'var ok=app&&onCard&&card&&left===0&&saved==="plex:7";' +
   'document.body.setAttribute("data-hold",ok?"ok":"bad app="+app+" onCard="+onCard+" card="+card+" left="+left+" saved="+saved+" menu="+ov().slice(0,160))},800)})},1000)},600)})},2500)},300)})()</script>';
-// linking Plex (Customise > Continue watching): Down three times to Link Plex..., OK; the menu shows the code for plex.tv/link, then, once the
+// linking Plex (Customize > Continue watching): Down three times to Link Plex..., OK; the menu shows the code for plex.tv/link, then, once the
 // stand-in says the code was entered, the server it is linked to
 const WATCH_LINK =
   '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
@@ -258,6 +258,19 @@ const WALL_FIT =
   'var landscape=!!l&&!l.classList.contains("fit")&&after(l)==="cover";' +
   'document.body.setAttribute("data-fit",portrait&&landscape?"ok":"bad portrait="+portrait+" landscape="+landscape)})})},500)})()</script>';
 // a holiday theme's frame (Halloween): one still picture behind the clock and the apps, not catching the pointer; nothing animates
+// the menus (menus.js): Customize on its own is one panel; a section opened from it (Screensaver) shows Customize's list on the left
+// with that section lit, its own rows on the right and a hint; its Frame list ticks the chosen frame; Left goes back to one panel.
+// The outcome lands in data-two.
+const MENU_TWO =
+  '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}function ov(){return document.getElementById("ov")}' +
+  'function pick(l){var m=stack[stack.length-1];for(var i=0;i<m.items.length;i++)if(m.items[i].label===l){m.idx=i;pickMenu();return}}' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);cfg.saver={on:true,frame:"oak"};customizeMenu();' +
+  'var one=!!ov()&&!/\\btwo\\b/.test(ov().className)&&!ov().querySelector(".secs");pick("Screensaver");' +
+  'var lit=ov().querySelector(".secs .sec.on"),two=/\\btwo\\b/.test(ov().className)&&!!lit&&/Screensaver/.test(lit.textContent)&&!!ov().querySelector(".hint");' +
+  'pick("Frame");var ticked=[].filter.call(ov().querySelectorAll(".panel .row"),function(r){return !!r.querySelector(".ck")}).map(function(r){return r.textContent});' +
+  'var tick=ticked.length===1&&/Oak/.test(ticked[0]);key(37);key(37);var back=stack.length===1&&!/\\btwo\\b/.test(ov().className);' +
+  'document.body.setAttribute("data-two",one&&two&&tick&&back?"ok":"bad one="+one+" two="+two+" tick="+ticked.join("|")+" back="+back)},300)})()</script>';
 // Dawn (effects.foreground): the front of its wallpaper is a layer over the clock (after #top, above it) and under the apps (#view
 // comes forward), its picture loads, and the date stands above the time (clock.dateAbove). The outcome lands in data-front.
 const FG_CHECK =
@@ -300,6 +313,7 @@ const PAGES = [
   ['dock row in glass', 'app/index.html', /data-dock="ok"/g, 1, 15000, DOCK_ROW, 'glass'],
   ['holiday frame', 'app/index.html', /data-fx="ok"/g, 1, 15000, FX_CHECK, 'halloween'],
   ['dawn front', 'app/index.html', /data-front="ok"/g, 1, 15000, FG_CHECK, 'dawn'],
+  ['menu sections', 'app/index.html', /data-two="ok"/g, 1, 12000, MENU_TWO],
 ];
 let famN = 0,
   plexState = 'idle',

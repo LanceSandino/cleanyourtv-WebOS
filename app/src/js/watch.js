@@ -2,7 +2,7 @@
    partly watched once linked, and LG's own rows of the other apps: YouTube's videos, Disney+'s films). The cards are shown only where
    they belong: when an app that has some is highlighted on Home, a row of its cards opens under that app's row a moment later; Down goes into it, OK opens one in that app (act
    in config.js), hold OK has its options (watchCardMenu). The row closes when the focus moves on along that row or above it. Read when
-   Home is shown and every minute while it is; Customise > Continue watching switches it off. ---------- */
+   Home is shown and every minute while it is; Customize > Continue watching switches it off. ---------- */
 /* where a card comes from, named on it (a card of Telemachus's channel says it plays next), and the apps that show it */
 var SOURCE_NAMES = { telemachus: 'Telemachus', plex: 'Plex', stremio: 'Stremio' },
   SOURCE_APPS = { telemachus: ['com.telemachus.screen'], plex: ['cdp-30', 'com.beb.plxnative'], stremio: ['io.strem.tv'] },

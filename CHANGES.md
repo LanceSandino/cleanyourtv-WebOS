@@ -930,3 +930,25 @@ commit_ref: "feature/dawn-theme (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T02:47:48Z"
 ```
+
+```yaml
+id: CU-20261028-7
+type: feature
+title: "Menus in two panes inside a section (after couch-tv's settings), section icons; Customise spelled Customize"
+description: "The owner asked for our settings menu to look like couch-tv's and for Customise to read Customize. drawMenu: a menu opened
+  from another shows the list it came from in a column on the left (icons in rounded squares, the open section lit, the pointer on
+  another section opens that one) and its own rows on the right (lighter cards, a picture in the row where the row has one: the theme
+  list, a green tick for the chosen one of a list, 'OK to change, Back to go back' at the foot), on a solid background; Left goes
+  back to the sections (Right in right-to-left languages); a menu on its own stays one panel with Home in view, so a change shows at
+  once. The large picture beside the theme list is used only when the theme list is on its own. Customize's rows have icons
+  (core.js: dock, top buttons, hidden, continue watching, order, running dot, theme, cards, accent, clock, wallpapers, screensaver,
+  more). Customise, customise and customisation become Customize, customize and customization in the pages, the service's texts,
+  every translation file's keys, the docs and the screenshot's name (docs/screenshots/customize.jpg); the change history keeps its
+  words."
+impact: low
+affected_modules: ["app/src/js/menus.js", "app/src/css/menus.css", "app/src/js/core.js", "i18n/*.json", "docs/*.md", "README.md", "themes/README.md", "helper/*.js (texts)", "manager/src/js/*.js (texts)", "scripts/bootstrap.sh (a message)", "tools/oldchrome.js"]
+related_tests: ["tools/oldchrome.js (menu sections: Customize alone is one panel; Screensaver opened from it shows Customize's list with Screensaver lit and a hint; the Frame list ticks the chosen frame; Left goes back)"]
+commit_ref: "feature/dawn-theme (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T02:57:11Z"
+```

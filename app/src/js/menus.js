@@ -100,16 +100,39 @@ function backMenu() {
   if (stack.length) refreshMenu();
   else closeMenus();
 }
+/* Inside a section (a menu opened from another), the list it came from stands on the left with the open section lit, and the
+   section's rows on the right with a hint at the foot (couch-tv's settings look); a menu on its own is one panel, Home in view. */
+var TICK = '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="15"/><path d="M9.5 16.5l4.2 4.2 8.8-9.2"/></svg>';
 function drawMenu() {
   var m = stack[stack.length - 1],
+    up = stack.length > 1 ? stack[stack.length - 2] : null,
     N = 10,
-    start = Math.max(0, Math.min(m.idx - 3, m.items.length - N));
+    start = Math.max(0, Math.min(m.idx - 3, m.items.length - N)),
+    secs = [];
   if (!ovEl) {
     ovEl = document.createElement('div');
     ovEl.id = 'ov';
     document.body.appendChild(ovEl);
   }
-  var h = '<div class="panel"><h2></h2><div class="more">' + (start > 0 ? '▲' : '') + '</div>';
+  var h = '';
+  if (up) {
+    for (var j = 0; j < up.items.length; j++) if (!skip(up.items[j])) secs.push(j);
+    var at = secs.indexOf(up.idx),
+      s0 = Math.max(0, Math.min(at - 6, secs.length - 13));
+    secs = secs.slice(s0, s0 + 13);
+    h += '<div class="secs"><h2 class="sh"></h2>';
+    for (j = 0; j < secs.length; j++)
+      h +=
+        '<div class="sec' +
+        (secs[j] === up.idx ? ' on' : '') +
+        '" data-s="' +
+        secs[j] +
+        '">' +
+        (up.items[secs[j]].icon ? '<span class="si">' + svg(up.items[secs[j]].icon) + '</span>' : '') +
+        '<span class="lb"></span></div>';
+    h += '</div>';
+  }
+  h += '<div class="panel"><h2></h2><div class="more">' + (start > 0 ? '▲' : '') + '</div>';
   for (var i = start; i < Math.min(m.items.length, start + N); i++) {
     var it = m.items[i];
     if (it.sep) {
@@ -132,29 +155,53 @@ function drawMenu() {
       i +
       '">' +
       (it.icon ? svg(it.icon) : '') +
+      (up && it.pv ? '<span class="th"></span>' : '') +
       '<span class="lb"></span>' +
-      (it.sub ? '<span class="st"></span>' : '') +
+      (it.sub === '✓' ? '<span class="ck">' + TICK + '</span>' : it.sub ? '<span class="st"></span>' : '') +
       '</div>';
   }
-  h += '<div class="more">' + (start + N < m.items.length ? '▼' : '') + '</div></div>';
+  h += '<div class="more">' + (start + N < m.items.length ? '▼' : '') + '</div>';
+  if (up) h += '<div class="hint"></div>';
+  h += '</div>';
   ovEl = setHtml(ovEl, h);
-  var side = m.items.some(function (x) {
-    return x.desc !== undefined;
-  });
-  ovEl.className = (side ? 'ws' : '') + (ovEnter && !OLDGPU ? ' enter' : '');
+  /* a list with pictures (the themes) shows the focused one large on the left, unless the left holds the sections: then each row has
+     its picture */
+  var side =
+    !up &&
+    m.items.some(function (x) {
+      return x.desc !== undefined;
+    });
+  ovEl.className = (up ? 'two' : side ? 'ws' : '') + (ovEnter && !OLDGPU ? ' enter' : '');
   ovEnter = false;
   drawSide(side && !skip(m.items[m.idx]) ? m.items[m.idx] : null);
-  ovEl.querySelector('h2').textContent = m.title;
+  ovEl.querySelector('.panel h2').textContent = m.title;
+  if (up) {
+    ovEl.querySelector('.sh').textContent = up.title;
+    ovEl.querySelector('.hint').textContent = t('OK to change, Back to go back');
+    [].forEach.call(ovEl.querySelectorAll('.sec'), function (el) {
+      var k = +el.getAttribute('data-s');
+      el.querySelector('.lb').textContent = up.items[k].label;
+      /* the pointer on another section: that one opens instead */
+      el.addEventListener('click', function () {
+        stack.pop();
+        up.idx = k;
+        refreshMenu();
+        pickMenu();
+      });
+    });
+  }
   [].forEach.call(ovEl.querySelectorAll('.mnote'), function (el) {
     el.textContent = m.items[+el.getAttribute('data-n')].note;
   });
   [].forEach.call(ovEl.querySelectorAll('.mhead'), function (el) {
     el.textContent = m.items[+el.getAttribute('data-n')].head;
   });
-  [].forEach.call(ovEl.querySelectorAll('.row'), function (row) {
+  [].forEach.call(ovEl.querySelectorAll('.panel .row'), function (row) {
     var it = m.items[+row.getAttribute('data-i')];
     row.querySelector('.lb').textContent = it.label;
-    if (it.sub) row.querySelector('.st').textContent = it.sub;
+    if (it.sub && it.sub !== '✓') row.querySelector('.st').textContent = it.sub;
+    var th = row.querySelector('.th');
+    if (th) th.style.backgroundImage = 'url("' + API + '/api/theme/preview/' + it.pv + '")';
     var pt = 0,
       rowHeld = false;
     if (it.hold) {
@@ -204,6 +251,7 @@ function menuKey(k) {
     /* the first or last row: nothing to move to */
   } else if (k === 13) pickMenu();
   else if (k === 461 || k === 27 || k === 8) backMenu();
+  else if (k === 37 && stack.length > 1) backMenu(); /* Left: back to the sections on the left (right-to-left languages swap it) */
   else return false;
   return true;
 }
@@ -435,7 +483,7 @@ function appMenu(a) {
         label: t('Hide app'),
         fn: function () {
           hideApp(a.id);
-          toast(t('%s is hidden. Customise > Hidden apps shows it again.').replace('%s', a.title));
+          toast(t('%s is hidden. Customize > Hidden apps shows it again.').replace('%s', a.title));
         },
       });
     if (a.rm) items.push({ label: t('Uninstall...'), stay: true, fn: uninstallMenu.bind(null, a) });
@@ -517,23 +565,25 @@ function barMenu(o) {
     return items;
   });
 }
-/* Customise: how Home looks. What the TV and the service do is in the manager app (More settings...) */
+/* Customize: how Home looks. What the TV and the service do is in the manager app (More settings...) */
 function customizeMenu() {
-  openBuilt(t('Customise'), function () {
+  openBuilt(t('Customize'), function () {
     var nh = hiddenIds().length;
     return [
       { head: t('Home') },
-      { label: t('Dock'), stay: true, fn: dockMenu },
-      { label: t('Top buttons'), stay: true, fn: topButtonsMenu },
-      { label: t('Hidden apps'), sub: nh ? String(nh) : '', stay: true, fn: hiddenMenu },
+      { label: t('Dock'), icon: 'dock', stay: true, fn: dockMenu },
+      { label: t('Top buttons'), icon: 'buttons', stay: true, fn: topButtonsMenu },
+      { label: t('Hidden apps'), icon: 'hidden', sub: nh ? String(nh) : '', stay: true, fn: hiddenMenu },
       {
         label: t('Continue watching'),
+        icon: 'play',
         sub: cfg.watch && cfg.watch.on === false ? t('Off') : t('On'),
         stay: true,
         fn: watchMenu,
       },
       {
         label: t('App order'),
+        icon: 'sort',
         sub: cfg.sort === 'alpha' ? t('A to Z') : t('Most used first'),
         stay: true,
         fn: function () {
@@ -543,6 +593,7 @@ function customizeMenu() {
       },
       {
         label: t('Mark running apps'),
+        icon: 'dot',
         sub: cfg.runDots === true ? t('Green dot') : t('No dot'),
         stay: true,
         fn: function () {
@@ -552,20 +603,22 @@ function customizeMenu() {
         },
       },
       { head: t('Look') },
-      { label: t('Theme'), stay: true, fn: themeMenu },
+      { label: t('Theme'), icon: 'theme', stay: true, fn: themeMenu },
       /* only where the theme has slots for cards */
       (TH.slots || []).length
         ? {
             label: t('Cards'),
+            icon: 'cards',
             sub: t('in the CleanYourTV app'),
             fn: function () {
               launch('com.cleanyourtv.manager', { open: 'cards' });
             },
           }
         : null,
-      { label: t('Accent colour'), stay: true, fn: accentMenu },
+      { label: t('Accent colour'), icon: 'accent', stay: true, fn: accentMenu },
       {
         label: t('Clock'),
+        icon: 'clock',
         sub: cfg.clock === '24' ? t('24-hour') : cfg.clock === '12' ? t('12-hour') : t('Automatic'),
         stay: true,
         fn: function () {
@@ -577,12 +630,14 @@ function customizeMenu() {
       { head: t('Photos') },
       {
         label: t('Wallpapers'),
+        icon: 'photo',
         sub: cfg.wall && cfg.wall.on ? t('On') : t('Off'),
         stay: true,
         fn: wallMenu,
       },
       {
         label: t('Screensaver'),
+        icon: 'frame',
         sub: cfg.saver && cfg.saver.on ? t('On') : t('Off'),
         stay: true,
         fn: saverMenu,
@@ -590,6 +645,7 @@ function customizeMenu() {
       { head: t('More') },
       {
         label: t('More settings...'),
+        icon: 'more',
         sub: t('Home, Live TV, Debloat, updates'),
         fn: function () {
           launch('com.cleanyourtv.manager');
@@ -869,7 +925,7 @@ function saverMenu() {
 function watchCardMenu(it) {
   var gone = function (g) {
     WATCH.remove(g);
-    toast(t('Removed. Customise > Continue watching shows it again.'));
+    toast(t('Removed. Customize > Continue watching shows it again.'));
   };
   openMenu(
     it.title,

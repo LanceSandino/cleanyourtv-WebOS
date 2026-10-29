@@ -366,7 +366,7 @@ function create(ctx) {
 
   // ---- the phone page: LAN, short-lived, the code shown on the TV in every request (header x-code) ----
   let pair = null;
-  // tab 'feed': the QR code opens the phone page on its Photo feed tab (the launcher's Customise > Screensaver > Photo feed...)
+  // tab 'feed': the QR code opens the phone page on its Photo feed tab (the launcher's Customize > Screensaver > Photo feed...)
   function startPair(tab) {
     stopPair();
     const code = String(nc.randomInt(100000, 1000000));

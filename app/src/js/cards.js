@@ -1,4 +1,4 @@
-/* ---------- cards: small widgets in the slots a theme declares (theme.json "slots"), chosen in Customise > Cards ----------
+/* ---------- cards: small widgets in the slots a theme declares (theme.json "slots"), chosen in Customize > Cards ----------
    cfg.cards is {<slot id>: {type, ...options}}; a slot without an entry shows the card the theme puts there (slot.card), and
    {type: 'none'} leaves it empty. Each card type draws itself into its box; draw() runs on every rebuild and every clock tick. */
 /* what changes with the time, for the cards: the greeting of the day part, the time and the date as the clock shows them */

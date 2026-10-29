@@ -297,7 +297,7 @@ function el(tag,attrs,text){var e=document.createElement(tag);for(var k in attrs
 function typeOf(n){for(var i=0;i<S.types.length;i++)if(S.types[i].type===n)return S.types[i];return null}
 /* the card a slot shows now: the chosen one, else the theme's default, else none */
 function cardOf(sl){var c=S.cards[sl.id];return c&&c.type?c:{type:sl.card||'none'}}
-function draw(){var box=$('slots');box.innerHTML='';$('sum').textContent=S.slots.length?'':t('This theme has no places for cards. Choose a theme with cards (Lock Screen) in Customise > Theme.');
+function draw(){var box=$('slots');box.innerHTML='';$('sum').textContent=S.slots.length?'':t('This theme has no places for cards. Choose a theme with cards (Lock Screen) in Customize > Theme.');
  S.slots.forEach(function(sl){var c=cardOf(sl),sec=el('section',{'class':'sl','data-id':sl.id});sec.appendChild(el('h2',{},sl.name));
   var sel=el('select',{'data-k':'type'});sel.appendChild(el('option',{value:'none'},t('Empty')));S.types.forEach(function(ty){sel.appendChild(el('option',{value:ty.type},ty.name))});
   if(c.type!=='none'&&!typeOf(c.type))sel.appendChild(el('option',{value:c.type},c.type));sel.value=c.type;sec.appendChild(sel);

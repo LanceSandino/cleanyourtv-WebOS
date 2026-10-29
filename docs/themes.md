@@ -4,15 +4,15 @@ A theme changes how the home screen looks: colours, the size of tiles and text, 
 the speed of animations and a wallpaper. Themes apply to the launcher's home screen (dock, top shelf, grid, top buttons and menus).
 Live TV, the Inputs picker and the notification cards keep their own look.
 
-In the launcher, **Customise** > **Theme** lists the themes; choosing one applies it at once (a theme that is not on the TV yet is
-downloaded first). **Go back to the previous theme** is at the bottom of the list. **Customise** > **Accent colour** sets the colour of
+In the launcher, **Customize** > **Theme** lists the themes; choosing one applies it at once (a theme that is not on the TV yet is
+downloaded first). **Go back to the previous theme** is at the bottom of the list. **Customize** > **Accent colour** sets the colour of
 the focus ring and of the highlighted button or menu row, on top of any theme. The theme list shows the highlighted theme's
 screenshot and description. The Inputs picker and the Live TV banner and guide follow the theme's colours, accent and typeface too.
 Your own photos can replace a theme's background: see [Wallpapers](wallpapers.md).
 
 ## Holiday themes
 
-**Customise** > **Theme** > **Holiday themes** switches them on (off unless you do). During a holiday's dates its colours and a still
+**Customize** > **Theme** > **Holiday themes** switches them on (off unless you do). During a holiday's dates its colours and a still
 frame go over your theme: your layout, wallpaper and photos stay, and your theme stays chosen and comes back after the dates. The TV
 downloads a holiday theme a few days before it begins.
 
@@ -57,7 +57,7 @@ folder of the GitHub repository (the `main` branch):
 | Bloom | A flower wallpaper with the dock in a glass panel at the bottom. Down moves the dock up and the apps appear below it, centred. It has slots for cards. |
 | Horizon | A row of seven square apps along the bottom of a dusk landscape, the clock on the left and the buttons on the right at the top. Down moves the row up and shows all apps below it. It has slots for cards. |
 | Pixel | Pixel art: a blocky typeface, square tiles and buttons, a yellow focus box and a sunset over a lake drawn in big pixels. Moves without animation, like an old console. |
-| Lock Screen | A phone-style lock screen: a greeting and a big clock top left, and a small, translucent dock low in the corner over a calm blue landscape, so the picture fills the screen. Down moves the dock up and shows all apps below it. Turn Wallpapers on for your own photos. It has slots for cards (Customise > Cards): the greeting is one. |
+| Lock Screen | A phone-style lock screen: a greeting and a big clock top left, and a small, translucent dock low in the corner over a calm blue landscape, so the picture fills the screen. Down moves the dock up and shows all apps below it. Turn Wallpapers on for your own photos. It has slots for cards (Customize > Cards): the greeting is one. |
 | Glass | Five columns of wide cards, the dock on a dark band with the focused app's name above it, a light clock with a divider and a greeting, and a soft glow of the app's colour around the dock. The focus is a glass plate that glides from app to app. Down moves the dock up, the clock and buttons step aside, and the name of the focused app shows under its card. |
 
 ![Classic, Compact, Large print and Midnight](screenshots/themes-1.jpg)
@@ -68,7 +68,7 @@ folder of the GitHub repository (the `main` branch):
 
 ![Horizon: the home screen and all apps shown with Down](screenshots/themes-4.jpg)
 
-![Pixel: the home screen and the Customise menu](screenshots/themes-5.jpg)
+![Pixel: the home screen and the Customize menu](screenshots/themes-5.jpg)
 
 ![Glass: the home screen and the app grid opened with Down](screenshots/themes-6.jpg)
 
@@ -199,7 +199,7 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `clock.alpha` | 0.3 to 1 | `1` | Opacity of the time: below 1 the picture shows a little through the digits. |
 | `clock.ampm` | `inline`, `small` | `inline` | AM and PM of a 12-hour clock: `inline` as the language writes it; `small`: smaller, in capitals, beside the time. |
 | **bar** | | | |
-| `bar.show` | `true` or `false` | `true` | Show the top buttons (Inputs, Settings, Customise, ...). |
+| `bar.show` | `true` or `false` | `true` | Show the top buttons (Inputs, Settings, Customize, ...). |
 | `bar.style` | `pill`, `round`, `flat` | `pill` | `pill`: icon and label on a rounded button; `round`: icon only in a circle; `flat`: no background. |
 | `bar.labels` | `auto`, `show`, `hide` | `auto` | Button labels: `auto` shows them except in the `round` style. |
 | `bar.anchor` | `top`, `bottom` | `top` | Which screen edge `bar.y` counts from. |
@@ -271,8 +271,8 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 
 ### Slots for cards
 
-A theme can mark places where **cards** go: small widgets the user chooses in **Customise** > **Cards** (greeting, weather,
-text and Home Assistant cards). A theme without slots shows no cards and has no Cards row in Customise. Slots are a
+A theme can mark places where **cards** go: small widgets the user chooses in **Customize** > **Cards** (greeting, weather,
+text and Home Assistant cards). A theme without slots shows no cards and has no Cards row in Customize. Slots are a
 list in `theme.json`:
 
 ```json

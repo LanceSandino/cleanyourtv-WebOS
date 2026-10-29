@@ -16,7 +16,7 @@ function barLabel(o) {
     : o.app === 'com.palm.app.settings'
       ? t('Settings')
       : o.action === 'customize'
-        ? t('Customise')
+        ? t('Customize')
         : o.action === 'live'
           ? t('Live TV')
           : o.label || '';

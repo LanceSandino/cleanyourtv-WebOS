@@ -427,7 +427,7 @@ function create(ctx) {
       if (id !== c.id || accent !== c.accent) save({ id, accent, prev: { id: c.id, accent: c.accent } });
       return json(await list());
     }
-    // Holiday themes on or off (Customise > Theme); on: the holiday theme for today is downloaded now when it is not on the TV
+    // Holiday themes on or off (Customize > Theme); on: the holiday theme for today is downloaded now when it is not on the TV
     if (act === 'holidays') {
       ctx.config.update('theme', cf => {
         cf.theme = Object.assign({}, cf.theme, { holidays: b.on === true });

@@ -24,7 +24,7 @@ var INFO = {
     'The language of CleanYourTV\u2019s screens: the launcher, this app and the Inputs list. Automatic follows the TV\u2019s menu language. The percentage says how much of a language is translated; the rest stays English. Translations are files in the repository that anyone can add to.',
   'Automatic': 'Follows the TV\u2019s menu language. English when CleanYourTV has no translation for it.',
   'Wallpapers':
-    'Your own photos behind Home: uploaded from a phone, or synced from Immich albums. Switch them on in the launcher: Customise > Wallpapers.',
+    'Your own photos behind Home: uploaded from a phone, or synced from Immich albums. Switch them on in the launcher: Customize > Wallpapers.',
   'Manage from your phone':
     'Shows a QR code. On the phone page you upload photos (they are made the right size on the phone), delete uploads, connect Immich, choose albums and hide single photos.',
   'Local uploads': 'Photos uploaded from a phone, kept on the TV. At most 100.',
@@ -36,7 +36,7 @@ var INFO = {
     '4K (the default) keeps photos at 3840 pixels, the size the TV draws Home at, so they look sharp; Full HD at 1920 fits about four times as many photos in 150 MB. It applies to new uploads and to the next Immich sync.',
   'Remove all uploads': 'Deletes every uploaded photo from the TV. Immich photos stay.',
   'Disconnect Immich': 'Forgets the address and the key and deletes the Immich photos from the TV. Uploads stay.',
-  'Reset Home customisation':
+  'Reset Home customization':
     'Puts the dock, the top buttons, hidden apps, the app order and the clock back to the defaults. The theme stays.',
   'Yes, reset Home': 'The launcher\u2019s own settings go back to the defaults. Apps, the theme and everything in this app stay.',
   'Use CleanYourTV as Home':

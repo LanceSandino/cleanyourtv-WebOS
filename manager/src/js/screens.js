@@ -60,7 +60,7 @@ function openLiveTv() {
     }
   );
 }
-/* Wallpapers: photos uploaded from a phone and synced from Immich (helper/wallpapers.js); the launcher's Customise switches them on */
+/* Wallpapers: photos uploaded from a phone and synced from Immich (helper/wallpapers.js); the launcher's Customize switches them on */
 function openWallpapers() {
   api('/api/photofeed/status').then(
     function (r) {
@@ -153,7 +153,7 @@ function openHa() {
     }
   );
 }
-/* Cards: a card for each place of the theme (/api/cards/status, /api/cards/set); also opened from the launcher's Customise > Cards */
+/* Cards: a card for each place of the theme (/api/cards/status, /api/cards/set); also opened from the launcher's Customize > Cards */
 var cs = null,
   cardSlot = null;
 function openCards() {

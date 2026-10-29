@@ -10,9 +10,9 @@ same on every supported webOS version.
 - **Dock.** Up to four apps, large, on the first row.
 - **Top shelf.** The name of the focused app and an ambient glow taken from its icon.
 - **Grid.** All other apps, sorted by how often you use each one (or A to Z).
-- **Top buttons.** Inputs, Live TV, Settings and Customise, and a clock. The buttons you see are yours to change.
+- **Top buttons.** Inputs, Live TV, Settings and Customize, and a clock. The buttons you see are yours to change.
 - **Open apps.** Optionally a green dot on the tile of every app that is open, as on the active input in the Inputs list: off by
-  default, **Customise** > **Mark running apps** switches it on, in the launcher and in the Inputs picker. Back on the home screen lists
+  default, **Customize** > **Mark running apps** switches it on, in the launcher and in the Inputs picker. Back on the home screen lists
   the open apps to close them (see [Running apps](#running-apps)).
 
 ## Keys
@@ -23,12 +23,12 @@ same on every supported webOS version.
 | Move between the rows | Up and Down go to the app or button above or below; the opposite key right after goes straight back to where the focus was |
 | App options (dock, hide, uninstall) | Hold OK on an app |
 | Move or remove a top button | Hold OK on it |
-| Customise | The **Customise** button |
+| Customize | The **Customize** button |
 | Live TV | The **Live TV** button or tile |
 | Switch input | The **Inputs** button |
 | Put an input on Home | Hold OK on it in the Inputs list |
 | Close running apps | Back on the home screen |
-| Back to Home | The remote's **Home** key closes whatever is open over Home (Customise, the Inputs list, the photo chooser); coming back from an app with Back keeps the menu you left |
+| Back to Home | The remote's **Home** key closes whatever is open over Home (Customize, the Inputs list, the photo chooser); coming back from an app with Back keeps the menu you left |
 
 The Magic Remote pointer works too: pointing and clicking, and holding the button on an app for its options.
 
@@ -46,11 +46,11 @@ Netflix, YouTube); an app is listed only if that copy of it was on the screen, s
 
 ![Running apps](screenshots/running.jpg)
 
-## Customise
+## Customize
 
-![Customise menu](screenshots/customise.jpg)
+![Customize menu](screenshots/customize.jpg)
 
-**Customise** holds how Home looks, in four groups (**Home**, **Look**, **Photos**, **More**). Menus open as a panel on the right,
+**Customize** holds how Home looks, in four groups (**Home**, **Look**, **Photos**, **More**). Menus open as a panel on the right,
 with Home still in view on the left, so a change shows at once:
 
 - the **dock**: each app in it can be replaced (an app already in the dock swaps places), moved or removed, and **Add an app...**
@@ -64,7 +64,7 @@ with Home still in view on the left, so a change shows at once:
 - **Wallpapers**: your own photos behind Home, and how often they change (see [Wallpapers](wallpapers.md));
 - **More settings...**, which opens the [manager app](manager.md) for everything the TV and the service do.
 
-Putting the dock, buttons, hidden apps, order and clock back to the defaults is in the manager app: **Reset Home customisation**.
+Putting the dock, buttons, hidden apps, order and clock back to the defaults is in the manager app: **Reset Home customization**.
 
 
 ## Continue watching
@@ -86,7 +86,7 @@ shown for apps without episodes, and there are no app shortcuts (your apps are o
 Holding OK on a card offers **Resume** (or **Play**), **Open** the app, **Remove from this row** (for Telemachus the whole show, so its
 next episode does not come back), **Hide the row of** that app, and the settings below.
 
-**Customise** > **Continue watching**:
+**Customize** > **Continue watching**:
 
 - **Show on Home** switches the rows off (nothing is then read).
 - **Telemachus** switches Telemachus's cards off (it is not read then).
@@ -108,11 +108,11 @@ Holding OK on an app offers **Uninstall...** for the apps the TV lets go of: app
 as LG Movies & TV or LG Gaming Portal) and developer apps. It asks first; the app and its data leave the TV, and LG's app store
 installs it again. LG's system apps (Home Hub, LG Channels, Sports, Multi View and the like) are part of the firmware and can only be
 hidden. CleanYourTV, the Homebrew Channel (it keeps the TV rooted) and LG Input Hook (the Input key needs it) are never offered. In
-**Customise** > **Hidden apps**, holding OK on a hidden app uninstalls it too.
+**Customize** > **Hidden apps**, holding OK on a hidden app uninstalls it too.
 ## Cards
 
 Cards are set up in the [manager app](manager.md), **Cards**. Themes with places for cards (**Lock Screen**, **Bloom** and **Horizon**)
-also have a **Cards** row in **Customise** that opens it. It lists the places (above the clock, beside the clock, a column on the right,
+also have a **Cards** row in **Customize** that opens it. It lists the places (above the clock, beside the clock, a column on the right,
 above the dock); choose one to put a card there or leave it empty. A card you chose stays when you switch to another theme with the
 same place.
 

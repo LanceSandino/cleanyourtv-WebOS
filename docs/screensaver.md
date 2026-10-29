@@ -1,7 +1,7 @@
 # Screensaver
 
 When Home is left alone, CleanYourTV can show your photos full screen with the time and the date, instead of LG's screensaver. It
-is off until you switch it on in **Customise** > **Screensaver**.
+is off until you switch it on in **Customize** > **Screensaver**.
 
 | Setting | What it does |
 |---|---|
@@ -44,7 +44,7 @@ TV asks Home at all depends on the firmware: if LG's screensaver still appears, 
 1. A **photo feed**, when one is set up (below).
 2. Otherwise the [Wallpapers](wallpapers.md) photos (phone uploads and Immich), in a shuffled order.
 
-A photo feed's photos are Wallpapers photos as well: Customise > Wallpapers counts them, shows them behind Home and lets you choose
+A photo feed's photos are Wallpapers photos as well: Customize > Wallpapers counts them, shows them behind Home and lets you choose
 one of them as your wallpaper.
 
 The TV never holds a whole photo library. It reads the feed's list of photo ids every hour and fetches a photo, at 1920 pixels,
@@ -61,7 +61,7 @@ already on the TV keep the screensaver going.
 1. On the server that offers the feed, create a token for the TV and copy its **setup code** (it starts with `cyfp1.`). The code
    holds the server's address, a token that can only read the feed, and the server's own root certificate. In
    [family-calendar](#family-calendar-and-frameo) this is **Admin** > **Photo feeds**, on the server itself.
-2. On the TV: **Customise** > **Screensaver** > **Photo feed...** shows a QR code and an address with a 6-digit code. Open it on a
+2. On the TV: **Customize** > **Screensaver** > **Photo feed...** shows a QR code and an address with a 6-digit code. Open it on a
    phone, or type the address on a computer on the same network (the computer that runs family-calendar works: copy the setup code
    there and paste it straight in); the page opens on **Photo feed**. Paste the code and choose **Check and save**. The code is tried
    before it is saved. The CleanYourTV app's **Wallpapers** screen shows the feed (**Photo feed**: how many photos, when it was read)

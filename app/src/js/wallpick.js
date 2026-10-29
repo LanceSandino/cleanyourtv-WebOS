@@ -1,4 +1,4 @@
-/* ---------- Choosing one wallpaper (Customise > Wallpapers > Choose a photo...): the Wallpapers photos one at a time, full screen and
+/* ---------- Choosing one wallpaper (Customize > Wallpapers > Choose a photo...): the Wallpapers photos one at a time, full screen and
    whole on black. Left and Right browse (mirrored for a right-to-left language), OK uses the photo on the screen as the only wallpaper
    (cfg.wall.pick; wall.js then keeps it instead of changing photos), Back leaves. With the Magic Remote, the left and right thirds of
    the screen browse and the middle chooses. One photo at a time, the ones on either side loaded ahead: a grid of 4K photos would be

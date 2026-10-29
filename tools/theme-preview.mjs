@@ -2,7 +2,7 @@
 // make themes/<id>/preview.jpg.
 //   node tools/theme-preview.mjs <id> [--out <folder>] [--write]
 // <id> is a folder in themes/ (or "classic"). It writes <out>/rest.png (the home screen), <out>/grid.png (the focus moved down into the app
-// grid) and <out>/menu.png (the Customise menu), 1920 x 1080. With --write it also writes themes/<id>/preview.jpg (800 x 450, the screenshot
+// grid) and <out>/menu.png (the Customize menu), 1920 x 1080. With --write it also writes themes/<id>/preview.jpg (800 x 450, the screenshot
 // the TV shows). Needs Node.js 22 or newer and Google Chrome (set CHROME to its path when it is not found); nothing is installed.
 // The page talks to a small stand-in for the TV's service on 127.0.0.1:8765, so stop anything else that uses that port.
 import http from 'node:http'; import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'; import { spawn, spawnSync } from 'node:child_process'; import { createRequire } from 'node:module';
@@ -57,7 +57,7 @@ try {
   const key = async (code, name) => { await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', windowsVirtualKeyCode: code, key: name }); await send('Input.dispatchKeyEvent', { type: 'keyUp', windowsVirtualKeyCode: code, key: name }); await sleep(350); };
   const restFile = await shot('rest');
   await key(40, 'ArrowDown'); await shot('grid'); await key(38, 'ArrowUp');
-  await send('Runtime.evaluate', { expression: "openMenu('Customise',[{label:'Edit the top buttons'},{label:'Add a button'},{label:'Hidden apps',sub:'2'}]);0" }); await shot('menu');
+  await send('Runtime.evaluate', { expression: "openMenu('Customize',[{label:'Edit the top buttons'},{label:'Add a button'},{label:'Hidden apps',sub:'2'}]);0" }); await shot('menu');
   if (write) {
     const dest = path.join(ROOT, 'themes', id, 'preview.jpg');
     const r = spawnSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', restFile, '-vf', 'scale=800:450', '-q:v', '4', dest]);

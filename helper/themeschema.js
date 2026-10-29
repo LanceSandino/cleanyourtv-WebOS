@@ -98,7 +98,7 @@ const SCHEMA = [
     'inline',
     'AM and PM of a 12-hour clock: `inline` as the language writes it; `small`: smaller, in capitals, beside the time.',
   ],
-  ['bar.show', 'bool', null, true, 'Show the top buttons (Inputs, Settings, Customise, ...).'],
+  ['bar.show', 'bool', null, true, 'Show the top buttons (Inputs, Settings, Customize, ...).'],
   [
     'bar.style',
     'enum',

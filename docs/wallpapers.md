@@ -5,7 +5,7 @@ Your own photos behind the home screen, from two sources: photos you upload from
 
 ## Switching it on
 
-In the launcher, **Customise** > **Wallpapers**:
+In the launcher, **Customize** > **Wallpapers**:
 
 | Row | What it does |
 |---|---|

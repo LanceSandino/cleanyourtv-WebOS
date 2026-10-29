@@ -16,8 +16,8 @@ const HALF_LIFE = 30 * 24 * 3600 * 1000; // usage counts halve every 30 days
 // apps that are never uninstalled from Home, whatever the app manager says: this project's, the Homebrew Channel (it keeps the TV
 // rooted), the input hook the Input key runs on, and LG's own
 const KEEP = /^(com\.cleanyourtv\.|org\.webosbrew\.hbchannel$|org\.webosbrew\.inputhook$|com\.webos\.|com\.lge\.)/;
-const WALL_SECS = [0, 10, 30, 60, 180, 300, 900, 3600]; // the photo-change intervals Customise > Wallpapers offers
-// Customise > Screensaver: how long Home is left alone before it starts, and how long each photo stays (seconds)
+const WALL_SECS = [0, 10, 30, 60, 180, 300, 900, 3600]; // the photo-change intervals Customize > Wallpapers offers
+// Customize > Screensaver: how long Home is left alone before it starts, and how long each photo stays (seconds)
 const SAVER_AFTER = [60, 120, 300, 600, 900, 1800],
   SAVER_SECS = [10, 15, 30, 60, 300, 900],
   // the frames other than the default (walnut), as saver.js names them
@@ -232,7 +232,7 @@ function create(ctx) {
       // secs: how often the photo changes while Home is shown, in seconds (0: each time Home opens); "every" (minutes) came before it
       const secs = typeof b.wall.secs === 'number' ? b.wall.secs : typeof b.wall.every === 'number' ? b.wall.every * 60 : 900;
       out.wall = { on: b.wall.on === true, secs: WALL_SECS.indexOf(secs) >= 0 ? secs : 900 };
-      // one chosen photo (Customise > Wallpapers > Choose a photo): an id as the wallpapers list names it, u/<id>, i/<asset id> or f/<feed id>
+      // one chosen photo (Customize > Wallpapers > Choose a photo): an id as the wallpapers list names it, u/<id>, i/<asset id> or f/<feed id>
       if (typeof b.wall.pick === 'string' && /^([ui]\/[0-9a-f-]{16,36}|f\/[A-Za-z0-9_-]{1,64})$/i.test(b.wall.pick))
         out.wall.pick = b.wall.pick;
     }
@@ -268,7 +268,7 @@ function create(ctx) {
       );
       if (hide.length) out.watch.hide = hide.slice(-100);
     }
-    // the cards in the theme's slots (Customise > Cards), checked for shape only (cards.js)
+    // the cards in the theme's slots (Customize > Cards), checked for shape only (cards.js)
     const cards = cardsShape.sanitize(b.cards);
     if (cards) out.cards = cards;
     if (Array.isArray(b.topbar))
