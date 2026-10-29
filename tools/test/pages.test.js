@@ -87,5 +87,8 @@ run(async () => {
   const picker = fs.readFileSync(path.join(root, 'picker', 'app', 'index.html'), 'utf8');
   const lights = [/\.tile \.rd \{[^}]*width: (\d+)px/, /#dock \.tile \.rd \{[^}]*width: (\d+)px/].map(r => +(r.exec(launcher) || [])[1]);
   const pick = +(/\.tile\.act::after\{[^}]*width:(\d+)px/.exec(picker) || [])[1];
-  ok(lights.concat(pick).every(w => w > 0 && w <= 12), 'the light on open apps is at most 12 px, on Home, the dock and the Inputs list: ' + lights.concat(pick));
+  ok(
+    lights.concat(pick).every(w => w > 0 && w <= 12),
+    'the light on open apps is at most 12 px, on Home, the dock and the Inputs list: ' + lights.concat(pick)
+  );
 });
