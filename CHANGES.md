@@ -1169,6 +1169,9 @@ related_tests: ["tools/oldchrome.js (saver frame: the four sides with their wood
 commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T15:05:00Z"
+```
+
+```yaml
 id: CU-20261029-12
 type: fix
 title: "Plex: linking works again (plex.tv answers a new code with 201), a busy or expired code, the server's address that answers"
