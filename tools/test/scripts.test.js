@@ -310,4 +310,40 @@ run(async () => {
   kill();
   if (!exited) wd.kill();
   ok(exited, 'the watchdog ends when CleanYourTV is no longer installed');
+  // a service that stops at once every time: started at most CYTV_WATCH_MAX times in ten minutes, then left alone with a note,
+  // and the crash log of the first stop is kept
+  {
+    const W2 = path.join(tmp, 'wd2'),
+      mark2 = path.join(W2, 'starts'),
+      blog2 = path.join(W2, 'boot.log'),
+      slog2 = path.join(W2, 'helper.log');
+    fs.mkdirSync(W2);
+    fs.writeFileSync(path.join(W2, 'helper.js'), "require('fs').appendFileSync(process.env.WD_MARK, 'start\\n'); console.log('crash');\n");
+    fs.writeFileSync(slog2, 'the first crash\n');
+    const n2 = () => (fs.existsSync(mark2) ? fs.readFileSync(mark2, 'utf8').split('\n').filter(Boolean).length : 0);
+    const wd2 = cp.spawn('sh', [path.join(root, 'scripts', 'watchdog.sh')], {
+      env: Object.assign({}, process.env, {
+        CYTV_DIR: W2,
+        CYTV_BOOT_LOG: blog2,
+        CYTV_SERVICE_LOG: slog2,
+        CYTV_SERVICE_URL: 'http://127.0.0.1:9/none',
+        CYTV_WATCH_SECS: '1',
+        CYTV_WATCH_MAX: '2',
+        WD_MARK: mark2,
+      }),
+      stdio: 'ignore',
+    });
+    for (let i = 0; i < 60 && !/not starting it again/.test(fs.existsSync(blog2) ? fs.readFileSync(blog2, 'utf8') : ''); i++)
+      await sleep(100);
+    await sleep(1500);
+    const log2 = fs.readFileSync(blog2, 'utf8');
+    wd2.kill();
+    ok(
+      n2() === 2 &&
+        /stopped 2 times in 10 minutes; not starting it again/.test(log2) &&
+        (log2.match(/not starting it again/g) || []).length === 1 &&
+        fs.readFileSync(path.join(W2, 'helper.crash.log'), 'utf8') === 'the first crash\n',
+      'a service that keeps stopping is started at most the limit, then left with one note; the first crash log is kept: ' + n2()
+    );
+  }
 });
