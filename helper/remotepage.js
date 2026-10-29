@@ -48,23 +48,25 @@ function tick() {
     o.stop(t0 + 0.05);
   } catch (e) {}
 }
-/* a short buzz: vibrate where there is one; Safari on the iPhone has none, but a switch toggled through its label taps (iOS 18 on) */
-var hap = null;
+/* a short buzz: vibrate where there is one. Safari on the iPhone has no vibrate, but toggling a switch through its label taps
+   (iOS 18 and later): a fresh hidden one each time, clicked and removed at once, so it never keeps the focus (a switch left focused
+   made every later buzz look like typing and skip). Not while typing into a text box (the click would close the keyboard). */
 function buzz() {
   if (fb.sound) tick();
   if (!fb.vibrate) return;
   try {
     if (navigator.vibrate) { navigator.vibrate(8); return; }
     var a = document.activeElement;
-    if (a && a.tagName === 'INPUT') return;
-    if (!hap) {
-      hap = document.createElement('label');
-      hap.className = 'hap';
-      hap.setAttribute('aria-hidden', 'true');
-      hap.innerHTML = '<input type=checkbox switch tabindex=-1>';
-      document.body.appendChild(hap);
-    }
-    hap.click();
+    if (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && /^(text|search|number|tel|email|url|password)$/.test(a.type)))) return;
+    var l = document.createElement('label'), i = document.createElement('input');
+    l.setAttribute('aria-hidden', 'true');
+    l.style.display = 'none';
+    i.type = 'checkbox';
+    i.setAttribute('switch', '');
+    l.appendChild(i);
+    document.head.appendChild(l);
+    l.click();
+    document.head.removeChild(l);
   } catch (e) {}
 }
 var up = null;
@@ -165,9 +167,11 @@ document.addEventListener('click', function (e) {
   else press(k, b);
 });
 var rep = 0, held = null, longT = 0;
-function lift() {
+function lift(e) {
   clearInterval(rep);
   clearTimeout(longT);
+  /* an iPhone taps only from a finished touch: a key that repeats while held (pressed at touch down) taps again as it is let go */
+  if (e && e.type === 'touchend' && held && held.hasAttribute('data-hold') && !navigator.vibrate) buzz();
   if (held) held.classList.remove('dn');
   held = null;
 }
@@ -495,7 +499,6 @@ small{display:block;margin-top:${u(16)};font-size:${u(12)};line-height:1.45;colo
 #login small{max-width:${u(280)};margin-top:${u(22)}}
 #msg{position:fixed;z-index:9;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 8px);width:calc(100% - 32px);max-width:380px;padding:12px 16px;border-radius:16px;transform:translateX(-50%);font-size:15px;line-height:1.35;color:#e9f7ec;background:#1e3425;box-shadow:0 10px 30px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.06)}
 #msg.e{color:#ffe9e7;background:#4a1a1a}
-.hap{position:fixed;left:-60px;top:0;opacity:0;pointer-events:none}
 .ack{box-shadow:0 0 0 3px rgba(48,209,88,.9)!important}.nak{box-shadow:0 0 0 3px rgba(255,69,58,.9)!important}
 .gear{margin-right:${u(8)}}.gear svg{width:${u(20)};height:${u(20)}}
 ${statuspage.css(u)}`;
