@@ -1621,3 +1621,16 @@ commit_ref: "feature/search-fit (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T21:24:16Z"
 ```
+
+```yaml
+id: CU-20261029-46
+type: fix
+title: "LG's screensaver question: every answer kept on the TV with its time and LG's reply"
+description: "After 1.6.39 LG's fault manager again recorded \"Request Screen Saver\" timed out for cleanyourtv (general_fault_logs.tar.gz, timeout.log, at 6425 s of uptime), with one subscription running; the service log in /tmp was gone after the next reboot, so the cause could not be read. Read on the owner's TV since: luna-send hands each reply on at once through a pipe; one luna call takes 29 to 40 ms; tvpowerd knows the client by clientName and takes the timestamp only as a string (a number: \"'timestamp' is needed, invalid param\"; an answer to no question: \"The response is too late\"). helper/lgscreensaver.js keeps every answer in D/screensaver-answers.log (the last 40, written whole and renamed into place): the time, uptime, ack, the app in front, the milliseconds from LG's question to LG's reply, and LG's reply (ok or its errorText; the timestamp's type when it is not a string), and logs a refused answer; status() has the last five. The next timeout says whether the answer was late, refused or missing."
+impact: low
+affected_modules: ["helper/lgscreensaver.js", "docs/screensaver.md"]
+related_tests: ["tools/test/lgscreensaver.test.js (the answer is kept in the record with the app in front, how long it took and LG reply; LG's refusal is kept; only the last answers are kept; the string timestamp is answered unchanged)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T23:10:00Z"
+```

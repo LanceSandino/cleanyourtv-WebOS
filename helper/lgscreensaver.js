@@ -7,8 +7,12 @@
 // Ours (the photos, saver.js) when the screensaver is on and has photos and the TV is not on an HDMI input (a console or a set-top box
 // is in use even when the remote is not): LG is told no, and Home is opened with {saver: 'start', from: the app that was in front}, so
 // the launcher shows the photos and a key goes back to that app. Otherwise LG decides, as before this launcher.
+// Every answer is kept in a short record on the TV's storage (screensaver-answers.log, the last 40), with how long it took and what LG
+// replied ("The response is too late", an invalid parameter): the service's own log is in /tmp and gone after the reboot such a fault
+// causes, so this is what says why LG counted an answer as missing.
 const cp = require('child_process'),
   fs = require('fs'),
+  os = require('os'),
   path = require('path');
 const P = require('./paths');
 
@@ -22,6 +26,8 @@ function create(ctx, opts) {
       maxWaitMs: 30000,
       proc: P.PROC,
       kill: (pid, sig) => process.kill(pid, sig),
+      record: path.join(P.D, 'screensaver-answers.log'),
+      keep: 40,
     },
     opts
   );
@@ -43,9 +49,30 @@ function create(ctx, opts) {
       wall = +String((c.wallpapers && c.wallpapers.stamp) || '0').split(':')[0] || 0;
     return s.on === true && (feed > 0 || wall > 0);
   }
-  const answer = (ts, ack) =>
-    ctx.luna(URI + 'responseScreenSaverRequest', { clientName: 'cleanyourtv', ack, timestamp: ts }).catch(() => null);
+  // one line per answer, the last o.keep kept (renamed into place, so a reader never sees half a file)
+  function remember(entry) {
+    try {
+      let lines = [];
+      try {
+        lines = fs.readFileSync(o.record, 'utf8').split('\n').filter(Boolean);
+      } catch (_) {}
+      lines.push(JSON.stringify(entry));
+      fs.writeFileSync(o.record + '.new', lines.slice(-o.keep).join('\n') + '\n');
+      fs.renameSync(o.record + '.new', o.record);
+    } catch (_) {}
+  }
+  let t0 = 0;
+  async function answer(ts, ack, fg) {
+    const r = await ctx.luna(URI + 'responseScreenSaverRequest', { clientName: 'cleanyourtv', ack, timestamp: ts }).catch(() => null);
+    const lg = r && r.returnValue === true ? 'ok' : (r && r.errorText) || 'no reply';
+    const entry = { at: new Date().toISOString(), up: Math.round(os.uptime()), ack, over: fg || '', ms: Date.now() - t0, lg };
+    if (typeof ts !== 'string') entry.ts = typeof ts;
+    remember(entry);
+    if (lg !== 'ok') log('LG did not take the answer (' + lg + ', ' + entry.ms + ' ms)');
+    return entry;
+  }
   async function asked(ts) {
+    t0 = Date.now();
     if (!ours()) {
       await answer(ts, true);
       return log('LG asked, LG allowed');
@@ -56,10 +83,10 @@ function create(ctx, opts) {
       fg = (f && f.appId) || '';
     } catch (_) {}
     if (/^com\.webos\.app\.hdmi\d+$/.test(fg)) {
-      await answer(ts, true);
+      await answer(ts, true, fg);
       return log('LG asked over ' + fg + ', left to LG (an HDMI input)');
     }
-    await answer(ts, false);
+    await answer(ts, false, fg);
     await ctx
       .luna('luna://com.webos.applicationManager/launch', {
         id: 'com.webos.app.home',
@@ -140,7 +167,19 @@ function create(ctx, opts) {
       } catch (_) {}
     }
   }
-  return { name: 'lgscreensaver', start, stop, status: () => ({ listening: !!child, last }) };
+  function answers() {
+    try {
+      return fs
+        .readFileSync(o.record, 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .slice(-5)
+        .map(l => JSON.parse(l));
+    } catch (_) {
+      return [];
+    }
+  }
+  return { name: 'lgscreensaver', start, stop, status: () => ({ listening: !!child, last, answers: answers() }) };
 }
 
 module.exports = { create };
