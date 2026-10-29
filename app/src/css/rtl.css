@@ -144,6 +144,13 @@
 [dir="rtl"] .wx-i svg {
   margin: 0 0 0 16px;
 }
+[dir="rtl"] .card-weather.slim .wx-i svg {
+  margin: 0 0 0 10px;
+}
+[dir="rtl"] .card-weather.slim .wx-p,
+[dir="rtl"] .card-weather.slim .wx-none {
+  margin: 0 14px 0 0;
+}
 [dir="rtl"] .wx-days > div + div {
   margin-left: 0;
   margin-right: 18px;

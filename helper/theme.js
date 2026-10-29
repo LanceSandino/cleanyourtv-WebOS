@@ -164,16 +164,35 @@ function create(ctx) {
     ids.sort((a, b) => span(a) - span(b));
     return ids[0] || null;
   }
+  // ---- the clock as the user set it (Customize > Clock), kept across themes: where it stands (the theme's place, top left or top
+  // centre), its size (the theme's, smaller or larger) and, for a theme with a cut-out of its picture, whether it stands behind it ----
+  const clockOf = () => {
+    const k = (conf().theme || {}).clock || {};
+    return {
+      pos: k.pos === 'tl' || k.pos === 'tc' ? k.pos : '',
+      size: k.size === 'small' || k.size === 'large' ? k.size : '',
+      front: k.front !== false,
+    };
+  };
+  function withClock(t, k) {
+    if (!t || (!k.pos && !k.size && k.front)) return t;
+    const v = Object.assign({}, t.v);
+    if (k.pos) Object.assign(v, { 'clock.anchor': 'top', 'clock.align': k.pos === 'tl' ? 'left' : 'center', 'clock.x': 96, 'clock.y': 64 });
+    if (k.size) v['clock.scale'] = Math.max(0.6, Math.min(5, Math.round(v['clock.scale'] * (k.size === 'small' ? 0.7 : 1.4) * 100) / 100));
+    if (!k.front) v['effects.foreground'] = '';
+    return Object.assign({}, t, { v });
+  }
   const resolved = () => {
     const c = cur(),
       all = load(),
-      h = holiday();
+      h = holiday(),
+      k = clockOf();
     if (h && h !== c.id) {
       // over a holiday the clock stands in front as usual: the chosen theme's cut-out of its picture is left out (the owner's choice)
       const t = normalize(all[h].raw, h, Object.assign({}, all[c.id].v, { 'effects.foreground': '' }));
-      if (t) return resolve(t, '');
+      if (t) return resolve(withClock(t, k), '');
     }
-    return resolve(all[c.id], c.accent);
+    return resolve(withClock(all[c.id], k), c.accent);
   };
   // the chosen theme, kept with the Holiday themes switch
   const save = o =>
@@ -181,6 +200,7 @@ function create(ctx) {
       const was = c.theme || {};
       c.theme = o;
       if (was.holidays === true && o.holidays === undefined) c.theme.holidays = true;
+      if (was.clock && o.clock === undefined) c.theme.clock = was.clock;
     });
   // downloads the holiday theme for today or the next 3 days when it is not on the TV (and a newer copy of one that is)
   async function ensureHoliday() {
@@ -339,6 +359,8 @@ function create(ctx) {
     const h = holiday();
     return {
       current: { id: c.id, accent: c.accent },
+      clock: clockOf(),
+      hasFront: !!(all[c.id] && all[c.id].v['effects.foreground']),
       holidays: { on: holidaysOn(), active: h, name: h ? all[h].name : '' },
       previous: c.prev,
       accents: ACCENTS.map(x => ({ name: x[0], hex: x[1] })),
@@ -426,6 +448,23 @@ function create(ctx) {
         accent = String(b.accent).toLowerCase();
       } else if (id !== c.id) accent = ''; // a new theme brings its own accent
       if (id !== c.id || accent !== c.accent) save({ id, accent, prev: { id: c.id, accent: c.accent } });
+      return json(await list());
+    }
+    // the clock (Customize > Clock): {pos: '' | 'tl' | 'tc', size: '' | 'small' | 'large', front: true | false}; the defaults are not kept
+    if (act === 'clock') {
+      const k = Object.assign(clockOf(), b.pos !== undefined ? { pos: b.pos } : {}, b.size !== undefined ? { size: b.size } : {});
+      if (b.front !== undefined) k.front = b.front !== false;
+      if (['', 'tl', 'tc'].indexOf(k.pos) < 0 || ['', 'small', 'large'].indexOf(k.size) < 0)
+        return json({ error: 'unknown clock place or size' }, 400);
+      ctx.config.update('theme', cf => {
+        const o = {};
+        if (k.pos) o.pos = k.pos;
+        if (k.size) o.size = k.size;
+        if (!k.front) o.front = false;
+        cf.theme = Object.assign({}, cf.theme);
+        if (Object.keys(o).length) cf.theme.clock = o;
+        else delete cf.theme.clock;
+      });
       return json(await list());
     }
     // Holiday themes on or off (Customize > Theme); on: the holiday theme for today is downloaded now when it is not on the TV

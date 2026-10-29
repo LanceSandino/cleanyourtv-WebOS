@@ -59,7 +59,10 @@ with Home still in view on the left, so a change shows at once:
 - **hidden apps** (show them again);
 - the **app order** (most used first, or A to Z);
 - **mark running apps** (a green dot on their tiles, or none);
-- the **clock** format (automatic, 12 or 24 hour);
+- the **clock**: its format (automatic, 12 or 24 hour), where it stands (**Position**: the theme's place, top left or top centre), its
+  **Size** (the theme's, smaller or larger) and, on a theme whose picture has a cut-out like Dawn, whether it stands **Behind the
+  picture** or in front. Position, Size and Behind the picture stay when you change theme; over a holiday theme and over your own
+  photos the clock is always in front;
 - the **theme** (see [Themes](themes.md)) and the **accent colour**; the theme list shows each theme's screenshot;
 - **Wallpapers**: your own photos behind Home, and how often they change (see [Wallpapers](wallpapers.md));
 - **More settings...**, which opens the [manager app](manager.md) for everything the TV and the service do.
@@ -114,12 +117,13 @@ hidden. CleanYourTV, the Homebrew Channel (it keeps the TV rooted) and LG Input 
 Cards are set up in the [manager app](manager.md), **Cards**. Themes with places for cards (**Lock Screen**, **Bloom** and **Horizon**)
 also have a **Cards** row in **Customize** that opens it. It lists the places (above the clock, beside the clock, a column on the right,
 above the dock); choose one to put a card there or leave it empty. A card you chose stays when you switch to another theme with the
-same place.
+same place. The QR code for the phone page goes as soon as the phone saves: back to Home when you came from Customize > Cards, so the
+card shows at once (the phone page stays open for more changes, at most an hour).
 
 | Card | What it shows |
 |---|---|
 | Greeting | Good morning, afternoon or evening, with your name if you set one, and the date or the weather on a second line where there is room. |
-| Weather | The temperature and the sky now at a place you search for on the phone page, from Open-Meteo (free, no account), with the next three days if you like; °C or °F. The TV asks at most every 30 minutes and keeps the last answer for when the internet is away. |
+| Weather | The temperature and the sky now at a place you search for on the phone page, from Open-Meteo (free, no account), with the next three days if you like; °C or °F. The TV asks at most every 30 minutes and keeps the last answer for when the internet is away. In a short place (Glass's line above the clock) it is one line: the icon, the temperature, the place and the sky. |
 | Home Assistant entity | One entity with an icon, its state (On, Off, 8.4 °C) and its name. Select it with the remote (it joins the row of top buttons) and press OK to switch a light, switch, fan or automation, or to run a scene or script. Locks, alarms and covers are never switched from the TV. |
 | Home Assistant entities | A list of entities, one per line on the phone page, with an optional title. |
 | Home Assistant camera | A camera's picture, renewed every 10, 30 or 60 seconds while Home is shown. |

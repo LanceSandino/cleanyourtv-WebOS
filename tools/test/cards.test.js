@@ -100,6 +100,10 @@ run(async () => {
   // the manager's Cards screen: the places and a card type for one of them
   r = await call(cards, '/api/cards/status', 'POST', {});
   ok(r.j.slots.length === 3 && r.j.types.some(t => t.type === 'ha-camera'), 'the manager gets the places and the card types');
+  ok(
+    typeof r.j.savedAt === 'number' && Date.now() - r.j.savedAt < 60000,
+    "the status says when the phone page last saved (the manager's QR screen goes then)"
+  );
   r = await call(cards, '/api/cards/set', 'POST', { slot: 'side', type: 'ha-camera' });
   ok(r.j.ok && config.get().cards.side.type === 'ha-camera', 'the manager picks a card for a place');
   config.update('test', c => {

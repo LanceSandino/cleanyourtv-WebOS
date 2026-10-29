@@ -79,7 +79,8 @@ disk, and a reboot without the boot scripts brings LG's Home back.
 
 ```sh
 sh tools/check.sh                  # every check: tests under Node 8.12.0 and the current Node, built pages
-sh tools/check.sh --chromium       # also the pages in Chromium 68 and 79 (webOS 5 and 6), as CI does
+sh tools/check.sh --chromium       # also the pages in Chromium 68 and 79 (webOS 5 and 6)
+CYTV_CHROMIUM_IMAGE=ubuntu:26.04 sh tools/check.sh --chromium   # the same in a Linux container, as CI does (Docker; on new macOS too)
 npm install                        # once: TypeScript, ESLint and Prettier for check.sh (development only, nothing is shipped)
 npm run format                     # formats the code (Prettier) and rebuilds the pages
 node tools/test.js live            # one area of tests (the files in tools/test)

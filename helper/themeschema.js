@@ -246,7 +246,8 @@ const SCHEMA = [
     '',
     'The front of the wallpaper: a `.png` or `.webp` in the theme folder, at most 1.5 MB, drawn at 1920 x 1080 over the clock and ' +
       'under the apps, the cards and the menus: the wallpaper with its sky cut away, so the clock stands behind the hills (Dawn uses ' +
-      "one). Only for the theme's own wallpaper; it is not drawn over your photos (Wallpapers on).",
+      "one). Only for the theme's own wallpaper: not over your photos (Wallpapers on) or a holiday theme, and Customize > Clock > " +
+      'Behind the picture turns it off.',
   ],
 ];
 const DEFAULTS = {};

@@ -111,14 +111,19 @@ const themeOf = id =>
   );
 let pageTheme = null;
 // in front of the page's own script: report script errors on <html data-errors>, and the TV's webOSSystem with no launch parameters.
-// The page also sends its own copy of itself to the stand-in (/__dom) each second it changed: headless Chromium 79 on GitHub's Linux
-// runners now and then cannot hand the page over at the end ("Failed to serialize document: Uncaught"), and then this copy is used
-// (or the reason the page itself could not copy itself is shown)
+// The page also sends its own copy of itself to the stand-in (/__dom): once its check has an outcome (data-...="ok" or "bad..."), and
+// for the pages that only draw, three seconds after the load and then every ten. The old headless Chromium builds now and then cannot hand the page over at
+// the end ("Failed to serialize document: Uncaught"), and then this copy is used (or the reason the page could not copy itself is
+// shown). One copy at a time: a copy sent every second kept requests open when the browser handed the page over, which made it fail
+// more often.
 const PROBE =
   '<script>window.onerror=function(m,s,l){var h=document.documentElement;h.setAttribute("data-errors",(h.getAttribute("data-errors")||"")+m+" (line "+l+"); ")};' +
   'window.webOSSystem={launchParams:"{}",locale:"en-GB",hide:function(){},activate:function(){},platformBack:function(){},setInputRegion:function(){},setKeyMask:function(){}};' +
-  '(function(){var last="";setInterval(function(){var h;try{h="<!DOCTYPE html>\\n"+document.documentElement.outerHTML}catch(e){h="__error__ "+e}' +
-  'if(h===last)return;last=h;try{var x=new XMLHttpRequest();x.open("POST","/__dom",true);x.send(h)}catch(e){}},1000)})();</script>';
+  '(function(){var sent=0;function copy(){var h;try{h="<!DOCTYPE html>\\n"+document.documentElement.outerHTML}catch(e){h="__error__ "+e}' +
+  'try{var x=new XMLHttpRequest();x.open("POST","/__dom",true);x.send(h)}catch(e){}}' +
+  'function done(){var a=document.body&&document.body.attributes;for(var i=0;a&&i<a.length;i++)if(/^data-/.test(a[i].name)&&/^(ok|bad)/.test(a[i].value))return true;return false}' +
+  'document.addEventListener("DOMContentLoaded",function(){new MutationObserver(function(){if(!sent&&done()){sent=1;copy()}}).observe(document.body,{attributes:true})});' +
+  'window.addEventListener("load",function(){setTimeout(function(){if(!sent)copy()},3000);setInterval(function(){if(!sent)copy()},10000)})})();</script>';
 const page = (f, extra) =>
   fs
     .readFileSync(path.join(ROOT, f), 'utf8')
@@ -271,6 +276,23 @@ const MENU_TWO =
   'pick("Frame");var ticked=[].filter.call(ov().querySelectorAll(".panel .row"),function(r){return !!r.querySelector(".ck")}).map(function(r){return r.textContent});' +
   'var tick=ticked.length===1&&/Oak/.test(ticked[0]);key(37);key(37);var back=stack.length===1&&!/\\btwo\\b/.test(ov().className);' +
   'document.body.setAttribute("data-two",one&&two&&tick&&back?"ok":"bad one="+one+" two="+two+" tick="+ticked.join("|")+" back="+back)},300)})()</script>';
+// a weather card in Glass's short place over the clock (30 px): one line inside the place (slim), its icon as tall as the place,
+// the place and the sky beside the temperature, and all of it above the time. The outcome lands in data-slim.
+const SLIM_WX =
+  '<script>(function(){var A=window.api;window.api=function(p,b){return p==="/api/cards/weather"?Promise.resolve({now:{temp:18,code:0,day:true},days:[],at:Date.now()}):A(p,b)};' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);cfg.cards={greeting:{type:"weather",place:"Lake",lat:40.1,lon:-75.2}};drawCards();' +
+  'setTimeout(function(){tickCards();setTimeout(function(){var c=document.querySelector("#cards .card-weather"),svg=c&&c.querySelector(".wx-i svg"),p=c&&c.querySelector(".wx-p"),' +
+  'tm=document.getElementById("time").getBoundingClientRect(),cr=c&&c.getBoundingClientRect(),sr=svg&&svg.getBoundingClientRect();' +
+  'var slim=!!c&&/\\bslim\\b/.test(c.className)&&cr.height<=31&&!!sr&&sr.height<=31&&sr.bottom<=cr.bottom+1&&c.scrollHeight<=32;' +
+  'var line=!!p&&/Lake/.test(p.textContent)&&p.getBoundingClientRect().top<cr.bottom,above=!!cr&&cr.bottom<=tm.top+2;' +
+  'document.body.setAttribute("data-slim",slim&&line&&above?"ok":"bad slim="+slim+" line="+line+" above="+above+" card="+(cr&&cr.top+"-"+cr.bottom)+" time="+tm.top)},600)},400)},300)})()</script>';
+// the manager's Check for updates: its "Checking…" banner goes when the answer is in (it stayed before), and the release's day
+// shows beside the version. The outcome lands in data-check.
+const MANAGER_CHECK =
+  '<script>(function(){var go=setInterval(function(){if(typeof rows==="undefined"||!rows.length)return;clearInterval(go);setTimeout(function(){' +
+  'for(var i=0;i<rows.length;i++)if(rows[i].label==="Check for updates"){idx=i;act();break}var was=$("banner").textContent;' +
+  'setTimeout(function(){var b=$("banner"),gone=b.style.display==="none",day=/2026/.test(document.body.textContent);' +
+  'document.body.setAttribute("data-check",gone&&/Checking/.test(was)&&day?"ok":"bad was="+was+" banner="+b.textContent+" day="+day)},1500)},800)},300)})()</script>';
 // Dawn (effects.foreground): the front of its wallpaper is a layer over the clock (after #top, above it) and under the apps (#view
 // comes forward), its picture loads, and the date stands above the time (clock.dateAbove). The outcome lands in data-front.
 const FG_CHECK =
@@ -314,6 +336,8 @@ const PAGES = [
   ['holiday frame', 'app/index.html', /data-fx="ok"/g, 1, 15000, FX_CHECK, 'halloween'],
   ['dawn front', 'app/index.html', /data-front="ok"/g, 1, 15000, FG_CHECK, 'dawn'],
   ['menu sections', 'app/index.html', /data-two="ok"/g, 1, 12000, MENU_TWO],
+  ['manager update check', 'manager/app/index.html', /data-check="ok"/g, 1, 12000, MANAGER_CHECK],
+  ['weather in a short place', 'app/index.html', /data-slim="ok"/g, 1, 12000, SLIM_WX, 'glass'],
 ];
 let famN = 0,
   plexState = 'idle',
@@ -407,6 +431,9 @@ function serve() {
         ],
       });
     if (u === '/api/manager/status') return json(golden['manager status'].body);
+    // Check for updates: the same status, with a release that came out on a known day
+    if (u === '/api/manager/check')
+      return json(Object.assign({}, golden['manager status'].body, { release: { version: '9.9.9', date: '2026-10-28' }, checking: false }));
     if (u === '/api/watch/rows')
       return json({
         items: [

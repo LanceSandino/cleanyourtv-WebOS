@@ -33,6 +33,8 @@ run(async () => {
     if (q.url === '/repos/o/r/releases/tags/dev') return send(rel('dev', '1.5.4', '1.4.6', 'build: abc1234\nbranch: dev', true));
     send(null);
   });
+  const pr = req('updates').parseRelease(rel('v1.5.3', '1.5.3', '1.4.5', 'stable'));
+  ok(pr.date === '2026-10-23', 'a release carries the day it was published, for the manager to show beside the version');
   process.env.CYTV_API = api.url;
   const D = process.env.CYTV_DIR;
   fs.writeFileSync(path.join(D, 'source'), 'o/r main\n');

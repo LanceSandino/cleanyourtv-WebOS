@@ -224,11 +224,38 @@ function openCardsPair() {
       $('sharemsg').textContent = tr(
         'The page stays open while you use it, at most an hour. It is not encrypted: what you type travels over your Wi-Fi.'
       );
+      watchCardsSave();
     },
     function () {
       $('sharemsg').textContent = tr('The service did not answer.');
     }
   );
+}
+/* once the phone page saves, this screen goes: back to Home when it was opened from Customize > Cards (the cards show there), else
+   to the Cards list. The phone page stays usable for more changes (at most an hour). */
+function watchCardsSave() {
+  var since = Date.now();
+  (function poll() {
+    setTimeout(function () {
+      if (view !== 'share' || shareMode !== 'cards') return;
+      api('/api/cards/status', {}).then(
+        function (s) {
+          if (view !== 'share' || shareMode !== 'cards') return;
+          if (!(s && s.savedAt > since)) return poll();
+          $('share').style.display = 'none';
+          pop();
+          if (cardsFromHome) {
+            cardsFromHome = false;
+            api('/api/launch', { id: 'com.webos.app.home' }).catch(function () {});
+          }
+          openCards();
+        },
+        function () {
+          poll();
+        }
+      );
+    }, 2000);
+  })();
 }
 function openLivePair() {
   shareMode = 'live';

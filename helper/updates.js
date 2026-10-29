@@ -81,6 +81,8 @@ function parseRelease(j) {
     build: buildInBody(j.body),
     test: !!channel(),
     notes: String(j.body || '').slice(0, 600),
+    // the day it was published (YYYY-MM-DD), shown beside the version in the manager
+    date: /^\d{4}-\d{2}-\d{2}/.test(String(j.published_at || '')) ? String(j.published_at).slice(0, 10) : '',
   };
 }
 async function latest(conf) {
@@ -168,7 +170,15 @@ function create(ctx) {
       },
       channel: channel(),
       release: lat
-        ? { version: lat.version, frontend: lat.frontend, service: lat.service, build: lat.build, test: lat.test, notes: lat.notes }
+        ? {
+            version: lat.version,
+            frontend: lat.frontend,
+            service: lat.service,
+            build: lat.build,
+            test: lat.test,
+            notes: lat.notes,
+            date: lat.date || '',
+          }
         : null,
       checkedAt: releaseAt,
       checking,

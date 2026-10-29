@@ -414,7 +414,8 @@ function drawCards() {
     if (!c) return;
     var el = document.createElement('div'),
       st = el.style;
-    el.className = 'card card-' + c.type + (sl.keep ? ' keep' : '');
+    /* a place shorter than the weather card (Glass's line over the clock): the card is one line sized to it, not cut off */
+    el.className = 'card card-' + c.type + (sl.keep ? ' keep' : '') + (c.type === 'weather' && parseInt(sl.h, 10) < 72 ? ' slim' : '');
     el.setAttribute('data-align', sl.align || 'left');
     st.setProperty('--cl', sl.l);
     st.setProperty('--cr', sl.r);

@@ -446,6 +446,7 @@
       },
       "release": {
         "build": "",
+        "date": "",
         "frontend": "99.1.0",
         "notes": "Release notes.",
         "service": "99.1.0",
@@ -529,6 +530,7 @@
       },
       "release": {
         "build": "",
+        "date": "",
         "frontend": "99.1.0",
         "notes": "Release notes.",
         "service": "99.1.0",
@@ -630,6 +632,7 @@
       },
       "release": {
         "build": "",
+        "date": "",
         "frontend": "99.1.0",
         "notes": "Release notes.",
         "service": "99.1.0",
@@ -769,10 +772,16 @@
         "error": "",
         "ok": true
       },
+      "clock": {
+        "front": true,
+        "pos": "",
+        "size": ""
+      },
       "current": {
         "accent": "",
         "id": "classic"
       },
+      "hasFront": false,
       "holidays": {
         "active": null,
         "name": "",

@@ -266,7 +266,7 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `effects.wallpaper` | a file name | none | A file name in `themes/wallpapers/`: `.jpg`, `.png` or `.webp`, at most 1.5 MB; drawn at 1920 x 1080. |
 | `effects.wallpaperDim` | 0 to 0.9 | `0.4` | How far the wallpaper is darkened with the background colour. |
 | `effects.overlay` | a file name | none | A decorative frame: a `.png` or `.webp` with transparency in the theme folder, at most 1.5 MB, drawn at 1920 x 1080 over the background, the wallpaper and your photos and under the clock, the buttons and the apps (the holiday themes use one). It is still: nothing in it moves. |
-| `effects.foreground` | a file name | none | The front of the wallpaper: a `.png` or `.webp` in the theme folder, at most 1.5 MB, drawn at 1920 x 1080 over the clock and under the apps, the cards and the menus: the wallpaper with its sky cut away, so the clock stands behind the hills (Dawn uses one). Only for the theme's own wallpaper; it is not drawn over your photos (Wallpapers on). |
+| `effects.foreground` | a file name | none | The front of the wallpaper: a `.png` or `.webp` in the theme folder, at most 1.5 MB, drawn at 1920 x 1080 over the clock and under the apps, the cards and the menus: the wallpaper with its sky cut away, so the clock stands behind the hills (Dawn uses one). Only for the theme's own wallpaper: not over your photos (Wallpapers on) or a holiday theme, and Customize > Clock > Behind the picture turns it off. |
 <!-- schema:end -->
 
 ### Slots for cards

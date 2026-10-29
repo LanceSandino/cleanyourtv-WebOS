@@ -791,6 +791,40 @@ body.wpon .glow.on {
   color: var(--ink2);
   font-size: 1em;
 }
+/* a weather card in a short place (cards.js adds slim): one line as tall as the place, the icon, the temperature, then the place and
+   the sky in words; no next days */
+.card-weather.slim {
+  display: flex;
+  align-items: center;
+}
+.card-weather.slim[data-align="center"] {
+  justify-content: center;
+}
+.card-weather.slim[data-align="right"] {
+  justify-content: flex-end;
+}
+.card-weather.slim .wx-now {
+  flex: none;
+  height: var(--ch);
+}
+.card-weather.slim .wx-i svg {
+  width: var(--ch);
+  height: var(--ch);
+  margin: 0 10px 0 0;
+}
+.card-weather.slim .wx-t {
+  font-size: calc(var(--ch) * 0.86);
+}
+.card-weather.slim .wx-p,
+.card-weather.slim .wx-none {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0 0 0 14px;
+  font-size: calc(var(--ch) * 0.62);
+}
+.card-weather.slim .wx-days {
+  display: none;
+}
 /* a list keeps its height to its rows (at most the slot's), and its text starts on the reading side */
 .card-ha-entities {
   height: auto !important;

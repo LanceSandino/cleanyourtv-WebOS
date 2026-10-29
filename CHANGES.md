@@ -952,3 +952,58 @@ commit_ref: "feature/dawn-theme (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T02:57:11Z"
 ```
+
+```yaml
+id: CU-20261028-8
+type: feature
+title: "Customize > Clock: format, position, size and Behind the picture, kept across themes"
+description: "The owner asked for the clock behind the scenery to be optional and for a way to move the clock, or keep it normal as with
+  photos and the Halloween theme. Customize > Clock is now a section: Format (as before), Position (the theme's, top left, top centre),
+  Size (the theme's, smaller x0.7, larger x1.4, held to 0.6-5) and, only on a theme with a cut-out (effects.foreground), Behind the
+  picture on or off. theme.js keeps them in config.theme.clock ({pos, size, front}, defaults not kept, kept when the theme changes), lays
+  them over the resolved theme (also under a holiday theme) and answers /api/theme/clock; /api/theme/list carries clock and hasFront.
+  Over a holiday theme and over the user's photos the clock is always in front (CU-20261028-6)."
+impact: low
+affected_modules: ["helper/theme.js", "app/src/js/menus.js", "helper/themeschema.js (text)", "docs/launcher.md", "docs/themes.md", "tools/test/golden/api.json"]
+related_tests: ["tools/test/theme.test.js (Customize > Clock moves the clock, sizes it and puts it in front of a theme's cut-out; it stays when the theme changes)", "tools/test/api.test.js (themes: the list carries clock and hasFront)"]
+commit_ref: "feature/clock-options (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T03:35:49Z"
+```
+
+```yaml
+id: CU-20261028-9
+type: fix
+title: "Weather card as one line in a short place; the Cards QR screen goes after the phone saves; the update check's banner goes; release day shown"
+description: "Three faults the owner met on the TV. (1) On Glass the only card place is a 30 px line above the clock; a weather card
+  (64 px icon and temperature) was cut off at the time and looked as if it were behind it: in a place under 72 px it is now one line as
+  tall as the place (icon, temperature, place and sky; no next days), mirrored for right-to-left. (2) The manager's Cards QR screen
+  stayed after the phone saved: cards.js keeps savedAt and /api/cards/status returns it; the screen watches it and goes back to Home
+  when it was opened from Customize > Cards, else to the Cards list (the phone page stays for more changes). (3) Check for updates kept
+  its 'Checking…' banner for good (load(true) keeps a banner): the banner is cleared when the answer is in, or says Cannot check.
+  Also asked: the manager's CleanYourTV row shows the day the latest release came out (parseRelease reads published_at)."
+impact: low
+affected_modules: ["app/src/js/cards.js", "app/src/css/home.css", "app/src/css/rtl.css", "helper/cards.js", "manager/src/js/screens.js", "manager/src/js/menu.js", "helper/updates.js", "docs/launcher.md", "docs/manager.md", "tools/oldchrome.js"]
+related_tests: ["tools/oldchrome.js (weather in a short place: one line inside Glass's place, above the time; manager update check: the banner goes and the release day shows)", "tools/test/cards.test.js (the status says when the phone page last saved)", "tools/test/updates.test.js (a release carries the day it was published)"]
+commit_ref: "feature/clock-options (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T03:35:49Z"
+```
+
+```yaml
+id: CU-20261028-10
+type: fix
+title: "CI runs the old-Chromium page checks in an Ubuntu 26.04 container on the latest runner"
+description: "The 1.6.27 release run failed twice: on GitHub's ubuntu-latest image (now Ubuntu 26), Chromium 79 crashed on four pages
+  before they could even send their own copy (CU-20261028-5). The owner wants the latest runner and the engines kept (they are webOS 5
+  and 6's). tools/oldchrome-container.sh runs tools/oldchrome.js in a plain Linux container with only the old builds' libraries and
+  Liberation fonts, the engines in the same cache; check.sh --chromium uses it when CYTV_CHROMIUM_IMAGE is set, as checks.yml,
+  dev-build.yml and release.yml now do (ubuntu:26.04); the runner's own library step is gone. The same container also runs both engines
+  on the owner's Mac, where Chromium 79 for macOS crashes."
+impact: none
+affected_modules: ["tools/oldchrome-container.sh", "tools/check.sh", ".github/workflows/checks.yml", ".github/workflows/dev-build.yml", ".github/workflows/release.yml", "AGENTS.md"]
+related_tests: ["tools/oldchrome-container.sh ubuntu:26.04 (both engines, every page, on the owner's Mac)"]
+commit_ref: "feature/clock-options (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T03:35:49Z"
+```

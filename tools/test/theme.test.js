@@ -392,6 +392,27 @@ run(async () => {
       th.resolved().fg.file === 'dawn-front.webp',
     "a theme's foreground (effects.foreground) is downloaded with it and served"
   );
+  // Customize > Clock: top left, larger (Dawn's 4.6 x 1.4, held at 5) and in front of the picture; kept when the theme changes;
+  // the defaults again keep nothing
+  r = await tcall('clock', { pos: 'tl', size: 'large', front: false });
+  const moved = th.resolved();
+  const clockOk =
+    r.j.clock.pos === 'tl' &&
+    r.j.clock.size === 'large' &&
+    r.j.clock.front === false &&
+    r.j.hasFront === true &&
+    moved.vars['--clock-s'] === '5' &&
+    moved.vars['--clock-ai'] === 'flex-start' &&
+    moved.vars['--clock-t'] === '64px' &&
+    !moved.fg;
+  const badPlace = await tcall('clock', { pos: 'middle' });
+  await tcall('set', { id: 'bloom' });
+  const kept = JSON.stringify((await tcall('list', null, 'GET')).j.clock);
+  await tcall('clock', { pos: '', size: '', front: true });
+  ok(
+    clockOk && badPlace.code === 400 && kept === '{"pos":"tl","size":"large","front":false}' && th.resolved().vars['--clock-s'] !== '5',
+    "Customize > Clock moves the clock, sizes it and puts it in front of a theme's cut-out; it stays when the theme changes"
+  );
   await tcall('set', { id: 'bloom' });
   // a theme's own typeface: downloaded with the theme, served from its folder, named first in --font
   ok(

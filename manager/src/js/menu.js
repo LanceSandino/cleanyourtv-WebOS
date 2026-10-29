@@ -954,10 +954,12 @@ function build() {
   };
   // updates, then the settings, then support; the destructive row last. One row for both parts of a release: the service and the
   // launcher are updated together (update-all; the new service installs its release's launcher)
-  var rel = st.release && (sv.updateTo || fe.updateTo) ? st.release.version : null;
+  var rel = st.release && (sv.updateTo || fe.updateTo) ? st.release.version : null,
+    /* the day the latest release came out: of the update offered, or of what is installed when it is up to date */
+    day = st.release && st.release.date ? releasedOn(st.release.date) : '';
   rows.push({
     label: 'CleanYourTV ' + sv.version,
-    sub: rel ? uptxt(rel) : uptxt(null) + ' \u00B7 launcher ' + fe.version,
+    sub: (rel ? uptxt(rel) : uptxt(null) + ' \u00B7 launcher ' + fe.version) + (day ? ' \u00B7 ' + day : ''),
     dim: busy,
     fn: rel
       ? function () {
@@ -970,7 +972,16 @@ function build() {
     dim: busy,
     fn: function () {
       banner('Checking…', 'work');
-      api('/api/manager/check', {}).then(refreshDone, refreshDone);
+      /* the banner goes when the answer is in (load(true) keeps a banner, so it stayed on "Checking…" before) */
+      api('/api/manager/check', {}).then(
+        function (s) {
+          banner(s && s.checkError ? 'Cannot check' : '', s && s.checkError ? 'err' : '');
+          load(true);
+        },
+        function () {
+          banner('The service did not answer', 'err');
+        }
+      );
     },
   });
   rows.push({
@@ -1080,4 +1091,14 @@ function debloatToggle(id) {
       return g !== id;
     }),
   });
+}
+/* "Released 28 Oct 2026" for a release's day (YYYY-MM-DD), in the TV's language */
+function releasedOn(d) {
+  var x = new Date(d + 'T12:00:00');
+  if (isNaN(x.getTime())) return '';
+  var txt = d;
+  try {
+    txt = x.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch (e) {}
+  return t('Released %s').replace('%s', txt);
 }

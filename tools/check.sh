@@ -7,7 +7,8 @@
 # 3. the pages built from their sources are up to date (tools/build-pages.js --check), and the translations in i18n/ (tools/i18n.js:
 #    how complete each language is; it fails only on a broken file);
 #    types, lint and formatting (tools/lint.js), when the development tools are installed (npm install);
-# 4. with --chromium: the pages in Chromium 68 and 79, the engines of webOS 5 and 6 (tools/oldchrome.js, about 200 MB downloaded once).
+# 4. with --chromium: the pages in Chromium 68 and 79, the engines of webOS 5 and 6 (tools/oldchrome.js, about 200 MB downloaded once);
+#    with CYTV_CHROMIUM_IMAGE=ubuntu:26.04 in that Linux container (tools/oldchrome-container.sh, needs Docker).
 # Nothing is installed and nothing leaves this machine, apart from the one Node download.
 set -e
 cd "$(dirname "$0")/.."
@@ -46,6 +47,9 @@ if command -v node >/dev/null; then
 fi
 if [ "$1" = "--chromium" ]; then
   echo; echo "== pages in old Chromium"
-  "$N8" tools/oldchrome.js ${CYTV_SHOTS:+--shots "$CYTV_SHOTS"}
+  # in a Linux container when CYTV_CHROMIUM_IMAGE names one (the CI workflows, and the only way on new macOS): tools/oldchrome-container.sh
+  if [ -n "$CYTV_CHROMIUM_IMAGE" ]; then sh tools/oldchrome-container.sh "$CYTV_CHROMIUM_IMAGE"
+  else "$N8" tools/oldchrome.js ${CYTV_SHOTS:+--shots "$CYTV_SHOTS"}
+  fi
 fi
 echo; echo "all checks passed"

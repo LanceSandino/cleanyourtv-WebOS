@@ -163,6 +163,7 @@ function create(ctx) {
     return {
       slots: slots().map(sl => ({ id: sl.id, name: T(SLOT_NAMES[sl.id] || sl.id), card: sl.card })),
       cards: config.get().cards || {},
+      savedAt,
       ha: ha.ready(),
       types: TYPES.map(ty => ({
         type: ty.type,
@@ -183,7 +184,10 @@ function create(ctx) {
     });
     return { ok: true };
   }
+  // when the phone page last saved (the manager's Cards screen leaves its QR code then)
+  let savedAt = 0;
   function save(cards) {
+    savedAt = Date.now();
     const c = sanitize(cards) || {};
     config.update('cards (phone)', conf => {
       if (Object.keys(c).length) conf.cards = c;

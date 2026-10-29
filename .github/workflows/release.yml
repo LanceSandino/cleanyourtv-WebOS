@@ -45,11 +45,6 @@ jobs:
         with:
           path: ~/.cache/cleanyourtv
           key: cytv-engines-${{ runner.os }}-node8.12.0-chromium555668-706915
-      - name: Libraries the old Chromium builds need
-        if: steps.gate.outputs.go == '1'
-        run: |
-          sudo apt-get update -qq
-          for p in libnss3 libatk1.0-0t64 libatk-bridge2.0-0t64 libcups2t64 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2t64 libpangocairo-1.0-0 libgtk-3-0t64 libxss1 libxtst6 fonts-liberation; do sudo apt-get install -y -qq $p >/dev/null 2>&1 || echo "not installed: $p"; done
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         if: steps.gate.outputs.go == '1'
         with:
@@ -59,7 +54,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Checks (before anything is changed)
         if: steps.gate.outputs.go == '1'
-        run: sh tools/check.sh --chromium
+        run: CYTV_CHROMIUM_IMAGE=ubuntu:26.04 sh tools/check.sh --chromium
       - name: Version numbers, commit to dev, move main
         id: rel
         if: steps.gate.outputs.go == '1'

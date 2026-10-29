@@ -7,7 +7,7 @@
 | Row | Function |
 |---|---|
 | CleanYourTV | The installed release (and launcher); updates the service and the launcher together when a newer release is out. |
-| Check for updates | Asks GitHub for the latest release. |
+| Check for updates | Asks GitHub for the latest release. The row above it shows the day that release came out. |
 | Update channel | Follow the stable releases or the [dev builds](managing.md#dev-builds). |
 | Go back to the previous launcher | Appears after a launcher update; names the launcher and the release it came with. |
 | CleanYourTV as Home | **Use CleanYourTV as Home** (LG's Home or ours; the TV restarts) and the optional **Learn the Home key**. |

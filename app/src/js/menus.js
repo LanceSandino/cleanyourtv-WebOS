@@ -621,11 +621,7 @@ function customizeMenu() {
         icon: 'clock',
         sub: cfg.clock === '24' ? t('24-hour') : cfg.clock === '12' ? t('12-hour') : t('Automatic'),
         stay: true,
-        fn: function () {
-          cfg.clock = cfg.clock === '24' ? '12' : cfg.clock === '12' ? 'auto' : '24';
-          saveCfg();
-          tick();
-        },
+        fn: clockMenu,
       },
       { head: t('Photos') },
       {
@@ -1256,6 +1252,67 @@ function themeCall(path, b, after) {
       toast(t('Could not load the themes. Try again in a moment.'), true);
     }
   );
+}
+/* Customize > Clock: how it tells the time, where it stands and how large (the theme's by default, kept when the theme changes), and
+   for a theme whose picture has a cut-out (Dawn), whether the clock stands behind the scenery or in front */
+function clockMenu() {
+  themeList(function (data) {
+    var build = function () {
+        var k = data.clock || { pos: '', size: '', front: true },
+          AT = ['', 'tl', 'tc'],
+          ATN = { '': t("The theme's"), tl: t('Top left'), tc: t('Top centre') },
+          SZ = ['', 'small', 'large'],
+          SZN = { '': t("The theme's"), small: t('Smaller'), large: t('Larger') },
+          set = function (o) {
+            themeCall('/api/theme/clock', o, update);
+          };
+        return [
+          {
+            label: t('Format'),
+            sub: cfg.clock === '24' ? t('24-hour') : cfg.clock === '12' ? t('12-hour') : t('Automatic'),
+            stay: true,
+            fn: function () {
+              cfg.clock = cfg.clock === '24' ? '12' : cfg.clock === '12' ? 'auto' : '24';
+              saveCfg();
+              tick();
+            },
+          },
+          {
+            label: t('Position'),
+            sub: ATN[k.pos] || ATN[''],
+            stay: true,
+            fn: function () {
+              set({ pos: AT[(AT.indexOf(k.pos) + 1) % AT.length] });
+            },
+          },
+          {
+            label: t('Size'),
+            sub: SZN[k.size] || SZN[''],
+            stay: true,
+            fn: function () {
+              set({ size: SZ[(SZ.indexOf(k.size) + 1) % SZ.length] });
+            },
+          },
+          data.hasFront
+            ? {
+                label: t('Behind the picture'),
+                sub: k.front !== false ? t('On') : t('Off'),
+                stay: true,
+                fn: function () {
+                  set({ front: k.front === false });
+                },
+              }
+            : null,
+        ].filter(function (it) {
+          return it;
+        });
+      },
+      update = function (r) {
+        data = r;
+        if (stack.length && stack[stack.length - 1].build === build) refreshMenu();
+      };
+    openBuilt(t('Clock'), build);
+  });
 }
 function themeMenu() {
   themeList(function (data) {
