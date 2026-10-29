@@ -39,13 +39,15 @@ What comes back is LG's pick for that app, not what was watched here (no app has
 their own row (Netflix, Prime Video; their launch point names a local source), the miner only wakes the app's own service, which asks
 its own servers. The miner keeps what it fetched on the TV (a database only it may read), so the rows survive a restart.
 
-The miner starts about 25 seconds after the TV starts, before the boot scripts (the Homebrew Channel runs them at about 40 seconds),
-and on one webOS 25 TV it began its round about 50 seconds after the start. **Suggestions and nudges** stops it a minute after the boot
-scripts, so it still runs for about a minute at every start. **LG's content miner, from the start** stops it when the boot scripts
-start and keeps it stopped. Nothing can stop it earlier without changing LG's files, which CleanYourTV never does; and LG's
-servers for these rows are the same ones LG Channels, LG's voice service and LG's sign-in use, so they cannot be blocked on their own.
+The miner starts about 25 to 35 seconds after the TV starts, before the boot scripts (the Homebrew Channel ran them at 39 and at
+49 seconds on the owner's webOS 25 TV), and asks LG once per start. **Suggestions and nudges** stops it a minute after the boot
+scripts, so it runs for well over a minute at every start. **LG's content miner, from the start** stops it when the boot scripts start
+and keeps it stopped until the next restart. On the owner's TV that request went out 50 seconds after one start, three seconds
+before the boot scripts stopped the miner: the group cannot always stop that first request at a cold start (with Quick Start+ the TV
+mostly sleeps and wakes, and the miner does not run again then). Nothing can stop it earlier without changing LG's files, which
+CleanYourTV never does. **LG's online services** blocks its server and LG's other online services from the same moment.
 
-What it changes: LG's picks on Home (see [Continue watching](launcher.md)) are no longer fetched again and stay as they were; switch
+What it changes: LG's picks on Home (see [Continue watching](launcher.md)) are fetched at most at a cold start, as above; switch
 **LG's picks** off there to show only the rows the apps write themselves. Netflix's and Prime Video's rows still come when those apps
 or their services run. The Homebrew Channel starts the boot scripts by its own boot task; on some TVs the miner also wakes it at the
 start, which has happened before the boot scripts run, so the stub does not stand in its way. The stub is in RAM: after a restart
