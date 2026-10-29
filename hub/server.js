@@ -6,7 +6,7 @@
 // and 7) to the TV's MAC, which it learns from this host's ARP table while the TV is on and keeps in its data folder (never logged).
 // It answers only addresses of the home network, forwards only to the TV, and keeps one connection open to the TV for the touchpad.
 //   TV_HOST (required) the TV's address · TV_PORT (8794) · HUB_PORT (8794) · HUB_DATA (/data) · WAKE_ADDR (255.255.255.255; a LAN's
-//   broadcast address such as 192.168.7.255 is better) · WAKE_PORTS (9,7) · TV_MAC (instead of learning it) · ARP_FILE (/proc/net/arp)
+//   broadcast address such as 192.168.1.255 is better) · WAKE_PORTS (9,7) · TV_MAC (instead of learning it) · ARP_FILE (/proc/net/arp)
 // With the TV's Phone remote set to go through the hub (remote.js: via 'hub'), the TV listens on nothing: it keeps one connection to
 // the hub (GET /link, only from TV_HOST, with a link key the hub pins the first time it sees one, as a SHA-256 in its data folder), and
 // the hub writes each phone's request down it as a line of JSON; the TV answers with POST /link/reply. Without that link the hub passes

@@ -89,7 +89,7 @@ run(async () => {
   const port = hub.server.address().port;
 
   ok(
-    hubMod.homeAddress('192.168.4.30') &&
+    hubMod.homeAddress('192.168.1.30') &&
       hubMod.homeAddress('::ffff:10.0.0.2') &&
       !hubMod.homeAddress('8.8.8.8') &&
       !hubMod.homeAddress('172.32.0.1'),

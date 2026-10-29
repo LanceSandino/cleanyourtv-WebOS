@@ -73,7 +73,7 @@ Wi-Fi** must be on). The hub (`hub/server.js`) is a small server for a computer 
 - It answers only addresses of the home network and forwards only to the TV: it is no proxy to anything else.
 
 Set up (Docker): copy `hub/server.js` and `hub/compose.yml` to a folder such as `/opt/cleanyourtv-hub`, write `.env` beside them
-with `TV_HOST=<the TV's address>` and `WAKE_ADDR=<the network's broadcast address>` (for 192.168.4.0/22: 192.168.7.255), make a
+with `TV_HOST=<the TV's address>` and `WAKE_ADDR=<the network's broadcast address>` (for 192.168.1.0/24: 192.168.1.255), make a
 `data` folder owned by user 65534, and run `docker compose up -d`. It runs as nobody, with no capabilities, on a read-only root, in
 96 MB at most. Then on the TV (a shell, or the API): `curl -X POST localhost:8765/api/remote/helper -d '{"url":"http://<hub>:8794"}'`;
 from then on the QR code and the address on the TV's Phone remote screen point at the hub. Pair each phone again through it (a
