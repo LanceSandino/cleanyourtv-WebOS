@@ -83,4 +83,9 @@ run(async () => {
     !/(^|\n)\s*\.st\s*\{/.test(launcher) && /svg\.st\s*\{\s*width:\s*26px/.test(launcher),
     "the favourite star is styled as svg.st, so the menu's .st text keeps its natural width"
   );
+  // the light on open apps stays a small corner light (it was a 14 to 18 px dot with a 3 px dark ring, big over the icons)
+  const picker = fs.readFileSync(path.join(root, 'picker', 'app', 'index.html'), 'utf8');
+  const lights = [/\.tile \.rd \{[^}]*width: (\d+)px/, /#dock \.tile \.rd \{[^}]*width: (\d+)px/].map(r => +(r.exec(launcher) || [])[1]);
+  const pick = +(/\.tile\.act::after\{[^}]*width:(\d+)px/.exec(picker) || [])[1];
+  ok(lights.concat(pick).every(w => w > 0 && w <= 12), 'the light on open apps is at most 12 px, on Home, the dock and the Inputs list: ' + lights.concat(pick));
 });

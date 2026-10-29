@@ -1551,3 +1551,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T21:00:00Z"
 ```
+
+```yaml
+id: CU-20261029-42
+type: fix
+title: "The light on open apps is small"
+description: "The green dot on open apps (Customize > mark running apps) was 14 px on the grid and 18 px on the dock, with a 3 px dark ring, set 14 to 20 px into the tile: big over the icons (the owner, on Dawn). It is now a 9 px light on the grid and 11 px on the dock, 9 to 11 px from the corner, with a thin dark edge and a soft glow; the Inputs list's light on open apps and the active input matches it (11 px). Picker 1.2.1."
+impact: low
+affected_modules: ["app/src/css/home.css", "app/index.html", "picker/app/index.html", "picker/app/appinfo.json"]
+related_tests: ["tools/test/pages.test.js (the light on open apps is at most 12 px, on Home, the dock and the Inputs list)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T22:10:00Z"
+```
