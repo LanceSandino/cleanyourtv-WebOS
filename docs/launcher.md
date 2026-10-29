@@ -102,7 +102,8 @@ next episode does not come back), **Hide the row of** that app, and the settings
 - **Rows from LG for other apps** switches LG's rows off, keeping Telemachus, Plex and Stremio.
 - **Show removed cards again** (when you removed some) brings them all back.
 - **Link Plex...** shows a 4-character code: open `plex.tv/link` on a phone or a computer, signed in to Plex, and enter it. The TV
-  then reads Continue Watching from your own Plex server, by its address on your network.
+  then reads Continue Watching from your own Plex server, at the first of its addresses that answers as that server (its address on
+  your network first).
 - **Link Stremio...** shows a link: open it on a phone or a computer and sign in to Stremio there. The TV then reads your Stremio
   library and shows what you started and did not finish, newest first.
 - A linked service shows its name; OK on it offers **Unlink**. A code is valid for ten minutes.

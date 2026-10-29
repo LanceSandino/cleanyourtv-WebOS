@@ -12,9 +12,15 @@ const body = q =>
 
 run(async () => {
   let pinPolls = 0,
-    photoToken = '';
+    photoToken = '',
+    identityToken = '';
   const pms = await serve((q, r) => {
     const json = o => (r.writeHead(200, { 'content-type': 'application/json' }), r.end(JSON.stringify(o)));
+    // who the server is, asked without a key (as Plex's /identity answers)
+    if (q.url === '/identity') {
+      identityToken = q.headers['x-plex-token'] || '';
+      return json({ MediaContainer: { size: 0, machineIdentifier: 'MID' } });
+    }
     // the picture route takes its key from the address, as Plex's does
     if (q.url.indexOf('/photo/:/transcode?') === 0) {
       photoToken = (/X-Plex-Token=([^&]+)/.exec(q.url) || [])[1] || '';
@@ -44,13 +50,44 @@ run(async () => {
     r.writeHead(404);
     r.end();
   });
+  // another Plex server on the network: answers, but is not the account's
+  const other = await serve((q, r) => {
+    r.writeHead(200, { 'content-type': 'application/json' });
+    r.end(JSON.stringify({ MediaContainer: { machineIdentifier: 'SOMEONE-ELSE' } }));
+  });
+  const pmsPort = pms.url.split(':')[2];
+  let pins = 0;
   const plextv = await serve(async (q, r) => {
-    const json = o => (r.writeHead(200, { 'content-type': 'application/json' }), r.end(JSON.stringify(o)));
-    if (q.method === 'POST' && q.url === '/api/v2/pins') return await body(q), json({ id: 7, code: 'AB12' });
-    if (q.url === '/api/v2/pins/7') return json(++pinPolls < 2 ? { id: 7 } : { id: 7, authToken: 'USERTOK' });
+    const json = (o, code) => (r.writeHead(code || 200, { 'content-type': 'application/json' }), r.end(JSON.stringify(o)));
+    // a new code is "201 Created" at plex.tv, not 200
+    if (q.method === 'POST' && q.url === '/api/v2/pins')
+      return await body(q), json([0, { id: 7, code: 'AB12' }, { id: 8, code: 'CD34' }, { id: 9, code: 'EF56' }][++pins], 201);
+    // the first answer is a busy plex.tv, then not entered yet, then entered
+    if (q.url === '/api/v2/pins/7') {
+      if (++pinPolls === 1) return json({ errors: [{ code: 0, message: 'busy', status: 503 }] }, 503);
+      return json(pinPolls < 3 ? { id: 7, authToken: null } : { id: 7, authToken: 'USERTOK' });
+    }
+    // Plex forgets a code once it expires
+    if (q.url === '/api/v2/pins/8') return json({ errors: [{ code: 1020, message: 'Code not found or expired', status: 404 }] }, 404);
+    // entered, but the answer is slow
+    if (q.url === '/api/v2/pins/9') return setTimeout(() => json({ id: 9, authToken: 'USERTOK' }), 150);
     if (q.url.indexOf('/api/v2/resources') === 0 && q.headers['x-plex-token'] === 'USERTOK')
       return json([
-        { name: 'Home server', provides: 'server', owned: true, accessToken: 'SRVTOK', connections: [{ uri: pms.url, local: true }] },
+        { name: 'A player', provides: 'client,player', owned: true, connections: [{ uri: other.url, local: true }] },
+        {
+          name: 'Home server',
+          provides: 'server',
+          owned: true,
+          clientIdentifier: 'MID',
+          accessToken: 'SRVTOK',
+          httpsRequired: false,
+          connections: [
+            // its secure name (plex.direct) does not work here, as behind a router that blocks such names; the plain address does
+            { protocol: 'https', address: '127.0.0.1', port: Number(pmsPort), uri: 'https://127.0.0.1:' + pmsPort, local: true },
+            { protocol: 'http', address: '127.0.0.1', port: 1, uri: other.url, local: true },
+            { protocol: 'https', address: '203.0.113.9', port: 32400, uri: 'https://203.0.113.9:1', local: false, relay: true },
+          ],
+        },
       ]);
     r.writeHead(404);
     r.end();
@@ -91,12 +128,17 @@ run(async () => {
   const pl = (await call(w, '/api/watch/link', 'POST', { service: 'plex' })).j;
   ok(pl.code === 'AB12' && pl.url === 'plex.tv/link', 'Plex: the TV shows a code for plex.tv/link');
   ok((await call(w, '/api/watch/accounts')).j.plex.state === 'waiting', 'Plex: waiting until the code is entered');
-  await sleep(400);
+  await sleep(600);
   const acc = (await call(w, '/api/watch/accounts')).j;
   ok(acc.plex.linked && acc.plex.server === 'Home server' && acc.plex.state === 'linked', "Plex: linked to the owner's server");
+  ok(pinPolls === 3, 'Plex: a busy plex.tv is asked again, not taken as a failed link (' + pinPolls + ' asks)');
   ok(
     config.get().watchAccounts.plex.token === 'USERTOK' && config.get().watchAccounts.plex.server.token === 'SRVTOK',
     'Plex: the keys are kept in the settings'
+  );
+  ok(
+    config.get().watchAccounts.plex.server.uri === pms.url && identityToken === '',
+    "Plex: the server's first address that answers as that server (here plain http when its secure name fails), asked without a key"
   );
   ok(JSON.stringify(acc).indexOf('TOK') < 0, 'Plex: the account status never carries a key');
 
@@ -146,5 +188,20 @@ run(async () => {
   const after = config.get().watchAccounts || {};
   ok(!(after.plex && after.plex.token) && !after.stremio, 'unlinking forgets the keys');
   ok((await call(w, '/api/watch/link', 'POST', { service: 'nope' })).code === 400, 'an unknown service is refused');
-  for (const x of [pms, plextv, st]) x.server.close();
+
+  // a code Plex no longer knows (expired) ends the wait, as expired, not as an error
+  ok((await call(w, '/api/watch/link', 'POST', { service: 'plex' })).j.code === 'CD34', 'Plex: a new code');
+  await sleep(200);
+  ok((await call(w, '/api/watch/accounts')).j.plex.state === 'expired', 'Plex: a code plex.tv no longer knows has expired');
+  // unlinked while plex.tv's answer is on its way: the TV does not link after all
+  await call(w, '/api/watch/link', 'POST', { service: 'plex' });
+  await sleep(100);
+  await call(w, '/api/watch/unlink', 'POST', { service: 'plex' });
+  await sleep(300);
+  const late = (await call(w, '/api/watch/accounts')).j.plex;
+  ok(
+    !late.linked && late.state === 'idle' && !(config.get().watchAccounts.plex || {}).token,
+    'Plex: an answer that arrives after unlinking links nothing'
+  );
+  for (const x of [pms, other, plextv, st]) x.server.close();
 });

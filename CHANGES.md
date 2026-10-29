@@ -1169,4 +1169,14 @@ related_tests: ["tools/oldchrome.js (saver frame: the four sides with their wood
 commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T15:05:00Z"
+id: CU-20261029-12
+type: fix
+title: "Plex: linking works again (plex.tv answers a new code with 201), a busy or expired code, the server's address that answers"
+description: "The owner could not link Plex: the TV's /api/watch/accounts said 'HTTP 201'. plex.tv answers POST /api/v2/pins with 201 Created, and plex.js read it through fetch.read, which refuses every status but 200, so link() gave an error before any code was shown; the test's stand-in plex.tv answered 200. plex.js now takes any 2xx as an answer and Plex's {errors: [{message}]} as the error. While waiting, a code plex.tv no longer knows (404) is expired, not an error; a dropped connection or a busy plex.tv is asked again; the wait ends with the code's own expiresIn when shorter than ten minutes. A new code or Unlink ends the asking for the code before, also an answer still on its way (two presses no longer left two loops, and an answer after Unlink no longer linked the TV). Once linked, the server is kept at the first of its addresses that answers as that server (/identity, no key sent, machineIdentifier checked): those on the network, then (unless the server requires secure connections) the same over plain http for a router that blocks plex.direct names of local addresses, then those from outside; never the relay; the first when none answers just now."
+impact: medium
+affected_modules: ["helper/plex.js", "docs/launcher.md", "docs/security.md"]
+related_tests: ["tools/test/watchlinks.test.js (plex.tv's 201 for a new code; a busy answer asked again; an expired code; an answer after unlinking links nothing; the server's first address that answers as that server, the plain-http fallback, another server skipped, /identity asked without a key)"]
+commit_ref: "feature/plex-link (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T14:38:29Z"
 ```

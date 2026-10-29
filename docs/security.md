@@ -111,10 +111,13 @@ switches this off.
 Plex and Stremio are read only once you link them there, with their own TV sign-in (no password on the TV):
 
 - **Plex:** the service asks `plex.tv` for a code (HTTPS), then every 3 s for at most ten minutes whether it was entered. It keeps the
-  account's key and your server's own key in `config.json` (readable by root only), and asks `plex.tv` once for the server's address,
-  preferring its local one. After that it reads only your Plex server (`/hubs/continueWatching/items`), at that address: often plain
-  `http://` on your network, so the server's key is visible on your network, as it is for the Plex app. Pictures come from the
-  server's picture route with that key; the key is added by the service and never reaches the Home page.
+  account's key and your server's own key in `config.json` (readable by root only), and asks `plex.tv` once for the server's
+  addresses. It keeps the first that answers as that server (Plex's `/identity`, asked without a key): those on your network first,
+  then, unless the server requires secure connections, the same addresses over plain `http://` (for a router that blocks Plex's
+  secure `plex.direct` names of addresses on your network), then those from outside; never Plex's relay. After that it reads only
+  your Plex server (`/hubs/continueWatching/items`), at that address: often plain `http://` on your network, so the server's key is
+  visible on your network, as it is for the Plex app. Pictures come from the server's picture route with that key; the key is added
+  by the service and never reaches the Home page.
 - **Stremio:** the service asks `link.stremio.com` for a link (HTTPS), then every 3 s for at most ten minutes whether it was used. It
   keeps the key it gets in `config.json` and reads your library from `api.strem.io` (HTTPS); pictures come from
   `images.metahub.space` (HTTPS only, Stremio's image server).

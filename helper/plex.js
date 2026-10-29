@@ -1,7 +1,8 @@
 // Plex for Continue watching (watch.js): the TV is linked with Plex's own TV sign-in (a 4-character code entered at plex.tv/link,
 // no password on the TV), then the owner's Plex server gives what is partly watched (/hubs/continueWatching/items, or /library/onDeck
 // on an older server) with pictures and how far it got. The keys stay in config.json (root only); the launcher sees the cards only.
-//   link()    {code, url} and the service asks plex.tv every 3 s (10 minutes at most) until the code was entered
+//   link()    {code, url} and the service asks plex.tv every 3 s (10 minutes at most) until the code was entered; then it keeps the
+//             server's first address that answers as that server (its addresses on the network first)
 //   status()  {linked, server, state: 'idle'|'waiting'|'linked'|'expired'|'error', code, url, error}
 //   items()   cards for watch.js; pictures go through watch.js's image ids, never by address
 const crypto = require('crypto');
@@ -36,50 +37,108 @@ function create(ctx) {
       { accept: 'application/json', 'X-Plex-Product': 'CleanYourTV', 'X-Plex-Device': 'LG TV', 'X-Plex-Client-Identifier': clientId() },
       token ? { 'X-Plex-Token': token } : {}
     );
+  // any 2xx is an answer (plex.tv gives a new code as "201 Created"); Plex's own errors come as {errors: [{message}]}
   const json = (url, o) =>
-    fetch.read(url, Object.assign({ totalMs: 20000, maxBytes: 4 * 1024 * 1024 }, o)).then(r => JSON.parse(r.body.toString('utf8')));
+    fetch.read(url, Object.assign({ totalMs: 20000, maxBytes: 4 * 1024 * 1024, anyStatus: true }, o)).then(r => {
+      const good = r.status >= 200 && r.status < 300;
+      let body = null;
+      try {
+        body = JSON.parse(r.body.toString('utf8'));
+      } catch (e) {
+        if (good) throw e;
+      }
+      if (good) return body;
+      const said = body && body.errors && body.errors[0] && body.errors[0].message;
+      throw fetch.fail(said ? String(said) : 'HTTP ' + r.status, 'status', r.status);
+    });
 
   let state = { state: 'idle', code: '', url: '', error: '' };
-  let timer = /** @type {any} */ (null);
+  let timer = /** @type {any} */ (null),
+    round = 0; // a new code (or unlinking) ends the asking for the one before, also an answer still on its way
   function stop() {
+    round++;
     clearTimeout(timer);
     timer = null;
   }
-  // the server to read: the owner's own, by its local address first
+  // the addresses to try, in order: on the network, the same by its plain address (a router that blocks the secure plex.direct names
+  // of addresses on the network, when the server allows it), then from outside; never through Plex's relay
+  function addresses(s) {
+    const cons = (s.connections || []).filter(c => c && typeof c.uri === 'string' && /^https?:\/\//.test(c.uri) && !c.relay),
+      local = cons.filter(c => c.local),
+      plain = s.httpsRequired
+        ? []
+        : local
+            .filter(c => c.protocol === 'https' && c.address && c.port > 0)
+            .map(c => 'http://' + (c.IPv6 ? '[' + c.address + ']' : c.address) + ':' + c.port),
+      all = local
+        .map(c => c.uri)
+        .concat(
+          plain,
+          cons.filter(c => !c.local).map(c => c.uri)
+        );
+    return all.map(u => u.replace(/\/+$/, '')).filter((u, i, a) => a.indexOf(u) === i);
+  }
+  // does this address answer as that server? /identity needs no key, so none is sent while trying
+  async function answers(uri, id) {
+    try {
+      const r = await json(uri + '/identity', { headers: { accept: 'application/json' }, totalMs: 5000, idleMs: 5000, allowHttp: true });
+      const mid = r && r.MediaContainer && r.MediaContainer.machineIdentifier;
+      return !id || !mid || mid === id;
+    } catch (_) {
+      return false;
+    }
+  }
+  // the server to read: the owner's own, at its first address that answers (or the first, when the server is off just now)
   async function findServer(token) {
     const list = await json(PLEXTV + '/api/v2/resources?includeHttps=1&includeRelay=0', { headers: head(token) });
     const servers = (Array.isArray(list) ? list : []).filter(r => r && /server/.test(r.provides || ''));
     const s = servers.filter(r => r.owned)[0] || servers[0];
     if (!s) throw new Error('No Plex server on this account.');
-    const cons = (s.connections || []).filter(c => c && c.uri);
-    const con = cons.filter(c => c.local && !c.relay)[0] || cons.filter(c => !c.relay)[0];
-    if (!con) throw new Error('The Plex server has no address this TV can reach.');
-    return { name: String(s.name || 'Plex'), uri: con.uri.replace(/\/+$/, ''), token: s.accessToken || token };
+    const uris = addresses(s);
+    if (!uris.length) throw new Error('The Plex server has no address this TV can reach.');
+    let uri = uris[0];
+    for (let i = 0; i < uris.length; i++) {
+      if (await answers(uris[i], s.clientIdentifier)) {
+        uri = uris[i];
+        break;
+      }
+    }
+    return { name: String(s.name || 'Plex'), uri, token: s.accessToken || token };
   }
   async function link() {
     stop();
+    const mine = round;
     try {
       const pin = await json(PLEXTV + '/api/v2/pins', {
         method: 'POST',
         body: 'strong=false',
         headers: Object.assign(head(), { 'content-type': 'application/x-www-form-urlencoded' }),
       });
+      if (mine !== round) return { error: 'A newer code was asked for.' };
       if (!pin || !pin.id || !pin.code) throw new Error('Plex did not give a code.');
-      const until = Date.now() + LINK_MS;
+      const until = Date.now() + Math.min(LINK_MS, pin.expiresIn > 0 ? pin.expiresIn * 1000 : LINK_MS);
       state = { state: 'waiting', code: String(pin.code), url: 'plex.tv/link', error: '' };
+      const expired = () => (state = { state: 'expired', code: '', url: '', error: '' });
       const poll = async () => {
-        if (Date.now() > until) return (state = { state: 'expired', code: '', url: '', error: '' });
+        if (Date.now() > until) return expired();
+        let p = null;
         try {
-          const p = await json(PLEXTV + '/api/v2/pins/' + encodeURIComponent(pin.id), { headers: head() });
-          if (p && p.authToken) {
+          p = await json(PLEXTV + '/api/v2/pins/' + encodeURIComponent(pin.id), { headers: head() });
+        } catch (e) {
+          // plex.tv forgets a code once it expires (404); anything else (a dropped connection, a busy plex.tv) is asked again
+          if (mine === round && e.status === 404) return expired();
+        }
+        if (mine !== round) return;
+        if (p && p.authToken) {
+          try {
             const server = await findServer(p.authToken);
+            if (mine !== round) return;
             setAcct(a => Object.assign(a, { token: p.authToken, server }));
             if (ctx.changed) ctx.changed();
             state = { state: 'linked', code: '', url: '', error: '' };
-            return;
+          } catch (e) {
+            if (mine === round) state = { state: 'error', code: '', url: '', error: String(e.message || e) };
           }
-        } catch (e) {
-          state = { state: 'error', code: '', url: '', error: String(e.message || e) };
           return;
         }
         timer = setTimeout(poll, pollMs);
@@ -87,8 +146,8 @@ function create(ctx) {
       timer = setTimeout(poll, pollMs);
       return { code: state.code, url: state.url };
     } catch (e) {
-      state = { state: 'error', code: '', url: '', error: String(e.message || e) };
-      return { error: state.error };
+      if (mine === round) state = { state: 'error', code: '', url: '', error: String(e.message || e) };
+      return { error: String(e.message || e) };
     }
   }
   function unlink() {
