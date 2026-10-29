@@ -77,7 +77,15 @@ load('apps', () => require('./apps').create(ctx));
 load('running', () => require('./running').create(ctx));
 
 require('./server')
-  .create({ features: () => loaded, guard: apiToken })
+  .create({
+    features: () => loaded,
+    guard: apiToken,
+    // a bare "file://" origin is our apps only on webOS 4 (Chromium 53); also while the version is not known yet
+    bareFile: () => {
+      const m = ctx.profile.get().sdkMajor;
+      return !m || m < 5;
+    },
+  })
   .listen(PORT, '127.0.0.1', () => {
     // the files that hold addresses and keys are for root only
     /** @type {Array<[string, number]>} */

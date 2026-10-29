@@ -137,4 +137,25 @@ run(async () => {
     'switched on with groups off: the groups are stored before debloat-stop.sh reads them'
   );
   exec.sh = realSh;
+  // the security at a glance: the update source (a warning when it is another repository), the API token, telnet on or off
+  r = await ask('status', 'GET');
+  const sec0 = r.j.security;
+  r = await ask('telnet', 'POST', { off: true });
+  const offNow = r.j.security.telnet.off && fs.existsSync(process.env.CYTV_TELNET_OFF);
+  r = await ask('telnet', 'POST', { off: false });
+  const onAgain = !r.j.security.telnet.off && !fs.existsSync(process.env.CYTV_TELNET_OFF);
+  fs.writeFileSync(path.join(process.env.CYTV_DIR, 'source'), 'someone/else main\n');
+  r = await ask('status', 'GET');
+  const other = r.j.security.source;
+  fs.unlinkSync(path.join(process.env.CYTV_DIR, 'source'));
+  ok(
+    sec0.source.ours === true &&
+      sec0.source.repo === 'LanceSandino/cleanyourtv-WebOS' &&
+      sec0.token.enforced === false &&
+      offNow &&
+      onAgain &&
+      other.repo === 'someone/else' &&
+      other.ours === false,
+    "the status says where updates come from (and when it is not this project's), whether the token is required, and telnet's switch works both ways"
+  );
 });

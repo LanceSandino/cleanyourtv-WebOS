@@ -18,6 +18,8 @@ module.exports = {
   PICKER_MODE: D + '/picker-mode', // read by scripts/inputkey.sh
   CHANNEL: D + '/channel', // the update channel ('dev' for the dev builds)
   SOURCE: D + '/source', // "owner/repo [branch]": another repository, for testing
+  // the Homebrew Channel skips its telnet server (an open root shell on the network) while this file exists
+  TELNET_OFF: process.env.CYTV_TELNET_OFF || '/var/luna/preferences/webosbrew_telnet_disabled',
   LIVE: env.CYTV_LIVE_DIR || D + '/live',
   THEMES: env.CYTV_THEMES || path.join(__dirname, 'themes'),
   VOICE: D + '/voice',

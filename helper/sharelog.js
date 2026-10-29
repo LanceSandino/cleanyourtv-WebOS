@@ -62,6 +62,11 @@ function report() {
       read(D + '/app/version.json').replace(/\s+/g, ' ')
   );
   sec('TV profile (tvprofile.js)', read(P.TV).replace(/\s+/g, ' '));
+  try {
+    sec('Security', require('./security').text());
+  } catch (e) {
+    sec('Security', 'could not be read: ' + e.message);
+  }
   let home = read(D + '/backup/home-appinfo.orig.json');
   if (home === '(not present)') home = read(P.HOME_APP + '/appinfo.json');
   try {

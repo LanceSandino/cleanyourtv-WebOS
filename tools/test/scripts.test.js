@@ -184,9 +184,80 @@ run(async () => {
   const stop = fs.readFileSync(path.join(root, 'scripts', 'debloat-stop.sh'), 'utf8'),
     undo = fs.readFileSync(path.join(root, 'scripts', 'debloat-undo.sh'), 'utf8');
   ok(
-    /mount --bind \/tmp\/cleanyourtv-hosts \/etc\/hosts/.test(stop) && /umount \/etc\/hosts/.test(undo),
+    /mount --bind \/tmp\/cleanyourtv-hosts "\$HOSTS"/.test(stop) &&
+      /umount "\$HOSTS"/.test(undo) &&
+      /HOSTS=\$\{CYTV_HOSTS:-\/etc\/hosts\}/.test(stop),
     'where /etc/hosts is read-only (issue 11) the ad servers go into a copy in RAM, and the undo removes it'
   );
+  // the groups debloat-stop.sh and debloat-undo.sh act on: only the part that picks the programs is run here (it stops and mounts
+  // nothing); admanager has its own group (adapps), on by default, and only while ads is on too
+  const pick = (script, args, off) => {
+    const d = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cytv-debloat-'));
+    fs.writeFileSync(path.join(d, 'config.json'), JSON.stringify({ options: { debloatOff: off || [] } }));
+    const body = script.replace(/^L=.*$/m, 'L=' + d).split(/\n# --no-block|\nfor b in \$bins/)[0] + '\necho "units:$units bins:$bins"\n';
+    fs.writeFileSync(path.join(d, 's.sh'), body);
+    const r = cp.spawnSync('sh', [path.join(d, 's.sh')].concat(args || []), { encoding: 'utf8' });
+    fs.rmSync(d, { recursive: true, force: true });
+    return r.stdout.trim().replace(/\s+/g, ' ');
+  };
+  const all = pick(stop),
+    adsOff = pick(stop, [], ['ads']),
+    appsOff = pick(stop, [], ['adapps']),
+    redoAds = pick(stop, ['ads'], []),
+    undoAds = pick(undo, ['ads']);
+  ok(
+    / admanager/.test(all) &&
+      / adoverlay-service/.test(all) &&
+      / acr2/.test(all) &&
+      !/admanager|adoverlay/.test(adsOff) &&
+      !/admanager/.test(appsOff) &&
+      / adoverlay-service/.test(appsOff) &&
+      / admanager/.test(redoAds) &&
+      / admanager/.test(undoAds),
+    'admanager is its own group, on by default, off with ads too, back with ads, and undone with ads: ' +
+      [all, adsOff, appsOff, redoAds, undoAds].join(' | ')
+  );
+  // the ad servers of the TV's country (LG's Smart Service country, here US) join the list; old marked lines (the Dutch ones alone)
+  // are written again, a second run adds nothing, and the undo takes them all out
+  {
+    const d = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cytv-hosts-'));
+    const bin = path.join(d, 'bin');
+    fs.mkdirSync(bin);
+    fs.writeFileSync(
+      path.join(bin, 'luna-send'),
+      '#!/bin/sh\nprintf \'{\\n "settings": {\\n  "smartServiceCountryCode2": "US"\\n }\\n}\\n\'\n',
+      { mode: 0o755 }
+    );
+    fs.writeFileSync(path.join(d, 'config.json'), '{}');
+    const hosts = path.join(d, 'hosts');
+    fs.writeFileSync(
+      hosts,
+      '127.0.0.1 localhost\n127.0.0.1 eic.ads.lgtvcommon.com nl.ad.lgsmartad.com nl.info.lgsmartad.com # cleanyourtv-debloat\n'
+    );
+    const env = Object.assign({}, process.env, { CYTV_HOSTS: hosts, PATH: process.env.PATH + ':' + bin });
+    const runIt = (script, name) => {
+      fs.writeFileSync(path.join(d, name), script.replace(/^L=.*$/m, 'L=' + d));
+      return cp.spawnSync('sh', [path.join(d, name), 'ads'], { encoding: 'utf8', env });
+    };
+    runIt(stop, 'stop.sh');
+    const once = fs.readFileSync(hosts, 'utf8');
+    runIt(stop, 'stop.sh');
+    const twice = fs.readFileSync(hosts, 'utf8');
+    runIt(undo, 'undo.sh');
+    const after = fs.readFileSync(hosts, 'utf8');
+    fs.rmSync(d, { recursive: true, force: true });
+    ok(
+      /^127\.0\.0\.1 .*nl\.ad\.lgsmartad\.com.* us\.ad\.lgsmartad\.com us\.info\.lgsmartad\.com # cleanyourtv-debloat$/m.test(once) &&
+        (once.match(/cleanyourtv-debloat/g) || []).length === 2 &&
+        twice === once &&
+        after === '127.0.0.1 localhost\n',
+      "the TV's country's ad servers are blocked too (old lines written again, nothing added twice, all removed by the undo): " +
+        JSON.stringify(once)
+    );
+  }
+  // never these: LG's sdx (the Settings gear stops working) or ss.gateway (casting, second screen and quick cards stop), as
+  // own-your-glass found out on webOS 25
+  ok(!/sdx|ss\.gateway|ssgateway/.test(stop + undo), 'the debloat never touches sdx or ss.gateway');
   ok(
     /TV="node \$S\/helper\/tvprofile\.js"/.test(bootText) &&
       /\$TV get notifyWindow/.test(bootText) &&

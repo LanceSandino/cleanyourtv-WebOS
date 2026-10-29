@@ -9,8 +9,8 @@ const web = require('./web');
 
 // Who may call: our own apps (local files; their requests carry Origin "null", "file://<app id>-webos" on webOS 6, or a bare
 // "file://" on webOS 4, whose Chromium 53 names no app, so it is no more specific than "null"; the API token still has to match)
-// and programs
-const OUR_APPS = /^file:\/\/((com\.webos\.app\.home|com\.cleanyourtv\.(manager|picker|notify))-webos)?$/;
+// and programs. The bare "file://" only where it is needed: on webOS 4, or while the TV's version is not known yet (opts.bareFile).
+const OUR_APPS = /^file:\/\/(com\.webos\.app\.home|com\.cleanyourtv\.(manager|picker|notify))-webos$/;
 // DNS rebinding: a web page whose own name was made to point at 127.0.0.1 still sends that name as Host. Only requests addressed to
 // the loopback address or localhost are answered; a request without Host comes from a program on the TV.
 const LOOPBACK_HOST = /^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/i;
@@ -18,6 +18,7 @@ const LOOPBACK_HOST = /^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/i;
 function create(opts) {
   const features = opts.features; // a function returning the loaded features, in order
   const guard = opts.guard || null; // apitoken.js: tells our apps apart from a web page that also sends origin null
+  const bareFile = opts.bareFile || (() => true); // is a bare "file://" origin one of our apps here (webOS 4)?
   const route = u => {
     for (const f of features()) {
       if (f.paths && f.paths.indexOf(u) >= 0) return f;
@@ -33,7 +34,7 @@ function create(opts) {
     }
     let origin = req.headers.origin;
     const rawOrigin = origin;
-    if (OUR_APPS.test(origin || '')) origin = 'null';
+    if (OUR_APPS.test(origin || '') || (origin === 'file://' && bareFile())) origin = 'null';
     if (origin !== undefined && origin !== 'null') {
       console.log('refused origin ' + origin + ' ' + req.method + ' ' + req.url.slice(0, 60));
       return web.json(res, { error: 'origin not allowed' }, 403);
@@ -50,7 +51,10 @@ function create(opts) {
       res.writeHead(204);
       return res.end();
     }
-    if (origin === 'null' && guard && !guard.allow(req)) {
+    // an app's icon is a picture the pages load as an image (crossOrigin, to read its colours), which cannot carry the token: icons are
+    // read-only and answered without it; everything else needs it once it is required
+    const icon = req.method === 'GET' && /^\/icon\/[\w.-]+$/.test(req.url.split('?')[0]);
+    if (origin === 'null' && guard && !icon && !guard.allow(req)) {
       console.log('refused a page without the API token ' + req.method + ' ' + req.url.split('?')[0].slice(0, 60));
       return web.json(res, { error: 'token required' }, 403);
     }

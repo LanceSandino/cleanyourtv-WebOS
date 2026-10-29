@@ -23,6 +23,10 @@ const SAVER_AFTER = [60, 120, 300, 600, 900, 1800],
   // the frames other than the default (walnut), as saver.js names them
   SAVER_FRAMES = 'oak teak ash cherry greyoak blackash black white charcoal sand navy sage burgundy brass silver none'.split(' ');
 const HOME = 'com.webos.app.home';
+// apps LG pushes onto Home that are not installed apps: a "stub" is only a placeholder that downloads the real app when opened (LG's
+// promotions), and these are promotions LG pushes as apps (own-your-glass found them on webOS 25: Rakuten TV's ui30, Streaming Week)
+const PUSHED = ['ui30', 'webos.day', 'com.miniclip.eightballpool'];
+const pushed = a => a.type === 'stub' || PUSHED.indexOf(a.id) >= 0;
 
 function create(ctx) {
   const { config, luna } = ctx;
@@ -39,7 +43,7 @@ function create(ctx) {
         asking = null;
         if (!Array.isArray(r.apps)) return appCache || [];
         appCache = r.apps
-          .filter(a => a.visible !== false && a.id !== HOME)
+          .filter(a => a.visible !== false && a.id !== HOME && !pushed(a))
           .map(a => ({
             id: a.id,
             title: a.title,

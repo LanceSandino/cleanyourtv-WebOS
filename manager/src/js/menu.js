@@ -582,7 +582,7 @@ function build() {
     DEBLOAT.forEach(function (g) {
       rows.push({
         label: g.label,
-        sub: onoff(debloatOn(g.id)) + ' \u00B7 ' + g.what,
+        sub: (g.id === 'adapps' && !debloatOn('ads') ? 'Off with Ads' : onoff(debloatOn(g.id))) + ' \u00B7 ' + g.what,
         fn: function () {
           debloatToggle(g.id);
         },
@@ -1025,6 +1025,14 @@ function build() {
     dim: busy,
     fn: openChannel,
   });
+  /* where updates come from: a warning when it is not this project's repository (D/source can name another) */
+  var sec = st.security || {};
+  if (sec.source)
+    rows.push({
+      label: 'Update source',
+      sub: sec.source.repo + (sec.source.ours ? '' : ' \u00B7 not this project: updates come from there'),
+      fn: null,
+    });
   if (fe.previous)
     rows.push({
       label: 'Go back to the previous launcher',
@@ -1077,6 +1085,32 @@ function build() {
       push('more');
     },
   });
+  /* the Homebrew Channel's telnet server, an open root shell on the network: shown, and switched only when you ask (helper/security.js) */
+  if (sec.telnet)
+    rows.push({
+      label: 'Telnet (Homebrew Channel)',
+      sub: sec.telnet.off ? 'Off' : 'On: anyone on the network gets a root shell. OK turns it off at the next start',
+      fn: function () {
+        api('/api/manager/telnet', { off: !sec.telnet.off }).then(function (r) {
+          if (r.error) return banner(r.error, 'err');
+          st = r;
+          banner(
+            r.security && r.security.telnet.off
+              ? 'Telnet is off from the next start of the TV'
+              : 'Telnet is on from the next start of the TV',
+            ''
+          );
+          build();
+          draw();
+        });
+      },
+    });
+  if (sec.token)
+    rows.push({
+      label: 'API token',
+      sub: sec.token.enforced ? 'Required: only our apps can use the service' : 'Not required yet: our apps have not all sent it back',
+      fn: null,
+    });
   rows.push({ sep: true });
   rows.push({ label: 'Share log', sub: 'QR code for your phone', fn: openShare });
   rows.push({
@@ -1095,7 +1129,8 @@ function build() {
 
 /* the debloat's groups (scripts/debloat-stop.sh; preload is the service's own, helper/lgpreload.js); options.debloatOff lists the ones switched off */
 var DEBLOAT = [
-  { id: 'ads', label: 'Ads', what: 'ad services and ad servers' },
+  { id: 'ads', label: 'Ads', what: 'ad overlays and ad servers' },
+  { id: 'adapps', label: "LG's ad service for apps", what: 'admanager; switch it off if an app (HBO Max) will not play' },
   { id: 'tracking', label: 'Viewing tracking (LivePlus)', what: 'acr2' },
   { id: 'logs', label: 'Telemetry logs', what: 'remotelogger, service-logger' },
   { id: 'suggestions', label: 'Suggestions and nudges', what: 'contentminer, nudge, sportsalarm' },

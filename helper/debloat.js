@@ -5,7 +5,7 @@
 const P = require('./paths'),
   exec = require('./exec');
 
-const GROUPS = ['ads', 'tracking', 'logs', 'suggestions', 'preload'];
+const GROUPS = ['ads', 'adapps', 'tracking', 'logs', 'suggestions', 'preload'];
 
 // parts of the service that follow the debloat settings (lgpreload.js); told after every switch, once config.json has the change
 const hooks = [];

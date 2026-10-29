@@ -7,6 +7,7 @@ run(async () => {
   const feature = {
     name: 'x',
     paths: ['/api/secret'],
+    prefix: '/icon/',
     handle: (q, r) => {
       r.writeHead(200, { 'content-type': 'application/json' });
       r.end('{"token":"SECRET"}');
@@ -37,9 +38,9 @@ run(async () => {
   const g = req('server').create({ features: () => [feature], guard });
   await new Promise(r => g.listen(0, '127.0.0.1', r));
   const gp = g.address().port;
-  const ask = (headers, method) =>
+  const ask = (headers, method, p) =>
     new Promise(resolve => {
-      const q = http.request({ host: '127.0.0.1', port: gp, path: '/api/secret', method: method || 'GET', headers }, r => {
+      const q = http.request({ host: '127.0.0.1', port: gp, path: p || '/api/secret', method: method || 'GET', headers }, r => {
         let b = '';
         r.on('data', d => (b += d));
         r.on('end', () => resolve({ code: r.statusCode, body: b, headers: r.headers }));
@@ -57,6 +58,14 @@ run(async () => {
     'the launcher on webOS 6 with the token too'
   );
   ok((await ask({})).code === 200, 'a program on the TV needs no token');
+  const icon = await ask({ Origin: 'null' }, 'GET', '/icon/com.new.app'),
+    iconPost = await ask({ Origin: 'null' }, 'POST', '/icon/com.new.app'),
+    iconPath = await ask({ Origin: 'null' }, 'GET', '/icon/../api/secret');
+  ok(
+    icon.code === 200 && iconPost.code === 403 && iconPath.code === 403,
+    "an app's icon is answered without the token (pages load it as an image), only as a GET of /icon/<id>: " +
+      [icon.code, iconPost.code, iconPath.code].join()
+  );
   const pre = await ask({ Origin: 'null', 'Access-Control-Request-Headers': 'x-cytv-token' }, 'OPTIONS');
   ok(
     pre.code === 204 && /x-cytv-token/.test(pre.headers['access-control-allow-headers'] || ''),
@@ -67,4 +76,26 @@ run(async () => {
     'an app id that is not ours is refused'
   );
   g.close();
+  // the bare "file://" of webOS 4's Chromium 53: one of our apps there, refused on a newer webOS
+  let sdk = 4;
+  const b = req('server').create({ features: () => [feature], guard, bareFile: () => !sdk || sdk < 5 });
+  await new Promise(r => b.listen(0, '127.0.0.1', r));
+  const bp = b.address().port;
+  const bare = () =>
+    new Promise(resolve => {
+      http.get({ host: '127.0.0.1', port: bp, path: '/api/secret', headers: { Origin: 'file://', 'x-cytv-token': 'T0K' } }, r => {
+        r.resume();
+        r.on('end', () => resolve(r.statusCode));
+      });
+    });
+  const on4 = await bare();
+  sdk = 10;
+  const on10 = await bare();
+  sdk = 0;
+  const unknown = await bare();
+  ok(
+    on4 === 200 && on10 === 403 && unknown === 200,
+    'a bare file:// origin is our app on webOS 4 (and while the version is not known), refused on webOS 10: ' + [on4, on10, unknown].join()
+  );
+  b.close();
 });

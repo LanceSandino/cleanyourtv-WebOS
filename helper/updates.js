@@ -430,4 +430,4 @@ function create(ctx) {
   };
 }
 
-module.exports = { create, latest, download, parseRelease, differs, channel, repo, releaseUrl, DEV_TAG };
+module.exports = { create, latest, download, parseRelease, differs, channel, repo, releaseUrl, DEV_TAG, DEFAULT_REPO };

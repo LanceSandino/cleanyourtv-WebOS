@@ -14,6 +14,8 @@ run(async () => {
         apps: [
           { id: 'a.one', title, folderPath: '/x', icon: 'i.png' },
           { id: 'com.webos.app.home', title: 'Home' },
+          { id: 'com.promo.game', title: 'A stub', type: 'stub' },
+          { id: 'ui30', title: 'Rakuten TV', type: 'web' },
         ],
       };
     }
@@ -45,7 +47,7 @@ run(async () => {
   ok(r.out.indexOf('secret-') < 0 && !r.j.config.watchAccounts, "the launcher never gets Plex's or Stremio's keys");
   ok(
     asked === 1 && r.j.apps.length === 1 && r.j.apps[0].title === 'One' && r.j.config.dock[0] === 'a.one',
-    'the first list is asked from the app manager, without LG Home'
+    "the first list is asked from the app manager, without LG Home or the placeholder and promotion apps LG pushes (stub, Rakuten TV's ui30)"
   );
   title = 'Two';
   const t0 = Date.now();

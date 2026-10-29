@@ -5,7 +5,8 @@ const fs = require('fs');
 const P = require('./paths'),
   web = require('./web'),
   exec = require('./exec'),
-  debloat = require('./debloat');
+  debloat = require('./debloat'),
+  security = require('./security');
 
 // the TV comes back to its last app after a restart; that must not be one of ours
 function fixLastApp() {
@@ -70,6 +71,7 @@ function create(ctx) {
       keys: keys(),
       job: updates.job(),
       repo: updates.repo(),
+      security: security.state(),
     });
   }
 
@@ -156,6 +158,11 @@ function create(ctx) {
     const b = await body(req);
     if (act === 'check') {
       await updates.check();
+      return json(status());
+    }
+    // the Homebrew Channel's telnet server: off (the file it reads when the TV starts) or on, only when the user switches it
+    if (act === 'telnet') {
+      if (!security.setTelnet(b.off !== false)) return json({ error: 'the telnet switch could not be written' }, 500);
       return json(status());
     }
     if (act === 'channel') {

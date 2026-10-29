@@ -1,21 +1,24 @@
 #!/bin/sh
 # Undo debloat-stop.sh: restart the systemd daemons, remove the stubs and the hosts lines (dynamic services start on demand again).
-# sh debloat-undo.sh [group...]: only those groups (ads, tracking, logs, suggestions, see debloat-stop.sh); without arguments all.
+# sh debloat-undo.sh [group...]: only those groups (ads, adapps, tracking, logs, suggestions, see debloat-stop.sh); without arguments all.
+# Undoing ads frees admanager too (adapps holds only while ads is on).
 export PATH=/usr/bin:/usr/sbin:/bin:/sbin:$PATH
-G=" ${*:-ads tracking logs suggestions} "
+G=" ${*:-ads tracking logs suggestions adapps} "
 on() { case "$G" in *" $1 "*) return 0 ;; esac; return 1; }
 units=""; bins=""
 on logs && units="$units remotelogger service-logger"
 on suggestions && { units="$units contentminer nudge"; bins="$bins sportsalarm"; }
 on tracking && bins="$bins acr2"
-on ads && bins="$bins admanager adoverlay-service"
+on ads && bins="$bins adoverlay-service admanager"
+on adapps && bins="$bins admanager"
 for b in $bins; do
   for m in $(awk -v b="/usr/sbin/$b" 'substr($2,length($2)-length(b)+1)==b {print $2}' /proc/mounts | sort -r); do umount $m 2>/dev/null; done
 done
 for s in $units; do systemctl --no-block start $s.service; done
 on ads || exit 0
 # the copy in RAM that debloat-stop.sh mounts where /etc/hosts is read-only; otherwise the marked lines in /etc/hosts itself
-if [ -e /tmp/cleanyourtv-hosts.mounted ]; then umount /etc/hosts 2>/dev/null && rm -f /tmp/cleanyourtv-hosts /tmp/cleanyourtv-hosts.mounted; fi
-if grep -q "# cleanyourtv-debloat" /etc/hosts; then
-  grep -v "# cleanyourtv-debloat" /etc/hosts > /tmp/hosts.new && cat /tmp/hosts.new > /etc/hosts; rm -f /tmp/hosts.new
+HOSTS=${CYTV_HOSTS:-/etc/hosts}
+if [ -e /tmp/cleanyourtv-hosts.mounted ]; then umount "$HOSTS" 2>/dev/null && rm -f /tmp/cleanyourtv-hosts /tmp/cleanyourtv-hosts.mounted; fi
+if grep -q "# cleanyourtv-debloat" "$HOSTS"; then
+  grep -v "# cleanyourtv-debloat" "$HOSTS" > /tmp/hosts.new && cat /tmp/hosts.new > "$HOSTS"; rm -f /tmp/hosts.new
 fi

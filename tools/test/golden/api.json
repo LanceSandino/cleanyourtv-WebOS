@@ -219,12 +219,12 @@
     "status": 200,
     "type": "application/json"
   },
-  "webOS 4 app origin": {
+  "a bare file:// origin on webOS 10 (only webOS 4 sends it)": {
     "body": {
-      "version": "<version>"
+      "error": "origin not allowed"
     },
-    "cors": "*",
-    "status": 200,
+    "cors": "",
+    "status": 403,
     "type": "application/json"
   },
   "another app origin is refused": {
