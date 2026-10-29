@@ -889,3 +889,22 @@ commit_ref: "feature/frame-saver (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T02:16:13Z"
 ```
+
+```yaml
+id: CU-20261028-5
+type: fix
+title: "Old-Chromium page checks: the page's own copy when Chromium 79 cannot hand it over; saver keys waits for the photo"
+description: "The v1.6.26 release run failed twice in its checks: on GitHub's Linux runner, headless Chromium 79 (webOS 6's engine, which
+  the checks must keep) failed to hand over the manager, saver and hold-ok pages five times each ('Failed to serialize document:
+  Uncaught'), and the dev build's saver-keys check read the photo 1.5 s after Right, before the frame (now the default, it loads a
+  photo before hanging it) had shown it. The same checks pass in Chromium 79 in an Ubuntu 26.04 container on the owner's Mac. The probe
+  in each test page now sends the page's own copy of itself to the stand-in each second it changed, and the harness uses that copy when
+  the browser hands nothing over (or shows why the page could not copy itself); saver keys waits up to 6 s for the photo to change.
+  The runners stay on ubuntu-latest (the owner's choice)."
+impact: none
+affected_modules: ["tools/oldchrome.js"]
+related_tests: ["tools/oldchrome.js (every page also passes when the browser's hand-over is ignored and only the page's own copy is read: checked once by hand)"]
+commit_ref: "fix/ci-runner (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T02:40:12Z"
+```

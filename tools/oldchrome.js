@@ -110,17 +110,23 @@ const themeOf = id =>
     ''
   );
 let pageTheme = null;
-// in front of the page's own script: report script errors on <html data-errors>, and the TV's webOSSystem with no launch parameters
+// in front of the page's own script: report script errors on <html data-errors>, and the TV's webOSSystem with no launch parameters.
+// The page also sends its own copy of itself to the stand-in (/__dom) each second it changed: headless Chromium 79 on GitHub's Linux
+// runners now and then cannot hand the page over at the end ("Failed to serialize document: Uncaught"), and then this copy is used
+// (or the reason the page itself could not copy itself is shown)
 const PROBE =
   '<script>window.onerror=function(m,s,l){var h=document.documentElement;h.setAttribute("data-errors",(h.getAttribute("data-errors")||"")+m+" (line "+l+"); ")};' +
-  'window.webOSSystem={launchParams:"{}",locale:"en-GB",hide:function(){},activate:function(){},platformBack:function(){},setInputRegion:function(){},setKeyMask:function(){}};</script>';
+  'window.webOSSystem={launchParams:"{}",locale:"en-GB",hide:function(){},activate:function(){},platformBack:function(){},setInputRegion:function(){},setKeyMask:function(){}};' +
+  '(function(){var last="";setInterval(function(){var h;try{h="<!DOCTYPE html>\\n"+document.documentElement.outerHTML}catch(e){h="__error__ "+e}' +
+  'if(h===last)return;last=h;try{var x=new XMLHttpRequest();x.open("POST","/__dom",true);x.send(h)}catch(e){}},1000)})();</script>';
 const page = (f, extra) =>
   fs
     .readFileSync(path.join(ROOT, f), 'utf8')
     .replace('<script>', PROBE + '<script>')
     .replace('</body>', (extra || '') + '</body>');
 // the screensaver's remote keys, pressed once it shows its first photo: Right (a new photo), Left (back), Right (forward again, no new
-// photo), Right (a new one), then Down, which ends it and goes no further (the focus on Home stays). The outcome lands in data-keys.
+// photo), Right (a new one), then Down, which ends it and goes no further (the focus on Home stays). After each key it waits for the
+// photo to change (up to 6 s: the frame loads a photo before it hangs it, slow on a busy machine). The outcome lands in data-keys.
 const SAVER_KEYS =
   '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
   'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}' +
@@ -129,7 +135,7 @@ const SAVER_KEYS =
   'var seen=[],steps=[39,37,39,39],f0=-1,go=setInterval(function(){if(!SAVER.active()||!photo())return;clearInterval(go);f0=foc();seen.push(photo());' +
   '(function next(){if(!steps.length){key(40);var ok=seen.join()==="p1,p2,p1,p2,p3"&&!SAVER.active()&&foc()===f0;' +
   'document.body.setAttribute("data-keys",ok?"ok":"bad "+seen.join()+" active="+SAVER.active()+" focus="+foc()+"/"+f0);return}' +
-  'key(steps.shift());setTimeout(function(){seen.push(photo());next()},1500)})()},500)})()</script>';
+  'var was=photo(),t0=Date.now();key(steps.shift());(function wait(){var p=photo();if((p===was||!p)&&Date.now()-t0<6000)return setTimeout(wait,200);seen.push(p);next()})()})()},500)})()</script>';
 // choosing one wallpaper (wallpick.js): open the chooser, Right to the second photo, OK; that photo is then the wallpaper on Home and
 // the chooser is gone. The outcome lands in data-pick.
 const WALLPICK_KEYS =
@@ -301,6 +307,7 @@ const portrait = u =>
 const TOKEN = 'harness-token-0123456789abcdef',
   noToken = []; // API calls a page made without the token
 const marks = []; // what the pages log (perf lines: tools/perf-tv.sh reads the same on a TV)
+let pageDom = ''; // the page's own last copy of itself (PROBE)
 function serve() {
   const srv = http.createServer((q, r) => {
     const u = q.url.split('?')[0];
@@ -313,6 +320,16 @@ function serve() {
     // the screensaver's materials sit next to the launcher page, as on the TV
     if (/^\/saver-[a-z-]+\.webp$/.test(u) && fs.existsSync(path.join(ROOT, 'app', u)))
       return r.writeHead(200, { 'content-type': 'image/webp' }), r.end(fs.readFileSync(path.join(ROOT, 'app', u)));
+    if (u === '/__dom' && q.method === 'POST') {
+      const parts = [];
+      q.on('data', c => parts.push(c));
+      q.on('end', () => {
+        pageDom = Buffer.concat(parts).toString('utf8');
+        r.writeHead(204);
+        r.end();
+      });
+      return;
+    }
     if (u === '/cytv-token.js')
       return r.writeHead(200, { 'content-type': 'text/javascript' }), r.end("var CYTV_TOKEN = '" + TOKEN + "';\n");
     if (
@@ -467,9 +484,18 @@ function run(bin, url, extra, budget) {
         // before the page drew its content: try again
         let r = null;
         for (let tries = 0; tries < 5; tries++) {
+          pageDom = '';
           r = await run(bin, url, ['--dump-dom'], p[4]);
+          const handed = (r.stdout || '').indexOf('<body') >= 0;
+          // the browser did not hand the page over: the page's own copy of itself stands in for it
+          if (!handed && pageDom.indexOf('<body') >= 0) {
+            r.stdout = pageDom;
+            r.status = 0;
+            r.copy = true;
+          } else if (!handed && pageDom) r.stderr += '\n  the page could not copy itself: ' + pageDom.slice(0, 300);
           if (r.status === 0 && (r.stdout || '').indexOf('<body') >= 0 && ((r.stdout || '').match(p[2]) || []).length >= p[3]) break;
         }
+        if (r.copy) console.log('     ' + e[0] + ': ' + p[0] + ': checked from the copy the page sent (the browser did not hand it over)');
         const dom = r.stdout || '';
         const errs = (/data-errors="([^"]*)"/.exec(dom) || [])[1] || '';
         const n = (dom.match(p[2]) || []).length;
