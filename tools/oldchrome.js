@@ -442,6 +442,23 @@ const WHERE_KEYS =
   'var ok=heads==="Where to watch|Search in"&&rows&&dim&&c0&&c1&&c2&&c3&&skip&&up&&held&&opens&&off&&none;' +
   'out(ok?"ok":"bad heads="+heads+" t0="+t0+" chips="+n0+" also="+also+" dim="+dim+" c0="+c0+" c1="+c1+" c2="+c2+" c3="+c3+" skip="+skip+" up="+up+' +
   '" held="+held+" opens="+opens+" off="+off+" none="+none+" hint="+hint()+" launched="+JSON.stringify(launched))},2000)},500)},"Where to watch")},"the tiles")})()</script>';
+// Where to watch, a full row (CU-20261029-44): a long title with seven offers in six apps (YouTube's rent and buy among them) stays inside
+// its row: the title on its own line, cut with an ellipsis; one chip per app, the library first and a catalogue last; only the chips that
+// fit on the line, the others named on the Also line; Right stops at the last chip shown. The outcome lands in data-fit.
+const FIT_KEYS =
+  '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}function out(v){document.body.setAttribute("data-fit",v)}' +
+  'function wait(test,then,what){var n=0,w=setInterval(function(){if(test()){clearInterval(w);then()}else if(++n>40){clearInterval(w);out("bad waiting for "+what)}},150)}' +
+  'function type(w){var q=document.getElementById("sr-q");q.value=w;q.dispatchEvent(new Event("input"))}' +
+  'wait(function(){return document.querySelector(".tile")},function(){SEARCH.show();type("long film");' +
+  'wait(function(){return !!document.querySelector("#sr .wrow .wchip")},function(){var row=document.querySelector("#sr .wrow"),rb=row.getBoundingClientRect(),' +
+  'box=row.querySelector(".wc").getBoundingClientRect(),cs=[].slice.call(row.querySelectorAll(".wchip")),names=cs.map(function(c){return c.textContent}),' +
+  'inside=cs.every(function(c){var r=c.getBoundingClientRect();return r.left>=box.left-1&&r.right<=box.right+1&&r.right<=rb.right+1}),' +
+  'lb=row.querySelector(".wt .lb"),cut=lb.scrollWidth>lb.clientWidth&&lb.getBoundingClientRect().right<=rb.right,' +
+  'once=names.filter(function(n){return /^YouTube/.test(n)}).length===1&&/rent/.test(names.join("|")),first=/^Plex/.test(names[0]||""),' +
+  'also=row.querySelector(".wo").textContent,rest=cs.length<6&&/Telemachus \\(in its catalogue\\)/.test(also);' +
+  'key(40);for(var i=0;i<9;i++)key(39);var on=document.querySelector("#sr .wrow.f .wchip.on"),last=!!on&&on===document.querySelector("#sr .wrow.f").querySelectorAll(".wchip")[cs.length-1];' +
+  'var ok=inside&&cut&&once&&first&&rest&&last;out(ok?"ok":"bad inside="+inside+" cut="+cut+" once="+once+" first="+first+" rest="+rest+" last="+last+" chips="+names.join("|")+" also="+also)},"the row")},"the tiles")})()</script>';
 // Search (search.js): the Search button in the default top bar opens it with the field focused (the TV's keyboard); Left there stays
 // in the text; the words typed bring the stand-in's results in two groups; Down goes into them, Up from the first back to the field;
 // OK opens a result when it is let go (Telemachus at that episode) and closes the search; opened again it keeps the words, and Back
@@ -504,6 +521,7 @@ const PAGES = [
   ['weather in a short place', 'app/index.html', /data-slim="ok"/g, 1, 12000, SLIM_WX, 'glass'],
   ['search', 'app/index.html', /data-search="ok"/g, 1, 15000, SEARCH_KEYS],
   ['where to watch', 'app/index.html', /data-where="ok"/g, 1, 20000, WHERE_KEYS],
+  ['where to watch fits', 'app/index.html', /data-fit="ok"/g, 1, 20000, FIT_KEYS],
 ];
 let famN = 0,
   plexState = 'idle',
@@ -654,6 +672,48 @@ function serve() {
     // services that are not here, the second only on a service that is not here
     if (u === '/api/search/where') {
       const words = new URL(q.url, 'http://127.0.0.1').searchParams.get('q') || '';
+      // a long title with seven offers in six apps: the row must still fit (FIT_KEYS)
+      if (/^long film$/i.test(words)) {
+        const offer = (key, name, offer, app, price) => ({
+          key,
+          provider: key,
+          name,
+          offer,
+          price: price || null,
+          currency: price ? 'USD' : '',
+          app,
+          appTitle: name,
+          launch: { id: app, params: {} },
+          exact: false,
+        });
+        return json({
+          q: words,
+          on: true,
+          groups: [
+            {
+              id: 'where',
+              items: [
+                {
+                  key: 'where-0-long',
+                  title: 'A Very Long Film Title That Goes On And On Well Past The Edge Of Any Row On This Screen',
+                  year: 1993,
+                  kind: 'movie',
+                  offers: [
+                    offer('telemachus', 'Telemachus', 'catalogue', 'com.telemachus.screen'),
+                    offer('youtube-rent', 'YouTube', 'rent', 'app.1', 3.99),
+                    offer('youtube-buy', 'YouTube', 'buy', 'app.1', 4.99),
+                    offer('prime', 'Prime Video Channels Store', 'buy', 'app.2', 14.99),
+                    offer('disney', 'Disney+', 'subscription', 'app.0'),
+                    offer('stremio', 'Stremio', 'catalogue', 'app.3'),
+                    offer('plex', 'Plex', 'library', 'cdp-30'),
+                    { key: 'fubo', provider: 'fubotv', name: 'Fubo', offer: 'subscription', price: null, currency: '' },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+      }
       if (!/^bluey$/i.test(words)) return json({ q: words, on: true, groups: [] });
       const target = 'distributionPartner=lg&programType=series&contentId=x&page=browse&id=entity-x&type=series&contentType=Full';
       return json({

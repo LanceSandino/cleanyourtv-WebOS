@@ -157,11 +157,39 @@ var SEARCH = (function () {
       }
     );
   }
-  /* the apps a Where to watch row can open (its chips), and the services it only names */
-  function chips(x) {
-    return (x.where.offers || []).filter(function (o) {
-      return !!o.launch;
+  /* the apps a Where to watch row can open (its chips): one per app (its best offer: a rent and a buy in the same app are one chip), your
+     library first, then subscription and free, rent, buy, and a catalogue last; at most MAX_CHIPS, so a row stays on one line. The
+     services it only names: those not on this TV, and the apps past the last chip */
+  var RANK = { library: 0, subscription: 1, free: 1, rent: 2, buy: 3, catalogue: 4 },
+    MAX_CHIPS = 5;
+  function split(x) {
+    if (x._split) return x._split;
+    var all = (x.where.offers || []).map(function (o, n) {
+        return { o: o, n: n, r: RANK[o.offer] === undefined ? 4 : RANK[o.offer] };
+      }),
+      seen = {},
+      on = [],
+      off = [];
+    all.sort(function (a, b) {
+      return a.r - b.r || a.n - b.n;
     });
+    all.forEach(function (e) {
+      var o = e.o;
+      if (!o.launch) return void off.push(o);
+      if (seen[o.app]) return;
+      seen[o.app] = 1;
+      if (on.length < MAX_CHIPS) on.push(o);
+      else off.push(o);
+    });
+    return (x._split = { on: on, off: off });
+  }
+  function chips(x) {
+    var on = split(x).on;
+    return x._fit !== undefined ? on.slice(0, x._fit) : on;
+  }
+  /* the services a row names on its Also line: the ones not on this TV, and the apps whose chip did not fit */
+  function named(x) {
+    return split(x).off.concat(split(x).on.slice(chips(x).length));
   }
   function usable(i) {
     var x = list[i];
@@ -198,9 +226,10 @@ var SEARCH = (function () {
     if (x.group === 'search') return [it.appTitle, '\u201c' + shownQ + '\u201d'];
     return [t('Open %s').replace('%s', it.appTitle), ''];
   }
-  /* how tall a row is drawn, for what fits on the screen */
+  /* how tall a row is drawn, for what fits on the screen (a Where to watch row: its title, its chips, the other services; search.css) */
   function height(x) {
-    return x.head !== undefined ? 50 : x.note !== undefined ? 56 : x.where ? 132 : 84;
+    if (x.where) return 74 + (chips(x).length ? 66 : 0) + (named(x).length ? 38 : 0) + 10;
+    return x.head !== undefined ? 50 : x.note !== undefined ? 56 : 84;
   }
   function draw() {
     var l = layer();
@@ -287,10 +316,7 @@ var SEARCH = (function () {
   /* a Where to watch row: the title, its year and kind, the apps on this TV as chips, the other services named with their offer */
   function fillWhere(el, x, k) {
     var w = x.where,
-      cs = chips(x),
-      others = (w.offers || []).filter(function (o) {
-        return !o.launch;
-      });
+      cs = split(x).on;
     el.querySelector('.lb').textContent = w.title;
     el.querySelector('.st').textContent = [
       w.year ? String(w.year) : '',
@@ -305,7 +331,7 @@ var SEARCH = (function () {
       c.innerHTML = '<img alt=""><span></span>';
       icon(c.firstChild, o.app);
       var tx = offerText(o);
-      c.lastChild.textContent = o.offer === 'rent' || o.offer === 'buy' ? o.appTitle + ' \u00b7 ' + tx : o.appTitle;
+      c.lastChild.textContent = o.offer === 'rent' || o.offer === 'buy' || o.offer === 'free' ? o.appTitle + ' \u00b7 ' + tx : o.appTitle;
       c.addEventListener('click', function (ev) {
         ev.stopPropagation();
         at = k;
@@ -314,13 +340,30 @@ var SEARCH = (function () {
       });
       box.appendChild(c);
     });
+    /* the chips that fit on the line, measured once a result is drawn (either side, for a right-to-left language); the rest are named
+       on the Also line, and Left and Right do not reach them */
+    var bx = box.getBoundingClientRect();
+    if (x._fit === undefined && bx.width > 0) {
+      var fit = 0;
+      [].forEach.call(box.children, function (c, n) {
+        var r = c.getBoundingClientRect();
+        if (r.left >= bx.left - 1 && r.right <= bx.right + 1 && fit === n) fit = n + 1;
+      });
+      x._fit = fit;
+    }
+    while (x._fit !== undefined && box.children.length > x._fit) box.removeChild(box.lastChild);
+    if (k === at && chip >= x._fit && x._fit > 0) {
+      chip = x._fit - 1;
+      box.children[chip].className = 'wchip on';
+    }
+    var others = named(x);
     el.querySelector('.wo').textContent = others.length
       ? t('Also: %s').replace(
           '%s',
           others
             .map(function (o) {
               var tx = offerText(o);
-              return o.name + (tx ? ' (' + tx + ')' : '');
+              return (o.name || o.appTitle) + (tx ? ' (' + tx + ')' : '');
             })
             .join(' \u00b7 ')
         )

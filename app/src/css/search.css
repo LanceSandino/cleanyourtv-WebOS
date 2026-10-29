@@ -106,42 +106,57 @@
   font-size: calc(24px * var(--fs));
   color: var(--ink2);
 }
-/* Where to watch: a row per title, two lines: the title with its year and kind, the apps on this TV as chips; under them the other
-   services with their offer. A row without an app on this TV is dimmed and skipped by the focus */
+/* Where to watch: a row per title, three lines: the title with its year and kind (cut short with an ellipsis), the apps on this TV as
+   chips (one line, at most five: search.js), the other services with their offer (cut short too). Its height is what search.js
+   counts (74 + 66 + 38, and the 10 between rows). A row without an app on this TV is dimmed and skipped by the focus */
 #sr .wrow {
+  display: block;
   height: auto;
-  min-height: 122px;
-  padding: 14px 34px;
-  flex-wrap: wrap;
-  align-content: center;
+  padding: 14px 34px 16px;
 }
-#sr .wrow > * {
+#sr .wrow > * + * {
   margin-left: 0;
-  margin-right: 0;
 }
 #sr .wt {
-  flex: 1 1 0;
-  min-width: 0;
   display: flex;
   align-items: baseline;
-  gap: 18px;
+  height: 44px;
+  line-height: 44px;
+  white-space: nowrap;
 }
 #sr .wt .lb {
   flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#sr .wt .st {
+  flex: none;
+  margin-inline-start: 18px;
+  font-size: calc(22px * var(--fs));
+  color: var(--ink2);
+}
+#sr .row.f .wt .st {
+  color: inherit;
+  opacity: 0.75;
 }
 #sr .wc {
   display: flex;
-  gap: 12px;
-  flex: none;
-  margin-inline-start: 22px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  margin-top: 12px;
+}
+#sr .wc:empty {
+  display: none;
 }
 #sr .wchip {
   display: flex;
+  flex: none;
   align-items: center;
-  gap: 10px;
-  height: 52px;
-  padding: 0 18px 0 8px;
-  border-radius: 26px;
+  height: 54px;
+  padding: 0 20px 0 9px;
+  margin-inline-end: 12px;
+  border-radius: 27px;
   font-size: calc(22px * var(--fs));
   background: rgba(255, 255, 255, 0.08);
   white-space: nowrap;
@@ -149,20 +164,21 @@
 #sr .wchip img {
   width: 36px;
   height: 36px;
+  margin-inline-end: 10px;
   border-radius: 8px;
   object-fit: contain;
 }
 #sr .row.f .wchip {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.12);
 }
 #sr .row.f .wchip.on {
   background: var(--acc-ink);
   color: var(--acc);
 }
 #sr .wo {
-  flex-basis: 100%;
-  margin-top: 6px;
+  margin-top: 10px;
   font-size: calc(21px * var(--fs));
+  line-height: 28px;
   opacity: 0.7;
   white-space: nowrap;
   overflow: hidden;

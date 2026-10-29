@@ -1608,3 +1608,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T22:40:00Z"
 ```
+
+```yaml
+id: CU-20261029-45
+type: fix
+title: "Search: a Where to watch row fits its frame (the title on its own line, the apps that fit as chips, one per app)"
+description: "On the owner's real answers (films and series with five or more services) a Where to watch row ran past the search box: its chips stayed on one line beside the title, which was cut to a few letters ('The Va...'). The owner found it ugly. A row now has three lines: the title with its year and kind (cut with an ellipsis), the chips, and the other services. One chip per app is shown, with its best offer, so a rent and a buy in YouTube are one chip. They are ordered: your library, subscription and free, rent, buy, a catalogue last. At most five are shown, and only those that fit on the line, measured once the row is drawn. The rest are named on the Also line, and Left and Right do not reach them. search.js counts the row's real height (74 + 66 + 38), so the rows that fit under the field are the ones shown."
+impact: low
+affected_modules: ["app/src/js/search.js", "app/src/css/search.css", "app/index.html"]
+related_tests: ["tools/oldchrome.js (where to watch fits: a long title with seven offers in six apps stays inside its row, the title cut, one chip per app with the library first, the chips past the line on the Also line, Right stops at the last chip; Chromium 120; fails on the layout before this fix)", "tools/oldchrome.js (where to watch)", "tools/test/search.test.js", "tools/test/where.test.js"]
+commit_ref: "feature/search-fit (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T21:24:16Z"
+```
