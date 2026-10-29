@@ -25,7 +25,17 @@ var SAVER = (function () {
   var HIST = 50;
   function opts() {
     var s = cfg.saver || {};
-    return { on: s.on === true, after: s.after || 300, secs: s.secs || 15, clock: s.clock !== false };
+    return {
+      on: s.on === true,
+      after: s.after || 300,
+      secs: s.secs || 15,
+      clock: s.clock !== false,
+      /* Style: Frame (the default) shows each photo like a print on a wall; Photos fits it whole on black */
+      style: s.style === 'photos' ? 'photos' : 'frame',
+      frame: FRAMES[s.frame] ? s.frame : 'wood',
+      mat: s.mat === 'white' || s.mat === 'cream' || s.mat === 'charcoal' ? s.mat : 'auto',
+      label: s.label !== false,
+    };
   }
   function famN() {
     return (cfg.photoFeed && cfg.photoFeed.photos) || 0;
@@ -79,25 +89,31 @@ var SAVER = (function () {
           url = function (id) {
             return API + '/api/wallpapers/photo/' + id;
           };
-        if (!l.length) return cb('');
+        if (!l.length) return cb(null);
         if (!deck.length || (r.stamp || '') !== deckStamp) {
           deckStamp = r.stamp || '';
           deck = shuffled(l);
           if (deck.length > 1 && url(deck[0]) === cur) deck.push(deck.shift());
         }
-        cb(url(deck.shift()));
+        cb({ url: url(deck.shift()), meta: {} });
       },
       function () {
-        cb('');
+        cb(null);
       }
     );
   }
-  /* the address of the next photo: the photo feed first, then the Wallpapers photos; '' when there is none */
+  /* the next photo, {url, meta: {date, caption, width, height, color}}: the photo feed first, then the Wallpapers photos; null when
+     there is none. A photo kept aside by the frame's pairing comes first. */
   function nextUrl(cb) {
+    if (spare) {
+      var s0 = spare;
+      spare = null;
+      return cb(s0);
+    }
     if (!famN()) return wallUrl(cb);
     api('/api/photofeed/next').then(
       function (r) {
-        if (r && r.id) cb(API + '/api/photofeed/photo/' + encodeURIComponent(r.id));
+        if (r && r.id) cb({ url: API + '/api/photofeed/photo/' + encodeURIComponent(r.id), meta: r });
         else wallUrl(cb);
       },
       function () {
@@ -105,34 +121,176 @@ var SAVER = (function () {
       }
     );
   }
-  /* loaded first, then swapped in, so the cross-fade never shows a half-drawn photo */
-  function show(url) {
+  function load(url, cb) {
     var im = new Image();
     im.onload = function () {
-      if (!on || hist[at] !== url) return; /* stepped on meanwhile */
-      var l = layers(),
-        a = l.p[side],
-        b = l.p[side ^ 1];
-      side ^= 1;
-      a.style.backgroundImage = 'url("' + url + '")';
-      a.className = 'svp on';
-      b.className = 'svp';
-      cur = url;
+      cb(im);
+    };
+    im.onerror = function () {
+      cb(null);
     };
     im.src = url;
   }
-  /* a new photo, remembered so Left can go back to it */
+  /* ---- the frame (Style: Frame): the photo in a mat behind a frame, like a print on a wall, with the day it was taken and its
+     caption on a small label; two portrait photos of the same day side by side; a photo near the screen's shape fills it inside
+     the frame. Still: only the cross-fade moves. The mat takes a little of the photo's colour when the feed says it. ---- */
+  var FRAMES = { wood: 1, black: 1, gold: 1, white: 1, none: 1 },
+    MATS = { white: '#f4f1ea', cream: '#ece2cc', charcoal: '#2c2b28' },
+    spare = null;
+  function shape(im) {
+    var r = im && im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : 1.5;
+    return Math.abs(r - 16 / 9) / (16 / 9) < 0.12 ? 'bleed' : r < 0.9 ? 'port' : 'land';
+  }
+  function matOf(meta) {
+    var m = opts().mat;
+    if (MATS[m]) return MATS[m];
+    var c = meta && /^#[0-9a-f]{6}$/i.test(meta.color || '') ? meta.color : '';
+    if (!c) return '#efe9df';
+    var n = parseInt(c.slice(1), 16),
+      rgb = [n >> 16, (n >> 8) & 255, n & 255];
+    if (rgb[0] * 0.3 + rgb[1] * 0.59 + rgb[2] * 0.11 < 60) return MATS.charcoal; /* a dark photo: a dark mat */
+    return (
+      'rgb(' +
+      rgb
+        .map(function (x) {
+          return Math.round(238 + (x - 238) * 0.16);
+        })
+        .join(',') +
+      ')'
+    );
+  }
+  function darkMat(col) {
+    var m = /(\d+),(\d+),(\d+)/.exec(col),
+      v = m ? [+m[1], +m[2], +m[3]] : [parseInt(col.slice(1, 3), 16), parseInt(col.slice(3, 5), 16), parseInt(col.slice(5, 7), 16)];
+    return v[0] * 0.3 + v[1] * 0.59 + v[2] * 0.11 < 128;
+  }
+  /* a photo's box inside the mat, by its shape and how many hang side by side */
+  function box(im, maxW, maxH) {
+    var r = im.naturalWidth / im.naturalHeight,
+      w = maxW,
+      h = w / r;
+    if (h > maxH) {
+      h = maxH;
+      w = h * r;
+    }
+    var d = document.createElement('div');
+    d.className = 'svf';
+    d.style.width = Math.round(w) + 'px';
+    d.style.height = Math.round(h) + 'px';
+    d.style.backgroundImage = 'url("' + im.src + '")';
+    return d;
+  }
+  function dayText(meta) {
+    if (!meta || !meta.date) return '';
+    try {
+      return new Date(meta.date + 'T12:00:00').toLocaleDateString(LOC, { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (e) {
+      return meta.date;
+    }
+  }
+  function paintFrame(a, it, im, im2) {
+    var o = opts(),
+      sh = shape(im),
+      mat = sh === 'bleed' ? '#111' : matOf(it.meta);
+    a.style.backgroundImage = '';
+    a.style.backgroundColor = mat;
+    a.className = 'svp fr fr-' + o.frame + ' fr-' + (im2 ? 'pair' : sh) + (darkMat(mat) ? ' fr-dark' : '');
+    a.textContent = '';
+    var row = document.createElement('div');
+    row.className = 'svrow';
+    if (sh === 'bleed') {
+      /* near the screen's shape: it fills the inside of the frame (cut by a few percent at most) */
+      var full = box(im, 1, 1);
+      full.style.width = full.style.height = '100%';
+      row.style.width = row.style.height = '100%';
+      row.appendChild(full);
+    } else if (im2) {
+      row.appendChild(box(im, 600, 760));
+      row.appendChild(box(im2, 600, 760));
+    } else if (sh === 'port') row.appendChild(box(im, 780, 800));
+    else row.appendChild(box(im, 1190, 720));
+    a.appendChild(row);
+    var day = dayText(it.meta),
+      cap = it.meta && it.meta.caption;
+    if (o.label && (day || cap)) {
+      var lb = document.createElement('div');
+      lb.className = 'svl';
+      if (cap) {
+        var c = document.createElement('div');
+        c.className = 'svl1';
+        c.textContent = cap;
+        lb.appendChild(c);
+      }
+      if (day) {
+        var dd = document.createElement('div');
+        dd.className = 'svl2';
+        dd.textContent = day;
+        lb.appendChild(dd);
+      }
+      a.appendChild(lb);
+    }
+    layers().w.classList.toggle('framed', true);
+    layers().w.classList.toggle('inkdark', !darkMat(mat) && sh !== 'bleed');
+  }
+  /* loaded first, then swapped in, so the cross-fade never shows a half-drawn photo */
+  function show(it) {
+    load(it.url, function (im) {
+      if (!im || !on || hist[at] !== it) return; /* failed, or stepped on meanwhile */
+      var paint = function (im2) {
+        if (!on || hist[at] !== it) return;
+        var l = layers(),
+          a = l.p[side],
+          b = l.p[side ^ 1];
+        side ^= 1;
+        if (opts().style === 'frame') paintFrame(a, it, im, im2);
+        else {
+          a.textContent = '';
+          a.style.backgroundColor = '';
+          a.style.backgroundImage = 'url("' + it.url + '")';
+          l.w.classList.remove('framed');
+          l.w.classList.remove('inkdark');
+        }
+        a.classList.add('on');
+        b.classList.remove('on');
+        cur = it.url;
+      };
+      if (it.with) load(it.with.url, paint);
+      else paint(null);
+    });
+  }
+  /* the same day (or no day known for either): two portraits that belong together */
+  function sameDay(a, b) {
+    var x = a.meta && a.meta.date,
+      y = b.meta && b.meta.date;
+    return !x || !y || x === y;
+  }
+  /* a new photo, remembered so Left can go back to it. In the frame, a portrait looks for a second one of the same day to hang
+     beside it (a photo that does not fit is kept for the next turn) */
   var fetching = false;
   function nextPhoto() {
     if (fetching) return;
     fetching = true;
-    nextUrl(function (url) {
+    var keep = function (it) {
       fetching = false;
-      if (!on || !url) return;
-      hist.push(url);
+      if (!on || !it) return;
+      hist.push(it);
       if (hist.length > HIST) hist.shift();
       at = hist.length - 1;
-      show(url);
+      show(it);
+    };
+    nextUrl(function (it) {
+      if (!it || opts().style !== 'frame') return keep(it);
+      load(it.url, function (im) {
+        if (!im || shape(im) !== 'port') return keep(it);
+        nextUrl(function (it2) {
+          if (!it2) return keep(it);
+          load(it2.url, function (im2) {
+            if (im2 && shape(im2) === 'port' && sameDay(it, it2)) it.with = it2;
+            else spare = it2;
+            keep(it);
+          });
+        });
+      });
     });
   }
   /* Left and Right: back and forward through what was shown; forward past the last one is a new photo */
@@ -166,6 +324,7 @@ var SAVER = (function () {
     idle = 0;
     if (!on) return;
     on = false;
+    spare = null;
     clearInterval(timer);
     clearInterval(clockT);
     var l = layers();
@@ -174,6 +333,8 @@ var SAVER = (function () {
     setTimeout(function () {
       if (on) return;
       l.p[0].style.backgroundImage = l.p[1].style.backgroundImage = '';
+      l.p[0].style.backgroundColor = l.p[1].style.backgroundColor = '';
+      l.p[0].textContent = l.p[1].textContent = '';
       l.p[0].className = l.p[1].className = 'svp';
     }, 900);
   }

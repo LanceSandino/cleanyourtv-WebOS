@@ -19,7 +19,7 @@ const KEEP = /^(com\.cleanyourtv\.|org\.webosbrew\.hbchannel$|org\.webosbrew\.in
 const WALL_SECS = [0, 10, 30, 60, 180, 300, 900, 3600]; // the photo-change intervals Customise > Wallpapers offers
 // Customise > Screensaver: how long Home is left alone before it starts, and how long each photo stays (seconds)
 const SAVER_AFTER = [60, 120, 300, 600, 900, 1800],
-  SAVER_SECS = [10, 15, 30, 60];
+  SAVER_SECS = [10, 15, 30, 60, 300, 900];
 const HOME = 'com.webos.app.home';
 
 function create(ctx) {
@@ -243,6 +243,11 @@ function create(ctx) {
         secs: SAVER_SECS.indexOf(s.secs) >= 0 ? s.secs : 15,
         clock: s.clock !== false,
       };
+      // Style: Frame (the default) or Photos; the frame, the mat and the label (saver.js)
+      if (s.style === 'photos') out.saver.style = 'photos';
+      if (['black', 'gold', 'white', 'none'].indexOf(s.frame) >= 0) out.saver.frame = s.frame;
+      if (['white', 'cream', 'charcoal'].indexOf(s.mat) >= 0) out.saver.mat = s.mat;
+      if (s.label === false) out.saver.label = false;
     }
     // Continue watching on Home (watch.js): on unless switched off; the shows and films removed from it (hold OK > Remove)
     if (b.watch && typeof b.watch === 'object') {

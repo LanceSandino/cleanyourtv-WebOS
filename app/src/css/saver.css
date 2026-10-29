@@ -1,5 +1,5 @@
 /* Screensaver (saver.js): over everything, two photo layers cross-faded with opacity only, a dim layer (darker at night), the time
-   and the date. The photo is fitted whole on black: Frameo photos are often portrait. */
+   and the date. The photo is fitted whole on black: Frameo photos are often portrait. Or, with Style: Frame, in a mat and a frame. */
 #sv {
   position: fixed;
   left: 0;
@@ -64,4 +64,98 @@
 [dir="rtl"] #svc {
   left: auto;
   right: 96px;
+}
+/* the frame (Style: Frame, saver.js): the photo in a mat, behind a frame around the screen, a small label and clock; nothing moves */
+#sv .svp.fr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+#sv .svrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#sv .svf {
+  background: center / cover no-repeat;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.18),
+    0 18px 40px rgba(0, 0, 0, 0.28);
+}
+#sv .svf + .svf {
+  margin-left: 64px;
+}
+#sv .fr-bleed .svf {
+  box-shadow: none;
+}
+#sv .fr-wood {
+  border: 30px solid #6b4423;
+  box-shadow:
+    inset 0 0 0 4px #4a2d16,
+    inset 0 0 0 8px rgba(255, 255, 255, 0.07);
+}
+#sv .fr-black {
+  border: 26px solid #151515;
+}
+#sv .fr-gold {
+  border: 28px solid #a8813a;
+  box-shadow: inset 0 0 0 4px #7a5a22;
+}
+#sv .fr-white {
+  border: 26px solid #f2f0ea;
+}
+#sv .svl {
+  position: absolute;
+  right: 110px;
+  bottom: 80px;
+  text-align: right;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #4f4a42;
+}
+#sv .svl1 {
+  font-size: 30px;
+}
+#sv .svl2 {
+  margin-top: 6px;
+  font-size: 24px;
+  color: #857e72;
+}
+#sv .fr-dark .svl1,
+#sv .fr-bleed .svl1 {
+  color: #f2ede4;
+}
+#sv .fr-dark .svl2,
+#sv .fr-bleed .svl2 {
+  color: #c9c2b6;
+}
+#sv .fr-bleed .svl {
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+#sv.framed #svc {
+  left: 110px;
+  bottom: 80px;
+}
+#sv.framed #svt {
+  font-size: 64px;
+}
+#sv.framed #svd {
+  font-size: 24px;
+  margin-top: 8px;
+}
+#sv.framed.inkdark #svc {
+  color: #4f4a42;
+  text-shadow: none;
+}
+#sv.framed.inkdark #svd {
+  color: #857e72;
+}
+[dir="rtl"] #sv .svl {
+  right: auto;
+  left: 110px;
+  text-align: left;
+}
+[dir="rtl"] #sv.framed #svc {
+  left: auto;
+  right: 110px;
 }

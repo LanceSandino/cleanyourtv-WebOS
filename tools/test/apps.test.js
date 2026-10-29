@@ -98,6 +98,22 @@ run(async () => {
     JSON.stringify(config.get().watch) === '{"on":true,"hide":["tm:The Show","plex:12"]}',
     'Continue watching keeps the removed shows (checked, once each) with its switch'
   );
+  await call(apps, '/api/config', 'POST', { saver: { on: true, secs: 900 } });
+  const sDefault = JSON.stringify(config.get().saver);
+  await call(apps, '/api/config', 'POST', {
+    saver: { on: true, secs: 300, style: 'photos', frame: 'gold', mat: 'charcoal', label: false },
+  });
+  const sSet = JSON.stringify(config.get().saver);
+  await call(apps, '/api/config', 'POST', {
+    saver: { on: true, secs: 7, style: 'x', frame: 'url(x)', mat: '#fff', label: 0 },
+  });
+  ok(
+    sDefault === '{"on":true,"after":300,"secs":900,"clock":true}' &&
+      sSet === '{"on":true,"after":300,"secs":300,"clock":true,"style":"photos","frame":"gold","mat":"charcoal","label":false}' &&
+      config.get().saver.secs === 15 &&
+      ['style', 'frame', 'mat', 'label'].every(k => config.get().saver[k] === undefined),
+    'the screensaver keeps its Style, Frame, Mat and Label only when they are one of the choices (Frame, wood, from the photo and the label are the defaults), and photos stay 5 or 15 minutes'
+  );
   await call(apps, '/api/config', 'POST', { wall: { on: true, secs: 10 } });
   const w10 = config.get().wall;
   await call(apps, '/api/config', 'POST', { wall: { on: true, secs: 0, pick: 'u/0123456789abcdef' } });

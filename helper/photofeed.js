@@ -10,7 +10,8 @@
 // (cfg.wall.pick 'f/<id>') is always kept on disk. A photo hidden or removed on the server leaves memory and disk at the next read. The shuffled order is saved with the ids, so a restart goes on
 // where it was instead of starting a new round. The token stays in config.json (root only), never returned.
 //   GET  /api/photofeed/status        {configured, host, tokenHint, pinned, photos, cached, lastSync, tried, error}
-//   GET  /api/photofeed/next          {id}: the photo to show next, already in the cache ({id: null, reason} when there is none)
+//   GET  /api/photofeed/next          {id, date, caption, width, height, color}: the photo to show next, already in the cache, with what
+//                                     the feed says of it (all but id optional); {id: null, reason} when there is none
 //   GET  /api/photofeed/photo/<id>    the photo (JPEG)
 //   POST /api/photofeed/setup {code}  POST /api/photofeed/refresh  POST /api/photofeed/disconnect
 // The wallpapers phone page calls setup() too: a setup code is too long to type with a remote.
@@ -110,6 +111,7 @@ function create(ctx) {
       st = {};
     }
     st.ids = Array.isArray(st.ids) ? st.ids.filter(id => ID.test(id)) : [];
+    st.meta = st.meta && typeof st.meta === 'object' ? st.meta : {};
     return st;
   }
   // the round so far is saved with the ids: at once when a new round starts or the list changes, otherwise at most every SAVE_MS,
@@ -185,11 +187,26 @@ function create(ctx) {
     if (r.status === 304) return null;
     if (r.status !== 200) throw fetch.fail('HTTP ' + r.status, 'status', r.status);
     const j = JSON.parse(r.body.toString('utf8'));
-    const ids = (Array.isArray(j && j.photos) ? j.photos : [])
-      .map(p => String((p && p.id) || ''))
-      .filter(id => ID.test(id))
-      .slice(0, 20000);
-    return { ids, etag: String(r.headers.etag || '') };
+    const list = (Array.isArray(j && j.photos) ? j.photos : []).filter(p => p && ID.test(String(p.id || ''))).slice(0, 20000);
+    // what the screensaver's frame shows and lays out by: the day it was taken (else added), a caption, the size; all optional
+    const meta = {};
+    for (const p of list) {
+      const m = {},
+        day = /^\d{4}-\d{2}-\d{2}/.exec(String(p.takenAt || p.createdAt || ''));
+      if (day) m.d = day[0];
+      if (typeof p.caption === 'string' && p.caption.trim())
+        m.c = p.caption
+          .replace(/[\u0000-\u001f\s]+/g, ' ')
+          .trim()
+          .slice(0, 80);
+      if (p.width > 0 && p.height > 0 && p.width < 100000 && p.height < 100000) {
+        m.w = Math.round(p.width);
+        m.h = Math.round(p.height);
+      }
+      if (typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color)) m.k = p.color.toLowerCase();
+      if (Object.keys(m).length) meta[String(p.id)] = m;
+    }
+    return { ids: list.map(p => String(p.id)), meta, etag: String(r.headers.etag || '') };
   }
   // read the ids again (every hour, and when the screensaver asks after an hour); a 304 keeps what is there
   let reading = null;
@@ -211,6 +228,7 @@ function create(ctx) {
             // (no round going yet: the next one takes every photo)
             queue = queue.length ? queue.filter(id => now[id]).concat(shuffled(got.ids.filter(id => !was[id]))) : [];
             s.ids = got.ids;
+            s.meta = got.meta;
             s.etag = got.etag;
             purge();
           }
@@ -360,6 +378,19 @@ function create(ctx) {
   }
 
   // the next photo for the screensaver, in the cache before it is named; the one after it is fetched meanwhile
+  // a photo with what is known of it: {id, date (YYYY-MM-DD), caption, width, height, color (#rrggbb, for the mat)}
+  function info(id) {
+    const m = (state().meta || {})[id] || {},
+      o = { id };
+    if (m.d) o.date = m.d;
+    if (m.c) o.caption = m.c;
+    if (m.w && m.h) {
+      o.width = m.w;
+      o.height = m.h;
+    }
+    if (m.k) o.color = m.k;
+    return o;
+  }
   async function next() {
     if (!feedCfg()) return { id: null, reason: 'not set up' };
     if (Date.now() - (state().tried || 0) > LIST_MS) await refresh();
@@ -372,7 +403,7 @@ function create(ctx) {
         await ensure(id);
         const n = peek();
         if (n && n !== id) ensure(n).catch(() => {});
-        return { id };
+        return info(id);
       } catch (e) {
         last = shown;
         if (e && (e.status === 404 || e.status === 422)) {
@@ -394,7 +425,7 @@ function create(ctx) {
         if (queue.length > 1) queue.push(queue.shift());
         else fill();
       }
-      return { id: last, offline: true };
+      return Object.assign(info(last), { offline: true });
     }
     return { id: null, reason: state().error || 'no photos' };
   }
@@ -437,7 +468,7 @@ function create(ctx) {
     });
     for (const x of cached()) unlink(fileOf(x.id));
     mem = [];
-    st = { ids: got.ids, etag: got.etag, ok: Date.now(), tried: Date.now(), error: '' };
+    st = { ids: got.ids, meta: got.meta, etag: got.etag, ok: Date.now(), tried: Date.now(), error: '' };
     queue = [];
     last = '';
     restored = true;

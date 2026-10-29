@@ -772,7 +772,6 @@
  "Show the Sonos volume": "Show the Sonos volume",
  "Speaker": "Speaker",
  "Place on screen": "Place on screen",
- "Now": "Now",
  "Top left": "Top left",
  "Top right": "Top right",
  "Bottom left": "Bottom left",
@@ -801,5 +800,17 @@
  "Holiday themes": "Holiday themes",
  "On, %s now": "On, %s now",
  "Getting the holiday theme...": "Getting the holiday theme...",
- "Telemachus": "Telemachus"
+ "Telemachus": "Telemachus",
+ "Wood": "Wood",
+ "Black": "Black",
+ "Gold": "Gold",
+ "White": "White",
+ "From the photo": "From the photo",
+ "Cream": "Cream",
+ "Charcoal": "Charcoal",
+ "Style": "Style",
+ "Frame": "Frame",
+ "Mat": "Mat",
+ "Label": "Label",
+ "Date and caption": "Date and caption"
 }

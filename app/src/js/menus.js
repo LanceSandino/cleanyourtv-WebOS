@@ -680,11 +680,22 @@ function saverMenu() {
       after = s.after || 300,
       secs = s.secs || 15,
       AF = [60, 120, 300, 600, 900, 1800],
-      SE = [10, 15, 30, 60],
+      SE = [10, 15, 30, 60, 300, 900],
       fam = (cfg.photoFeed && cfg.photoFeed.photos) || 0,
       wall = +String((cfg.wallpapers && cfg.wallpapers.stamp) || '0').split(':')[0] || 0,
+      framed = s.style !== 'photos',
+      FR = ['wood', 'black', 'gold', 'white', 'none'],
+      FRN = { wood: t('Wood'), black: t('Black'), gold: t('Gold'), white: t('White'), none: t('None') },
+      MA = ['auto', 'white', 'cream', 'charcoal'],
+      MAN = { auto: t('From the photo'), white: t('White'), cream: t('Cream'), charcoal: t('Charcoal') },
+      fr = FRN[s.frame] ? s.frame : 'wood',
+      ma = MAN[s.mat] ? s.mat : 'auto',
       set = function (k, v) {
         var o = { on: s.on === true, after: after, secs: secs, clock: s.clock !== false };
+        if (s.style === 'photos') o.style = 'photos';
+        if (fr !== 'wood') o.frame = fr;
+        if (ma !== 'auto') o.mat = ma;
+        if (s.label === false) o.label = false;
         o[k] = v;
         cfg.saver = o;
         saveCfg();
@@ -711,7 +722,7 @@ function saverMenu() {
       },
       {
         label: t('New photo'),
-        sub: t('Every %s s').replace('%s', secs),
+        sub: secs >= 60 ? t('Every %s min').replace('%s', secs / 60) : t('Every %s s').replace('%s', secs),
         stay: true,
         fn: function () {
           set('secs', SE[(SE.indexOf(secs) + 1) % SE.length]);
@@ -725,6 +736,45 @@ function saverMenu() {
           set('clock', s.clock === false);
         },
       },
+      /* the frame (saver.js): each photo like a print on a wall, or fitted whole on black */
+      {
+        label: t('Style'),
+        sub: framed ? t('Frame') : t('Photos'),
+        stay: true,
+        fn: function () {
+          set('style', framed ? 'photos' : 'frame');
+        },
+      },
+      framed
+        ? {
+            label: t('Frame'),
+            sub: FRN[fr],
+            stay: true,
+            fn: function () {
+              set('frame', FR[(FR.indexOf(fr) + 1) % FR.length]);
+            },
+          }
+        : null,
+      framed
+        ? {
+            label: t('Mat'),
+            sub: MAN[ma],
+            stay: true,
+            fn: function () {
+              set('mat', MA[(MA.indexOf(ma) + 1) % MA.length]);
+            },
+          }
+        : null,
+      framed
+        ? {
+            label: t('Label'),
+            sub: s.label !== false ? t('Date and caption') : t('Off'),
+            stay: true,
+            fn: function () {
+              set('label', s.label === false);
+            },
+          }
+        : null,
       { sep: true },
       fam || wall
         ? {

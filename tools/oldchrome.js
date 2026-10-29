@@ -124,7 +124,7 @@ const page = (f, extra) =>
 const SAVER_KEYS =
   '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
   'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}' +
-  'function photo(){var p=document.querySelector("#sv .svp.on");return p?(/photo\\/(p\\d+)/.exec(p.style.backgroundImage)||[])[1]||"":""}' +
+  'function photo(){var p=document.querySelector("#sv .svp.on");p=p&&(p.querySelector(".svf")||p);return p?(/photo\\/(p\\d+)/.exec(p.style.backgroundImage)||[])[1]||"":""}' +
   'function foc(){var f=document.querySelector(".f");return [].indexOf.call(document.querySelectorAll(".tile,.pill"),f)}' +
   'var seen=[],steps=[39,37,39,39],f0=-1,go=setInterval(function(){if(!SAVER.active()||!photo())return;clearInterval(go);f0=foc();seen.push(photo());' +
   '(function next(){if(!steps.length){key(40);var ok=seen.join()==="p1,p2,p1,p2,p3"&&!SAVER.active()&&foc()===f0;' +
@@ -172,6 +172,15 @@ const SAVER_HDMI =
   'var allowed=calls.some(function(c){return /responseScreenSaverRequest/.test(c)&&/"ack":true/.test(c)&&/"timestamp":43/.test(c)});' +
   'var ok=allowed&&!launched.length&&!SAVER.active();' +
   'document.body.setAttribute("data-hdmi",ok?"ok":"bad allowed="+allowed+" launched="+launched.join()+" active="+SAVER.active())},1500)},500)})()</script>';
+// the frame (Style: Frame, the default): two portrait photos of the same day hang side by side in the mat, with the caption and the
+// day on a label; the clock is the small one of the frame
+const SAVER_FRAME =
+  '<script>(function(){var A=window.api,n=0;window.api=function(p,b){return p==="/api/photofeed/next"?Promise.resolve({id:"q"+(++n),date:"2026-10-25",caption:"Pumpkin patch",color:"#c08a5a"}):A(p,b)};' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);SAVER.start(true);var k=0,w=setInterval(function(){' +
+  'var p=document.querySelector("#sv .svp.on");if(++k<60&&!(p&&p.querySelectorAll(".svf").length))return;clearInterval(w);' +
+  'var pair=!!p&&/fr-pair/.test(p.className)&&p.querySelectorAll(".svf").length===2,lab=p&&p.querySelector(".svl"),txt=lab?lab.textContent:"";' +
+  'var label=/Pumpkin patch/.test(txt)&&/2026/.test(txt),framed=document.getElementById("sv").classList.contains("framed")&&/fr-wood/.test(p.className);' +
+  'document.body.setAttribute("data-frame",pair&&label&&framed?"ok":"bad pair="+pair+" label="+txt+" framed="+framed+" class="+(p&&p.className))},300)},500)})()</script>';
 // the remote's Home key over a menu and over the photo chooser: the TV relaunches Home with launchType homeKey (webOS 6 to 24), or
 // with plain {keepAlive: true} (webOS 25, over the chooser here); both close
 const HOME_KEY =
@@ -255,13 +264,14 @@ const PAGES = [
   ['manager', 'manager/app/index.html', /class="row[ "]/g, 5, 8000],
   ['picker', 'picker/app/index.html', /class="chip[ "]/g, 2, 3000],
   // the launcher left alone for its screensaver's minute (virtual time): the screensaver is up with a photo from the feed drawn
-  ['saver', 'app/index.html', /class="svp on"/g, 1, 75000],
+  ['saver', 'app/index.html', /class="svp[^"]* on"/g, 1, 75000],
   // and its keys: Left and Right step through the photos, another key ends it without acting on Home
   ['saver keys', 'app/index.html', /data-keys="ok"/g, 1, 90000, SAVER_KEYS],
   ['wallpaper chooser', 'app/index.html', /data-pick="ok"/g, 1, 20000, WALLPICK_KEYS],
   ['saver over an app', 'app/index.html', /data-over="ok"/g, 1, 30000, SAVER_OVER],
   ['home key', 'app/index.html', /data-home="ok"/g, 1, 15000, HOME_KEY],
   ['saver over hdmi', 'app/index.html', /data-hdmi="ok"/g, 1, 20000, SAVER_HDMI],
+  ['saver frame', 'app/index.html', /data-frame="ok"/g, 1, 20000, SAVER_FRAME],
   ['continue watching', 'app/index.html', /data-watch="ok"/g, 1, 15000, WATCH_KEYS],
   ['linking plex', 'app/index.html', /data-link="ok"/g, 1, 20000, WATCH_LINK],
   ['hold ok', 'app/index.html', /data-hold="ok"/g, 1, 20000, HOLD_OK],
@@ -398,6 +408,7 @@ function serve() {
     if (/^\/api\/wallpapers\/photo\/u\/\d{16}$/.test(u)) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(photo(u));
     if (u === '/api/photofeed/next') return json({ id: 'p' + ++famN });
     if (/^\/api\/photofeed\/photo\/p\d+$/.test(u)) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(photo(u));
+    if (/^\/api\/photofeed\/photo\/q\d+$/.test(u)) return r.writeHead(200, { 'content-type': 'image/svg+xml' }), r.end(portrait(u));
     if (u === '/api/log') {
       marks.push(decodeURIComponent(q.url.split('m=')[1] || ''));
       return json({});

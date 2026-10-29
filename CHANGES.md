@@ -840,3 +840,24 @@ commit_ref: "feature/upstream-1.6.10 (the commits named in their (cherry picked 
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-28T23:19:23Z"
 ```
+
+```yaml
+id: CU-20261028-3
+type: feature
+title: "Screensaver Style: Frame, each photo like a print on a wall"
+description: "The owner asked to reimagine the screensaver as a photo frame (like Samsung's The Frame) and approved the defaults and
+  labels. saver.js gains Style (Frame by default, or Photos), Frame (wood, black, gold, white, none), Mat (from the photo, white,
+  cream, charcoal) and Label (on): a photo is laid out by its shape (near 16:9 fills the inside of the frame; a landscape one large in
+  the mat; a portrait one tall; two portraits of the same day side by side, a photo that does not pair kept for the next turn), the
+  mat takes a little of the photo's average colour when the feed gives it (a dark photo gets charcoal; no colour, warm white: the page
+  cannot read a photo's pixels, since a cross-origin read would need the API token), the clock is smaller in the mat's corner and the
+  label shows the day taken (else added) and the caption. Only the cross-fade moves. photofeed.js keeps each photo's takenAt (else
+  createdAt), caption (control characters and runs of spaces collapsed, 80 characters), width, height and color from the feed list,
+  saved with the ids, and /api/photofeed/next returns them. New photo also takes 5 and 15 minutes. apps.js checks the new settings."
+impact: medium
+affected_modules: ["app/src/js/saver.js", "app/src/css/saver.css", "app/src/js/menus.js", "helper/photofeed.js", "helper/apps.js", "tools/oldchrome.js", "docs/screensaver.md"]
+related_tests: ["tools/test/photofeed.test.js", "tools/test/apps.test.js", "tools/oldchrome.js (saver frame: two portraits of one day side by side with their label in a wood frame; saver; saver keys; saver over an app)"]
+commit_ref: "feature/frame-saver (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T01:42:20Z"
+```

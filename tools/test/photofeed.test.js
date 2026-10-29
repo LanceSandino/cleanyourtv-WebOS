@@ -59,7 +59,25 @@ run(async () => {
         return r.end();
       }
       r.writeHead(200, { 'content-type': 'application/json', etag: etag() });
-      return r.end(JSON.stringify({ stamp: etag(), photos: ids.map(id => ({ id, createdAt: '2026-10-27T00:00:00Z' })) }));
+      // the first photo with everything a frame can show, the others with only the day they were added
+      return r.end(
+        JSON.stringify({
+          stamp: etag(),
+          photos: ids.map((id, i) =>
+            i === 0
+              ? {
+                  id,
+                  createdAt: '2026-10-27T00:00:00Z',
+                  takenAt: '2026-08-14T15:20:00Z',
+                  caption: 'Lake\u0007 day',
+                  width: 3024,
+                  height: 4032,
+                  color: '#8A7B70',
+                }
+              : { id, createdAt: '2026-10-27T00:00:00Z', color: 'red' }
+          ),
+        })
+      );
     }
     const m = /^\/api\/feed\/photos\/([\w-]+)$/.exec(u);
     if (m && m[1] === 'broken') {
@@ -119,6 +137,25 @@ run(async () => {
   const firstThree = order.slice(0, 3).sort().join(),
     nextThree = order.slice(3).sort().join();
   ok(firstThree === 'p1,p2,p3' && nextThree === 'p1,p2,p3', 'every photo once before any comes back');
+  // what the frame shows: the day taken (else added), a caption without control characters, the size
+  const metas = [];
+  for (let i = 0; i < ids.length; i++) metas.push((await call(f, '/api/photofeed/next')).j);
+  const first = metas.filter(m => m.id === ids[0])[0],
+    other = metas.filter(m => m.id !== ids[0])[0];
+  ok(
+    first &&
+      first.date === '2026-08-14' &&
+      first.caption === 'Lake day' &&
+      first.width === 3024 &&
+      first.height === 4032 &&
+      first.color === '#8a7b70',
+    'next says when the photo was taken, its caption, its size and its colour: ' + JSON.stringify(first)
+  );
+  ok(
+    other && other.date === '2026-10-27' && !other.caption && !other.width && !other.color,
+    'a photo with less: the day it was added only (a colour that is not #rrggbb is dropped)'
+  );
+
   ok(
     order.every((x, i) => i === 0 || x !== order[i - 1]),
     'never the same photo twice in a row'
