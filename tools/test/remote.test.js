@@ -125,11 +125,16 @@ run(async () => {
   );
   r = await lan('POST', '/press', { key: 'rm -rf' }, key);
   const nokey = await lan('POST', '/press', { key: 'UP' });
-  const badkey = await lan('POST', '/press', { key: 'UP' }, { 'x-remote-key': p1.j.key.slice(0, 42) + 'A' });
+  const badkey = await lan(
+    'POST',
+    '/press',
+    { key: 'UP' },
+    { 'x-remote-key': p1.j.key.slice(0, 42) + (p1.j.key.slice(-1) === 'A' ? 'E' : 'A') }
+  );
   const other = await lan('POST', '/press', { key: 'UP' }, Object.assign({ origin: 'http://evil.example' }, key));
   ok(
     r.code === 400 && nokey.code === 401 && badkey.code === 401 && other.code === 403,
-    'an unknown key, no key, a wrong key and another site are refused'
+    'an unknown key, no key, a wrong key and another site are refused: ' + [r.code, nokey.code, badkey.code, other.code].join()
   );
   calls.length = 0;
   await lan('POST', '/text', { text: 'blu\u0007ey' }, key);
