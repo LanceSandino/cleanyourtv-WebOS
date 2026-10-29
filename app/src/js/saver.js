@@ -604,9 +604,11 @@ var SAVER = (function () {
   });
   window.addEventListener(
     'wheel',
-    function () {
+    function (e) {
       idle = 0;
-      if (on) wake();
+      if (!on) return;
+      wake();
+      e.stopPropagation(); /* the wheel that ends the photos does nothing else (the menus' and Home's wheel) */
     },
     true
   );
