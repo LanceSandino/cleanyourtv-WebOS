@@ -213,6 +213,22 @@ run(async () => {
       icon.text === 'png',
     'the apps come in the order of the dock (hidden apps and inputs left out), and only those open'
   );
+  // a hub on the home network (hub/server.js): the QR code and the address shown point there; only http://<home address>:<port>
+  const bad = await call(R, '/api/remote/helper', 'POST', { url: 'http://8.8.8.8:8794' });
+  const bad2 = await call(R, '/api/remote/helper', 'POST', { url: 'https://192.168.4.4:8794/x' });
+  r = await call(R, '/api/remote/helper', 'POST', { url: 'http://192.168.4.4:8794/' });
+  const pr = await call(R, '/api/remote/pair', 'POST', {});
+  ok(
+    bad.code === 400 &&
+      bad2.code === 400 &&
+      r.j.helper === 'http://192.168.4.4:8794' &&
+      r.j.url === 'http://192.168.4.4:8794' &&
+      pr.j.qr === 'http://192.168.4.4:8794/#p=' + pr.j.code,
+    'a hub on the home network is where the QR code and the address point; any other address is refused'
+  );
+  await call(R, '/api/remote/pair', 'POST', { stop: true });
+  r = await call(R, '/api/remote/helper', 'POST', { url: '' });
+  ok(r.j.helper === '' && r.j.url.indexOf('http://192.168.4.4:') !== 0, 'clearing the hub points back at the TV');
   // off on the TV: the phone is refused; on again; removed: the key no longer works and the server stops
   await call(R, '/api/remote/on', 'POST', { on: false });
   await sleep(300);

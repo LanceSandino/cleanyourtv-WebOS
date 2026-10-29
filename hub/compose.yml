@@ -1,0 +1,21 @@
+# The CleanYourTV hub (server.js) on a home server: copy this folder (server.js, compose.yml) to e.g. /opt/cleanyourtv-hub, write .env
+# beside it (TV_HOST=<the TV's address>, WAKE_ADDR=<the LAN's broadcast address>), then `docker compose up -d`. It uses the host's
+# network (Wake-on-LAN broadcasts, and the host's ARP table for the TV's MAC), runs as nobody with no capabilities on a read-only root,
+# and keeps the TV's MAC and the phone page in ./data.
+services:
+  hub:
+    image: node:22.21.1-alpine@sha256:0340fa682d72068edf603c305bfbc10e23219fb0e40df58d9ea4d6f33a9798bf
+    network_mode: host
+    restart: unless-stopped
+    user: '65534:65534'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 96m
+    env_file: .env
+    environment:
+      HUB_DATA: /data
+    volumes:
+      - ./server.js:/app/server.js:ro
+      - ./data:/data
+    command: ['node', '/app/server.js']

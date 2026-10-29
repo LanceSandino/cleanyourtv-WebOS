@@ -1333,3 +1333,16 @@ commit_ref: "feature/own-miner (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T17:12:17Z"
 ```
+
+```yaml
+id: CU-20261029-27
+type: feature
+title: "Turn the TV on from the phone: the hub on a home server (Wake-on-LAN), the phone remote through it"
+description: "The owner asked for the phone remote to turn the TV on, from a helper on his Ubuntu server, and to keep the TV's resources in mind (D-20261029-6). hub/server.js (Node built-ins, Docker: hub/compose.yml with the host network, nobody, no capabilities, read-only root, 96 MB) passes everything for the phone remote to the TV's LAN server unchanged (Host header and the phone's key: the TV's checks decide), over one kept-alive connection; keeps the last phone page and the manifest; learns the TV's MAC from the host's ARP table (a complete entry) into data/tv-mac (mode 600, never logged or answered); with the TV gone it serves the kept page, answers {off: true}, and POST /wake (only from its own page, at most one every 10 s) sends magic packets by UDP broadcast to ports 9 and 7. It answers only home-network addresses and forwards only to the TV. remote.js: POST /api/remote/helper {url} sets the hub's address (http://<home address>:<port> only); the QR code, the address shown and the status then point there. remotepage.js: {off: true} puts the page in an asleep state (the keys dimmed, the power key and a Turn the TV on button wake the TV, then it waits for the TV and carries on)."
+impact: medium
+affected_modules: ["hub/server.js", "hub/compose.yml", "helper/remote.js", "helper/remotepage.js", "docs/remote.md", "DECISIONS.md"]
+related_tests: ["tools/test/hub.test.js (the page and a press pass through with the Host header and the key; the page kept and the MAC learned from a complete ARP entry, mode 600, never in its status; with the TV gone the kept page and off; a magic packet of six 0xff and the MAC sixteen times; one wake per interval, only from its own page)", "tools/test/remote.test.js (a hub on the home network is where the QR code and the address point; any other address is refused; clearing it points back at the TV)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T18:48:30Z"
+```

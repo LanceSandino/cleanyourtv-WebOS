@@ -17,6 +17,9 @@
 //   GET  /api/remote/status    {on, url, devices: [{id, name, added, used}], pairing: {until} | null}
 //   POST /api/remote/pair      {} opens pairing: {url, code, qr, seconds}; {stop: true} closes it
 //   POST /api/remote/forget {id}    POST /api/remote/on {on}
+//   POST /api/remote/helper {url}   the address of a hub on the home network (hub/server.js: 'http://<private address>:<port>', ''
+//                                   to clear) that stays on when the TV sleeps: the QR code and the address shown then point there, so
+//                                   phones pair through it and it can wake the TV
 // On the LAN server: GET / (the phone page), POST /pair {code, name} -> {key, id}; with the key: POST /press {key}, /move {dx, dy},
 // /click, /scroll {dy}, /hold {key}, /text {text}, /backspace, /enter, /launch {id}, /power, GET /apps, GET /icon/<id>, GET /ping.
 const http = require('http'),
@@ -83,6 +86,12 @@ function create(ctx) {
   const conf = () => config.get().remote || {};
   const devices = () => (Array.isArray(conf().devices) ? conf().devices : []);
   const isOn = () => conf().on !== false && devices().length > 0;
+  // the hub's address when one is set (a private IPv4 address and a port only: phones are never sent off the home network)
+  const hubOk = h => {
+    const m = /^http:\/\/(\d{1,3}(?:\.\d{1,3}){3}):(\d{2,5})$/.exec(h);
+    return !!m && homeAddress(m[1]) && +m[2] < 65536;
+  };
+  const helper = () => (hubOk(String(conf().helper || '')) ? conf().helper : '');
 
   // ---- LG's network input: one socket, opened when a press comes and again after it closed ----
   let sock = null,
@@ -153,7 +162,7 @@ function create(ctx) {
       timer: setTimeout(closePairing, PAIR_MS),
     };
     return listen().then(() => {
-      const url = 'http://' + web.lanIp() + ':' + PORT;
+      const url = helper() || 'http://' + web.lanIp() + ':' + PORT;
       return { url, code: pairing.code, qr: url + '/#p=' + pairing.code, seconds: PAIR_MS / 1000 };
     });
   }
@@ -351,7 +360,8 @@ function create(ctx) {
   function status() {
     return {
       on: isOn(),
-      url: srv ? 'http://' + web.lanIp() + ':' + PORT : '',
+      url: srv ? helper() || 'http://' + web.lanIp() + ':' + PORT : '',
+      helper: helper(),
       devices: devices().map(d => ({ id: d.id, name: d.name, added: d.added || 0, used: d.used || 0 })),
       pairing: pairing ? { until: pairing.until } : null,
     };
@@ -376,6 +386,17 @@ function create(ctx) {
       if (!isOn() && !pairing) unlisten();
       return web.json(res, status());
     }
+    if (u === '/api/remote/helper') {
+      const url = String(b.url || '').replace(/\/+$/, '');
+      if (url && !hubOk(url)) return web.json(res, { error: 'the hub must be http://<home network address>:<port>' }, 400);
+      config.update('remote (hub ' + (url ? 'set' : 'cleared') + ')', c => {
+        const r = Object.assign({}, c.remote);
+        if (url) r.helper = url;
+        else delete r.helper;
+        c.remote = r;
+      });
+      return web.json(res, status());
+    }
     if (u === '/api/remote/on') {
       config.update('remote (switched ' + (b.on === false ? 'off' : 'on') + ')', c => {
         const r = Object.assign({}, c.remote);
@@ -392,7 +413,7 @@ function create(ctx) {
 
   return {
     name: 'remote',
-    paths: ['/api/remote/status', '/api/remote/pair', '/api/remote/forget', '/api/remote/on'],
+    paths: ['/api/remote/status', '/api/remote/pair', '/api/remote/forget', '/api/remote/on', '/api/remote/helper'],
     handle,
     start: () => {
       if (isOn()) listen();

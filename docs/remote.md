@@ -36,6 +36,23 @@ forgetting them.
 - The touchpad moves, clicks and scrolls LG's pointer through its pointer input (each message framed with its length, as LG's
   input service reads it; it then moves its own touchpad device). Held keys use LG's long press (`sendLongKeyEvent`).
 
-Turning the TV **on** from the phone needs something that stays on at home, because the TV's service sleeps with the TV: the TV wakes
-on a Wake-on-LAN packet (on this TV **Turn on via Wi-Fi** is on), and a phone's browser cannot send one. A small helper for an
-always-on computer at home is planned.
+## Turning the TV on: the hub
+
+The TV's service sleeps with the TV, and a phone's browser cannot send the Wake-on-LAN packet that wakes it (LG's **Turn on via
+Wi-Fi** must be on). The hub (`hub/server.js`) is a small server for a computer that stays on at home (a home server, a Raspberry Pi):
+
+- Everything for the phone remote passes through it to the TV unchanged, the Host header too, so the TV's own checks (the paired
+  key, the home network, the page's origin) work as before, and phones pair at the hub's address. It keeps one connection open to
+  the TV, so the touchpad stays quick.
+- It keeps the last copy of the phone page (no key is in it). While the TV sleeps the page still opens, says the TV is off, and its
+  power key or **Turn the TV on** sends Wake-on-LAN magic packets (UDP broadcast, ports 9 and 7), at most one every ten seconds; the
+  page then waits for the TV and carries on.
+- It learns the TV's MAC from the computer's ARP table while the TV is on and keeps it in its data folder, never in a log or an answer.
+- It answers only addresses of the home network and forwards only to the TV: it is no proxy to anything else.
+
+Set up (Docker): copy `hub/server.js` and `hub/compose.yml` to a folder such as `/opt/cleanyourtv-hub`, write `.env` beside them
+with `TV_HOST=<the TV's address>` and `WAKE_ADDR=<the network's broadcast address>` (for 192.168.4.0/22: 192.168.7.255), make a
+`data` folder owned by user 65534, and run `docker compose up -d`. It runs as nobody, with no capabilities, on a read-only root, in
+96 MB at most. Then on the TV (a shell, or the API): `curl -X POST localhost:8765/api/remote/helper -d '{"url":"http://<hub>:8794"}'`;
+from then on the QR code and the address on the TV's Phone remote screen point at the hub. Pair each phone again through it (a
+phone keeps its key per address).

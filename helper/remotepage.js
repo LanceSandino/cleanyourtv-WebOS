@@ -44,6 +44,29 @@ function buzz() {
   } catch (e) {}
 }
 var up = null;
+/* the TV asleep: only a hub (hub/server.js) answers {off: true}, with the page it kept; the power key then wakes the TV */
+var asleep = false;
+function sleeping(on) {
+  if (on === asleep) return;
+  asleep = on;
+  document.body.classList.toggle('asleep', on);
+  up = null;
+  if (on) {
+    $('dot').className = 'off';
+    $('tv').textContent = t('The TV is off. The power key turns it on.');
+  }
+}
+function wake() {
+  buzz();
+  call('/wake').then(function (r) {
+    if (r.error) return note(t(r.error), true);
+    $('tv').textContent = t('Turning the TV on\u2026');
+    var n = 0, iv = setInterval(function () {
+      call('/ping').then(function (p) { if (p.status === 200 && !p.off) { clearInterval(iv); sleeping(false); state(true); } });
+      if (++n > 45) clearInterval(iv);
+    }, 2000);
+  }, function () { note(t('The TV does not answer. Is it on, and the phone on the same Wi-Fi?'), true); });
+}
 function state(ok) {
   if (ok === up) return;
   up = ok;
@@ -54,6 +77,8 @@ function state(ok) {
 function send(path, body) {
   return call(path, body).then(function (r) {
     if (r.status === 401) { login(t('This phone is not paired any more. Pair it again from the TV.')); return r; }
+    if (r.off) { sleeping(true); return r; }
+    sleeping(false);
     state(r.status < 500 || r.status === 502);
     if (r.error) note(t(r.error), true);
     else if ($('msg').textContent) note('');
@@ -87,7 +112,8 @@ function pair(code) {
 function ping() {
   call('/ping').then(function (r) {
     if (r.status === 401) login(t('This phone is not paired any more. Pair it again from the TV.'));
-    else state(r.status === 200);
+    else if (r.off) sleeping(true);
+    else { sleeping(false); state(r.status === 200); }
   }, function () { state(false); });
 }
 function start() {
@@ -301,7 +327,8 @@ function colourPick(k) {
 }
 $('sheetno').onclick = function () { $('sheet').className = 'hide'; };
 colourLabels();
-$('off').onclick = function () { buzz(); if (confirm(t('Turn the TV off?'))) send('/power'); };
+$('off').onclick = function () { if (asleep) return wake(); buzz(); if (confirm(t('Turn the TV off?'))) send('/power'); };
+$('wakeb').onclick = wake;
 /* pairing with the six digits from the TV */
 function go() {
   var c = $('code').value.replace(/\D/g, '');
@@ -340,6 +367,8 @@ svg.f{fill:currentColor;stroke-width:1.4}
 .pw{flex:none;width:${u(48)};height:${u(48)};border-radius:50%;color:#ff4d42}
 .pw svg{stroke-width:2.5}.pw.dn,.pw:active{color:#ff7a70;box-shadow:inset 0 ${u(1)} ${u(3)} rgba(0,0,0,.65),0 0 ${u(14)} rgba(255,77,66,.45)}
 #st{flex:1;min-width:0;display:flex;align-items:center;margin:0 ${u(12)}}
+#wakeb{display:none;width:100%;height:${u(56)};margin:0 0 ${u(12)};border-radius:${u(18)};font-size:${u(16)};font-weight:700}#wakeb svg{width:${u(20)};height:${u(20)};margin-right:${u(8)}}
+.asleep #wakeb{display:flex}.asleep section{opacity:.35;pointer-events:none}
 #dot{flex:none;width:${u(9)};height:${u(9)};margin-right:${u(8)};border-radius:50%;background:#5a5d65}
 #dot.on{background:#30d158;box-shadow:0 0 ${u(8)} rgba(48,209,88,.65)}#dot.off{background:#ff453a;box-shadow:0 0 ${u(8)} rgba(255,69,58,.5)}
 #tv{font-size:${u(11.5)};line-height:1.3;color:#9a9ca5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
@@ -495,6 +524,7 @@ function html(lang) {
 <div id=main class=hide>
 <div class=top><button class="key pw" id=off aria-label="${T('Turn the TV off')}">${icon('power')}</button><div id=st><i id=dot></i><span id=tv></span></div>
 <button class="key nb" id=nb aria-label="${T('Numbers')}">123</button></div>
+<button class="key p" id=wakeb>${icon('power')}<span>${T('Turn the TV on')}</span></button>
 <nav><button class=on data-p=keys>${T('Remote')}</button><button data-p=touch>${T('Touchpad')}</button><button data-p=type>${T('Type')}</button><button data-p=apps>${T('Apps')}</button></nav>
 <section id=keys>
 <div class=rk>${rocker('VOLUMEUP', 'Volume up', 'plus', 'VOL', 'VOLUMEDOWN', 'Volume down', 'minus', true)}

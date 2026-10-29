@@ -1,0 +1,157 @@
+// The hub (hub/server.js): with a stand-in TV on this computer, it passes the phone remote through unchanged (the Host header too), keeps
+// the phone page and learns the TV's MAC from an ARP table while the TV answers; with the TV gone it serves the kept page, says
+// {off: true} and sends Wake-on-LAN magic packets (caught here by a UDP listener), at most one every few seconds, only from its page.
+const http = require('http'),
+  dgram = require('dgram'),
+  fs = require('fs'),
+  os = require('os'),
+  path = require('path');
+const { root, ok, serve, sleep, run } = require('./lib');
+const hubMod = require(path.join(root, 'hub', 'server.js'));
+
+function ask(port, method, p, body, headers) {
+  return new Promise((resolve, reject) => {
+    const r = http.request(
+      { host: '127.0.0.1', port, path: p, method, agent: false, headers: Object.assign({ host: 'hub.test:' + port }, headers || {}) },
+      res => {
+        const b = [];
+        res.on('data', c => b.push(c));
+        res.on('end', () => {
+          const text = Buffer.concat(b).toString();
+          let j = null;
+          try {
+            j = JSON.parse(text);
+          } catch (_) {}
+          resolve({ code: res.statusCode, text, j, headers: res.headers });
+        });
+      }
+    );
+    r.on('error', reject);
+    r.end(body === undefined ? undefined : JSON.stringify(body));
+  });
+}
+
+run(async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cytv-hub-')),
+    arp = path.join(dir, 'arp'),
+    data = path.join(dir, 'data');
+  fs.mkdirSync(data);
+  const MAC = '02:00:5e:10:20:30';
+  fs.writeFileSync(
+    arp,
+    'IP address       HW type     Flags       HW address            Mask     Device\n' +
+      '127.0.0.5        0x1         0x0         00:00:00:00:00:00     *        eth0\n' +
+      '127.0.0.1        0x1         0x2         ' +
+      MAC +
+      '     *        eth0\n'
+  );
+  // the TV's phone page and its API, as remote.js answers them
+  const seen = [];
+  const tv = await serve((rq, rs) => {
+    const b = [];
+    rq.on('data', c => b.push(c));
+    rq.on('end', () => {
+      seen.push({
+        method: rq.method,
+        url: rq.url,
+        host: rq.headers.host,
+        key: rq.headers['x-remote-key'],
+        body: Buffer.concat(b).toString(),
+      });
+      if (rq.url === '/') {
+        rs.writeHead(200, { 'content-type': 'text/html' });
+        return rs.end('<!doctype html><title>TV remote</title>');
+      }
+      rs.writeHead(rq.url === '/press' ? 200 : 404, { 'content-type': 'application/json' });
+      rs.end(JSON.stringify({ ok: rq.url === '/press' }));
+    });
+  });
+  const tvPort = +tv.url.split(':').pop();
+  // the Wake-on-LAN packets
+  const packets = [],
+    udp = dgram.createSocket('udp4');
+  udp.on('message', m => packets.push(m));
+  await new Promise(r => udp.bind(0, '127.0.0.1', r));
+  const hub = hubMod.create({
+    tv: '127.0.0.1',
+    tvPort,
+    data,
+    arp,
+    wakeAddr: '127.0.0.1',
+    wakePorts: [udp.address().port],
+    timeoutMs: 500,
+    wakeEveryMs: 1500,
+  });
+  await new Promise(r => hub.server.listen(0, '127.0.0.1', r));
+  const port = hub.server.address().port;
+
+  ok(
+    hubMod.homeAddress('192.168.4.30') &&
+      hubMod.homeAddress('::ffff:10.0.0.2') &&
+      !hubMod.homeAddress('8.8.8.8') &&
+      !hubMod.homeAddress('172.32.0.1'),
+    'the home network: private, link-local and loopback addresses only'
+  );
+  let r = await ask(port, 'GET', '/');
+  ok(
+    r.code === 200 && /TV remote/.test(r.text) && seen[0].host === 'hub.test:' + port,
+    "the phone page comes from the TV, with the hub's Host header passed on"
+  );
+  r = await ask(port, 'POST', '/press', { key: 'UP' }, { 'x-remote-key': 'k'.repeat(43), 'content-type': 'application/json' });
+  const last = seen[seen.length - 1];
+  ok(
+    r.code === 200 && r.j.ok && last.key === 'k'.repeat(43) && last.body === '{"key":"UP"}',
+    "a press goes through with the phone's key and its body"
+  );
+  const kept = fs.readFileSync(path.join(data, 'page.html'), 'utf8'),
+    mac = fs.readFileSync(path.join(data, 'tv-mac'), 'utf8').trim(),
+    mode = fs.statSync(path.join(data, 'tv-mac')).mode & 0o777;
+  ok(
+    /TV remote/.test(kept) && mac === MAC && mode === 0o600,
+    "it keeps the page and learns the TV's MAC from the ARP table (only a complete entry), readable only by itself"
+  );
+  r = await ask(port, 'GET', '/hub/status');
+  ok(
+    r.j.tv === 'on' && r.j.mac === true && r.j.page === true && JSON.stringify(r.j).indexOf(MAC) < 0,
+    'its status says what it knows, never the MAC'
+  );
+
+  // the TV asleep
+  tv.server.close();
+  await sleep(100);
+  r = await ask(port, 'GET', '/');
+  const p = await ask(port, 'GET', '/ping', undefined, { 'x-remote-key': 'k'.repeat(43) });
+  ok(
+    r.code === 200 && r.headers['x-hub'] === 'kept' && /TV remote/.test(r.text) && p.code === 503 && p.j.off === true,
+    'with the TV asleep the kept page opens and /ping says off'
+  );
+  r = await ask(port, 'POST', '/wake', {}, { origin: 'http://hub.test:' + port });
+  await sleep(200);
+  const pk = packets[0],
+    m = Buffer.from(MAC.split(':').map(h => parseInt(h, 16)));
+  ok(
+    r.code === 200 &&
+      r.j.sent === true &&
+      packets.length === 1 &&
+      pk.length === 102 &&
+      pk.slice(0, 6).equals(Buffer.alloc(6, 0xff)) &&
+      pk.slice(6, 12).equals(m) &&
+      pk.slice(96).equals(m),
+    'POST /wake sends a magic packet: six 0xff, then the MAC sixteen times'
+  );
+  r = await ask(port, 'POST', '/wake', {}, { origin: 'http://hub.test:' + port });
+  const other = await ask(port, 'POST', '/wake', {}, { origin: 'http://evil.example' });
+  await sleep(200);
+  ok(
+    r.j.sent === false && r.j.waiting && other.code === 403 && packets.length === 1,
+    'at most one wake every few seconds, and only from its own page'
+  );
+  await sleep(1500);
+  r = await ask(port, 'POST', '/wake');
+  await sleep(200);
+  ok(r.j.sent === true && packets.length === 2, 'later it wakes again');
+
+  hub.close();
+  udp.close();
+  fs.rmSync(dir, { recursive: true, force: true });
+});
