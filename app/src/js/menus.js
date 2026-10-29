@@ -1175,7 +1175,17 @@ function watchMenu() {
             },
           },
         ];
-      /* each app's row from LG on its own: YouTube's, for one, is LG's pick of videos */
+      /* LG's picks (what LG's servers chose for YouTube, Disney+, Apple TV, LG Channels); off keeps the rows the apps wrote themselves
+         (Netflix, Prime Video). Then each app's row on its own: YouTube's, for one, is LG's pick of videos */
+      if (WATCH.lgOn())
+        items.push({
+          label: t("LG's picks"),
+          sub: WATCH.picksOn() ? t('On') : t('Off'),
+          stay: true,
+          fn: function () {
+            WATCH.setPicks(!WATCH.picksOn());
+          },
+        });
       if (WATCH.lgOn())
         WATCH.lgApps().forEach(function (id) {
           items.push({

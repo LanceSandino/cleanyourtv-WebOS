@@ -1296,4 +1296,27 @@ related_tests: ["tools/test/disney.test.js (an episode card and Disney's next ep
 commit_ref: "feature/disney-link (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T17:06:36Z"
+id: CU-20261029-24
+type: feature
+title: "Continue watching: LG's picks can be switched off, leaving only the rows the apps write themselves (no LG data)"
+description: "The owner asked for Home's rows without what LG's servers send. Read only on the TV: LG's content miner asks LG (com.webos.service.sdx, homeprv on <region>.tv.wiselg.com, sdx adding the TV's identity) for the rows of apps whose launch point names no local source (YouTube, Disney+, Apple TV, LG Channels: LG's picks, no personal key on the TV) and writes them to its database and to the app manager; apps whose launch point names a local source (previewMetadata SOURCE_LOCAL*: Netflix, Prime Video) write their own rows from their own servers. lgrows.js now reads listLaunchPoints with the rows and marks each LG card pick: true (LG's pick, or a row of unknown kind) or false (the app's own). Customize > Continue watching > LG's picks (under Rows from LG for other apps, kept as watch.lgPicks false): off, the miner's database is not read and only the apps' own rows are shown, their Continue watching first; the page hides picks at once, before the service's next read. The page's save() also keeps the switches it is not given: it read Telemachus's switch after writing cfg.watch again, so any other change switched Telemachus back on."
+impact: medium
+affected_modules: ["helper/lgrows.js", "helper/watch.js", "helper/apps.js", "app/src/js/watch.js", "app/src/js/menus.js", "app/index.html", "i18n/en.json", "docs/launcher.md", "docs/security.md", "DECISIONS.md"]
+related_tests: ["tools/test/apps.test.js (watch.lgPicks false is kept, any other value dropped)", "tools/test/watch.test.js (a row is the app's own only for a local source; with picks on the miner's rows are picks and Netflix/Prime Video's are not; with picks off the miner is not read and only the apps' own rows stay, Continue watching first; launch points unreadable: nothing from LG)", "tools/oldchrome.js (lg's picks off: the menu row, OK keeps watch.lgPicks false and Telemachus off, the app whose row is a pick is no longer listed and opens no row, OK switches it back; lg app off and linking plex one Down more; Chromium 68 and 79)"]
+commit_ref: "feature/own-miner (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T16:25:07Z"
+```
+
+```yaml
+id: CU-20261029-25
+type: feature
+title: "Debloat: LG's content miner can be stopped from the start (opt-in), so it no longer runs for a minute at every start"
+description: "Read only on the TV (webOS 25): contentminer starts about 26 s after the start, before the boot scripts (the Homebrew Channel ran them at about 39 s, from its own boot task), began its round at 52 s and was stopped by Suggestions and nudges at 109 s, so it can ask LG's servers at every start. A host block cannot single it out (homeprv shares <region>.tv.wiselg.com with LG Channels, LG's voice service and sign-in), and stopping it before it starts needs LG's files changed. The new opt-in group miner (options.debloatOn, off by default; the manager's Debloat screen, LG's content miner, from the start): 15-cleanyourtv-debloat runs debloat-stop.sh miner at once in the background, which has systemd stop contentminer and mounts the do-nothing stub over its program (never kill -9) so nothing starts it again until the next restart; debloat-undo.sh unstubs it and starts it again only when neither Suggestions and nudges nor the miner group still holds it; debloat.change applies and undoes the scripts' opt-in groups when debloatOn changes; Check that it works looks at it while it is on. The manager's opt-in handling is no longer HbbTV only. Not yet seen at a TV start (needs a restart with the group on)."
+impact: medium
+affected_modules: ["scripts/debloat-stop.sh", "scripts/debloat-undo.sh", "scripts/15-cleanyourtv-debloat", "helper/debloat.js", "helper/manager.js", "helper/debloatcheck.js", "manager/src/js/menu.js", "manager/app/index.html", "docs/debloat.md", "docs/manager.md", "docs/security.md", "DECISIONS.md"]
+related_tests: ["tools/test/scripts.test.js (the miner is stopped and stubbed, never killed, only when switched on, alone at boot; the undo starts it only when neither group holds it; the boot hook runs it at once in the background before the minute's wait)", "tools/test/manager.test.js (the miner switched on and off is applied and undone alone; HbbTV runs no script)", "tools/test/debloatcheck.test.js (the miner group is looked at only when switched on: not stubbed or running is not in place)"]
+commit_ref: "feature/own-miner (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T16:25:07Z"
 ```

@@ -320,5 +320,80 @@ run(async () => {
       .length === 4,
     "a TV whose app manager has no getAllContents keeps the miner's rows"
   );
+
+  // LG's picks and the apps' own rows: an app whose launch point names a local source for the miner (Netflix, Prime Video) wrote its
+  // row itself; every other row is what LG's servers chose. With LG's picks off the miner is not read and only the apps' own rows stay.
+  const LR = req('lgrows');
+  ok(
+    LR.ownRow({ previewMetadata: { sourceEndpoint: '@PREVIEW.ENDPOINT.SOURCE_LOCAL' } }) &&
+      LR.ownRow({ previewMetadata: { sourceEndpoint: '@PREVIEW.ENDPOINT.SOURCE_LOCAL_STOREAPP' } }) &&
+      !LR.ownRow({ previewMetadata: { sourceEndpoint: '@PREVIEW.ENDPOINT.SOURCE_DEFAULT' } }) &&
+      !LR.ownRow({ previewMetadata: 'x' }) &&
+      !LR.ownRow({}) &&
+      !LR.ownRow(null),
+    "a row is the app's own only when its launch point names a local source"
+  );
+  let minerAsked = 0;
+  const lpLuna = async (uri, payload, opts) => {
+    if (/listLaunchPoints$/.test(uri))
+      return {
+        returnValue: true,
+        launchPoints: [
+          {
+            id: 'netflix',
+            previewMetadata: { sourceEndpoint: '@PREVIEW.ENDPOINT.SOURCE_LOCAL', targetEndpoint: '@PREVIEW.ENDPOINT.TARGET_LOCAL' },
+          },
+          {
+            id: 'amazon',
+            previewMetadata: { sourceEndpoint: '@PREVIEW.ENDPOINT.SOURCE_LOCAL_STOREAPP', targetEndpoint: 'luna://amazon.service/invoke' },
+          },
+          { id: 'youtube.leanback.v4' },
+          null,
+        ],
+      };
+    if (/db\/find$/.test(uri)) minerAsked++;
+    return samLuna(uri, payload, opts);
+  };
+  const withPicks = (await call(W.create({ config, luna: lpLuna, feature: () => null }), '/api/watch/rows')).j.items.filter(
+    i => i.source === 'lg'
+  );
+  const pickOf = app => withPicks.filter(i => i.app === app).map(i => i.pick);
+  ok(
+    minerAsked === 1 &&
+      pickOf('youtube.leanback.v4').every(p => p === true) &&
+      pickOf('com.disney.disneyplus-prod').join() === 'true' &&
+      pickOf('netflix').every(p => p === false) &&
+      pickOf('amazon').every(p => p === false) &&
+      pickOf('amazon').length === 3,
+    "with LG's picks on: the miner's rows are LG's picks, Netflix's and Prime Video's own rows are not (" +
+      withPicks.map(i => i.app + ':' + i.pick).join(' ') +
+      ')'
+  );
+  config.update('test', c => {
+    c.watch = { on: true, lgPicks: false };
+  });
+  minerAsked = 0;
+  const ownOnly = (await call(W.create({ config, luna: lpLuna, feature: () => null }), '/api/watch/rows')).j.items.filter(
+    i => i.source === 'lg'
+  );
+  ok(
+    minerAsked === 0 &&
+      ownOnly.length === 5 &&
+      ownOnly.every(i => (i.app === 'netflix' || i.app === 'amazon') && i.pick === false) &&
+      ownOnly[0].title === 'A Series' &&
+      ownOnly.filter(i => i.app === 'netflix')[0].title === 'Half Seen',
+    "with LG's picks off: the miner is not read, only the apps' own rows, their Continue watching first (" +
+      ownOnly.map(i => i.app + ':' + i.title).join(' | ') +
+      ')'
+  );
+  const lpDown = async (uri, payload, opts) => (/listLaunchPoints$/.test(uri) ? { returnValue: false } : lpLuna(uri, payload, opts));
+  ok(
+    (await call(W.create({ config, luna: lpDown, feature: () => null }), '/api/watch/rows')).j.items.filter(i => i.source === 'lg')
+      .length === 0,
+    "with LG's picks off and the launch points unreadable, nothing from LG is shown (a row of unknown kind counts as LG's pick)"
+  );
+  config.update('test', c => {
+    c.watch = { on: true };
+  });
   tm.close();
 });

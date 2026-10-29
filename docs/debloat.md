@@ -1,7 +1,8 @@
 # Debloat
 
 An optional clean-up of LG's ads and telemetry. It is on by default in the setup; the [manager app](manager.md) has a **Debloat**
-screen with its groups (seven on with it, and HbbTV, which you switch on yourself), and **Check that it works**.
+screen with its groups (seven on with it, and two you switch on yourself: HbbTV and LG's content miner from the start), and **Check
+that it works**.
 
 ## What it does
 
@@ -16,6 +17,7 @@ About a minute after every boot, the debloat:
 | **Suggestions and nudges** | Stops `contentminer` and `nudge`, and prevents `sportsalarm` from starting. |
 | **LG's ad and promotion settings** | LG's own switches, the ones LG's Settings menus change: home promotions, screensaver ads, the ad cookie, Smart Tips, sports alerts, limit ad tracking (on), content recommendations, Live TV promotions, LivePlus and the promotion video. Each value is saved first (`/media/developer/cleanyourtv/lgsettings-saved.json`) and put back when the group is switched off; a key this firmware does not have is left alone. Looked at again every ten minutes and when the TV wakes. |
 | **HbbTV red-button pages** | Off unless you switch it on. HbbTV off, Do Not Track on and the device ID off (LG's own switches, saved and put back like the group above). The broadcasters' red-button extras stop on the tuner; own-your-glass found they carried most of the third-party trackers. |
+| **LG's content miner, from the start** | Off unless you switch it on. Stops `contentminer` as soon as the boot scripts run, instead of with **Suggestions and nudges** a minute later, and mounts a do-nothing stub over its program so nothing starts it again until the next restart. See below. |
 | **Stop LG pre-loading apps** | webOS 25 only. LG's preload manager starts apps such as LG Channels, Netflix and YouTube in the background so they open faster, and they then take memory and show up as running. This switches its pre-loading off for every app except Home (the launcher, so Home stays quick) and anything of the Homebrew Channel's, with its own call, until it restarts; the service does it again after every start. See below. |
 
 A program is prevented from starting by mounting a do-nothing stub over it (in RAM; the real files are not changed). Where
@@ -25,6 +27,27 @@ over it until the next restart. Each group can be switched on or off on its own;
 
 Nothing is uninstalled. It applies only while the launcher is Home, because LG's own Home needs some of those services to start;
 switching back to LG's Home lifts the debloat first.
+
+### LG's content miner
+
+LG's content miner (`com.webos.service.contentminer`) fills the rows LG's Home shows under an app. For most apps (YouTube, Disney+,
+Apple TV, LG Channels) it asks LG's servers through LG's `sdx` service (`homeprv` on LG's `tv.wiselg.com`, the TV's region in front):
+`sdx` adds the TV's identity to the request (device ID, model, firmware, country, language, the terms accepted, LG's sign-in token).
+What comes back is LG's pick for that app, not what was watched here (no app has given the miner a personal key). For the apps that write
+their own row (Netflix, Prime Video; their launch point names a local source), the miner only wakes the app's own service, which asks
+its own servers. The miner keeps what it fetched on the TV (a database only it may read), so the rows survive a restart.
+
+The miner starts about 25 seconds after the TV starts, before the boot scripts (the Homebrew Channel runs them at about 40 seconds),
+and on one webOS 25 TV it began its round about 50 seconds after the start. **Suggestions and nudges** stops it a minute after the boot
+scripts, so it still runs for about a minute at every start. **LG's content miner, from the start** stops it when the boot scripts
+start and keeps it stopped. Nothing can stop it earlier without changing LG's files, which CleanYourTV never does; and LG's
+servers for these rows are the same ones LG Channels, LG's voice service and LG's sign-in use, so they cannot be blocked on their own.
+
+What it changes: LG's picks on Home (see [Continue watching](launcher.md)) are no longer fetched again and stay as they were; switch
+**LG's picks** off there to show only the rows the apps write themselves. Netflix's and Prime Video's rows still come when those apps
+or their services run. The Homebrew Channel starts the boot scripts by its own boot task; on some TVs the miner also wakes it at the
+start, which has happened before the boot scripts run, so the stub does not stand in its way. The stub is in RAM: after a restart
+the miner starts as LG made it, until the boot scripts stop it again.
 
 ### LG's pre-loading
 

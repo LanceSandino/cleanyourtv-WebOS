@@ -136,6 +136,18 @@ run(async () => {
     ran.length === 5 && /debloat-stop\.sh$/.test(ran[4]) && JSON.stringify(conf.options().debloatOff) === '["ads","logs","suggestions"]',
     'switched on with groups off: the groups are stored before debloat-stop.sh reads them'
   );
+  // an opt-in group of the scripts (LG's content miner) switched on and off: only it is applied and undone; HbbTV (lgsettings.js)
+  // runs no script
+  r = await ask('options', 'POST', { debloatOn: ['miner', 'nonsense'] });
+  ok(
+    ran.length === 6 && /debloat-stop\.sh miner$/.test(ran[5]) && JSON.stringify(conf.options().debloatOn) === '["miner"]',
+    'the miner switched on is stored and applied alone: ' + ran.slice(5).join(' | ')
+  );
+  r = await ask('options', 'POST', { debloatOn: ['hbbtv'] });
+  ok(
+    ran.length === 7 && /debloat-undo\.sh miner$/.test(ran[6]),
+    'switched off it is undone alone; HbbTV switched on runs no script: ' + ran.slice(6).join(' | ')
+  );
   exec.sh = realSh;
   // the security at a glance: the update source (a warning when it is another repository), the API token, telnet on or off
   r = await ask('status', 'GET');

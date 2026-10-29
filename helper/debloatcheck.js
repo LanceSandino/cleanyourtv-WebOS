@@ -17,13 +17,18 @@ const SCRIPT_GROUPS = {
   tracking: { bins: ['acr2'] },
   logs: { units: ['remotelogger', 'service-logger'] },
   suggestions: { units: ['contentminer', 'nudge'], bins: ['sportsalarm'] },
+  miner: { units: ['contentminer'], bins: ['contentminer'] }, // opt-in (options.debloatOn): stopped and its program stubbed
 };
+const OPT_IN = ['miner'];
 
 function create(ctx, opts) {
   const o = Object.assign({ startMs: 90000, tickMs: 10000, wakeGapMs: 60000 }, opts);
   const options = () => ctx.config.options();
   const debloatOn = () => options().debloat !== false && !fs.existsSync(P.DISABLE);
-  const groupOn = g => (options().debloatOff || []).indexOf(g) < 0 && !(g === 'adapps' && (options().debloatOff || []).indexOf('ads') >= 0);
+  const groupOn = g =>
+    OPT_IN.indexOf(g) >= 0
+      ? (options().debloatOn || []).indexOf(g) >= 0
+      : (options().debloatOff || []).indexOf(g) < 0 && !(g === 'adapps' && (options().debloatOff || []).indexOf('ads') >= 0);
   const read = f => {
     try {
       return fs.readFileSync(f, 'utf8');

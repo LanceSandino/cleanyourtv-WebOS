@@ -100,6 +100,13 @@ run(async () => {
     JSON.stringify(config.get().watch) === '{"on":true,"hide":["tm:The Show","plex:12"]}',
     'Continue watching keeps the removed shows (checked, once each) with its switch'
   );
+  await call(apps, '/api/config', 'POST', { watch: { on: true, lgPicks: false, tm: 'no' } });
+  const picksOff = JSON.stringify(config.get().watch);
+  await call(apps, '/api/config', 'POST', { watch: { on: true, lgPicks: 'off' } });
+  ok(
+    picksOff === '{"on":true,"lgPicks":false}' && JSON.stringify(config.get().watch) === '{"on":true}',
+    "LG's picks switched off is kept (false only), other values are dropped: " + picksOff
+  );
   await call(apps, '/api/config', 'POST', { saver: { on: true, secs: 900 } });
   const sDefault = JSON.stringify(config.get().saver);
   await call(apps, '/api/config', 'POST', {

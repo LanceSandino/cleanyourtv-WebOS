@@ -104,7 +104,13 @@ function create(ctx) {
     });
     inputkey().syncMode();
     if (next.debloat !== cur.debloat) await debloat.apply(next.debloat);
-    else if (next.debloat) await debloat.change(debloat.cleanOff(cur.debloatOff), debloat.cleanOff(next.debloatOff));
+    else if (next.debloat)
+      await debloat.change(
+        debloat.cleanOff(cur.debloatOff),
+        debloat.cleanOff(next.debloatOff),
+        debloat.cleanOn(cur.debloatOn),
+        debloat.cleanOn(next.debloatOn)
+      );
     ensureHook();
     return next;
   }

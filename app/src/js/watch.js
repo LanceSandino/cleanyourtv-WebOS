@@ -32,23 +32,35 @@ var WATCH = (function () {
   function removed() {
     return (cfg.watch && cfg.watch.hide) || [];
   }
-  /* the switches kept with the removed list: on (all rows), lg (LG's rows of the other apps), tm (Telemachus's row) */
+  /* the switches kept with the removed list: on (all rows), lg (LG's rows of the other apps), tm (Telemachus's row), lgPicks (of LG's
+     rows, what LG's servers chose; off leaves the rows the apps wrote themselves) */
   function tmOn() {
     return !(cfg.watch && cfg.watch.tm === false);
   }
-  function save(on, hide, lg, tm) {
+  function picksOn() {
+    return !(cfg.watch && cfg.watch.lgPicks === false);
+  }
+  /* a switch not given keeps its value (read before cfg.watch is written again) */
+  function save(on, hide, lg, tm, picks) {
+    var tmKeep = tm === undefined ? tmOn() : tm,
+      picksKeep = picks === undefined ? picksOn() : picks;
     cfg.watch = { on: on };
     if (!lg) cfg.watch.lg = false;
-    if (tm === undefined ? !tmOn() : !tm) cfg.watch.tm = false;
+    if (!tmKeep) cfg.watch.tm = false;
+    if (!picksKeep) cfg.watch.lgPicks = false;
     if (hide.length) cfg.watch.hide = hide.slice(-100);
     saveCfg();
+  }
+  /* an LG row that is shown: LG's rows on, and LG's picks only while they are on */
+  function lgShown(it) {
+    return it.source !== 'lg' || (lgOn() && (!it.pick || picksOn()));
   }
   /* the cards an app shows */
   function mine(appId) {
     var gone = removed();
     if (!on() || gone.indexOf('app:' + appId) >= 0) return [];
     return items.filter(function (it) {
-      return cardOf(it, appId) && gone.indexOf(it.group) < 0 && (it.source !== 'lg' || lgOn()) && (it.source !== 'telemachus' || tmOn());
+      return cardOf(it, appId) && gone.indexOf(it.group) < 0 && lgShown(it) && (it.source !== 'telemachus' || tmOn());
     });
   }
   /* a card of its own kind, kept like the app tiles (tiles[], focus, the pointer) and rebuilt only when what it shows changed. Plex's
@@ -172,6 +184,12 @@ var WATCH = (function () {
     setLg: function (v) {
       save(on(), removed(), v);
     },
+    picksOn: picksOn,
+    /* LG's picks: the service stops reading LG's content miner and keeps only the rows the apps wrote themselves (helper/lgrows.js) */
+    setPicks: function (v) {
+      save(on(), removed(), lgOn(), undefined, v);
+      refresh();
+    },
     tmOn: tmOn,
     /* Telemachus's row: the service stops reading Telemachus (helper/watch.js) */
     setTm: function (v) {
@@ -186,7 +204,7 @@ var WATCH = (function () {
     lgApps: function () {
       var seen = [];
       items.forEach(function (it) {
-        if (it.source === 'lg' && it.app && seen.indexOf(it.app) < 0) seen.push(it.app);
+        if (it.source === 'lg' && lgShown(it) && it.app && seen.indexOf(it.app) < 0) seen.push(it.app);
       });
       return seen;
     },

@@ -266,6 +266,7 @@ function create(ctx) {
     if (b.watch && typeof b.watch === 'object') {
       out.watch = { on: b.watch.on !== false };
       if (b.watch.lg === false) out.watch.lg = false; // LG's rows of the other apps (lgrows.js)
+      if (b.watch.lgPicks === false) out.watch.lgPicks = false; // of those, what LG's servers chose (only the apps' own rows then)
       if (b.watch.tm === false) out.watch.tm = false; // Telemachus's row
       const hide = (Array.isArray(b.watch.hide) ? b.watch.hide : []).filter(
         (g, i, a) => typeof g === 'string' && /^[a-z]+:[^\u0000-\u001f]{1,160}$/.test(g) && a.indexOf(g) === i

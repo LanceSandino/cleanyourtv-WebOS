@@ -104,9 +104,13 @@ next episode does not come back), **Hide the row of** that app, and the settings
 
 - **Show on Home** switches the rows off (nothing is then read).
 - **Telemachus** switches Telemachus's cards off (it is not read then).
-- **Rows from LG for other apps** switches LG's rows off, keeping Telemachus, Plex, Stremio and Disney+. Under it, each app LG has a row for
-  (YouTube, Disney+, Netflix and the like) can be switched off on its own: YouTube's row, for one, is LG's pick of videos, not what
-  you watched. It is the same as **Hide the row of** that app when holding OK on one of its cards.
+- **Rows from LG for other apps** switches LG's rows off, keeping Telemachus, Plex, Stremio and Disney+. Under it:
+  - **LG's picks** switches off the rows LG's servers chose for an app (YouTube, Disney+, Apple TV, LG Channels: not what you
+    watched). The rows the apps write themselves stay (Netflix and Prime Video, their Continue watching
+    first), and LG's content miner is not read at all. With the debloat's opt-in group **LG's content miner, from the start**
+    ([Debloat](debloat.md)) the miner does not ask LG's servers either.
+  - Each app LG has a row for (YouTube, Disney+, Netflix and the like) can be switched off on its own: YouTube's row, for one, is
+    LG's pick of videos, not what you watched. It is the same as **Hide the row of** that app when holding OK on one of its cards.
 - **Show removed cards again** (when you removed some) brings them all back, also the rows switched off.
 - **Link Plex...** shows a 4-character code: open `plex.tv/link` on a phone or a computer, signed in to Plex, and enter it. The TV
   then reads Continue Watching from your own Plex server, at the first of its addresses that answers as that server (its address on

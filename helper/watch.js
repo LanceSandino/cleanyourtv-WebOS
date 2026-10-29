@@ -1,10 +1,13 @@
 // Continue watching: the episodes and films a highlighted app on Home shows in a row under it (app/src/js/watch.js), things started
 // and not finished, never app shortcuts. From Telemachus on this TV (what is playing, or the episode each show is in the middle of,
 // then what its channel plays next), Plex, Stremio and Disney+ once linked (plex.js, stremio.js, disney.js: what is partly watched), and
-// for the other apps the row LG's own Home shows under them (lgrows.js, without LG's advertisements; not Disney+'s once it is linked). Read here, by the root service:
+// for the other apps the row LG's own Home shows under them (lgrows.js, without LG's advertisements; not Disney+'s once it is linked;
+// with LG's picks switched off, watch.lgPicks false, only the rows the apps wrote themselves, and LG's content miner is not read).
+// Read here, by the root service:
 // Telemachus answers programs on the TV but refuses web pages, and the pictures are fetched here and served from memory, so the Home
 // page never contacts another site.
-//   GET /api/watch/rows        {items: [{key, group, title, sub, img, progress, next, launch: {id, params}, source}]}
+//   GET /api/watch/rows        {items: [{key, group, title, sub, img, progress, next, launch: {id, params}, source, pick}]}
+//                              (pick: on LG's rows, true for what LG's servers chose, false for a row the app wrote itself)
 //                              (group: what Remove on Home takes away, a whole show or a film; the launcher keeps that list)
 //   GET /api/watch/img/<id>    a picture named in items, from memory
 //   GET /api/watch/accounts    {plex: {linked, server, state, code, url, error}, stremio: {...}, disney: {...}} (never a key)
@@ -220,7 +223,7 @@ function create(ctx) {
       plex.items(plexPic).catch(() => []),
       stremio.items(metahubPic).catch(() => []),
       disney.items(disneyPic).catch(() => []),
-      lgOn ? lg.items(lgPic).catch(() => []) : [],
+      lgOn ? lg.items(lgPic, { picks: wc.lgPicks !== false }).catch(() => []) : [],
     ]);
     // a linked Disney+ replaces LG's row for it (LG's picks of the season, nothing of the account's)
     const lgRows = disney.status().linked ? l.filter(i => i.app !== DISNEY_APP) : l;

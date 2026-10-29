@@ -61,5 +61,26 @@ run(async () => {
   });
   r = await C.check();
   ok(!r.on && !r.groups.length, 'the debloat off: nothing to look at');
+  // LG's content miner (opt-in): looked at only while switched on; not stubbed, or running, is not in place
+  fs.writeFileSync(path.join(sbin, 'contentminer'), '');
+  conf.update('test', c => {
+    c.options = { debloat: true };
+  });
+  r = await C.check();
+  const noMiner = !r.groups.some(g => g.id === 'miner');
+  conf.update('test', c => {
+    c.options = { debloat: true, debloatOn: ['miner'] };
+  });
+  running = 'contentminer';
+  r = await C.check();
+  const mi = r.groups.filter(g => g.id === 'miner')[0];
+  fs.writeFileSync(path.join(process.env.CYTV_PROC, 'mounts'), mountsOf(['contentminer']));
+  running = '';
+  r = await C.check();
+  const mi2 = r.groups.filter(g => g.id === 'miner')[0];
+  ok(
+    noMiner && mi && !mi.ok && mi.notes.join() === 'contentminer is not stubbed,contentminer is running' && mi2 && mi2.ok,
+    'the miner group is looked at only when switched on: ' + JSON.stringify([mi, mi2])
+  );
   exec.sh = realSh;
 });

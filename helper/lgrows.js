@@ -6,14 +6,24 @@
 //   rows apps write themselves through their own service (Netflix, Prime Video: their Continue watching and suggestions).
 // LG's Home puts its advertisements in these rows separately (com.webos.service.admanager), which is never called here; an item that
 // carries a promotion is dropped too, and the apps' own "shown" calls (onShow) are never made. Nothing is sent anywhere.
-//   items(pic)  cards for watch.js: {key, group, app, source: 'lg', title, sub, img, progress: null, launch: {id, params: {contentTarget}}},
-//               an app's Continue watching first
+// Two kinds of row: an app whose launch point names a local source for the miner (previewMetadata SOURCE_LOCAL*: Netflix, Prime
+// Video) writes its own row through its own service, from its own servers; every other app's row (YouTube, Disney+, Apple TV, LG
+// Channels) is what LG's servers chose for it when the miner asked them (com.webos.service.sdx, homeprv on LG's tv.wiselg.com, with
+// the TV's identity), not what anyone watched: LG's picks.
+//   items(pic, {picks})  cards for watch.js: {key, group, app, source: 'lg', pick, title, sub, img, progress: null,
+//               launch: {id, params: {contentTarget}}}, an app's Continue watching first; pick: true for LG's picks. picks: false
+//               leaves LG's picks out and does not read the miner at all: only the rows the apps wrote themselves
 const crypto = require('crypto');
 
 const MINER = 'com.webos.service.contentminer',
   KIND = MINER + '.contents:1',
   SAM = 'luna://com.webos.applicationManager/getAllContents',
+  LPS = 'luna://com.webos.applicationManager/listLaunchPoints',
   PER_APP = 12;
+// the miner's sources that are the app's own service (LG's servers are not asked for that app's row)
+const OWN = /^@PREVIEW\.ENDPOINT\.SOURCE_LOCAL/;
+const ownRow = lp =>
+  !!(lp && lp.previewMetadata && typeof lp.previewMetadata === 'object' && OWN.test(String(lp.previewMetadata.sourceEndpoint || '')));
 const AD = /sponsor|advert|\bads?\b|promot/i,
   CONTINUE = /continue watching|watch next|resume/i;
 
@@ -30,7 +40,7 @@ function create(ctx) {
   const ask = (uri, payload, opts) => Promise.resolve(ctx.luna(uri, payload, opts)).catch(() => null);
   // an item someone is in the middle of: its shelf says so, or the app gave its watch state (Prime Video)
   const going = c => CONTINUE.test(String(c.category || '')) || !!(c.watch_state && typeof c.watch_state === 'object');
-  function card(appId, c, pic) {
+  function card(appId, c, pic, pick) {
     const click = c.onClick && typeof c.onClick === 'object' ? c.onClick : {};
     const target = typeof click.targetAppId === 'string' && click.targetAppId ? click.targetAppId : appId;
     const params = {};
@@ -47,6 +57,7 @@ function create(ctx) {
       group: 'lg:' + appId + ':' + id, // what Remove from this row keeps
       app: appId,
       source: 'lg',
+      pick,
       title: ep ? cat.title : String(c.titleText),
       sub: ep ? 'S' + s + ' E' + e : c.category ? String(c.category) : '',
       img: pic((c.image && c.image.url) || '', (c.image_4k && c.image_4k.url) || ''),
@@ -54,20 +65,28 @@ function create(ctx) {
       launch: { id: target, params },
     };
   }
-  async function items(pic) {
-    const [sam, miner] = await Promise.all([
+  async function items(pic, opts) {
+    const picks = !(opts && opts.picks === false);
+    // without LG's picks the miner is not read at all; the launch points tell which apps write their own row
+    const [sam, miner, lps] = await Promise.all([
       ask(SAM, {}),
-      ask('luna://com.webos.service.db/find', { query: { from: KIND } }, { as: MINER }),
+      picks ? ask('luna://com.webos.service.db/find', { query: { from: KIND } }, { as: MINER }) : null,
+      ask(LPS, {}),
     ]);
+    const own = {};
+    for (const lp of lps && lps.returnValue && Array.isArray(lps.launchPoints) ? lps.launchPoints : [])
+      if (lp && typeof lp.id === 'string' && ownRow(lp)) own[lp.id] = 1;
     const rows = [],
       seen = {};
     for (const rec of miner && miner.returnValue && Array.isArray(miner.results) ? miner.results : []) {
       if (rec && typeof rec.appId === 'string' && rec.appId && !seen[rec.appId] && Array.isArray(rec.contents))
-        rows.push(rec), (seen[rec.appId] = 1);
+        rows.push({ appId: rec.appId, contents: rec.contents, pick: true }), (seen[rec.appId] = 1);
     }
     for (const lp of sam && sam.returnValue && Array.isArray(sam.allContents) ? sam.allContents : []) {
       const m = lp && typeof lp.launchPointId === 'string' ? /^(.+)_default$/.exec(lp.launchPointId) : null; // an app's own launch point
-      if (m && !seen[m[1]] && Array.isArray(lp.contents)) rows.push({ appId: m[1], contents: lp.contents }), (seen[m[1]] = 1);
+      // the miner writes LG's picks here too: an app that does not write its own row has LG's pick here (unknown counts as a pick)
+      if (m && !seen[m[1]] && Array.isArray(lp.contents) && (picks || own[m[1]]))
+        rows.push({ appId: m[1], contents: lp.contents, pick: !own[m[1]] }), (seen[m[1]] = 1);
     }
     const out = [];
     for (const rec of rows) {
@@ -76,11 +95,11 @@ function create(ctx) {
         c => c && c.type === 'content' && c.titleText && !c.promotionId && !AD.test(String(c.category || ''))
       );
       const first = list.filter(going).concat(list.filter(c => !going(c)));
-      for (const c of first.slice(0, PER_APP)) out.push(card(rec.appId, c, pic));
+      for (const c of first.slice(0, PER_APP)) out.push(card(rec.appId, c, pic, rec.pick));
     }
     return out;
   }
   return { items };
 }
 
-module.exports = { create, MINER };
+module.exports = { create, MINER, ownRow };

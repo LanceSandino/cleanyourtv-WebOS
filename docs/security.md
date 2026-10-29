@@ -108,7 +108,11 @@ shown (`onShow`, to the app's own service) are never made. LG's advertisements i
 (`com.webos.service.admanager`), which is never called; items marked as promoted are dropped. The pictures named there are fetched by
 the service over HTTPS from the app's own image server, or from LG's (`aic.imagesvc.lgtvcommon.com`, `ngfts.lge.com`, plain HTTP as
 LG uses them), images only, at most 1 MB each and 12 MB in memory all together, never on disk; **Customize** > **Continue watching** >
-**Rows from LG for other apps** switches this off.
+**Rows from LG for other apps** switches this off. **LG's picks** under it leaves out the rows LG's servers chose (the miner's) and
+keeps only the rows the apps wrote themselves (an app whose launch point names a local source for the miner, from
+`com.webos.applicationManager/listLaunchPoints`, a read); the miner's database is then not read. The miner itself sends the TV's
+identity to LG when it asks for its rows; the debloat's opt-in **LG's content miner, from the start** stops it when the boot scripts
+start ([Debloat](debloat.md)).
 
 Plex, Stremio and Disney+ are read only once you link them there, with their own TV sign-in (no password on the TV):
 

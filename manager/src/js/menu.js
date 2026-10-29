@@ -1191,7 +1191,19 @@ var DEBLOAT = [
     what: 'home promotions, screensaver ads, tips, sports alerts, Live TV promotions; put back when off',
   },
   { id: 'hbbtv', label: 'HbbTV red-button pages', what: "off, with Do Not Track; broadcasters' extras stop", optIn: true },
+  {
+    id: 'miner',
+    label: "LG's content miner, from the start",
+    what: "stopped at every start before it asks LG's servers; LG's picks on Home stop changing",
+    optIn: true,
+  },
 ];
+/* an opt-in group (HbbTV, LG's content miner): on only while options.debloatOn lists it */
+function debloatOptIn(id) {
+  return DEBLOAT.some(function (g) {
+    return g.id === id && g.optIn;
+  });
+}
 /* the groups that are on with the debloat unless switched off (not the opt-in ones) */
 function DEBLOAT_MAIN() {
   return DEBLOAT.filter(function (g) {
@@ -1200,15 +1212,15 @@ function DEBLOAT_MAIN() {
 }
 function debloatOn(id) {
   var o = st.options || {};
-  if (id === 'hbbtv') return o.debloat !== false && (o.debloatOn || []).indexOf(id) >= 0;
+  if (debloatOptIn(id)) return o.debloat !== false && (o.debloatOn || []).indexOf(id) >= 0;
   return o.debloat !== false && (o.debloatOff || []).indexOf(id) < 0;
 }
 /* switching the last group off switches the debloat off; one group on while it is off switches it on with only that group */
 function debloatToggle(id) {
   var o = st.options || {},
     off = (o.debloatOff || []).slice();
-  /* an opt-in group (HbbTV): listed in debloatOn while it is on; switching it on switches the debloat on with only it */
-  if (id === 'hbbtv') {
+  /* an opt-in group: listed in debloatOn while it is on; switching it on switches the debloat on with only it */
+  if (debloatOptIn(id)) {
     var onList = (o.debloatOn || []).filter(function (g) {
       return g !== id;
     });

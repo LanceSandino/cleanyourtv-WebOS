@@ -324,6 +324,58 @@ run(async () => {
     'admanager is its own group, on by default, off with ads too, back with ads, and undone with ads: ' +
       [all, adsOff, appsOff, redoAds, undoAds].join(' | ')
   );
+  // LG's content miner from the start (the opt-in group "miner", options.debloatOn): stopped by systemd and its program stubbed (never
+  // killed) only when switched on; the undo starts it again only when no group still holds it (suggestions or the miner still on)
+  const pickOpt = (script, args, options) => {
+    const d = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cytv-debloat-'));
+    fs.writeFileSync(path.join(d, 'config.json'), JSON.stringify({ options }));
+    const body =
+      script.replace(/^L=.*$/m, 'L=' + d).split(/\n# --no-block|\nfor b in \$bins/)[0] + '\necho "units:$units bins:$bins stubs:$stubs"\n';
+    fs.writeFileSync(path.join(d, 's.sh'), body);
+    const r = cp.spawnSync('sh', [path.join(d, 's.sh')].concat(args || []), { encoding: 'utf8' });
+    cp.spawnSync('rm', ['-rf', d]);
+    return r.stdout.trim().replace(/\s+/g, ' ');
+  };
+  const minerDefault = pickOpt(stop, [], {}),
+    minerOn = pickOpt(stop, [], { debloatOn: ['miner'] }),
+    minerAsked = pickOpt(stop, ['miner'], {}),
+    minerAtBoot = pickOpt(stop, ['miner'], { debloatOn: ['miner'] }),
+    minerOnly = pickOpt(stop, ['miner'], { debloatOn: ['miner'], debloatOff: ['suggestions'] });
+  ok(
+    !/stubs:.*contentminer/.test(minerDefault) &&
+      /stubs: contentminer$/.test(minerOn) &&
+      !/contentminer/.test(minerAsked) &&
+      minerAtBoot === 'units: contentminer bins: stubs: contentminer' &&
+      minerOnly === minerAtBoot &&
+      !/bins:[^:]*contentminer/.test(minerOn),
+    'the miner is stopped and stubbed (never killed) only when switched on; at boot alone it touches nothing else: ' +
+      [minerDefault, minerOn, minerAsked, minerAtBoot].join(' | ')
+  );
+  const undoMinerSugOn = pickOpt(undo, ['miner'], { debloatOn: [] }),
+    undoMinerSugOff = pickOpt(undo, ['miner'], { debloatOff: ['suggestions'] }),
+    undoSugMinerOn = pickOpt(undo, ['suggestions'], { debloatOn: ['miner'], debloatOff: ['suggestions'] }),
+    undoSugMinerOff = pickOpt(undo, ['suggestions'], { debloatOff: ['suggestions'] }),
+    undoAll = pickOpt(undo, [], { debloatOn: ['miner'] });
+  const startsMiner = x => /units:[^:]*contentminer/.test(x);
+  ok(
+    /bins: contentminer/.test(undoMinerSugOn) &&
+      !startsMiner(undoMinerSugOn) &&
+      startsMiner(undoMinerSugOff) &&
+      !startsMiner(undoSugMinerOn) &&
+      / nudge/.test(undoSugMinerOn) &&
+      startsMiner(undoSugMinerOff) &&
+      startsMiner(undoAll) &&
+      /bins:[^:]*contentminer/.test(undoAll),
+    'the undo unstubs the miner and starts it only when neither suggestions nor the miner group still holds it: ' +
+      [undoMinerSugOn, undoMinerSugOff, undoSugMinerOn, undoSugMinerOff, undoAll].join(' | ')
+  );
+  const bootHook = fs.readFileSync(path.join(root, 'scripts', '15-cleanyourtv-debloat'), 'utf8');
+  ok(
+    /^\(home && sh \/media\/developer\/cleanyourtv\/debloat-stop\.sh miner\) [^\n]*&$/m.test(bootHook) &&
+      bootHook.indexOf('debloat-stop.sh miner') < bootHook.indexOf('sleep 60') &&
+      /DISABLE-DEBLOAT \] && exit 0/.test(bootHook.split('debloat-stop.sh miner')[0]),
+    'the boot hook stops the miner at once (in the background), after the off switches and before the minute the rest waits'
+  );
   // the ad servers of the TV's country (LG's Smart Service country, here US) join the list; old marked lines (the Dutch ones alone)
   // are written again, a second run adds nothing, and the undo takes them all out
   {
