@@ -1175,6 +1175,18 @@ function watchMenu() {
             },
           },
         ];
+      /* each app's row from LG on its own: YouTube's, for one, is LG's pick of videos */
+      if (WATCH.lgOn())
+        WATCH.lgApps().forEach(function (id) {
+          items.push({
+            label: title(id),
+            sub: WATCH.appOn(id) ? t('On') : t('Off'),
+            stay: true,
+            fn: function () {
+              WATCH.setApp(id, !WATCH.appOn(id));
+            },
+          });
+        });
       if (gone)
         items.push({
           label: t('Show removed cards again'),

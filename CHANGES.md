@@ -1248,3 +1248,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T15:51:19Z"
 ```
+
+```yaml
+id: CU-20261029-18
+type: feature
+title: "Continue watching: each app's row from LG switched on or off in the menu (YouTube's random videos off)"
+description: "The owner wants YouTube's row gone: it is LG's pick of videos, not what he watched. Customize > Continue watching lists, under Rows from LG for other apps (while it is on), every app LG has a row for (YouTube, Disney+, Netflix, Prime Video...) with On or Off; OK switches it. It is kept as that app's whole row ('app:<id>' in watch.hide), the same as holding OK on a card and choosing Hide the row of that app, so either way shows Off in the menu; Show removed cards again still brings everything back. watch.js gains lgApps(), appOn(id) and setApp(id, on)."
+impact: low
+affected_modules: ["app/src/js/watch.js", "app/src/js/menus.js", "app/index.html", "docs/launcher.md", "tools/oldchrome.js"]
+related_tests: ["tools/oldchrome.js (lg app off: the app's row in the menu, OK switches it off, kept as app:<id>, highlighting the app opens no row, OK switches it on again; linking plex: one Down more past the app's row; Chromium 68)"]
+commit_ref: "feature/plex-link (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T15:33:47Z"
+```

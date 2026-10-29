@@ -177,6 +177,24 @@ var WATCH = (function () {
     remove: function (g) {
       if (g) save(on(), removed().concat([g]), lgOn());
     },
+    /* the apps LG has a row for (YouTube, Disney+, Netflix...), each switched on or off on its own (an app's whole row, as above) */
+    lgApps: function () {
+      var seen = [];
+      items.forEach(function (it) {
+        if (it.source === 'lg' && it.app && seen.indexOf(it.app) < 0) seen.push(it.app);
+      });
+      return seen;
+    },
+    appOn: function (appId) {
+      return removed().indexOf('app:' + appId) < 0;
+    },
+    setApp: function (appId, v) {
+      var g = 'app:' + appId,
+        rest = removed().filter(function (x) {
+          return x !== g;
+        });
+      save(on(), v ? rest : rest.concat([g]), lgOn());
+    },
     restore: function () {
       save(on(), [], lgOn());
     },

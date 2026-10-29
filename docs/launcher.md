@@ -102,8 +102,10 @@ next episode does not come back), **Hide the row of** that app, and the settings
 
 - **Show on Home** switches the rows off (nothing is then read).
 - **Telemachus** switches Telemachus's cards off (it is not read then).
-- **Rows from LG for other apps** switches LG's rows off, keeping Telemachus, Plex and Stremio.
-- **Show removed cards again** (when you removed some) brings them all back.
+- **Rows from LG for other apps** switches LG's rows off, keeping Telemachus, Plex and Stremio. Under it, each app LG has a row for
+  (YouTube, Disney+, Netflix and the like) can be switched off on its own: YouTube's row, for one, is LG's pick of videos, not what
+  you watched. It is the same as **Hide the row of** that app when holding OK on one of its cards.
+- **Show removed cards again** (when you removed some) brings them all back, also the rows switched off.
 - **Link Plex...** shows a 4-character code: open `plex.tv/link` on a phone or a computer, signed in to Plex, and enter it. The TV
   then reads Continue Watching from your own Plex server, at the first of its addresses that answers as that server (its address on
   your network first).

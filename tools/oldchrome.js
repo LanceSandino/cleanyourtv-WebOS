@@ -230,12 +230,12 @@ const HOLD_OK =
   'var left=document.querySelectorAll("#grid .wcard").length,saved=cfg.watch&&cfg.watch.hide&&cfg.watch.hide.join();' +
   'var ok=app&&onCard&&card&&left===0&&saved==="plex:7";' +
   'document.body.setAttribute("data-hold",ok?"ok":"bad app="+app+" onCard="+onCard+" card="+card+" left="+left+" saved="+saved+" menu="+ov().slice(0,160))},800)})},1000)},600)})},2500)},300)})()</script>';
-// linking Plex (Customize > Continue watching): Down three times to Link Plex..., OK; the menu shows the code for plex.tv/link, then, once the
-// stand-in says the code was entered, the server it is linked to
+// linking Plex (Customize > Continue watching): Down four times to Link Plex... (past the row of the app LG has a row for), OK; the menu
+// shows the code for plex.tv/link, then, once the stand-in says the code was entered, the server it is linked to
 const WATCH_LINK =
   '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
   'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}function ov(){var o=document.getElementById("ov");return o?o.textContent:""}' +
-  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);watchMenu();setTimeout(function(){key(40);key(40);key(40);key(13);' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile")||!WATCH.lgApps().length)return;clearInterval(go);watchMenu();setTimeout(function(){key(40);key(40);key(40);key(40);key(13);' +
   'var n=0,code=false,w=setInterval(function(){if(/plex\\.tv\\/link and enter AB12/.test(ov()))code=true;if(++n<60&&!/Linked to Home server/.test(ov()))return;clearInterval(w);' +
   'var ok=code&&/Linked to Home server/.test(ov());document.body.setAttribute("data-link",ok?"ok":"bad code="+code+" menu="+ov().slice(0,200))},250)},800)},300)})()</script>';
 // LG's row of another app (lgrows.js): highlighting the second dock app opens its row; OK opens the video the way LG's Home does
@@ -246,6 +246,17 @@ const LG_ROW =
   'var cards=document.querySelectorAll("#grid .wcard"),badge=cards[0]&&cards[0].querySelector(".wsrc").textContent;key(40);key(13);setTimeout(function(){var l=launched[0]||[];' +
   'var ok=cards.length===1&&badge===""&&l[0]==="app.1"&&l[1]&&l[1].contentTarget==="v=1";' +
   'document.body.setAttribute("data-lg",ok?"ok":"bad cards="+cards.length+" badge="+badge+" launched="+JSON.stringify(launched))},800)},1000)},2500)},300)})()</script>';
+// one app's row from LG switched off (Customize > Continue watching, the row under "Rows from LG for other apps"): it says Off, the
+// setting is kept as that app's whole row, and highlighting the app on Home opens no row; OK again switches it back on
+const LG_APP_OFF =
+  '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}function ov(){var o=document.getElementById("ov");return o?o.textContent:""}' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile")||!WATCH.lgApps().length)return;clearInterval(go);watchMenu();setTimeout(function(){' +
+  'key(40);key(40);key(40);var row=stack[stack.length-1].items[stack[stack.length-1].idx];key(13);setTimeout(function(){' +
+  'var off=WATCH.appOn("app.1")===false&&cfg.watch.hide.join()==="app:app.1"&&/Off/.test(ov());closeMenus();setTimeout(function(){key(39);setTimeout(function(){' +
+  'var cards=document.querySelectorAll("#grid .wcard").length;watchMenu();setTimeout(function(){key(40);key(40);key(40);key(13);setTimeout(function(){var back=WATCH.appOn("app.1");' +
+  'var ok=!!row&&row.label==="Video"&&off&&cards===0&&back;' +
+  'document.body.setAttribute("data-lgoff",ok?"ok":"bad row="+(row&&row.label)+" off="+off+" cards="+cards+" back="+back+" menu="+ov().slice(0,200))},400)},600)},1500)},300)},400)},800)},300)})()</script>';
 // a theme that keeps the grid under the dock (Glass, grid.mode push): highlighting Plex in the dock opens its row, and the view goes up
 // so that row is on the screen; moving on to an app without cards closes it and the view comes back down (the slide itself is
 // switched off: headless Chromium does not run it in page time)
@@ -405,6 +416,7 @@ const PAGES = [
   ['linking plex', 'app/index.html', /data-link="ok"/g, 1, 20000, WATCH_LINK],
   ['hold ok', 'app/index.html', /data-hold="ok"/g, 1, 20000, HOLD_OK],
   ['lg row', 'app/index.html', /data-lg="ok"/g, 1, 15000, LG_ROW],
+  ['lg app off', 'app/index.html', /data-lgoff="ok"/g, 1, 20000, LG_APP_OFF],
   ['wallpaper fit', 'app/index.html', /data-fit="ok"/g, 1, 15000, WALL_FIT],
   ['dock row in glass', 'app/index.html', /data-dock="ok"/g, 1, 15000, DOCK_ROW, 'glass'],
   ['holiday frame', 'app/index.html', /data-fx="ok"/g, 1, 15000, FX_CHECK, 'halloween'],
