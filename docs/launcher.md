@@ -158,6 +158,8 @@ keyboard, or with the [phone remote](remote.md)'s **Type**; the results follow w
   search for what you typed.
 - **Look in:** when none of your apps has the title, Telemachus, Plex (or PLX) and Stremio, opened at their Home to look there.
 
+![Search with words typed: In your apps, Where to watch with the apps on this TV as chips and the other services named, Search in](screenshots/search-where.jpg)
+
 OK or Down goes from the field to the results, Up from the first result back to the field, OK opens a result, Back closes. The
 titles in **In your apps** are the ones Home has already read for Continue watching, with the same switches: with **Show on Home**
 off, a row switched off or a card removed, those titles are not found there either.

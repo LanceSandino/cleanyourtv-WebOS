@@ -95,6 +95,7 @@ python3 ipk/build.py               # writes dist/: the package, the launcher bun
 node tools/theme-docs.js           # regenerates the settings table in docs/themes.md from helper/themeschema.js
 node tools/theme-index.js          # writes themes/index.json
 node tools/theme-preview.mjs <id>  # renders a theme in headless Chrome (Node 22+)
+node tools/doc-shots.mjs --write   # remakes docs/screenshots of the phone remote, hub, Search, TV health, saver (made-up data)
 sh tools/diagnose.sh <tv-ip> > cytv-diagnose.txt   # read-only report from a TV over SSH
 sh tools/perf-tv.sh <tv-ip>        # read-only timings from a TV: launcher, Input key, Live TV
 ```

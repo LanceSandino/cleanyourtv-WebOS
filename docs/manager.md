@@ -27,6 +27,8 @@
 | Reset Home customization | Puts the launcher's dock, top buttons, hidden apps, app order and clock back to the defaults, after a confirmation. The theme stays. |
 | Uninstall | Removes everything and restarts the TV. |
 
+![TV health: the processor per core, temperature, memory, swap and storage, with the focused row explained on the left](screenshots/tv-health.jpg)
+
 ## When the service is not running
 
 The manager works without the service for two things: checking for a newer package and installing it, so a broken service can

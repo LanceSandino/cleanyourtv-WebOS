@@ -34,6 +34,8 @@ launcher (`app/saver-*.webp`): the woods cut by `tools/saver-wood.mjs` from phot
 canvas and the linen drawn by `tools/saver-art.mjs`. With **Style** set to **Photos**, photos are shown whole on black (portrait
 photos too).
 
+![The frame: Walnut, Modern, two landscape photos in a mat from the photo with the caption and the day under each](screenshots/saver-frame.jpg)
+
 **LG's screensaver.** Before the TV starts its own screensaver it asks the apps that registered for it. While the screensaver is on
 and there are photos, the service answers no at once and opens Home with the photos instead (the service, not the page: LG counts a
 late answer as a fault and then reboots the TV fully at its next standby, so a page in the background or reloading must not be the

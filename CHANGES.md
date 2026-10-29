@@ -1634,3 +1634,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T23:10:00Z"
 ```
+
+```yaml
+id: CU-20261029-47
+type: docs
+title: "Documentation screenshots: the phone remote, the hub's history, Where to watch, TV health and the framed screensaver"
+description: "Eight screenshots for pages that had none, made on a computer in headless Chrome from the repository's own pages with made-up data only (no TV or hub asked, no address, MAC, device id, name or account title, no photo of people): docs/remote.md the Remote and Touchpad tabs, the TV tab and the Feedback sheet with its Vibration test (390 x 844 at twice the pixels), and the hub's History and alerts page (1280 wide: 24 hours of samples with two gaps, one alert, one that passed, the open ports classified by helper/exposure.js's own table); docs/launcher.md Search with Where to watch (made-up titles, one long title with more offers than its row holds); docs/manager.md TV health; docs/screensaver.md the frame (Walnut, Modern) with two landscape pictures from themes/dawn and themes/lake-dock. The TV pages are 1920 x 1080 saved at 1280 x 720, JPEG quality 80, each under 180 kB. tools/doc-shots.mjs makes them again (stand-ins on 127.0.0.1:8765, 8911 and 8912, a fixed made-up clock, seeded curves; two runs give the same files), named in AGENTS.md and docs/development/index.md. The site in site/ is not rebuilt here: it is ignored by git and built by the docs workflow (zensical)."
+impact: none
+affected_modules: ["docs/remote.md", "docs/launcher.md", "docs/manager.md", "docs/screensaver.md", "docs/development/index.md", "docs/screenshots/remote-keys.jpg", "docs/screenshots/remote-touchpad.jpg", "docs/screenshots/remote-feedback.jpg", "docs/screenshots/remote-tv.jpg", "docs/screenshots/hub-dashboard.jpg", "docs/screenshots/search-where.jpg", "docs/screenshots/tv-health.jpg", "docs/screenshots/saver-frame.jpg", "tools/doc-shots.mjs", "AGENTS.md"]
+related_tests: []
+commit_ref: "feature/doc-screenshots (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T22:41:13Z"
+```

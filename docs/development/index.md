@@ -14,7 +14,7 @@ reports from TVs that are not in the [tested list](../tested-tvs.md).
 | `scripts/` | Boot, setup and restore scripts: `bootstrap.sh`, `10-cleanyourtv-home`, `stage-home.sh`, `undo-home.sh`, the debloat scripts. |
 | `voice/` | Source of the small speech program `cytv-asr` and its build script. |
 | `third-party/` | The bundled inputhook files and the QR library. |
-| `tools/` | `check.sh`: every check (the tests in `tools/test` on the current Node, the built pages, types and lint; with `--chromium` the pages in Chromium 120); `build-pages.js`: builds the launcher and manager pages from their sources; `theme-docs.js`: regenerates the table of theme settings in the docs; `theme-index.js`: writes `themes/index.json`; `theme-preview.mjs`: renders a theme in headless Chrome (and makes its screenshot). |
+| `tools/` | `check.sh`: every check (the tests in `tools/test` on the current Node, the built pages, types and lint; with `--chromium` the pages in Chromium 120); `build-pages.js`: builds the launcher and manager pages from their sources; `theme-docs.js`: regenerates the table of theme settings in the docs; `theme-index.js`: writes `themes/index.json`; `theme-preview.mjs`: renders a theme in headless Chrome (and makes its screenshot); `doc-shots.mjs`: makes the documentation's screenshots of the phone remote, the hub, Search, TV health and the screensaver in headless Chrome, with made-up data and stand-ins (`--write` puts them in `docs/screenshots`). |
 | `ipk/build.py` | Builds the release files. |
 | `package.json`, `tsconfig.json`, `eslint.config.js`, `.prettierrc.json` | Development tools only: type checks, lint and formatting. |
 | `compat.json` | The list of tested firmware the setup reads. |

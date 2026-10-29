@@ -23,6 +23,10 @@ forgetting them.
 | Apps | The apps in the order of your dock, then the others; a tap opens one. |
 | TV | The TV's health, read only: the processor per core, temperature, memory and swap, storage and the flash's wear, Wi-Fi, how long it has been up and this service's own use; a summary of the settings (versions, update channel, CleanYourTV as Home, the debloat groups and whether they work, the phone remote, Plex, Stremio and Disney+ linked or not, telnet, LG's web inspector, the API token); and, on a tap, the open ports with how each is guarded and the services. See below. |
 
+| | |
+|---|---|
+| ![The Remote tab](screenshots/remote-keys.jpg) | ![The Touchpad tab](screenshots/remote-touchpad.jpg) |
+
 ## The TV tab
 
 The tab asks the TV every 3 seconds, only while it is shown and the page is in front, with the phone's own key like every
@@ -30,6 +34,10 @@ other command (`GET /status-data`; `/status-exposure` and `/status-services` on 
 address, MAC, playlist, account or phone name, and a port is only ever "loopback" or "LAN". It changes nothing on the TV and keeps
 nothing: the TV makes one reading every 2 seconds at most, whoever asks, and none while nobody looks. A phone that is not paired, or
 removed on the TV, gets nothing.
+
+| | |
+|---|---|
+| ![The TV tab: the processor per core, memory and swap, storage, Wi-Fi](screenshots/remote-tv.jpg) | |
 
 What one look costs on the TV (an 86UR8000, webOS 25, read in place with the service's own code on 2026-10-29): a health reading
 about 3.5 ms of processor time (one every 2 s while someone looks: about 0.2% of one core), free space one `df` a minute (about
@@ -97,9 +105,15 @@ open to the network, and a port open to the network with no check at all. With `
 topic, a Home Assistant webhook...) each alert is also posted there as JSON `{title, message}`. The hub's own question to the TV may
 only read the status, never press a key.
 
+![The hub's History and alerts page: the readings now, an alert, 24 hours of graphs with gaps while the TV was off, the open ports](screenshots/hub-dashboard.jpg)
+
 **Feedback.** The gear beside the status sets what each press does on this phone: a vibration (on by default; on an iPhone the tap
 of iOS 18 and later) and a click sound (off by default). A key also lights green when the TV took the press, red when it did not.
 Safari has no vibration call, so on an iPhone the page flips a hidden switch, which iOS answers with its tap. Under **Vibration test**,
 **Way 1** and **Way 2** each try one way to do that (Way 2 draws the switch out of sight for a moment, for an iPhone that taps only for
 a switch on the screen); tap each and the one you choose is used from then on, on this phone. If even **The iPhone's own switch** does
 not vibrate, the iPhone itself is set not to: Settings > Sounds & Haptics > System Haptics (iOS 18 or later).
+
+| | |
+|---|---|
+| ![Feedback (the gear): vibration, click sound and the Vibration test](screenshots/remote-feedback.jpg) | |
