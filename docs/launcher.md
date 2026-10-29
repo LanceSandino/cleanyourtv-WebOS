@@ -91,8 +91,8 @@ Highlight an app on Home and, a moment later, a row of its episodes, films or vi
   got, because the apps do not give it.
  Down goes into the row; OK opens it in that app: Telemachus at that episode or film (an older Telemachus app
 without the `play` launch option just opens), Plex, PLX or Stremio at their own Home, where their Continue Watching row has
-the same item first, Disney+ playing the film or at the show's page (where Disney+ offers to continue the episode), and the other
-apps at that video or film, as LG's Home opens it. For an app in the dock, Home slides up to show the row under the dock (as it does when you go down
+the same item first, Disney+ playing that film or episode from where you stopped (Disney+ first asks **Who's watching?** when it
+was not open yet), and the other apps at that video or film, as LG's Home opens it. For an app in the dock, Home slides up to show the row under the dock (as it does when you go down
 into the apps), and back when the row closes. The row closes when you move on along that app's row or above it; going down past it
 keeps it. Nothing is
 shown for apps without episodes, and there are no app shortcuts (your apps are on Home already).

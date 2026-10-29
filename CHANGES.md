@@ -1284,3 +1284,16 @@ commit_ref: "feature/webos25-floor (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T15:33:15Z"
 ```
+
+```yaml
+id: CU-20261029-23
+type: feature
+title: "Continue watching: a Disney+ episode card plays that episode, no longer the show's page"
+description: "Checked on the owner's TV on 2026-10-29: launching com.disney.disneyplus-prod with contentTarget distributionPartner=lg&programType=episode&contentId=<episode>&page=play&id=<episode>&type=episode&contentType=Full plays that episode from where it stopped. This is LG's film link with the episode's id; the owner saw it play, and Disney's own record moved from 11% to 14%, last watched seconds before. When Disney+ was not running it first asks Who's watching?, then plays. Episode cards, Disney's next episode included, now use that link instead of the series' page. Also checked live from the Mac (Node 8.12) with the owner entering a code: helper/disney.js linked, read 12 cards, and renewed its keys twice (refreshToken: new access and refresh keys, 4 hours each); unlinking forgot them."
+impact: low
+affected_modules: ["helper/disney.js", "docs/launcher.md"]
+related_tests: ["tools/test/disney.test.js (an episode card and Disney's next episode open that episode playing; a film card opens the film playing)"]
+commit_ref: "feature/disney-link (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T17:06:36Z"
+```

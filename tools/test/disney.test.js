@@ -274,12 +274,8 @@ run(async () => {
   ok(
     ep.launch.id === 'com.disney.disneyplus-prod' &&
       ep.launch.params.contentTarget ===
-        'distributionPartner=lg&programType=series&contentId=' +
-          SERIES +
-          '&page=browse&id=entity-' +
-          SERIES +
-          '&type=series&contentType=Full',
-    "an episode opens its series' page in the Disney+ app (LG's own deep link)"
+        'distributionPartner=lg&programType=episode&contentId=' + EPISODE + '&page=play&id=' + EPISODE + '&type=episode&contentType=Full',
+    'an episode card opens that episode playing in the Disney+ app'
   );
   ok(
     film.sub === '' &&
@@ -289,8 +285,11 @@ run(async () => {
     'a film card opens the film playing'
   );
   ok(
-    next.next === true && next.progress === null && next.img === '',
-    "Disney's next episode: marked next, no bar, no picture from a bad id"
+    next.next === true &&
+      next.progress === null &&
+      next.img === '' &&
+      next.launch.params.contentTarget.indexOf('&page=play&id=' + NEXT + '&') > 0,
+    "Disney's next episode: marked next, no bar, no picture from a bad id, opens that next episode playing"
   );
   ok(/^\/api\/watch\/img\/[0-9a-f]{16}$/.test(ep.img) && /^\/api\/watch\/img\//.test(film.img), 'pictures are ids');
   ok(JSON.stringify(rows).indexOf('TOK') < 0 && JSON.stringify(rows).indexOf('WEBKEY') < 0, 'no key reaches the page');

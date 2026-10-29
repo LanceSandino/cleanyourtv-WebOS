@@ -6,7 +6,8 @@
 // (root only); the launcher sees the cards only.
 //   link()    {code, url}; Disney says on its socket when the code was entered (10 minutes at most)
 //   status()  {linked, state: 'idle'|'waiting'|'linked'|'expired'|'error', code, url, error}
-//   items()   cards for watch.js: a film opens playing, an episode opens its series' page in the Disney+ app (LG's own deep links);
+//   items()   cards for watch.js: the film or the episode opens playing in the Disney+ app (LG's deep links; Disney+ asks who is
+//             watching first when it was not running);
 //             pictures from Disney's image host go through watch.js's image ids
 const crypto = require('crypto');
 const fetch = require('./fetch'),
@@ -51,14 +52,11 @@ const uuid = () => {
   const h = b.toString('hex');
   return [h.slice(0, 8), h.slice(8, 12), h.slice(12, 16), h.slice(16, 20), h.slice(20)].join('-');
 };
-// how LG's Home opens a Disney+ title (the content miner's Disney+ row): a film plays, a series opens its page
+// how LG's Home opens a Disney+ film (the content miner's Disney+ row), and the same for an episode (it plays that episode: checked on
+// the owner's TV on 2026-10-29)
 function target(i) {
-  if (i.type === 'movie')
-    return 'distributionPartner=lg&programType=movie&contentId=' + i.id + '&page=play&id=' + i.id + '&type=movie&contentType=Full';
-  const s = (/^entity-(.+)$/.exec(String((i.browse || {}).deeplinkId || '')) || [])[1];
-  return ID.test(s || '')
-    ? 'distributionPartner=lg&programType=series&contentId=' + s + '&page=browse&id=entity-' + s + '&type=series&contentType=Full'
-    : '';
+  const t = i.type === 'movie' ? 'movie' : 'episode';
+  return 'distributionPartner=lg&programType=' + t + '&contentId=' + i.id + '&page=play&id=' + i.id + '&type=' + t + '&contentType=Full';
 }
 
 function create(ctx) {
@@ -355,7 +353,6 @@ function create(ctx) {
         const img = [std.tile, std.background, art.up_next && art.up_next.background, std.thumbnail]
           .map(x => x && x['1.78'] && x['1.78'].imageId)
           .filter(x => ID.test(String(x || '')))[0];
-        const to = target(i);
         return {
           key: 'disney-' + i.id,
           group: 'disney:' + (ep && ID.test(series) ? series : i.id),
@@ -368,7 +365,7 @@ function create(ctx) {
           img: img ? pic(IMAGES + img + '/scale?width=780&aspectRatio=1.78&format=jpeg') : '',
           progress: pct > 0 ? Math.min(1, pct / 100) : null,
           next: ep && pct === 0, // Disney's "Watch Next Episode"
-          launch: { id: APP, params: to ? { contentTarget: to } : {} },
+          launch: { id: APP, params: { contentTarget: target(i) } },
         };
       });
   }
