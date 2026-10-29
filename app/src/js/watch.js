@@ -88,8 +88,9 @@ var WATCH = (function () {
       '<div class="wimg"></div><div class="wsrc"></div><div class="wtx"><div class="wt"></div><div class="ws"></div></div>' +
       (it.progress > 0 ? '<div class="wpg"><i></i></div>' : '');
     if (it.img) d.firstChild.style.backgroundImage = 'url("' + API + it.img + '")';
+    /* the source, and the profile whose row it is when the source says (Disney+) */
     d.querySelector('.wsrc').textContent = SOURCE_NAMES[it.source]
-      ? (it.next ? t('Up next on %s') : '%s').replace('%s', SOURCE_NAMES[it.source])
+      ? (it.next ? t('Up next on %s') : '%s').replace('%s', SOURCE_NAMES[it.source]) + (it.who ? ' \u00B7 ' + it.who : '')
       : '';
     d.querySelector('.wt').textContent = it.title;
     d.querySelector('.ws').textContent = it.sub || '';

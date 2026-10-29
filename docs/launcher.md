@@ -85,7 +85,8 @@ Highlight an app on Home and, a moment later, a row of its episodes, films or vi
 - **Telemachus:** one card per show, the latest it watched: the episode you are in the middle of (with a bar for how far you got),
   or else the next one to watch (marked **Up next on Telemachus**). Never its channel's whole lineup.
 - **Plex (or PLX), Stremio, Disney+:** what you started and did not finish, with a bar for how far you got. Disney+'s next episode
-  of a show you are following is marked **Up next on Disney+**.
+  of a show you are following is marked **Up next on Disney+**. Disney+'s cards name the profile whose row it is
+  (**Disney+ · Robin**); Netflix's say it in the row's own words (**Continue Watching for Robin**). Prime Video's row does not say.
 - **The other apps** (YouTube, Apple TV, Disney+ until it is linked, and the like): the row LG's own Home shows for that app, as LG keeps it on the TV,
   without LG's advertisements. Which apps have one is LG's choice; an app LG has nothing for shows no row. Netflix and Prime Video
   keep their own row there, from the profile last used in the app: their **Continue watching** comes first (Prime Video with the

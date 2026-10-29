@@ -7,7 +7,8 @@
 //   link()    {code, url}; Disney says on its socket when the code was entered (10 minutes at most)
 //   status()  {linked, state: 'idle'|'waiting'|'linked'|'expired'|'error', code, url, error}
 //   items()   cards for watch.js: the film or the episode opens playing in the Disney+ app (LG's deep links; Disney+ asks who is
-//             watching first when it was not running);
+//             watching first when it was not running); who: the name of the Disney+ profile whose Continue Watching it is (the
+//             account's active profile, asked of Disney with the same key; none when Disney does not say);
 //             pictures from Disney's image host go through watch.js's image ids
 const crypto = require('crypto');
 const fetch = require('./fetch'),
@@ -25,6 +26,7 @@ const WEB = process.env.CYTV_DISNEY_WEB || 'https://www.disneyplus.com', // othe
   SDK = '35.8.0',
   VERSION = '1.1.2',
   LINK_MS = 10 * 60 * 1000,
+  WHO_MS = 30 * 60 * 1000, // the profile's name is asked again after this, or with a new key
   KEY_MS = 6 * 60 * 60 * 1000,
   RETRY_MS = 3000,
   MAX = 12;
@@ -320,10 +322,36 @@ function create(ctx) {
     return renewing;
   }
 
+  // whose Continue Watching it is: the account's active profile (its name only); a failed question gives no name and is not repeated
+  // before WHO_MS
+  let who = '',
+    whoAt = 0,
+    whoTok = '';
+  async function profile(tok) {
+    if (tok === whoTok && Date.now() - whoAt < WHO_MS) return who;
+    whoTok = tok;
+    whoAt = Date.now();
+    try {
+      const j = await api('/v1/public/graphql', tok, { query: '{me{account{activeProfile{id name}}}}' });
+      const p = j.data && j.data.me && j.data.me.account && j.data.me.account.activeProfile;
+      who =
+        p && typeof p.name === 'string'
+          ? p.name
+              .replace(/[\u0000-\u001f]/g, '')
+              .trim()
+              .slice(0, 40)
+          : '';
+    } catch (_) {
+      who = '';
+    }
+    return who;
+  }
+
   // what is partly watched, newest first: Disney's feed for TV makers (the newer version first)
   async function items(pic) {
     const tok = await token().catch(() => '');
     if (!tok) return [];
+    const asked = profile(tok);
     let j = null;
     for (const v of ['v1.21', 'v1.4']) {
       try {
@@ -339,6 +367,7 @@ function create(ctx) {
       }
     }
     const list = (j && j.data && j.data.continueWatching && j.data.continueWatching.items) || [];
+    const name = await asked;
     return list
       .filter(i => i && ID.test(String(i.id)) && (i.type === 'movie' || i.type === 'episode'))
       .slice(0, MAX)
@@ -366,6 +395,7 @@ function create(ctx) {
           progress: pct > 0 ? Math.min(1, pct / 100) : null,
           next: ep && pct === 0, // Disney's "Watch Next Episode"
           launch: { id: APP, params: { contentTarget: target(i) } },
+          ...(name ? { who: name } : {}),
         };
       });
   }

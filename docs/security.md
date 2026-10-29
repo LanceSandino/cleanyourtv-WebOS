@@ -174,7 +174,8 @@ Plex, Stremio and Disney+ are read only once you link them there, with their own
   as a device with Disney (`disney.api.edge.bamgrid.com`). Then it opens Disney's socket (`disney.connections.edge.bamgrid.com`) and asks
   for an 8-digit code. You enter the code at `disneyplus.com/begin`, signed in there. Disney says so on the socket, and the service
   trades that for the account's keys. It keeps the account's refresh key and a 4-hour access key in `config.json`. It reads Continue
-  watching from Disney's feed for TV makers (`partner/continueWatching`) and renews the access key with the refresh key when it runs
+  watching from Disney's feed for TV makers (`partner/continueWatching`), and the name of the account's active profile (so the cards
+  can say whose row it is; it stays on the TV), and renews the access key with the refresh key when it runs
   out. Pictures come from `disney.images.edge.bamgrid.com` (HTTPS only, Disney's image server). The socket is open only while a code
   waits. This is not an interface Disney offers to others: it can stop working when Disney changes its web player, and it uses your
   account as the web player would.

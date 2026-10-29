@@ -529,7 +529,9 @@ related_tests: ["tools/test/updates.test.js", "tools/test/api.test.js"]
 commit_ref: "feature/plex-stremio (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T12:49:33Z"
+```
 
+```yaml
 id: CU-20261027-40
 type: feature
 title: "Sonos soundbar volume on screen (read only, off by default)"
@@ -567,7 +569,9 @@ related_tests: ["tools/test/watch.test.js"]
 commit_ref: "feature/telemachus-oneoff (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T13:34:47Z"
+```
 
+```yaml
 id: CU-20261027-41
 type: feature
 title: "Hide LG's own volume bar while the Sonos volume shows"
@@ -607,7 +611,9 @@ related_tests: ["tools/oldchrome.js (home key: homeKey over a menu, plain keepAl
 commit_ref: "feature/home-key-rows (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-27T14:22:12Z"
+```
 
+```yaml
 id: CU-20261027-42
 type: fix
 title: "The Sonos volume bar shows at once after the first change"
@@ -1022,7 +1028,9 @@ related_tests: ["tools/oldchrome-container.sh ubuntu:26.04 --engine 68 with CYTV
 commit_ref: "fix/ci-shots (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T04:18:32Z"
+```
 
+```yaml
 id: CU-20261029-1
 type: feature
 title: "Phone remote: a paired phone on the Wi-Fi as the TV's remote (keys, touchpad, typing, apps)"
@@ -1464,6 +1472,10 @@ related_tests: ["tools/test/lgscreensaver.test.js (ours: no at once and Home ope
 commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T20:33:41Z"
+```
+
+```yaml
+id: CU-20261029-36
 type: docs
 title: "Debloat docs: what LG's content miner and LG's online services groups do at a real start of the owner's TV"
 description: "Tried on the owner's TV (webOS 25, release 1.6.31 with this branch's service files and pages, both opt-in groups on and LG's picks off, one restart with Lance's OK). The miner started at 34 s and asked LG once (homeprv getdata) at 50.6 s; the Homebrew Channel started the boot scripts at 48.6 s (39 s at the start before), and the miner was stopped and stubbed at 53.3 s. After that every request to LG's online servers failed (sports 76 s, LG Channels' dmost 100 s, LG's dev-log upload 100 s, Netflix's voice intents 118 s, nudge log 121 s); their hosts resolve to ::1, the app store's (us.nextlgsdp.com) and the internet check's do not; ThinQ's iot-client retries and fails. Check that it works: all nine groups working. Home's rows: Telemachus, Stremio, Netflix's and Prime Video's own rows only (pick false). Disney+ opened. docs/debloat.md now says the group cannot always stop the miner's first request at a cold start."
@@ -1473,4 +1485,17 @@ related_tests: []
 commit_ref: "feature/own-miner (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T18:24:25Z"
+```
+
+```yaml
+id: CU-20261029-37
+type: feature
+title: "Continue watching: Disney+'s cards name the profile whose row it is"
+description: "Lance asked for profile labels on the cards. Disney+'s Continue Watching is the account's active profile's; disney.js now asks Disney for that profile's name with the same key (/v1/public/graphql {me{account{activeProfile{id name}}}}), once per key and at most every 30 minutes, control characters taken out, 40 characters at most; a failed question gives no name and the cards come as before. Each Disney+ card carries who: <name>, and the launcher's badge says 'Disney+ · <name>' (any source that gives who). Netflix's cards already say 'Continue Watching for <name>' (its own row's title); Prime Video's row has no profile name. Opening a card cannot choose the profile: Disney+ asks Who's watching? when it was not running. Not yet seen against Disney's real API (the TV has no Disney+ link yet)."
+impact: low
+affected_modules: ["helper/disney.js", "app/src/js/watch.js", "app/index.html", "docs/launcher.md", "docs/security.md"]
+related_tests: ["tools/test/disney.test.js (each card names the profile, asked once, cleaned; no profile from Disney: no name, not asked again at once)", "tools/oldchrome.js (continue watching: the Plex card's badge reads 'Plex · Robin' from the fixture's who)"]
+commit_ref: "feature/profile-labels (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T18:53:48Z"
 ```

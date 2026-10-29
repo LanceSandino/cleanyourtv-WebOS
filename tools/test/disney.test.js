@@ -78,6 +78,12 @@ run(async () => {
           return json({ errors: [{ code: 'invalid_grant', description: 'refresh token invalid' }] }, 400);
         return json(sdk({ accessToken: 'ACCTOK2', refreshToken: 'ACCREF2', expiresIn: 14400 }));
       }
+      // the account's active profile: its name (the cards say whose row it is)
+      if (q.url === '/v1/public/graphql' && /activeProfile/.test(b.query)) {
+        seen.profileAsked = (seen.profileAsked || 0) + 1;
+        if (auth !== 'Bearer ACCTOK2' || seen.noProfile) return json({ errors: [{ code: 'unauthorized' }] }, 401);
+        return json({ data: { me: { account: { activeProfile: { id: 'p1', name: ' Robin\u0007 ' } } } } });
+      }
       if (q.url === '/v1/public/graphql' && /activeSession/.test(b.query))
         return json({ data: { activeSession: { sessionId: 'SESSION1' } } });
       if (q.url === '/v1/public/graphql' && b.operationName === 'requestLicensePlate') {
@@ -292,6 +298,10 @@ run(async () => {
     "Disney's next episode: marked next, no bar, no picture from a bad id, opens that next episode playing"
   );
   ok(/^\/api\/watch\/img\/[0-9a-f]{16}$/.test(ep.img) && /^\/api\/watch\/img\//.test(film.img), 'pictures are ids');
+  ok(
+    mine.every(i => i.who === 'Robin') && seen.profileAsked === 1,
+    'each card names the Disney+ profile whose row it is (asked once, control characters and spaces taken out): ' + ep.who
+  );
   ok(JSON.stringify(rows).indexOf('TOK') < 0 && JSON.stringify(rows).indexOf('WEBKEY') < 0, 'no key reaches the page');
   ok(
     !rows.some(i => i.source === 'lg' && i.app === 'com.disney.disneyplus-prod') &&
@@ -309,6 +319,20 @@ run(async () => {
   enter();
   await sleep(300);
   ok((await call(w, '/api/watch/accounts')).j.disney.state === 'linked' && seen.exchanges === 2, 'and links again once it is entered');
+
+  // ---- Disney does not say whose profile it is: the cards come without a name ----
+  seen.noProfile = true;
+  const dn = req('disney').create({
+    config: memoryConfig({ watchAccounts: { disney: { token: 'ACCTOK2', refreshToken: 'ACCREF2', until: Date.now() + 3600000 } } }),
+  });
+  const nameless = await dn.items(() => '');
+  const askedThen = seen.profileAsked;
+  await dn.items(() => '');
+  ok(
+    nameless.length === 3 && nameless.every(i => !('who' in i)) && seen.profileAsked === askedThen,
+    'no profile from Disney: the cards have no name, and it is not asked again at once'
+  );
+  seen.noProfile = false;
 
   // ---- a refresh key Disney no longer takes (a changed password): the account says to link again ----
   refuseRefresh = true;

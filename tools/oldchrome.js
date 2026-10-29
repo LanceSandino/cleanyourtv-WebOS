@@ -199,11 +199,12 @@ const WATCH_KEYS =
   'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}var launched=[],L=window.launch;window.launch=function(id,p){launched.push([id,p]);return L(id,p)};' +
   'function n(){return document.querySelectorAll("#grid .wcard").length}function f(){return document.querySelector(".f")}' +
   'var go=setInterval(function(){if(!document.querySelector(".tile")||!WATCH.refresh)return;clearInterval(go);setTimeout(function(){var none=n()===0;' +
-  'key(39);key(39);var onPlex=f()&&f()._a&&f()._a.id==="cdp-30";setTimeout(function(){var plexRow=n()===1;key(40);var inRow=f()&&f().classList.contains("wcard");key(13);' +
+  'key(39);key(39);var onPlex=f()&&f()._a&&f()._a.id==="cdp-30";setTimeout(function(){var plexRow=n()===1;var badge=(document.querySelector("#grid .wcard .wsrc")||{}).textContent;key(40);var inRow=f()&&f().classList.contains("wcard");key(13);' +
   'setTimeout(function(){key(38);key(39);setTimeout(function(){var closed=n()===0;var p=posOf(tiles["com.telemachus.screen"]);setFocus(p[0],p[1]);setTimeout(function(){' +
   'var under=posOf(document.querySelector("#grid .wcard"));var tmRow=!!under&&under[0]===p[0]+1;key(40);key(37);key(37);key(37);key(13);setTimeout(function(){' +
-  'var l0=launched[0]||[],l1=launched[1]||[];var ok=none&&onPlex&&plexRow&&inRow&&l0[0]==="cdp-30"&&closed&&tmRow&&l1[0]==="com.telemachus.screen"&&l1[1]&&l1[1].play&&l1[1].play.episode===6;' +
-  'document.body.setAttribute("data-watch",ok?"ok":"bad none="+none+" onPlex="+onPlex+" plexRow="+plexRow+" inRow="+inRow+" closed="+closed+" tmRow="+tmRow+" launched="+JSON.stringify(launched))},800)},1000)},800)},800)},1000)},2500)},300)})()</script>';
+  'var l0=launched[0]||[],l1=launched[1]||[];var ok=none&&onPlex&&plexRow&&badge==="Plex \\u00B7 Robin"&&inRow&&l0[0]==="cdp-30"&&closed&&tmRow&&l1[0]==="com.telemachus.screen"&&l1[1]&&l1[1].play&&l1[1].play.episode===6;' +
+  'document.body.setAttribute("data-watch",ok?"ok":"bad none="+none+" onPlex="+onPlex+" plexRow="+plexRow+" badge="+badge+" inRow="+inRow+" closed="+closed+" tmRow="+tmRow+" launched="+JSON.stringify(launched))},800)},1000)},800)},800)},1000)},2500)},300)})()</script>';
+// (the Plex card's badge names the profile the fixture gives it: "Plex · Robin")
 // holding OK: on an app tile in the dock its options (Hide app); on a card under Plex its own (Resume, Open Plex, Remove from this row,
 // Hide the row of Plex); Remove takes that show off and keeps it in the settings
 const HOLD_OK =
@@ -612,6 +613,7 @@ function serve() {
             key: 'plex-7',
             group: 'plex:7',
             source: 'plex',
+            who: 'Robin', // whose row it is (Disney+ says; the page shows it for any source)
             title: 'Film B',
             sub: '2001',
             img: '/api/watch/img/bbbbbbbbbbbbbbbb',
