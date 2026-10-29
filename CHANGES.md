@@ -1007,3 +1007,19 @@ commit_ref: "feature/clock-options (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T03:35:49Z"
 ```
+
+```yaml
+id: CU-20261029-2
+type: fix
+title: "The old-Chromium container hands its files back, so CI can upload the screenshots"
+description: "The first dev build with the old-Chromium checks in the Ubuntu 26.04 container (CU-20261028-10) passed every page in both
+  engines (five through the page's own copy) but failed its last step: the screenshots, written by root in the container, could not be
+  zipped by the upload step. tools/oldchrome-container.sh now gives the screenshots and the engine cache back to the calling user
+  (chown to its uid:gid) when the run ends, keeping the run's exit status."
+impact: none
+affected_modules: ["tools/oldchrome-container.sh"]
+related_tests: ["tools/oldchrome-container.sh ubuntu:26.04 --engine 68 with CYTV_SHOTS (the screenshots and the cache come back owned by the calling user)"]
+commit_ref: "fix/ci-shots (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T04:18:32Z"
+```

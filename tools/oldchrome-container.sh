@@ -18,7 +18,9 @@ if [ -n "$CYTV_SHOTS" ]; then
   shots="-v $CYTV_SHOTS:/shots -e SHOTS=/shots"
 fi
 # shellcheck disable=SC2086
-docker run --rm --platform linux/amd64 -v "$PWD":/w -v "$cache":/cache/cleanyourtv -e XDG_CACHE_HOME=/cache $shots -w /w "$img" sh -c '
+# the files it writes (the old builds in the cache, the screenshots) are handed back to this user afterwards: as root's they could not be
+# read by the CI's upload or cache steps
+docker run --rm --platform linux/amd64 -v "$PWD":/w -v "$cache":/cache/cleanyourtv -e XDG_CACHE_HOME=/cache -e OWNER="$(id -u):$(id -g)" $shots -w /w "$img" sh -c '
 set -e
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq >/dev/null
@@ -27,5 +29,8 @@ for p in libnss3 libatk1.0-0t64 libatk-bridge2.0-0t64 libcups2t64 libxcomposite1
   apt-get install -y -qq --no-install-recommends $p >/dev/null 2>&1 || echo "not installed: $p"
 done
 echo "old Chromium in $(. /etc/os-release; echo "$PRETTY_NAME"), Node $(node --version)"
-node tools/oldchrome.js ${SHOTS:+--shots "$SHOTS"} "$@"
+s=0
+node tools/oldchrome.js ${SHOTS:+--shots "$SHOTS"} "$@" || s=$?
+chown -R "$OWNER" /cache/cleanyourtv ${SHOTS:+"$SHOTS"} 2>/dev/null || true
+exit $s
 ' sh "$@"
