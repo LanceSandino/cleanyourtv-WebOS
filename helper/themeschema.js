@@ -578,6 +578,9 @@ function resolve(t, accent) {
   // only a theme with a frame has this key, so the replies for the other themes stay as they were
   if (v['effects.overlay']) out.frame = { id: v.overlayTheme || t.id, file: v['effects.overlay'] }; // (out.overlay is the grid mode)
   if (v['effects.foreground']) out.fg = { id: v.foregroundTheme || t.id, file: v['effects.foreground'] };
+  // a dock along the bottom with the apps over it or under it (Dawn): Continue watching stands in a strip above the dock, this far
+  // from the bottom of the screen (only such a theme has this key)
+  if (dockBottom && (overlay || push)) out.strip = dockY + v['dock.h'] + 2 * pad + 34;
   // only a theme with slots has this key (the same reason)
   if (v.slots && v.slots.length)
     out.slots = v.slots.map(sl => {

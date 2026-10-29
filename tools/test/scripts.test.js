@@ -166,6 +166,33 @@ run(async () => {
     'an update keeps the Input key switched off (issues 6 and 7)'
   );
   ok(fs.existsSync(path.join(D, 'backup', 'service-prev.tgz')), 'an update keeps the previous service files for a rollback');
+  // the input hook is loaded in lginput2 on the TV: an update must never write over it in place (a truncated mapped library crashed
+  // lginput2, and LG rebooted the TV at the next standby). Held open here as lginput2 holds it: an unchanged hook is left alone, a
+  // changed one replaces it by a rename, so the open copy keeps its bytes; the rollback's archive leaves the hook out
+  const hook = path.join(D, 'inputhook', 'libinputhookpp.so'),
+    ino0 = fs.statSync(hook).ino;
+  boot(['update', '1.6.0', '--no-start']);
+  const same = fs.statSync(hook).ino === ino0;
+  fs.writeFileSync(hook + '.tmp', 'OLD HOOK BYTES');
+  fs.renameSync(hook + '.tmp', hook);
+  const held = fs.openSync(hook, 'r');
+  write(path.join(S, 'inputhook', 'libinputhookpp.so'), 'NEW HOOK');
+  b = boot(['update', '1.6.0', '--no-start']);
+  const kept = Buffer.alloc(14);
+  fs.readSync(held, kept, 0, 14, 0);
+  fs.closeSync(held);
+  const listed = cp.spawnSync('tar', ['tzf', path.join(D, 'backup', 'service-prev.tgz')], { encoding: 'utf8' }).stdout || '';
+  ok(
+    b.status === 0 &&
+      same &&
+      kept.toString() === 'OLD HOOK BYTES' &&
+      fs.readFileSync(hook, 'utf8') === 'NEW HOOK' &&
+      !fs.existsSync(hook + '.new') &&
+      (fs.statSync(path.join(D, 'inputhook', 'ezinject')).mode & 0o111) !== 0 &&
+      !/^inputhook\//m.test(listed) &&
+      /^helper\.js$/m.test(listed),
+    'an update never writes over the loaded input hook: unchanged it stays, changed it is renamed in, the open copy keeps its bytes, the rollback leaves it out'
+  );
   fs.writeFileSync(
     path.join(R, 'usr/palm/applications/com.webos.app.home/appinfo.json'),
     JSON.stringify({ id: 'com.webos.app.home', type: 'native' })

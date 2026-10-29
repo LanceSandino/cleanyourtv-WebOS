@@ -2709,12 +2709,26 @@ svg.st {
    theme's picture and its cut-out */
 #wstrip {
   position: absolute;
-  left: 0;
-  width: 1920px;
+  left: 96px;
+  width: 1728px;
+  padding: 18px 0;
+  overflow: hidden;
   z-index: 7;
-  display: flex;
-  justify-content: center;
   pointer-events: none;
+}
+/* more cards to one side: that edge fades */
+#wstrip.ml {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 72px);
+}
+#wstrip.mr {
+  -webkit-mask-image: linear-gradient(to left, transparent 0, #000 72px);
+}
+#wstrip.ml.mr {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 72px, #000 1656px, transparent 1728px);
+}
+#wstrip .wtrack {
+  display: flex;
+  transition: transform calc(0.2s * var(--spd)) ease-out;
 }
 #wstrip .wcard {
   position: relative;
@@ -2759,8 +2773,9 @@ svg.st {
 body.wpon #thfg {
   display: none;
 }
-/* and with it the clock that stood behind the scenery goes back to a usual place and size, top left, out of the way of the photo */
-body.wpon[data-fg] {
+/* and a time as large as a lock screen's (Dawn's, behind its scenery or not, as under a holiday theme) goes back to a usual place
+   and size over your own photos, top left, out of the photo's way */
+body.wpon[data-bigclock] {
   --clock-l: 96px;
   --clock-r: auto;
   --clock-t: 64px;
@@ -3745,6 +3760,7 @@ var TH0 = {
     'data-glow',
     'data-dockpanel',
     'data-dateabove',
+    'data-bigclock',
   ];
 function applyTheme(t) {
   var st = document.documentElement.style,
@@ -3790,6 +3806,8 @@ function applyTheme(t) {
     themeKeys.push('--wall');
   }
   for (k in t.attrs) b.setAttribute('data-' + k, t.attrs[k]);
+  /* a time as large as a lock screen's (Dawn, also under a holiday theme): over your own photos it moves aside (frame.css) */
+  if (parseFloat(t.vars['--clock-s']) >= 2.5) b.setAttribute('data-bigclock', '');
   FRAME.set(t.frame); /* a holiday theme's still frame (frame.js) */
   FRAME.fg(t.fg); /* the front of the theme's wallpaper, over the clock (frame.js) */
   var at = t.attrs || {},
@@ -3818,12 +3836,9 @@ function applyTheme(t) {
     /* room kept under the lowest row for the name under the focused tile */
     capH: at.label === 'focus' ? 44 : 0,
     shelfDock: t.shelf || null,
-    /* a dock along the bottom with the apps over the screen (Dawn): a dock app's Continue watching cards stand in a strip just above
-       the dock (layout.js), Up goes into them, and the grid stays shut for them */
-    strip:
-      !!t.overlay && !!t.vars['--dock-b'] && t.vars['--dock-b'] !== 'auto'
-        ? parseFloat(t.vars['--dock-b']) + (parseFloat(t.vars['--dock-h']) || 120) + 2 * (parseFloat(t.vars['--dock-pad']) || 0) + 34
-        : 0,
+    /* a dock along the bottom with the apps over it or under it (Dawn): a dock app's Continue watching cards stand in a strip just
+       above the dock (layout.js), Up goes into them, and the grid stays shut for them */
+    strip: t.strip || 0,
   };
   decoTheme();
   /* the name follows the dock (shelf.dockAlign) only while that is on; otherwise it keeps the theme's own margin (--name-x) */
@@ -3858,6 +3873,33 @@ function stripAt() {
 function stripRow(i) {
   return i >= 0 && i === stripAt();
 }
+/* the strip's window: the screen's safe area (96 px each side), with room above and below for the focused card's scale and ring */
+var STRIP_W = 1728,
+  STRIP_PAD = 18;
+/* the cards centred when they fit; otherwise the track slides so the focused card stands in the middle (not past either end), the
+   edges fading where more cards wait. Only transform moves. */
+function stripScroll() {
+  var strip = $('wstrip'),
+    track = strip && strip.firstChild;
+  if (!track || !track.children.length) return;
+  var cards = track.children,
+    last = cards[cards.length - 1],
+    tw = last.offsetLeft + last.offsetWidth,
+    x = 0;
+  if (tw <= STRIP_W) x = Math.round((STRIP_W - tw) / 2);
+  else {
+    var f = stripRow(r) ? rows[r][c] : null,
+      mid = f ? f.offsetLeft + f.offsetWidth / 2 : 0;
+    x = -Math.max(0, Math.min(tw - STRIP_W, Math.round(mid - STRIP_W / 2)));
+  }
+  if (track._x !== x) {
+    track._x = x;
+    track.style.transform = 'translateX(' + x + 'px)';
+    rowXs = null; /* the cards moved: read their centres again for Up and Down */
+  }
+  strip.classList.toggle('ml', x < 0);
+  strip.classList.toggle('mr', tw + x > STRIP_W);
+}
 function setFocus(nr, nc, first) {
   var old = rows[r] && rows[r][c];
   if (old) old.classList.remove('f');
@@ -3865,6 +3907,7 @@ function setFocus(nr, nc, first) {
   c = Math.min(nc, rows[r].length - 1);
   var e = rows[r][c];
   e.classList.add('f');
+  if (TH.strip) stripScroll();
   var a = e._a,
     nm = a ? a.title : e._o ? barLabel(e._o) : '';
   showName(nm);
@@ -7656,21 +7699,26 @@ function rebuild() {
     at = !w.length ? -1 : di.indexOf(own) >= 0 ? 0 : oi >= 0 ? Math.floor(oi / TH.cols) + 1 : -1;
   if (at < 0) w = [];
   /* a dock along the bottom with the apps over the screen (TH.strip): a dock app's cards stand in their own strip above the dock */
-  var strip = $('wstrip');
-  if (strip) strip.textContent = '';
+  var strip = $('wstrip'),
+    track = strip && strip.firstChild;
+  if (track) track.textContent = '';
   var inStrip = TH.strip && at === 0 && w.length;
   if (inStrip) {
     if (!strip) {
+      /* the strip is a window over the safe area; its track slides (transform) to keep the focused card in view (stripScroll) */
       strip = document.createElement('div');
       strip.id = 'wstrip';
+      track = document.createElement('div');
+      track.className = 'wtrack';
+      strip.appendChild(track);
       document.body.insertBefore(strip, $('view'));
     }
-    strip.style.bottom = TH.strip + 'px';
+    strip.style.bottom = TH.strip - STRIP_PAD + 'px';
   }
   var put = function () {
     w.forEach(function (t, i) {
       t.style.gridColumnStart = inStrip || i !== 0 ? '' : '1';
-      (inStrip ? strip : gd).appendChild(t);
+      (inStrip ? track : gd).appendChild(t);
     });
   };
   if (inStrip) put();

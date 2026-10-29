@@ -37,12 +37,19 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:transpa
 #vnum{flex:none;min-width:72px;margin-left:24px;text-align:right;font-size:40px;font-weight:700;font-variant-numeric:tabular-nums}
 .muted #vfill{opacity:.35}
 .muted #vnum{opacity:.55}
+/* muted: a small speaker struck through stays in a top corner (away from the bar) until the sound comes back, as LG's own mute
+   icon did before its volume view was hidden for the soundbar */
+#mute{position:absolute;top:64px;right:64px;display:flex;align-items:center;justify-content:center;width:88px;height:88px;border-radius:44px;
+  background:rgba(12,13,17,.92);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 12px 28px rgba(0,0,0,.45);opacity:0;transform:scale(.9);transition:opacity .25s ease-out,transform .25s ease-out}
+#mute.on{opacity:1;transform:none}
+#mute svg{width:46px;height:46px;fill:#f5f6f8}#mute .ln{fill:none;stroke:#f5f6f8;stroke-width:2;stroke-linecap:round}
 </style></head><body>
+<div id="mute"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z"/><path class="ln" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></div>
 <div id="vol"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z"/><path id="vwv" class="ln" d="M15.5 9a3.5 3.5 0 010 6M18.5 6a8 8 0 010 12"/><path id="vmu" class="ln" d="M16 9.5l5 5M21 9.5l-5 5"/></svg><div id="vtrack"><div id="vfill"></div></div><div id="vnum"></div></div>
 <div id="card"><div id="bars"><i></i><i></i><i></i><i></i><i></i></div><div id="dots"><i></i><i></i><i></i></div><img id="img" alt=""><div id="title"></div><div id="q"></div><div id="text"></div></div>
 <script>
 var card=document.getElementById('card'),img=document.getElementById('img'),timer=0;
-var vol=document.getElementById('vol'),vfill=document.getElementById('vfill'),vnum=document.getElementById('vnum'),vtimer=0;
+var vol=document.getElementById('vol'),vfill=document.getElementById('vfill'),vnum=document.getElementById('vnum'),vtimer=0,mu=document.getElementById('mute');
 /* never take the remote or the pointer: an empty input region and key mask. Newer webOS wants an array; webOS 5 throws for that and
    wants a JSON string. The array goes first, the string only when that fails, so a TV that takes the array never sees the string. */
 function setBoth(name,value){try{webOSSystem[name](value)}catch(e){try{webOSSystem[name](JSON.stringify(value))}catch(e2){}}}
@@ -54,7 +61,7 @@ document.addEventListener('keydown',function(){clearTimeout(timer);clearTimeout(
 /* the volume bar may keep the window open, empty, for a while after it fades (launch param stay, in seconds): starting this app takes
    1 to 2 s on webOS 25, while a change that finds it open only wakes it (under 0.1 s), so the bar follows the remote at once */
 var kept=false,keepT=0;
-function closeIdle(){if(!kept&&!card.classList.contains('on')&&!vol.classList.contains('on')){try{window.close()}catch(e){}}}
+function closeIdle(){if(!kept&&!card.classList.contains('on')&&!vol.classList.contains('on')&&!mu.classList.contains('on')){try{window.close()}catch(e){}}}
 function place(pos,wide){
   var m=64,s=card.style,w=wide?900:640;s.left=s.right=s.top=s.bottom='auto';
   if(/left/.test(pos))s.left=m+'px';else if(/center/.test(pos))s.left=(1920-w)/2+'px';else s.right=m+'px';
@@ -71,6 +78,10 @@ function showVolume(p){
   vol.className=(on?'on ':'')+(/bottom/.test(pos)?'b':'')+(p.muted?' muted':'');
   vfill.style.transform='translateX('+(v-100)+'%)';
   vnum.textContent=String(v);
+  /* the mute badge: in the top corner the bar does not use, kept while muted (the window stays open for it) */
+  mu.style.left=mu.style.right='auto';
+  if(pos==='top-right')mu.style.left='64px';else mu.style.right='64px';
+  if(p.muted){if(!mu.classList.contains('on'))reveal(mu)}else mu.classList.remove('on');
   clearTimeout(vtimer);
   vtimer=setTimeout(function(){vol.classList.remove('on');setTimeout(closeIdle,400)},Math.max(2,Math.min(10,+p.seconds||3))*1000);
   if(!on)reveal(vol)}

@@ -95,14 +95,22 @@ function start() {
   $('main').className = '';
   ping();
 }
-/* the keys: data-k is the key; a key with data-hold (the arrows, the volume) repeats while it is held. A key looks pressed while touched */
+/* the keys: data-k is the key; a key with data-hold (the arrows, the volume) repeats while it is held; OK, Back, Home and Settings held
+   are LG's long press (/hold); a colour key held is given an app (colours), and then opens it. A key looks pressed while touched */
+var LONG = { ENTER: 1, BACK: 1, HOME: 1, MENU: 1 }, COLOURS = { RED: 1, GREEN: 1, YELLOW: 1, BLUE: 1 }, CK = 'cytv-remote-colours', ck = {};
+try { ck = JSON.parse(localStorage.getItem(CK) || '{}') || {}; } catch (e) {}
 document.addEventListener('click', function (e) {
   var b = e.target.closest && e.target.closest('[data-k]');
-  if (b && !b.hasAttribute('data-hold')) press(b.getAttribute('data-k'));
+  if (!b || b.hasAttribute('data-hold')) return;
+  if (b._long) { b._long = false; return; }
+  var k = b.getAttribute('data-k');
+  if (COLOURS[k] && ck[k]) { buzz(); send('/launch', { id: ck[k].id }); }
+  else press(k);
 });
-var rep = 0, held = null;
+var rep = 0, held = null, longT = 0;
 function lift() {
   clearInterval(rep);
+  clearTimeout(longT);
   if (held) held.classList.remove('dn');
   held = null;
 }
@@ -113,6 +121,16 @@ function lift() {
     lift();
     held = b;
     b.classList.add('dn');
+    var lk = b.getAttribute('data-k');
+    if (lk && (LONG[lk] || COLOURS[lk])) {
+      b._long = false;
+      longT = setTimeout(function () {
+        b._long = true;
+        buzz();
+        if (COLOURS[lk]) colourPick(lk);
+        else send('/hold', { key: lk });
+      }, 550);
+    }
     if (!b.hasAttribute('data-hold')) return;
     e.preventDefault();
     var k = b.getAttribute('data-k'), n = 0;
@@ -255,6 +273,34 @@ function apps() {
     });
   });
 }
+/* a colour key's app: held, the key offers the apps of the TV (and its own LG key); the choice stays on this phone */
+var COLOUR_NAMES = { RED: t('Red'), GREEN: t('Green'), YELLOW: t('Yellow'), BLUE: t('Blue') };
+function colourLabels() {
+  [].forEach.call(document.querySelectorAll('#ckl span'), function (s) {
+    var c = ck[s.getAttribute('data-c')];
+    s.textContent = c ? c.title : '';
+  });
+}
+function colourPick(k) {
+  send('/apps').then(function (r) {
+    if (!r || !r.apps) return;
+    var sh = $('sheet'), list = $('sheetlist');
+    $('sheettitle').textContent = t('%s key').replace('%s', COLOUR_NAMES[k]);
+    list.textContent = '';
+    var add = function (label, fn, on) {
+      var b = document.createElement('button');
+      b.className = 'key opt' + (on ? ' on' : '');
+      b.textContent = label;
+      b.onclick = function () { fn(); try { localStorage.setItem(CK, JSON.stringify(ck)); } catch (e) {} colourLabels(); sh.className = 'hide'; };
+      list.appendChild(b);
+    };
+    add(t('LG\u2019s own key (as on the remote)'), function () { delete ck[k]; }, !ck[k]);
+    r.apps.forEach(function (a) { add(a.title, function () { ck[k] = { id: a.id, title: a.title }; }, ck[k] && ck[k].id === a.id); });
+    sh.className = '';
+  });
+}
+$('sheetno').onclick = function () { $('sheet').className = 'hide'; };
+colourLabels();
 $('off').onclick = function () { buzz(); if (confirm(t('Turn the TV off?'))) send('/power'); };
 /* pairing with the six digits from the TV */
 function go() {
@@ -330,6 +376,13 @@ section{flex:1 0 auto;display:flex;flex-direction:column}
 .ck button:before{content:'';display:block;width:100%;height:${u(14)};border-radius:${u(7)};box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 ${u(2)} ${u(4)} rgba(0,0,0,.5)}
 .ck .r:before{background:#df3a3f}.ck .g:before{background:#3faa55}.ck .y:before{background:#e8c23b}.ck .b:before{background:#2f80df}
 .ck button.dn:before,.ck button:active:before{opacity:.7;transform:translateY(1px)}
+#ckl{display:flex;justify-content:space-between;margin-top:${u(2)}}#ckl span{width:${u(70)};font-size:${u(10)};line-height:1.2;color:#8a8d96;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sheet{position:fixed;left:0;top:0;right:0;bottom:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55)}
+#sheet .sh{width:100%;max-width:420px;max-height:80%;display:flex;flex-direction:column;padding:${u(18)} ${u(16)} max(${u(16)},env(safe-area-inset-bottom));border-radius:${u(24)} ${u(24)} 0 0;background:#17181d;box-shadow:0 -${u(6)} ${u(24)} rgba(0,0,0,.5)}
+#sheet h2{margin:0 0 ${u(4)};font-size:${u(18)}}#sheet p{margin:0 0 ${u(12)};font-size:${u(12.5)};color:#8a8d96}
+#sheetlist{overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:${u(12)}}
+.opt{width:100%;height:${u(46)};margin-bottom:${u(8)};border-radius:${u(14)};justify-content:flex-start;padding:0 ${u(16)};font-size:${u(15)}}.opt.on{box-shadow:inset 0 0 0 2px #4d8ef7}
+#sheetno{width:100%;height:${u(46)};border-radius:${u(14)}}
 #num{position:absolute;z-index:2;left:0;top:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);grid-gap:${u(16)} ${u(18)};align-content:center;padding:${u(12)} ${u(16)};border-radius:${u(26)};background:#18191d;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);opacity:0;visibility:hidden;transform:translateY(${u(10)});transition:opacity .16s,transform .16s,visibility 0s .16s}
 #num.open{opacity:1;visibility:visible;transform:none;transition:opacity .16s,transform .16s}
 #num .key{height:${u(72)};border-radius:${u(24)};font-size:${u(26)};font-weight:600}#num .o{font-size:${u(18)};font-weight:700}
@@ -452,6 +505,7 @@ ${rocker('CHANNELUP', 'Channel up', 'up', 'CH', 'CHANNELDOWN', 'Channel down', '
 ${k('ENTER', '', 'OK', { cls: 'ok' })}</div></div>
 <div class=pb>${k('REWIND', 'Rewind', icon('rew', 'f'))}${k('PLAY', 'Play', icon('play', 'f'))}${k('PAUSE', 'Pause', icon('pause', 'f'))}${k('FASTFORWARD', 'Fast forward', icon('ff', 'f'))}</div>
 <div class=ck><button class=r data-k=RED aria-label="${T('Red')}"></button><button class=g data-k=GREEN aria-label="${T('Green')}"></button><button class=y data-k=YELLOW aria-label="${T('Yellow')}"></button><button class=b data-k=BLUE aria-label="${T('Blue')}"></button></div>
+<div id=ckl><span data-c=RED></span><span data-c=GREEN></span><span data-c=YELLOW></span><span data-c=BLUE></span></div>
 <div id=num>${digits}${k('DASH', 'Dash', '–')}${k('0', '', '0')}${k('ENTER', '', 'OK', { cls: 'o' })}</div></section>
 <section id=touch class=hide><div id=pad><i id=spot></i><div class=hint>${icon('pointer')}<span>${T('Drag to move the pointer, tap to click, two fingers to scroll')}</span></div></div>
 <div class=row>${k('BACK', '', icon('back') + '<span>' + T('Back') + '</span>')}${k('ENTER', '', 'OK', { cls: 'ob' })}${k('HOME', '', icon('home') + '<span>' + T('Home') + '</span>')}</div></section>
@@ -459,6 +513,8 @@ ${k('ENTER', '', 'OK', { cls: 'ok' })}</div></div>
 <div class=row><button class="key p" id=send>${T('Send')}</button><button class=key id=bs>${T('Delete')}</button><button class=key id=ent>${T('Enter')}</button></div>
 <small>${T('Open a search box on the TV first; the text goes where its cursor is.')}</small></section>
 <section id=apps class=hide><div id=grid></div><small>${T('Works on the same Wi-Fi as the TV. Add it to the Home Screen to open it like an app.')}</small></section></div>
+<div id=sheet class=hide><div class=sh><h2 id=sheettitle></h2><p>${T('Hold a colour key to give it an app; a tap then opens it.')}</p><div id=sheetlist></div>
+<button class=key id=sheetno>${T('Cancel')}</button></div></div>
 ` +
     i18n.script(lang, JS) +
     '<script>' +

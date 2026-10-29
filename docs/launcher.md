@@ -67,8 +67,8 @@ theme's screenshot, and the Screensaver its frame, mat and photos as an example 
 - the **clock**: its format (automatic, 12 or 24 hour), where it stands (**Position**: the theme's place, top left or top centre), its
   **Size** (the theme's, smaller or larger) and, on a theme whose picture has a cut-out like Dawn, whether it stands **Behind the
   picture** or in front. Position, Size and Behind the picture stay when you change theme; over a holiday theme and over your own
-  photos the clock is always in front, and over your photos a clock that stood behind the picture moves top left at a usual size, out
-  of the photo's way;
+  photos the clock is always in front, and over your photos a time as large as a lock screen's (Dawn's) moves top left at a usual
+  size, out of the photo's way;
 - the **theme** (see [Themes](themes.md)) and the **accent colour**; the theme list shows each theme's screenshot;
 - **Wallpapers**: your own photos behind Home, and how often they change (see [Wallpapers](wallpapers.md));
 - **More settings...**, which opens the [manager app](manager.md) for everything the TV and the service do.

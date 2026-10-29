@@ -37,21 +37,26 @@ function rebuild() {
     at = !w.length ? -1 : di.indexOf(own) >= 0 ? 0 : oi >= 0 ? Math.floor(oi / TH.cols) + 1 : -1;
   if (at < 0) w = [];
   /* a dock along the bottom with the apps over the screen (TH.strip): a dock app's cards stand in their own strip above the dock */
-  var strip = $('wstrip');
-  if (strip) strip.textContent = '';
+  var strip = $('wstrip'),
+    track = strip && strip.firstChild;
+  if (track) track.textContent = '';
   var inStrip = TH.strip && at === 0 && w.length;
   if (inStrip) {
     if (!strip) {
+      /* the strip is a window over the safe area; its track slides (transform) to keep the focused card in view (stripScroll) */
       strip = document.createElement('div');
       strip.id = 'wstrip';
+      track = document.createElement('div');
+      track.className = 'wtrack';
+      strip.appendChild(track);
       document.body.insertBefore(strip, $('view'));
     }
-    strip.style.bottom = TH.strip + 'px';
+    strip.style.bottom = TH.strip - STRIP_PAD + 'px';
   }
   var put = function () {
     w.forEach(function (t, i) {
       t.style.gridColumnStart = inStrip || i !== 0 ? '' : '1';
-      (inStrip ? strip : gd).appendChild(t);
+      (inStrip ? track : gd).appendChild(t);
     });
   };
   if (inStrip) put();

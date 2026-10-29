@@ -24,8 +24,9 @@
 body.wpon #thfg {
   display: none;
 }
-/* and with it the clock that stood behind the scenery goes back to a usual place and size, top left, out of the way of the photo */
-body.wpon[data-fg] {
+/* and a time as large as a lock screen's (Dawn's, behind its scenery or not, as under a holiday theme) goes back to a usual place
+   and size over your own photos, top left, out of the photo's way */
+body.wpon[data-bigclock] {
   --clock-l: 96px;
   --clock-r: auto;
   --clock-t: 64px;

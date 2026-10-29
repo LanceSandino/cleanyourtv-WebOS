@@ -39,7 +39,8 @@ configuration service (configd), is not `false`, and it follows that setting whi
 - It removes the file again (and asks configd to read again) as soon as the option, or **Show the Sonos volume**, is switched off,
   or the TV's sound goes anywhere but HDMI ARC/eARC or optical: the TV's speakers, headphones or a Bluetooth speaker then get LG's
   bar as usual. The sound output is looked at every 20 seconds.
-- The remote's volume and mute keep working as before; only LG's bar on screen (and its mute icon) stays away. A restart of the TV
+- The remote's volume and mute keep working as before; only LG's bar on screen (and its mute icon) stays away. While the soundbar is muted, a small
+  struck-through speaker stays in a top corner (the one the bar does not use) until the sound comes back. A restart of the TV
   brings LG's bar back by itself; the service hides it again once it runs.
 
 By hand, from a shell on the TV:

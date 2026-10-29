@@ -646,7 +646,14 @@ run(async () => {
   advance(1000);
   ok(!closes, 'the window stays while the card still shows');
   advance(8000);
-  ok(!card.classList.contains('on') && closes === 1, 'and closes once neither shows');
+  ok(
+    !card.classList.contains('on') && els.mute.classList.contains('on') && els.mute.style.left === '64px' && !closes,
+    'muted: a mute badge stays, in the top corner the bar does not use, and keeps the window open'
+  );
+  launch({ kind: 'volume', volume: 13, muted: false, seconds: 3, position: 'top-right' });
+  ok(!els.mute.classList.contains('on'), 'the sound back: the badge goes');
+  advance(4000);
+  ok(!card.classList.contains('on') && closes === 1, 'and closes once nothing shows');
   // the service's volume bar keeps the window open, empty, so the next change shows at once
   launch({ kind: 'volume', volume: 20, muted: false, seconds: 3, position: 'top-left', stay: 600 });
   advance(4000);

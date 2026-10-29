@@ -200,6 +200,15 @@ run(async () => {
       !('fg' in jpgFront),
     'effects.foreground names a png or webp in the theme folder (drawn over the clock), with clock.dateAbove, clock.alpha and a time up to 5 times as large'
   );
+  // a dock along the bottom with the apps under it (Dawn: push): Continue watching stands in a strip above the dock, its distance from
+  // the bottom sent with the theme; a theme with its dock at the top has none
+  const topDock = themeMod.resolve(
+    themeMod.normalize(JSON.parse(fs.readFileSync(path.join(tdir, 'glass', 'theme.json'), 'utf8')), 'glass', null, path.join(tdir, 'glass'))
+  );
+  ok(
+    dawn.push && dawn.strip === 46 + 120 + 2 * 20 + 34 && !('strip' in topDock) && !('strip' in plain),
+    'a bottom dock with the apps under it gets the strip above the dock (Dawn: ' + dawn.strip + '); a top dock does not'
+  );
   // dock.tileFrost and dock.tileFrostColor: a tint over the resting tiles, its colour resolved to an rgb triple
   const frost = themeMod.resolve(themeMod.normalize({ dock: { tileFrost: 0.4, tileFrostColor: '#ffffff' } }, 'frost'));
   ok(

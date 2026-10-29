@@ -17,8 +17,8 @@ forgetting them.
 
 | Tab | What it does |
 |---|---|
-| Remote | Power (asks first, then turns the TV off), the volume rocker (hold to repeat) and Mute, the channel rocker, Home, the arrows round OK (hold one to repeat), Settings, Info, Back and Exit, rewind, play, pause and fast forward, and the red, green, yellow and blue keys. **123** opens a number pad (1 to 9, 0, the dash and OK). |
-| Touchpad | Drag to move the pointer (a quick drag goes further, a slow one is precise), tap to click, two fingers to scroll, as with the Magic Remote; Back, OK and Home under it. |
+| Remote | Power (asks first, then turns the TV off), the volume rocker (hold to repeat) and Mute, the channel rocker, Home, the arrows round OK (hold one to repeat), Settings, Info, Back and Exit, rewind, play, pause and fast forward, and the red, green, yellow and blue keys. **123** opens a number pad (1 to 9, 0, the dash and OK). Hold OK, Back, Home or Settings for LG's long press, as on the remote (on Home, holding OK opens an app's menu). Hold a colour key to give it an app: a tap then opens that app; **LG's own key** puts it back (Live TV and HbbTV use the colour keys). The choice stays on that phone. |
+| Touchpad | Drag to move the pointer (a quick drag goes further, a slow one is precise), tap to click where the pointer is, two fingers to scroll, as with the Magic Remote; Back, OK and Home under it. |
 | Type | Text for a search box on the TV: open the box first, the text goes where its cursor is; Delete and Enter. |
 | Apps | The apps in the order of your dock, then the others; a tap opens one. |
 
@@ -33,8 +33,8 @@ forgetting them.
   and the rest by their key code; text goes to LG's on-screen keyboard. The volume and Mute go to LG's audio service, as the TV's own
   volume does, so a soundbar on HDMI eARC follows them (network input's volume keys did not reach one). The remote presses only what
   you tap: nothing here changes the TV or its volume by itself.
-- The touchpad moves and scrolls LG's pointer through its pointer input; a tap is OK, which clicks where the pointer is while it
-  shows.
+- The touchpad moves, clicks and scrolls LG's pointer through its pointer input (each message framed with its length, as LG's
+  input service reads it; it then moves its own touchpad device). Held keys use LG's long press (`sendLongKeyEvent`).
 
 Turning the TV **on** from the phone needs something that stays on at home, because the TV's service sleeps with the TV: the TV wakes
 on a Wake-on-LAN packet (on this TV **Turn on via Wi-Fi** is on), and a phone's browser cannot send one. A small helper for an

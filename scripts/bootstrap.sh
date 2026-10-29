@@ -104,7 +104,8 @@ backup() {
   [ -f $D/backup/processes.orig.txt ] || { ps > $D/backup/processes.orig.txt 2>&1; systemctl list-units --no-legend > $D/backup/units.orig.txt 2>&1; date > $D/backup/date.txt; }
   # an update keeps the running version's files, so a failed start can be undone
   if [ "$MODE" = update ]; then
-    (cd $D && tar czf backup/service-prev.tgz $(ls *.js *.sh 10-cleanyourtv-home 15-cleanyourtv-debloat 2>/dev/null) inputhook 2>/dev/null)
+    # (not the input hook: it stays loaded in lginput2, and a rollback must not write over it; see copy_files)
+    (cd $D && tar czf backup/service-prev.tgz $(ls *.js *.sh 10-cleanyourtv-home 15-cleanyourtv-debloat 2>/dev/null) 2>/dev/null)
   fi
 }
 
@@ -114,7 +115,16 @@ copy_files() {
   [ -d $S/i18n ] && { mkdir -p $D/i18n; cp $S/i18n/* $D/i18n/; }   # the translations, for the phone pages (helper/i18n.js)
   if [ -f $S/BUILD ]; then cp $S/BUILD $D/BUILD; else rm -f $D/BUILD; fi   # the commit of a test build
   cp $S/scripts/* $D/
-  mkdir -p $D/inputhook && cp $S/inputhook/* $D/inputhook/ && chmod 755 $D/inputhook/ezinject
+  # the input hook is loaded in LG's input service (lginput2): a file it has mapped must never be written over in place (cp truncates
+  # it, which throws away lginput2's loaded copy; lginput2 then crashed within a second and LG answered with a full reboot at the next
+  # standby, rebootByFault, LG's Home first). An unchanged file is left alone; a changed one is written beside it and renamed over
+  # it, so lginput2 keeps the old one until it restarts
+  mkdir -p $D/inputhook
+  for f in $S/inputhook/*; do
+    n=$D/inputhook/$(basename "$f")
+    cmp -s "$f" "$n" || { cp "$f" "$n.new" && mv -f "$n.new" "$n"; }
+  done
+  chmod 755 $D/inputhook/ezinject
   [ -d $S/licenses ] && { mkdir -p $D/licenses; cp $S/licenses/* $D/licenses/; }
   chmod +x $D/*.sh $D/10-cleanyourtv-home $D/15-cleanyourtv-debloat
   # root runs these files at boot and from the Input-key hook: nobody else may write them (the dev partition is world-writable)

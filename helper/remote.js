@@ -8,15 +8,17 @@
 // keys it names through sendSpecialKey ({key: 'HOME'}), the others as Linux key codes through sendKeyCodes ({keyCode1: 103}), as seen
 // working on the owner's webOS 25 TV (Home, the arrows, the quick settings, Exit). The volume and mute go to LG's audio service
 // (com.webos.service.audio/master), as LG's own volume does: network input's volume keys did not reach a soundbar on eARC, the audio
-// service does (it drives the soundbar over HDMI-CEC). The pointer moves and scrolls through network input's pointer socket
-// (getPointerInputSocket, a local socket); a tap is OK, which clicks where the pointer is while it shows (the socket's click did
-// nothing). Text goes to LG's keyboard service (com.webos.service.ime).
+// service does (it drives the soundbar over HDMI-CEC). The pointer moves, clicks and scrolls through network input's pointer socket
+// (getPointerInputSocket, a local socket): each message is its text (type:move, dx, dy, down; type:click; type:scroll) after its
+// length as 4 bytes, big-endian; network input then moves its own TouchPad device (seen on the owner's TV: REL_X/REL_Y, BTN_LEFT,
+// the wheel; unframed text made it close the socket). Holding OK, Back, Home or Settings is LG's long press
+// (sendLongKeyEvent). Text goes to LG's keyboard service (com.webos.service.ime).
 // Nothing here presses a key by itself: every press comes from a paired phone.
 //   GET  /api/remote/status    {on, url, devices: [{id, name, added, used}], pairing: {until} | null}
 //   POST /api/remote/pair      {} opens pairing: {url, code, qr, seconds}; {stop: true} closes it
 //   POST /api/remote/forget {id}    POST /api/remote/on {on}
 // On the LAN server: GET / (the phone page), POST /pair {code, name} -> {key, id}; with the key: POST /press {key}, /move {dx, dy},
-// /click, /scroll {dy}, /text {text}, /backspace, /enter, /launch {id}, /power, GET /apps, GET /icon/<id>, GET /ping.
+// /click, /scroll {dy}, /hold {key}, /text {text}, /backspace, /enter, /launch {id}, /power, GET /apps, GET /icon/<id>, GET /ping.
 const http = require('http'),
   net = require('net'),
   crypto = require('crypto');
@@ -53,6 +55,7 @@ const SPECIAL = {
 const CODES = { UP: 103, DOWN: 108, LEFT: 105, RIGHT: 106, PLAY: 207, INFO: 358, BLUE: 401, 0: 11 };
 for (let d = 1; d <= 9; d++) CODES[d] = d + 1; // KEY_1 is 2 ... KEY_9 is 10
 const KEYS = Object.keys(SPECIAL).concat(Object.keys(CODES));
+const LONG = ['ENTER', 'BACK', 'HOME', 'MENU']; // held on the phone: LG's long press
 const AUDIO = 'luna://com.webos.service.audio/master/';
 
 // an address of the home network: 10/8, 172.16/12, 192.168/16, link-local, loopback, IPv6 unique local and link-local
@@ -122,14 +125,18 @@ function create(ctx) {
       );
     return opening;
   }
-  // a message as LG's network input reads them: lines of name:value and an empty line at the end
+  // a message as LG's network input reads them: lines of name:value and an empty line at the end, after its length (4 bytes,
+  // big-endian)
   function send(fields) {
-    const msg =
-      Object.keys(fields)
-        .map(k => k + ':' + fields[k])
-        .join('\n') + '\n\n';
+    const msg = Buffer.from(
+        Object.keys(fields)
+          .map(k => k + ':' + fields[k])
+          .join('\n') + '\n\n'
+      ),
+      len = Buffer.alloc(4);
+    len.writeUInt32BE(msg.length, 0);
     return pointer().then(s => {
-      s.write(msg);
+      s.write(Buffer.concat([len, msg]));
       return { returnValue: true };
     });
   }
@@ -228,7 +235,12 @@ function create(ctx) {
       return luna('luna://com.webos.service.networkinput/sendKeyCodes', { keyCode1: CODES[k] });
     }
     if (u === '/move') return send({ type: 'move', dx: clamp(b.dx, -300, 300), dy: clamp(b.dy, -300, 300), down: 0 });
-    if (u === '/click') return luna('luna://com.webos.service.networkinput/sendSpecialKey', { key: 'ENTER' });
+    if (u === '/click') return send({ type: 'click' });
+    if (u === '/hold') {
+      const k = String(b.key || '');
+      if (LONG.indexOf(k) < 0) return { error: 'unknown key', code: 400 };
+      return luna('luna://com.webos.service.networkinput/sendLongKeyEvent', { key: SPECIAL[k] });
+    }
     if (u === '/scroll') return send({ type: 'scroll', dx: 0, dy: clamp(b.dy, -50, 50) });
     if (u === '/text') {
       const t = String(b.text || '')

@@ -343,6 +343,23 @@ const STRIP =
   'key(40);var apps=document.body.classList.contains("grid-open")&&!!f()&&!f().classList.contains("wcard");' +
   'var ok=cards>=1&&!inGrid&&above&&wide&&shut&&up&&back&&apps;' +
   'document.body.setAttribute("data-strip",ok?"ok":"bad cards="+cards+" inGrid="+inGrid+" above="+above+" wide="+wide+" shut="+shut+" up="+up+" back="+back+" apps="+apps)},1500)},2500)},300)})()</script>';
+// Dawn with ten Plex cards, more than the screen holds: the strip stays inside the safe area (96 px each side), centred cards slide so the
+// focused one (the eighth) is wholly in view and the edge with more cards fades; Down from the dock then opens the apps under it (push:
+// the grid open, the dock moved up). Transitions off: this engine does not run them in virtual time. The outcome lands in data-sfit.
+const STRIP_FIT =
+  '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}function f(){return document.querySelector(".f")}' +
+  'var nt=document.createElement("style");nt.textContent="*{transition:none!important}";document.head.appendChild(nt);' +
+  'var A=window.api;window.api=function(p,b){if(p==="/api/watch/rows"){var it=[];for(var i=0;i<10;i++)it.push({key:"plex-"+i,group:"plex:"+i,source:"plex",' +
+  'title:"Film "+i,sub:"",img:"/api/watch/img/bbbbbbbbbbbbbbbb",progress:0.5,launch:{id:"cdp-30",params:{}}});return Promise.resolve({items:it})}return A(p,b)};' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile")||!WATCH.refresh)return;clearInterval(go);WATCH.refresh();setTimeout(function(){key(39);key(39);' +
+  'setTimeout(function(){key(38);for(var i=0;i<7;i++)key(39);setTimeout(function(){var st=document.getElementById("wstrip"),sr=st.getBoundingClientRect(),' +
+  'n=st.querySelectorAll(".wcard").length,fc=f(),fr=fc.getBoundingClientRect(),safe=sr.left>=95&&sr.right<=1825,' +
+  'seen=fc.classList.contains("wcard")&&fr.left>=sr.left-1&&fr.right<=sr.right+1,fade=st.classList.contains("ml");' +
+  'key(40);var dockY=document.getElementById("dock").getBoundingClientRect().top;key(40);setTimeout(function(){' +
+  'var open=document.body.classList.contains("grid-open")&&document.body.getAttribute("data-grid")==="push",up=document.getElementById("dock").getBoundingClientRect().top<dockY-200;' +
+  'var ok=n===10&&safe&&seen&&fade&&open&&up;' +
+  'document.body.setAttribute("data-sfit",ok?"ok":"bad n="+n+" safe="+safe+" strip="+sr.left+"-"+sr.right+" seen="+seen+" card="+fr.left+"-"+fr.right+" fade="+fade+" open="+open+" up="+up)},700)},800)},1500)},1500)},300)})()</script>';
 // Dawn (effects.foreground): the front of its wallpaper is a layer over the clock (after #top, above it) and under the apps (#view
 // comes forward), its picture loads, and the date stands above the time (clock.dateAbove). The outcome lands in data-front.
 const FG_CHECK =
@@ -390,6 +407,7 @@ const PAGES = [
   ['dawn clock with photos', 'app/index.html', /data-wpclock="ok"/g, 1, 15000, WP_CLOCK, 'dawn'],
   ['magic remote wheel', 'app/index.html', /data-wheel="ok"/g, 1, 12000, WHEEL],
   ['watch strip in dawn', 'app/index.html', /data-strip="ok"/g, 1, 15000, STRIP, 'dawn'],
+  ['watch strip fits in dawn', 'app/index.html', /data-sfit="ok"/g, 1, 20000, STRIP_FIT, 'dawn'],
   ['manager update check', 'manager/app/index.html', /data-check="ok"/g, 1, 12000, MANAGER_CHECK],
   ['manager closes when left', 'manager/app/index.html', /data-left="ok"/g, 1, 150000, MANAGER_LEFT],
   ['weather in a short place', 'app/index.html', /data-slim="ok"/g, 1, 12000, SLIM_WX, 'glass'],

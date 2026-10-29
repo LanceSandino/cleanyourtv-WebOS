@@ -1193,3 +1193,55 @@ commit_ref: "feature/plex-link (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T14:49:13Z"
 ```
+
+```yaml
+id: CU-20261029-14
+type: fix
+title: "Phone remote: the touchpad moves, clicks and scrolls; held keys are LG's long press; colour keys can open an app"
+description: "The owner found the touchpad did nothing and holding a key did not work like the remote, and asked what the colour keys do. Read on the TV: network input's pointer socket reads each message after its length as 4 bytes, big-endian; the unframed text we sent made it close the socket, so no move ever arrived. Framed, its TouchPad device (registered when the socket is used) gives REL_X/REL_Y for type:move, BTN_LEFT down and up for type:click and the wheel for type:scroll (seen on its event device). remote.js frames every message, and /click is the pointer's click again (not OK). The service also has sendLongKeyEvent {key}: POST /hold {key} sends it for OK, Back, Home and Settings, and the phone page holds those keys after 550 ms (on Home, a held OK changed the screen and Back changed it again, as the app menu does). The colour keys send LG's own keys (Live TV uses them: green a favourite, yellow the menu, blue the stats; HbbTV and teletext too); held on the phone, one offers the TV's apps and keeps the choice on that phone (localStorage), and a tap then opens that app; LG's own key is the first choice."
+impact: low
+affected_modules: ["helper/remote.js", "helper/remotepage.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (the pointer moves, clicks and scrolls through the socket, each message after its length; holding OK is sendLongKeyEvent and a key it does not hold is refused)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T15:41:01Z"
+```
+
+```yaml
+id: CU-20261029-15
+type: fix
+title: "Dawn: Continue watching stays on screen, Down brings the apps in under the dock, a large clock moves aside over your photos"
+description: "On the owner's TV the Plex cards above Dawn's dock ran off both sides of the screen, Down from the dock jumped to a grid over the top of the screen, and the large time stood over his photo during the Halloween theme. watch.css/layout.js/theme.js: the strip is a window over the safe area (96 px each side) with room for the focused card's scale; its track is centred when the cards fit, else slides (transform) so the focused card is in the middle without going past either end, fading the edge where more cards wait (stripScroll, the centres read again after a slide). themes/dawn: grid.mode push (dockUp 150, clipTop 0): Down slides the dock up and the apps come in under it over a dimmed screen, as in Glass; the strip works with push as with overlay. theme.js marks a time as large as a lock screen's (clock.scale 2.5 or more) data-bigclock, and frame.css moves it top left at scale 1.5 while your photos are the wallpaper, also when a holiday theme leaves Dawn's cut-out out (the earlier rule needed the cut-out)."
+impact: low
+affected_modules: ["app/src/js/layout.js", "app/src/js/theme.js", "app/src/css/watch.css", "app/src/css/frame.css", "themes/dawn/theme.json", "docs/launcher.md", "tools/oldchrome.js"]
+related_tests: ["tools/oldchrome.js (watch strip fits in dawn: ten cards, the strip within the safe area, the eighth wholly in view, the edge faded, Down opens the apps under the dock and the dock moves up; watch strip in dawn; dawn clock with photos)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T15:41:01Z"
+```
+
+```yaml
+id: CU-20261029-16
+type: fix
+title: "Updates no longer crash LG's input service, which made the TV reboot instead of standing by (LG's Home first after a wake)"
+description: "The owner saw LG's Home for about a minute before ours after switching the TV on, and Quick Start+ was on. The TV's boot log gave the power-on reason rebootByFault; LG's fault manager records (four today) all showed lginput2 crashing (SIGSEGV at the same address) one second after each of today's updates (1.6.27, 1.6.28, 1.6.29, 1.6.30), with 'fault recovery: rebootToSuspend': at the next standby LG reboots fully, and such a boot does not start Home at once (bootd: 'Reason(rebootByFault) doesn't support full home booting'). The crash was in our input hook (InputHook::watchConfigFile, its jump table holding the file's raw bytes): bootstrap.sh copied libinputhookpp.so with cp onto the copy lginput2 has loaded; cp truncates it, which drops lginput2's relocated pages. copy_files now leaves an unchanged hook alone and renames a changed one in (written beside it first), so lginput2 keeps its loaded copy until it restarts, and the rollback archive leaves the hook out. An update runs the new package's bootstrap.sh, so this one already installs safely (D-20261029-2)."
+impact: high
+affected_modules: ["scripts/bootstrap.sh", "DECISIONS.md"]
+related_tests: ["tools/test/scripts.test.js (an update never writes over the loaded input hook: unchanged it keeps its inode, changed it is renamed in while a held-open copy keeps its bytes, no .new is left, the rollback archive leaves it out)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T15:51:19Z"
+```
+
+```yaml
+id: CU-20261029-17
+type: feature
+title: "A mute badge stays on screen while the soundbar is muted"
+description: "The owner noticed there was no mute icon any more: with the Sonos volume on screen, LG's own volume view (and its mute icon) is hidden (D-20261027-22). notify/app: when the volume bar's reading says muted, a small struck-through speaker shows in the top corner the bar does not use and stays, keeping the overlay window open (it never takes the remote: empty input region and key mask), until a reading says the sound is back. Notify app 1.0.7."
+impact: low
+affected_modules: ["notify/app/index.html", "notify/app/appinfo.json", "docs/sonos.md"]
+related_tests: ["tools/test/sonos.test.js (muted: a mute badge stays in the top corner the bar does not use and keeps the window open; the sound back, it goes and the window closes)", "tools/test/pages.test.js (the notify page as ES5)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T15:51:19Z"
+```

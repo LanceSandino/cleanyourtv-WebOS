@@ -41,8 +41,18 @@ function lan(method, p, body, headers) {
 run(async () => {
   // LG's network input, as a local socket that keeps what it is sent
   const sockPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'cytv-remote-')), 'pointer.sock');
-  let got = '';
-  const input = net.createServer(c => c.on('data', d => (got += d.toString())));
+  let raw = Buffer.alloc(0);
+  const input = net.createServer(c => c.on('data', d => (raw = Buffer.concat([raw, d]))));
+  // the messages as network input reads them: each after its length (4 bytes, big-endian)
+  const frames = () => {
+    const out = [];
+    for (let i = 0; i + 4 <= raw.length; ) {
+      const n = raw.readUInt32BE(i);
+      out.push(raw.slice(i + 4, i + 4 + n).toString());
+      i += 4 + n;
+    }
+    return out;
+  };
   await new Promise(r => input.listen(sockPath, r));
   process.env.CYTV_REMOTE_SOCK = sockPath;
   const calls = [];
@@ -152,9 +162,16 @@ run(async () => {
   await lan('POST', '/scroll', { dy: 3 }, key);
   await sleep(100);
   ok(
-    got === 'type:move\ndx:13\ndy:-300\ndown:0\n\ntype:scroll\ndx:0\ndy:3\n\n' &&
-      JSON.stringify(calls) === JSON.stringify([[N + 'sendSpecialKey', { key: 'ENTER' }]]),
-    "the pointer moves and scrolls through LG's pointer socket (a move is held to 300 px); a tap is OK: " + JSON.stringify(got)
+    JSON.stringify(frames()) ===
+      JSON.stringify(['type:move\ndx:13\ndy:-300\ndown:0\n\n', 'type:click\n\n', 'type:scroll\ndx:0\ndy:3\n\n']) && !calls.length,
+    "the pointer moves, clicks and scrolls through LG's pointer socket, each message after its length (a move is held to 300 px): " +
+      JSON.stringify(frames())
+  );
+  r = await lan('POST', '/hold', { key: 'ENTER' }, key);
+  const r2 = await lan('POST', '/hold', { key: 'RIGHT' }, key);
+  ok(
+    r.code === 200 && r2.code === 400 && JSON.stringify(calls) === JSON.stringify([[N + 'sendLongKeyEvent', { key: 'ENTER' }]]),
+    "holding OK on the phone is LG's long press; a key it does not hold is refused: " + JSON.stringify(calls)
   );
   r = await lan('POST', '/press', { key: 'rm -rf' }, key);
   const nokey = await lan('POST', '/press', { key: 'UP' });

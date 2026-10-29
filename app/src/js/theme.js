@@ -38,6 +38,7 @@ var TH0 = {
     'data-glow',
     'data-dockpanel',
     'data-dateabove',
+    'data-bigclock',
   ];
 function applyTheme(t) {
   var st = document.documentElement.style,
@@ -83,6 +84,8 @@ function applyTheme(t) {
     themeKeys.push('--wall');
   }
   for (k in t.attrs) b.setAttribute('data-' + k, t.attrs[k]);
+  /* a time as large as a lock screen's (Dawn, also under a holiday theme): over your own photos it moves aside (frame.css) */
+  if (parseFloat(t.vars['--clock-s']) >= 2.5) b.setAttribute('data-bigclock', '');
   FRAME.set(t.frame); /* a holiday theme's still frame (frame.js) */
   FRAME.fg(t.fg); /* the front of the theme's wallpaper, over the clock (frame.js) */
   var at = t.attrs || {},
@@ -111,12 +114,9 @@ function applyTheme(t) {
     /* room kept under the lowest row for the name under the focused tile */
     capH: at.label === 'focus' ? 44 : 0,
     shelfDock: t.shelf || null,
-    /* a dock along the bottom with the apps over the screen (Dawn): a dock app's Continue watching cards stand in a strip just above
-       the dock (layout.js), Up goes into them, and the grid stays shut for them */
-    strip:
-      !!t.overlay && !!t.vars['--dock-b'] && t.vars['--dock-b'] !== 'auto'
-        ? parseFloat(t.vars['--dock-b']) + (parseFloat(t.vars['--dock-h']) || 120) + 2 * (parseFloat(t.vars['--dock-pad']) || 0) + 34
-        : 0,
+    /* a dock along the bottom with the apps over it or under it (Dawn): a dock app's Continue watching cards stand in a strip just
+       above the dock (layout.js), Up goes into them, and the grid stays shut for them */
+    strip: t.strip || 0,
   };
   decoTheme();
   /* the name follows the dock (shelf.dockAlign) only while that is on; otherwise it keeps the theme's own margin (--name-x) */
@@ -151,6 +151,33 @@ function stripAt() {
 function stripRow(i) {
   return i >= 0 && i === stripAt();
 }
+/* the strip's window: the screen's safe area (96 px each side), with room above and below for the focused card's scale and ring */
+var STRIP_W = 1728,
+  STRIP_PAD = 18;
+/* the cards centred when they fit; otherwise the track slides so the focused card stands in the middle (not past either end), the
+   edges fading where more cards wait. Only transform moves. */
+function stripScroll() {
+  var strip = $('wstrip'),
+    track = strip && strip.firstChild;
+  if (!track || !track.children.length) return;
+  var cards = track.children,
+    last = cards[cards.length - 1],
+    tw = last.offsetLeft + last.offsetWidth,
+    x = 0;
+  if (tw <= STRIP_W) x = Math.round((STRIP_W - tw) / 2);
+  else {
+    var f = stripRow(r) ? rows[r][c] : null,
+      mid = f ? f.offsetLeft + f.offsetWidth / 2 : 0;
+    x = -Math.max(0, Math.min(tw - STRIP_W, Math.round(mid - STRIP_W / 2)));
+  }
+  if (track._x !== x) {
+    track._x = x;
+    track.style.transform = 'translateX(' + x + 'px)';
+    rowXs = null; /* the cards moved: read their centres again for Up and Down */
+  }
+  strip.classList.toggle('ml', x < 0);
+  strip.classList.toggle('mr', tw + x > STRIP_W);
+}
 function setFocus(nr, nc, first) {
   var old = rows[r] && rows[r][c];
   if (old) old.classList.remove('f');
@@ -158,6 +185,7 @@ function setFocus(nr, nc, first) {
   c = Math.min(nc, rows[r].length - 1);
   var e = rows[r][c];
   e.classList.add('f');
+  if (TH.strip) stripScroll();
   var a = e._a,
     nm = a ? a.title : e._o ? barLabel(e._o) : '';
   showName(nm);
