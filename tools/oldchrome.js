@@ -623,6 +623,20 @@ function run(bin, url, extra, budget) {
   try {
     for (const e of ENGINES.filter(x => !only || x[0].indexOf(only) >= 0)) {
       const bin = engine(e[1], e[2]);
+      // a build that cannot start on this computer fails here once instead of on every page: Chrome 120 for macOS stops with SIGTRAP
+      // at start on macOS 26 (its helper processes cannot find the browser's Mach rendezvous service), and every start that dies
+      // leaves crash reports. (--single-process is no way around it: Chrome 120 stops in it on Linux too.)
+      const probe = await run(bin, 'about:blank', ['--dump-dom'], 1000);
+      if (probe.status !== 0 || probe.stdout.indexOf('<body') < 0) {
+        ok(
+          false,
+          e[0] +
+            ' starts on this computer (' +
+            (probe.error || 'exit ' + probe.status) +
+            '): run the pages in the Linux container instead, CYTV_CHROMIUM_IMAGE=ubuntu:26.04 sh tools/check.sh --chromium'
+        );
+        continue;
+      }
       for (const p of PAGES.filter(x => !pageOnly || x[0].indexOf(pageOnly) >= 0)) {
         const url = 'http://127.0.0.1:8765/' + p[0].replace(/ /g, '-') + '.html';
         // headless Chromium on Linux now and then fails to hand over the page ("Failed to serialize document"), hangs or hands it over

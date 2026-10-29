@@ -15,8 +15,10 @@ runs everything a push or a release needs:
 With `--chromium` it also runs the launcher, the manager and the Inputs picker in **Chromium 120**, the browser engine of webOS 25
 (`tools/oldchrome.js`, headless, against a stand-in service): a page that throws a script error there or does not draw its tiles, rows
 or inputs fails the check. The engine is Chrome for Testing's headless shell 120.0.6099.109 from Google's storage, checked against
-pinned SHA-256 sums (about 90 MB, downloaded once). `CYTV_SHOTS=<folder>` keeps a screenshot of every page; CI keeps them as an
-artifact of each run.
+pinned SHA-256 sums (about 90 MB, downloaded once). CI runs it in an `ubuntu:26.04` container (`tools/oldchrome-container.sh`), and
+so does `check.sh --chromium` on macOS when Docker runs: Chrome 120 for macOS stops at start on macOS 26 (`node tools/oldchrome.js`
+on its own then fails once, before any page, instead of crashing on every one). `CYTV_SHOTS=<folder>` keeps a screenshot of every
+page; CI keeps them as an artifact of each run.
 
 Nothing leaves your machine apart from the downloads. One area of tests on its own: `node tools/test.js live` (the names are
 the files in `tools/test` without `.test.js`), or `node tools/test/live.test.js`.

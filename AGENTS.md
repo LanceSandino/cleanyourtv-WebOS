@@ -82,8 +82,9 @@ disk, and a reboot without the boot scripts brings LG's Home back.
 
 ```sh
 sh tools/check.sh                  # every check: the tests on the current Node, built pages, types and lint
-sh tools/check.sh --chromium       # also the pages in Chromium 120 (webOS 25), Chrome for Testing's headless shell
-CYTV_CHROMIUM_IMAGE=ubuntu:26.04 sh tools/check.sh --chromium   # the same in a Linux container, as CI does (Docker; on new macOS too)
+sh tools/check.sh --chromium       # also the pages in Chromium 120 (webOS 25), Chrome for Testing's headless shell; on macOS in the
+                                   # Linux container when Docker runs (Chrome 120 for macOS does not start on macOS 26)
+CYTV_CHROMIUM_IMAGE=ubuntu:26.04 sh tools/check.sh --chromium   # the same in a Linux container, as CI does (Docker)
 npm install                        # once: TypeScript, ESLint and Prettier for check.sh (development only, nothing is shipped)
 npm run format                     # formats the code (Prettier) and rebuilds the pages
 node tools/test.js live            # one area of tests (the files in tools/test)

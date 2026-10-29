@@ -7,7 +7,8 @@
 #    how complete each language is; it fails only on a broken file);
 #    types, lint and formatting (tools/lint.js), when the development tools are installed (npm install);
 # 3. with --chromium: the pages in Chromium 120, the engine of webOS 25 (tools/oldchrome.js: Chrome for Testing's headless shell 120,
-#    about 90 MB downloaded once); with CYTV_CHROMIUM_IMAGE=ubuntu:26.04 in that Linux container (tools/oldchrome-container.sh, needs Docker).
+#    about 90 MB downloaded once); with CYTV_CHROMIUM_IMAGE=ubuntu:26.04 in that Linux container (tools/oldchrome-container.sh, needs Docker),
+#    which is also the default on macOS when Docker runs (Chrome 120 for macOS does not start on macOS 26).
 # Nothing is installed and nothing leaves this machine, apart from the one Chromium download.
 set -e
 cd "$(dirname "$0")/.."
@@ -28,7 +29,11 @@ echo; echo "== types, lint, formatting"
 node tools/lint.js
 if [ "$1" = "--chromium" ]; then
   echo; echo "== pages in Chromium 120 (webOS 25)"
-  # in a Linux container when CYTV_CHROMIUM_IMAGE names one (the CI workflows): tools/oldchrome-container.sh
+  # in a Linux container when CYTV_CHROMIUM_IMAGE names one (the CI workflows): tools/oldchrome-container.sh. On macOS that is the
+  # default when Docker runs: Chrome 120 for macOS stops at start on macOS 26 (node tools/oldchrome.js still tries it on its own)
+  if [ -z "$CYTV_CHROMIUM_IMAGE" ] && [ "$(uname -s)" = Darwin ] && command -v docker >/dev/null && docker info >/dev/null 2>&1; then
+    CYTV_CHROMIUM_IMAGE=ubuntu:26.04; echo "macOS: the pages run in the Linux container $CYTV_CHROMIUM_IMAGE (Docker)"
+  fi
   if [ -n "$CYTV_CHROMIUM_IMAGE" ]; then sh tools/oldchrome-container.sh "$CYTV_CHROMIUM_IMAGE"
   else node tools/oldchrome.js ${CYTV_SHOTS:+--shots "$CYTV_SHOTS"}
   fi
