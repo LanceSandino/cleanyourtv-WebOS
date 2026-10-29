@@ -289,12 +289,15 @@ run(async () => {
   // bootstrap.sh asks tvprofile.js for the per-TV decisions instead of deciding itself
   const bootText = fs.readFileSync(path.join(root, 'scripts', 'bootstrap.sh'), 'utf8');
   const stop = fs.readFileSync(path.join(root, 'scripts', 'debloat-stop.sh'), 'utf8'),
-    undo = fs.readFileSync(path.join(root, 'scripts', 'debloat-undo.sh'), 'utf8');
+    undo = fs.readFileSync(path.join(root, 'scripts', 'debloat-undo.sh'), 'utf8'),
+    hostsSh = fs.readFileSync(path.join(root, 'scripts', 'debloat-hosts.sh'), 'utf8');
   ok(
-    /mount --bind \/tmp\/cleanyourtv-hosts "\$HOSTS"/.test(stop) &&
-      /umount "\$HOSTS"/.test(undo) &&
-      /HOSTS=\$\{CYTV_HOSTS:-\/etc\/hosts\}/.test(stop),
-    'where /etc/hosts is read-only (issue 11) the ad servers go into a copy in RAM, and the undo removes it'
+    /mount --bind \/tmp\/cleanyourtv-hosts "\$HOSTS"/.test(hostsSh) &&
+      /umount "\$HOSTS"/.test(hostsSh) &&
+      /HOSTS=\$\{CYTV_HOSTS:-\/etc\/hosts\}/.test(hostsSh) &&
+      /sh \$L\/debloat-hosts\.sh \$keep$/m.test(stop) &&
+      /sh \$L\/debloat-hosts\.sh \$keep$/m.test(undo),
+    'where /etc/hosts is read-only (issue 11) the servers go into a copy in RAM, unmounted when no line is left (debloat-hosts.sh)'
   );
   // the groups debloat-stop.sh and debloat-undo.sh act on: only the part that picks the programs is run here (it stops and mounts
   // nothing); admanager has its own group (adapps), on by default, and only while ads is on too
@@ -371,10 +374,10 @@ run(async () => {
   );
   const bootHook = fs.readFileSync(path.join(root, 'scripts', '15-cleanyourtv-debloat'), 'utf8');
   ok(
-    /^\(home && sh \/media\/developer\/cleanyourtv\/debloat-stop\.sh miner\) [^\n]*&$/m.test(bootHook) &&
+    /^\(home && sh \/media\/developer\/cleanyourtv\/debloat-stop\.sh miner lgservers\) [^\n]*&$/m.test(bootHook) &&
       bootHook.indexOf('debloat-stop.sh miner') < bootHook.indexOf('sleep 60') &&
       /DISABLE-DEBLOAT \] && exit 0/.test(bootHook.split('debloat-stop.sh miner')[0]),
-    'the boot hook stops the miner at once (in the background), after the off switches and before the minute the rest waits'
+    'the boot hook applies the opt-in groups at once (in the background), after the off switches and before the minute the rest waits'
   );
   // the ad servers of the TV's country (LG's Smart Service country, here US) join the list; old marked lines (the Dutch ones alone)
   // are written again, a second run adds nothing, and the undo takes them all out
@@ -394,6 +397,7 @@ run(async () => {
       '127.0.0.1 localhost\n127.0.0.1 eic.ads.lgtvcommon.com nl.ad.lgsmartad.com nl.info.lgsmartad.com # cleanyourtv-debloat\n'
     );
     const env = Object.assign({}, process.env, { CYTV_HOSTS: hosts, PATH: process.env.PATH + ':' + bin });
+    fs.writeFileSync(path.join(d, 'debloat-hosts.sh'), hostsSh.replace(/^L=.*$/m, 'L=' + d));
     const runIt = (script, name) => {
       fs.writeFileSync(path.join(d, name), script.replace(/^L=.*$/m, 'L=' + d));
       return cp.spawnSync('sh', [path.join(d, name), 'ads'], { encoding: 'utf8', env });
@@ -414,9 +418,101 @@ run(async () => {
         JSON.stringify(once)
     );
   }
+  // LG's online servers (the opt-in group lgservers): the hosts LG's sdx names on this TV for its own services (only LG's domains),
+  // with the region's LG Channels and ThinQ hosts; the list kept for a start at which sdx does not answer yet; undoing ads keeps
+  // them, undoing them keeps the ads, and the full undo leaves the TV's own file
+  {
+    const d = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cytv-lgservers-'));
+    const bin = path.join(d, 'bin'),
+      down = path.join(d, 'sdx-down');
+    fs.mkdirSync(bin);
+    fs.writeFileSync(
+      path.join(bin, 'luna-send'),
+      [
+        '#!/bin/sh',
+        'case "$*" in',
+        '  *getSystemSettings*) printf \'{\\n "settings": {\\n  "smartServiceCountryCode2": "US"\\n }\\n}\\n\' ;;',
+        '  *getServerUrl*)',
+        '    [ -e "$SDX_DOWN" ] && { printf \'{"returnValue": false}\\n\'; exit 0; }',
+        '    case "$*" in',
+        '      *homeprv_secure*) u=https://AIC.tv.wiselg.com/homeprv/10.0.0/ ;;',
+        '      *ibis_stat_secure*) u=https://US.ibsstat.nextlgsdp.com/ibs/10.0.0/ ;;',
+        '      *rdx_secure*) u=https://evil.example.com/rdx/ ;;',
+        '      *) u=https://AIC.api.lgtviot.com/v3.0/ ;;',
+        '    esac',
+        '    printf \'{\\n    "serverUrl": "http://US.nextlgsdp.com",\\n    "baseUrl": "%s"\\n}\\n\' "$u" ;;',
+        'esac',
+        '',
+      ].join('\n'),
+      { mode: 0o755 }
+    );
+    const hosts = path.join(d, 'hosts'),
+      base = '127.0.0.1 localhost\n';
+    fs.writeFileSync(hosts, base);
+    const env = Object.assign({}, process.env, { CYTV_HOSTS: hosts, SDX_DOWN: down, PATH: bin + ':' + process.env.PATH });
+    fs.writeFileSync(path.join(d, 'debloat-hosts.sh'), hostsSh.replace(/^L=.*$/m, 'L=' + d));
+    fs.writeFileSync(path.join(d, 'stop.sh'), stop.replace(/^L=.*$/m, 'L=' + d));
+    fs.writeFileSync(path.join(d, 'undo.sh'), undo.replace(/^L=.*$/m, 'L=' + d));
+    const runIt = (name, args, options) => {
+      fs.writeFileSync(path.join(d, 'config.json'), JSON.stringify({ options }));
+      cp.spawnSync('sh', [path.join(d, name)].concat(args), { encoding: 'utf8', env });
+      return fs.readFileSync(hosts, 'utf8');
+    };
+    const marked = t => t.split('\n').filter(l => /# cleanyourtv-debloat$/.test(l));
+    const on = runIt('stop.sh', ['lgservers'], { debloatOn: ['lgservers'] });
+    const kept = fs.existsSync(path.join(d, 'lgservers-hosts')) ? fs.readFileSync(path.join(d, 'lgservers-hosts'), 'utf8') : '';
+    const lgLine = marked(on).filter(l => /^127\.0\.0\.1 aic\.tv\.wiselg\.com /.test(l))[0] || '';
+    const words = lgLine.split(' ');
+    fs.writeFileSync(hosts, base);
+    fs.writeFileSync(down, '');
+    const fromKept = runIt('stop.sh', ['miner', 'lgservers'], { debloatOn: ['miner', 'lgservers'] });
+    fs.unlinkSync(down);
+    const adsUndone = runIt('undo.sh', ['ads'], { debloatOff: ['ads'], debloatOn: ['lgservers'] });
+    const lgUndone = runIt('undo.sh', ['lgservers'], { debloatOff: [] });
+    runIt('stop.sh', ['lgservers'], { debloatOn: ['lgservers'] });
+    const all = runIt('undo.sh', [], { debloatOn: ['lgservers'] });
+    const notOptedIn = runIt('stop.sh', ['lgservers'], {});
+    cp.spawnSync('rm', ['-rf', d]);
+    ok(
+      marked(on).length === 4 &&
+        [
+          'aic.tv.wiselg.com',
+          'us.ibsstat.nextlgsdp.com',
+          'aic.api.lgtviot.com',
+          'aic.lgchhomeapp.lgtvcommon.com',
+          'aic.cdplauncher.lgtvcommon.com',
+          'aic.cdpsvc.lgtvcommon.com',
+          'aic.cdpbeacon.lgtvcommon.com',
+          'aic-connect-client.lgthinq.com',
+          'connect-client.lgthinq.com',
+        ].every(h => words.indexOf(h) > 0) &&
+        !/evil|us\.nextlgsdp\.com /.test(on) &&
+        /us\.ad\.lgsmartad\.com/.test(on) &&
+        kept.trim() === words.slice(1, -2).join(' '),
+      "LG's online servers as sdx names them (LG's domains only, never the app store's host), with the ads, the list kept: " +
+        JSON.stringify(marked(on))
+    );
+    ok(
+      fromKept === on &&
+        marked(adsUndone).length === 2 &&
+        !/lgsmartad/.test(adsUndone) &&
+        /aic\.tv\.wiselg\.com/.test(adsUndone) &&
+        marked(lgUndone).length === 2 &&
+        /lgsmartad/.test(lgUndone) &&
+        !/wiselg/.test(lgUndone) &&
+        all === base &&
+        notOptedIn === '127.0.0.1 localhost\n' + marked(lgUndone).join('\n') + '\n',
+      'sdx silent: the kept list; undoing ads keeps the servers, undoing the servers keeps the ads, the full undo leaves the file as ' +
+        'it was, and the servers stay out unless switched on'
+    );
+  }
   // never these: LG's sdx (the Settings gear stops working) or ss.gateway (casting, second screen and quick cards stop), as
   // own-your-glass found out on webOS 25
   ok(!/sdx|ss\.gateway|ssgateway/.test(stop + undo), 'the debloat never touches sdx or ss.gateway');
+  ok(
+    !/(stop|kill|mount|umount)[^\n]*sdx/.test(hostsSh) && /getServerUrl/.test(hostsSh),
+    'debloat-hosts.sh only asks sdx for the names of its servers; it never stops or stubs it'
+  );
   ok(
     /TV="node \$S\/helper\/tvprofile\.js"/.test(bootText) &&
       /\$TV get notifyWindow/.test(bootText) &&

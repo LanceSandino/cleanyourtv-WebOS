@@ -1197,8 +1197,14 @@ var DEBLOAT = [
     what: "stopped at every start before it asks LG's servers; LG's picks on Home stop changing",
     optIn: true,
   },
+  {
+    id: 'lgservers',
+    label: "LG's online services",
+    what: "LG's servers blocked: LG Channels, LG voice, LG account, ThinQ, sports, shopping, viewing statistics; the app store stays",
+    optIn: true,
+  },
 ];
-/* an opt-in group (HbbTV, LG's content miner): on only while options.debloatOn lists it */
+/* an opt-in group (HbbTV, LG's content miner, LG's online services): on only while options.debloatOn lists it */
 function debloatOptIn(id) {
   return DEBLOAT.some(function (g) {
     return g.id === id && g.optIn;

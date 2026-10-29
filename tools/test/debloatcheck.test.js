@@ -82,5 +82,23 @@ run(async () => {
     noMiner && mi && !mi.ok && mi.notes.join() === 'contentminer is not stubbed,contentminer is running' && mi2 && mi2.ok,
     'the miner group is looked at only when switched on: ' + JSON.stringify([mi, mi2])
   );
+  // LG's online servers (opt-in): in place only with a marked tv.wiselg.com line; the ad servers' line alone is not that
+  conf.update('test', c => {
+    c.options = { debloat: true, debloatOn: ['lgservers'] };
+  });
+  fs.writeFileSync(process.env.CYTV_HOSTS, '127.0.0.1 localhost\n127.0.0.1 nl.ad.lgsmartad.com # cleanyourtv-debloat\n');
+  r = await C.check();
+  const lgs1 = r.groups.filter(g => g.id === 'lgservers')[0],
+    ads1 = r.groups.filter(g => g.id === 'ads')[0];
+  fs.writeFileSync(
+    process.env.CYTV_HOSTS,
+    '127.0.0.1 localhost\n127.0.0.1 nl.ad.lgsmartad.com # cleanyourtv-debloat\n127.0.0.1 aic.tv.wiselg.com x.lgthinq.com # cleanyourtv-debloat\n'
+  );
+  r = await C.check();
+  const lgs2 = r.groups.filter(g => g.id === 'lgservers')[0];
+  ok(
+    lgs1 && !lgs1.ok && /LG's online servers/.test(lgs1.notes.join()) && !/hosts/.test(ads1.notes.join()) && lgs2 && lgs2.ok,
+    "LG's online servers are looked at only when switched on, by their own line: " + JSON.stringify([lgs1, lgs2])
+  );
   exec.sh = realSh;
 });

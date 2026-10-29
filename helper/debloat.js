@@ -3,13 +3,14 @@
 // one: options.debloatOff in config.json lists those, and debloat-stop.sh reads it. The group "preload" (LG's app pre-loading) is
 // the service's own (lgpreload.js, which hears of every change through onChange); the scripts leave it alone, and so are "lgads"
 // (LG's ad and promotion settings) and the opt-in "hbbtv" (lgsettings.js), which is on only when listed in options.debloatOn. The
-// opt-in "miner" (LG's content miner stopped from the start, kept from starting again) is the scripts' own, listed in debloatOn too.
+// opt-in "miner" (LG's content miner stopped from the start, kept from starting again) and "lgservers" (LG's servers for its online
+// services blocked in /etc/hosts, scripts/debloat-hosts.sh) are the scripts' own, listed in debloatOn too.
 const P = require('./paths'),
   exec = require('./exec');
 
 const GROUPS = ['ads', 'adapps', 'tracking', 'logs', 'suggestions', 'preload', 'lgads'],
-  OPT_IN = ['hbbtv', 'miner'],
-  SCRIPT_OPT_IN = ['miner']; // the opt-in groups debloat-stop.sh and debloat-undo.sh apply
+  OPT_IN = ['hbbtv', 'miner', 'lgservers'],
+  SCRIPT_OPT_IN = ['miner', 'lgservers']; // the opt-in groups debloat-stop.sh and debloat-undo.sh apply
 
 // parts of the service that follow the debloat settings (lgpreload.js); told after every switch, once config.json has the change
 const hooks = [];

@@ -18,8 +18,9 @@ const SCRIPT_GROUPS = {
   logs: { units: ['remotelogger', 'service-logger'] },
   suggestions: { units: ['contentminer', 'nudge'], bins: ['sportsalarm'] },
   miner: { units: ['contentminer'], bins: ['contentminer'] }, // opt-in (options.debloatOn): stopped and its program stubbed
+  lgservers: { lgHosts: true }, // opt-in: LG's online servers in the hosts file (debloat-hosts.sh)
 };
-const OPT_IN = ['miner'];
+const OPT_IN = ['miner', 'lgservers'];
 
 function create(ctx, opts) {
   const o = Object.assign({ startMs: 90000, tickMs: 10000, wakeGapMs: 60000 }, opts);
@@ -51,7 +52,10 @@ function create(ctx, opts) {
       const r = await exec.sh('systemctl is-active ' + u + '.service', 5000);
       if (r.out.trim() === 'active') notes.push(u + ' is running');
     }
-    if (g.hosts && read(HOSTS()).indexOf('# cleanyourtv-debloat') < 0) notes.push('the ad servers are not in the hosts file');
+    if (g.hosts && !/(ads\.lgtvcommon|lgsmartad)\.com[^\n]*# cleanyourtv-debloat/.test(read(HOSTS())))
+      notes.push('the ad servers are not in the hosts file');
+    if (g.lgHosts && !/\.tv\.wiselg\.com[^\n]*# cleanyourtv-debloat/.test(read(HOSTS())))
+      notes.push("LG's online servers are not in the hosts file");
     return notes;
   }
 

@@ -1320,3 +1320,16 @@ commit_ref: "feature/own-miner (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T16:25:07Z"
 ```
+
+```yaml
+id: CU-20261029-26
+type: feature
+title: "Debloat: LG's online services can be blocked (opt-in): LG Channels, LG voice, LG account, ThinQ, viewing statistics"
+description: "The owner does not use LG voice, LG Channels or LG's other online services and wants them gone. Read only on the TV: sdx/getServerUrl names each service's host; LG's picks, LG Channels (cmp, beacons), voice, account, sports, shop, nudges and quick cards share <region>.tv.wiselg.com, Live TV's viewing statistics go to <country>.ibsstat.nextlgsdp.com, remote diagnostics to <country>.rdx2.nextlgsdp.com, ThinQ to <region>.api.lgtviot.com and connect-client.lgthinq.com; LG Channels' pages and beacons also to <region>.{lgchhomeapp,cdplauncher,cdpsvc,cdpbeacon}.lgtvcommon.com. New opt-in group lgservers: scripts/debloat-hosts.sh writes exactly the marked hosts lines of the groups that are on (ads as before, lgservers from sdx's answers, LG's domains only, the last list kept in lgservers-hosts for a start at which sdx is silent); debloat-stop.sh and debloat-undo.sh call it with the groups that stay on; the boot hook applies it at once with the miner group. The app store (nextlgsdp.com itself), firmware updates and the internet check are not blocked. Check that it works looks for its line. Not yet seen on the TV."
+impact: medium
+affected_modules: ["scripts/debloat-hosts.sh", "scripts/debloat-stop.sh", "scripts/debloat-undo.sh", "scripts/15-cleanyourtv-debloat", "helper/debloat.js", "helper/debloatcheck.js", "manager/src/js/menu.js", "manager/app/index.html", "docs/debloat.md", "docs/manager.md"]
+related_tests: ["tools/test/scripts.test.js (LG's online servers as sdx names them, LG's domains only, never the app store's host, with the ads, the list kept; sdx silent: the kept list; undoing ads keeps the servers and back; the full undo leaves the file as it was; only asks sdx, never stops it; the boot hook applies the opt-in groups at once)", "tools/test/debloatcheck.test.js (looked at only when switched on, by its own line)", "tools/test/manager.test.js (switched on and off with the miner)"]
+commit_ref: "feature/own-miner (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T17:12:17Z"
+```

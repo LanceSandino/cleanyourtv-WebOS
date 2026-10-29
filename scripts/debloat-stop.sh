@@ -7,15 +7,18 @@
 #   tracking     acr2 (viewing tracking, LivePlus)
 #   logs         remotelogger, service-logger
 #   suggestions  contentminer, nudge, sportsalarm
-# and one that is off unless switched on (options.debloatOn lists it):
-#   miner        LG's content miner from the start: stopped as soon as the boot hook runs (15-cleanyourtv-debloat, not a minute
-#                later) and kept from starting again until the next restart, so it does not ask LG's servers for its rows
+# and two that are off unless switched on (options.debloatOn lists them), applied as soon as the boot hook runs (15-cleanyourtv-debloat,
+# not a minute later):
+#   miner        LG's content miner stopped and kept from starting again until the next restart, so it does not ask LG's servers for
+#                its rows
+#   lgservers    LG's servers for its online services blocked in /etc/hosts (debloat-hosts.sh): LG's picks, LG Channels, LG's voice
+#                service, LG sign-in, ThinQ, sports, shopping, nudges, Live TV's viewing statistics, remote diagnostics
 # sh debloat-stop.sh [group...]: only those groups; without arguments every group that is on.
 export PATH=/usr/bin:/usr/sbin:/bin:/sbin:$PATH
 L=/media/developer/cleanyourtv
 CFG=$(node -e 'try{var o=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).options||{};console.log((o.debloatOff||[]).join(" ")+"|"+(o.debloatOn||[]).join(" "))}catch(e){}' $L/config.json 2>/dev/null)
 OFF=${CFG%%|*}; ON=${CFG#*|}
-if [ $# -gt 0 ]; then G=" $* "; else G=" ads tracking logs suggestions adapps miner "; fi
+if [ $# -gt 0 ]; then G=" $* "; else G=" ads tracking logs suggestions adapps miner lgservers "; fi
 off() { case " $OFF " in *" $1 "*) return 0 ;; esac; return 1; }
 optin() { case " $ON " in *" $1 "*) return 0 ;; esac; return 1; }
 on() { case "$G" in *" $1 "*) off "$1" && return 1; return 0 ;; esac; return 1; }
@@ -39,26 +42,7 @@ for b in $bins; do
   grep -q " /usr/sbin/$b " /proc/mounts || mount --bind $L/stub-noop /usr/sbin/$b
   pkill -9 -f "^/usr/sbin/$b"
 done
-on ads || exit 0
-# ad servers (resolved + verified as LG ad endpoints), and those of this TV's country: LG names them <country>.ad.lgsmartad.com and
-# <country>.info.lgsmartad.com (own-your-glass saw es. on a Spanish TV), the country from LG's Smart Service setting. The marker
-# lets debloat-undo.sh remove them; marked lines that are out of date (another country) are written again.
-HOSTS=${CYTV_HOSTS:-/etc/hosts}
-CC=$(luna-send -n 1 -w 4000 -f luna://com.webos.settingsservice/getSystemSettings '{"category":"option","keys":["smartServiceCountryCode2"]}' </dev/null 2>/dev/null \
-  | sed -n 's/.*"smartServiceCountryCode2": *"\([A-Za-z][A-Za-z]\)".*/\1/p' | tr 'A-Z' 'a-z' | head -1)
-names="eic.ads.lgtvcommon.com nl.ad.lgsmartad.com nl.info.lgsmartad.com"
-[ -n "$CC" ] && [ "$CC" != nl ] && names="$names $CC.ad.lgsmartad.com $CC.info.lgsmartad.com"
-add_hosts() { printf '127.0.0.1 %s # cleanyourtv-debloat\n::1 %s # cleanyourtv-debloat\n' "$names" "$names"; }
-grep -qF "$names # cleanyourtv-debloat" "$HOSTS" && exit 0
-if [ -e /tmp/cleanyourtv-hosts.mounted ]; then
-  umount "$HOSTS" 2>/dev/null && rm -f /tmp/cleanyourtv-hosts /tmp/cleanyourtv-hosts.mounted
-elif grep -q "# cleanyourtv-debloat" "$HOSTS"; then
-  grep -v "# cleanyourtv-debloat" "$HOSTS" > /tmp/hosts.new && cat /tmp/hosts.new > "$HOSTS"; rm -f /tmp/hosts.new
-fi
-if [ -w "$HOSTS" ] && add_hosts >> "$HOSTS" 2>/dev/null; then
-  :
-else
-  # on some TVs /etc/hosts is on the read-only system partition (issue 11): a copy in RAM is mounted over it until the next restart
-  cp "$HOSTS" /tmp/cleanyourtv-hosts && add_hosts >> /tmp/cleanyourtv-hosts && mount --bind /tmp/cleanyourtv-hosts "$HOSTS" && touch /tmp/cleanyourtv-hosts.mounted \
-    || echo "hosts: /etc/hosts cannot be changed on this TV; the ad servers are not blocked"
-fi
+# the hosts lines (debloat-hosts.sh): written again for every group that is on, whichever was asked for
+on ads || on lgservers || exit 0
+keep=""; off ads || keep="ads"; optin lgservers && keep="$keep lgservers"
+sh $L/debloat-hosts.sh $keep

@@ -1,7 +1,8 @@
 # Debloat
 
 An optional clean-up of LG's ads and telemetry. It is on by default in the setup; the [manager app](manager.md) has a **Debloat**
-screen with its groups (seven on with it, and two you switch on yourself: HbbTV and LG's content miner from the start), and **Check
+screen with its groups (seven on with it, and three you switch on yourself: HbbTV, LG's content miner from the start and LG's
+online services), and **Check
 that it works**.
 
 ## What it does
@@ -18,6 +19,7 @@ About a minute after every boot, the debloat:
 | **LG's ad and promotion settings** | LG's own switches, the ones LG's Settings menus change: home promotions, screensaver ads, the ad cookie, Smart Tips, sports alerts, limit ad tracking (on), content recommendations, Live TV promotions, LivePlus and the promotion video. Each value is saved first (`/media/developer/cleanyourtv/lgsettings-saved.json`) and put back when the group is switched off; a key this firmware does not have is left alone. Looked at again every ten minutes and when the TV wakes. |
 | **HbbTV red-button pages** | Off unless you switch it on. HbbTV off, Do Not Track on and the device ID off (LG's own switches, saved and put back like the group above). The broadcasters' red-button extras stop on the tuner; own-your-glass found they carried most of the third-party trackers. |
 | **LG's content miner, from the start** | Off unless you switch it on. Stops `contentminer` as soon as the boot scripts run, instead of with **Suggestions and nudges** a minute later, and mounts a do-nothing stub over its program so nothing starts it again until the next restart. See below. |
+| **LG's online services** | Off unless you switch it on. Blocks, in `/etc/hosts` (marked `# cleanyourtv-debloat`, applied as soon as the boot scripts run), the servers LG's `sdx` service names on this TV for LG's own online services: the region's `tv.wiselg.com` (LG's picks for Home, LG Channels, LG's voice service, LG sign-in, sports, shopping, nudges, quick cards), Live TV's viewing statistics (`ibsstat`), remote diagnostics (`rdx2`) and ThinQ (`lgtviot.com`, `connect-client.lgthinq.com`), with the region's LG Channels hosts (`lgtvcommon.com`). Those stop working. The app store and app updates, firmware updates and LG's internet check are not blocked. |
 | **Stop LG pre-loading apps** | webOS 25 only. LG's preload manager starts apps such as LG Channels, Netflix and YouTube in the background so they open faster, and they then take memory and show up as running. This switches its pre-loading off for every app except Home (the launcher, so Home stays quick) and anything of the Homebrew Channel's, with its own call, until it restarts; the service does it again after every start. See below. |
 
 A program is prevented from starting by mounting a do-nothing stub over it (in RAM; the real files are not changed). Where

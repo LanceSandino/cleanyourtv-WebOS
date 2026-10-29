@@ -148,6 +148,13 @@ run(async () => {
     ran.length === 7 && /debloat-undo\.sh miner$/.test(ran[6]),
     'switched off it is undone alone; HbbTV switched on runs no script: ' + ran.slice(6).join(' | ')
   );
+  r = await ask('options', 'POST', { debloatOn: ['lgservers', 'miner'] });
+  const both = ran.slice(7).join(' | ');
+  r = await ask('options', 'POST', { debloatOn: [] });
+  ok(
+    ran.length === 9 && /debloat-stop\.sh miner lgservers$/.test(ran[7]) && /debloat-undo\.sh miner lgservers$/.test(ran[8]),
+    "LG's online services and the miner switched on together and off together: " + both + ' | ' + ran[8]
+  );
   exec.sh = realSh;
   // the security at a glance: the update source (a warning when it is another repository), the API token, telnet on or off
   r = await ask('status', 'GET');
