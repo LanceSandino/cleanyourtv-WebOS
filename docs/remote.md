@@ -1,7 +1,8 @@
 # Phone remote
 
-Your phone, on the same Wi-Fi as the TV, as its remote: the arrows round OK, Back, Home and Settings, the volume, play and pause, a
-touchpad for the pointer, typing into a search box on the TV, and the apps of your dock. It is off until you pair a phone.
+Your phone, on the same Wi-Fi as the TV, as its remote, laid out like LG's: power, the volume and channel rockers, the arrows round OK,
+Back, Home, Settings, Info and Exit, play and pause, the colour keys and a number pad, a touchpad for the pointer, typing into a search
+box on the TV, and the apps of your dock. It is off until you pair a phone.
 
 ## Pairing a phone
 
@@ -16,8 +17,8 @@ forgetting them.
 
 | Tab | What it does |
 |---|---|
-| Remote | The arrows (hold one to repeat), OK, Back, Home, Settings, the volume and Mute, rewind, play, pause and fast forward, and Turn the TV off. |
-| Touchpad | Drag to move the pointer, tap to click, two fingers to scroll, as with the Magic Remote. |
+| Remote | Power (asks first, then turns the TV off), the volume rocker (hold to repeat) and Mute, the channel rocker, Home, the arrows round OK (hold one to repeat), Settings, Info, Back and Exit, rewind, play, pause and fast forward, and the red, green, yellow and blue keys. **123** opens a number pad (1 to 9, 0, the dash and OK). |
+| Touchpad | Drag to move the pointer (a quick drag goes further, a slow one is precise), tap to click, two fingers to scroll, as with the Magic Remote; Back, OK and Home under it. |
 | Type | Text for a search box on the TV: open the box first, the text goes where its cursor is; Delete and Enter. |
 | Apps | The apps in the order of your dock, then the others; a tap opens one. |
 
