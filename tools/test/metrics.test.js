@@ -355,6 +355,31 @@ run(async () => {
     port(9998).tone === 'r' && port(9998).bind === 'LAN' && port(9998).program === 'WebAppMgr' && rep.ports[0].port === 9998,
     "WebAppMgr's DevTools on the network is red, and listed first"
   );
+  // LG's web inspector and the security option that closes it (security.js, scripts/devtools-close.sh): while it is on and WebAppMgr
+  // still has the port, red with "from the next start"; switched off, red with where to close it; closed, one green row "closed"
+  const wam = { proto: 'tcp', port: 9998, bind: 'all', program: 'WebAppMgr' };
+  const onButOpen = E.classify(wam, { devtoolsClosed: true }),
+    off = E.classify(wam, { devtoolsClosed: false });
+  const amber22 = { proto: 'tcp', port: 22, bind: 'LAN', program: 'dropbear', what: 'SSH', how: 'x', tone: 'a' },
+    green1900 = { proto: 'udp', port: 1900, bind: 'LAN', program: 'x', what: 'SSDP', how: 'x', tone: 'g' };
+  const closedRows = E.devtoolsRow([amber22, green1900], true),
+    closedRow = closedRows.filter(p => p.port === 9998)[0] || {};
+  ok(
+    onButOpen.tone === 'r' &&
+      /closed from the next start/.test(onButOpen.how) &&
+      off.tone === 'r' &&
+      /Security > LG’s web inspector closes it/.test(off.how) &&
+      closedRow.bind === 'closed' &&
+      closedRow.tone === 'g' &&
+      closedRows.map(p => p.port).join() === '22,1900,9998' &&
+      port(9998).how === onButOpen.how,
+    'port 9998: open while closing is on says from the next start; switched off says where; closed is one green row: ' +
+      JSON.stringify([onButOpen.how, closedRow])
+  );
+  ok(
+    E.devtoolsRow([amber22], false).length === 1 && E.devtoolsRow([Object.assign({}, wam, { bind: 'LAN', tone: 'r' })], true).length === 1,
+    'no "closed" row while the option is off, nor while WebAppMgr still listens'
+  );
   ok(port(8765).tone === 'g' && port(8765).bind === 'loopback' && /API token/.test(port(8765).how), 'our service: loopback only, green');
   ok(
     port(8794).tone === 'g' &&
@@ -405,8 +430,11 @@ run(async () => {
     JSON.stringify(sv.debloat.daemons) ===
       JSON.stringify([
         { name: 'acr2', group: 'tracking', state: 'running again' },
+        { name: 'livepick-plus', group: 'tracking', state: 'stopped' },
+        { name: 'uploadd', group: 'logs', state: 'stopped' },
         { name: 'remotelogger', group: 'logs', state: 'stopped' },
         { name: 'service-logger', group: 'logs', state: 'stopped' },
+        { name: 'rdxd', group: 'logs', state: 'stopped' },
       ]),
     "LG's daemons the debloat stops: stopped, or running again: " + JSON.stringify(sv.debloat.daemons)
   );
@@ -506,7 +534,12 @@ run(async () => {
       repo: SECRETS[8],
       keys: { input: '241' },
       notifyApi: { token: SECRETS[4] },
-      security: { source: { repo: SECRETS[8], ours: false }, token: { enforced: true }, telnet: { off: true } },
+      security: {
+        source: { repo: SECRETS[8], ours: false },
+        token: { enforced: true },
+        telnet: { off: true },
+        devtools: { closed: true, listening: false },
+      },
     }),
   };
   const all = {
@@ -602,7 +635,8 @@ run(async () => {
       st.debloat.groups.filter(g => g.id === 'lgservers')[0].on === true &&
       st.debloat.check.groups[0].ok === false &&
       st.security.telnetOff === true &&
-      st.security.apiToken === true,
+      st.security.apiToken === true &&
+      st.security.devtoolsClosed === true,
     'with its key: the health reading and the summary of the settings: ' + JSON.stringify(st)
   );
   const sx = await lan('/status-exposure', key),

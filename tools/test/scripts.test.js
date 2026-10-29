@@ -372,13 +372,275 @@ run(async () => {
     'the undo unstubs the miner and starts it only when neither suggestions nor the miner group still holds it: ' +
       [undoMinerSugOn, undoMinerSugOff, undoSugMinerOn, undoSugMinerOff, undoAll].join(' | ')
   );
-  const bootHook = fs.readFileSync(path.join(root, 'scripts', '15-cleanyourtv-debloat'), 'utf8');
+  // the daemons added after own-your-glass's list, read on the owner's 86UR8000 (webOS 25): LG's crash and log reports (rdxd makes
+  // them, uploadd sends them) with the logs, livepick-plus (shopping overlays from ACR) with the tracking, nudge stubbed instead of
+  // stopped (it ignores SIGTERM: systemd waited 90 s), LG's unused network services (cups-lpd's socket on 515, ninfod) as a group
+  const lanOff = pick(stop, [], ['lan']),
+    undoLan = pick(undo, ['lan']),
+    undoLogs = pick(undo, ['logs']),
+    undoSug = pick(undo, ['suggestions']);
+  const unitsOf = x => x.split('bins:')[0],
+    binsOf = x => x.split('bins:')[1] || '';
   ok(
-    /^\(home && sh \/media\/developer\/cleanyourtv\/debloat-stop\.sh miner lgservers\) [^\n]*&$/m.test(bootHook) &&
-      bootHook.indexOf('debloat-stop.sh miner') < bootHook.indexOf('sleep 60') &&
-      /DISABLE-DEBLOAT \] && exit 0/.test(bootHook.split('debloat-stop.sh miner')[0]),
-    'the boot hook applies the opt-in groups at once (in the background), after the off switches and before the minute the rest waits'
+    / rdxd/.test(unitsOf(all)) &&
+      / uploadd/.test(binsOf(all)) &&
+      / livepick-plus/.test(binsOf(all)) &&
+      / nudge/.test(binsOf(all)) &&
+      !/nudge/.test(unitsOf(all)) &&
+      / cups-lpd\.socket ninfod/.test(all) &&
+      !/cups-lpd|ninfod/.test(lanOff) &&
+      / cups-lpd\.socket ninfod/.test(undoLan) &&
+      / rdxd/.test(unitsOf(undoLogs)) &&
+      / uploadd/.test(binsOf(undoLogs)) &&
+      / nudge/.test(unitsOf(undoSug)) &&
+      / nudge/.test(binsOf(undoSug)),
+    'the new daemons: rdxd stopped and uploadd stubbed (logs), livepick-plus stubbed (tracking), nudge stubbed and started again ' +
+      'by the undo, cups-lpd.socket and ninfod stopped (lan): ' +
+      [all, lanOff, undoLan, undoLogs, undoSug].join(' | ')
   );
+  const typed = /case \$s in \*\.\*\) u=\$s ;; \*\) u=\$s\.service ;; esac/;
+  ok(
+    typed.test(stop) && typed.test(undo),
+    'a unit named with its type (cups-lpd.socket) is stopped and started as it is, the others as .service'
+  );
+  ok(
+    /mv -f \$L\/stub-noop\.new \$L\/stub-noop/.test(stop) && !/> \$L\/stub-noop;/.test(stop),
+    'the stub mounted over LG programs is never written over in place: only when it differs, beside it and renamed (D-20261029-2)'
+  );
+  // the boot hook, run for real with stand-ins for debloat-stop.sh and debloat-undo.sh: the early run from 10-cleanyourtv-home
+  // applies it at once; the Homebrew Channel's run lifts it if Home was not taken over, else applies it again once LG's boot is done
+  {
+    const B = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cytv-boothook-'));
+    const calls = path.join(B, 'calls'),
+      mounts = path.join(B, 'mounts'),
+      done = path.join(B, 'boot-done'),
+      early = path.join(B, 'early');
+    fs.writeFileSync(path.join(B, 'debloat-stop.sh'), 'echo "stop $*" >> "' + calls + '"\n');
+    fs.writeFileSync(path.join(B, 'debloat-undo.sh'), 'echo "undo $*" >> "' + calls + '"\n');
+    const hook = (args, setup) => {
+      for (const f of [calls, mounts, done, early, path.join(B, 'DISABLE-DEBLOAT')]) cp.spawnSync('rm', ['-f', f]);
+      fs.writeFileSync(mounts, setup.home ? 'x /usr/palm/applications/com.webos.app.home tmpfs rw 0 0\n' : 'x / ext4 rw 0 0\n');
+      if (setup.early) fs.writeFileSync(early, '');
+      if (setup.done) fs.writeFileSync(done, '');
+      if (setup.off) fs.writeFileSync(path.join(B, 'DISABLE-DEBLOAT'), '');
+      cp.spawnSync('sh', [path.join(root, 'scripts', '15-cleanyourtv-debloat')].concat(args), {
+        env: Object.assign({}, process.env, {
+          CYTV_DIR: B,
+          CYTV_BOOT_LOG: path.join(B, 'boot.log'),
+          CYTV_DEBLOAT_EARLY: early,
+          CYTV_BOOT_DONE: done,
+          CYTV_MOUNTS: mounts,
+          CYTV_BOOT_WAIT: '3',
+        }),
+        stdio: 'ignore',
+      });
+    };
+    const got = () =>
+      fs.existsSync(calls)
+        ? fs
+            .readFileSync(calls, 'utf8')
+            .trim()
+            .split('\n')
+            .map(l => l.trim())
+            .join(', ')
+        : '';
+    const settle = async (want, ms) => {
+      for (let i = 0; i < ms / 100 && got() !== want; i++) await sleep(100);
+      await sleep(300);
+      return got();
+    };
+    hook(['early'], {});
+    const e1 = await settle('stop', 3000),
+      e1Marked = fs.existsSync(early);
+    hook([], { home: true, early: true, done: true });
+    const h1 = await settle('stop', 3000);
+    hook([], { home: true, early: true });
+    await sleep(500);
+    const waiting = got();
+    fs.writeFileSync(done, '');
+    const h2 = await settle('stop', 5000);
+    hook([], { home: false, early: true, done: true });
+    const lifted = await settle('undo', 3000);
+    hook([], { home: false, done: true });
+    const untouched = await settle('-', 1000);
+    hook([], { home: true, done: true });
+    const noEarly = await settle('stop, stop', 3000);
+    hook(['early'], { off: true });
+    const disabled = await settle('-', 1000);
+    cp.spawnSync('rm', ['-rf', B]);
+    ok(
+      e1 === 'stop' &&
+        e1Marked &&
+        h1 === 'stop' &&
+        waiting === '' &&
+        h2 === 'stop' &&
+        lifted === 'undo' &&
+        untouched === '' &&
+        noEarly === 'stop, stop' &&
+        disabled === '',
+      "boot hook: early applies at once; after it, the second run waits for LG's boot-done and applies once more; Home not taken " +
+        'over lifts it (only if the early run applied it); without the early run it applies at once and again; DISABLE-DEBLOAT: ' +
+        'nothing: ' +
+        JSON.stringify([e1, h1, waiting, h2, lifted, untouched, noEarly, disabled])
+    );
+  }
+  // 10-cleanyourtv-home at boot (no argument): LG's web inspector closed with WebAppMgr's one restart in the background, the debloat's
+  // early run before Home is staged, and the restart over before Home is taken over (sam restarted, or the stand-in mounted); the setup
+  // and an update only mount the copy and do not start the debloat early
+  {
+    const h = fs.readFileSync(path.join(root, 'scripts', '10-cleanyourtv-home'), 'utf8');
+    const at = t => h.indexOf(t);
+    ok(
+      at('sh $L/devtools-close.sh restart </dev/null >/dev/null 2>&1 &') > 0 &&
+        at('sh $L/devtools-close.sh restart') < at('[ -e $L/DISABLE ] && exit 0') &&
+        /if \[ -z "\$1" \]; then\n {2}sh \$L\/devtools-close\.sh restart/.test(h) &&
+        /else\n {2}sh \$L\/devtools-close\.sh <\/dev\/null/.test(h) &&
+        /\[ -z "\$1" \] && \[ -e \$INITD\/15-cleanyourtv-debloat \] && sh \$L\/15-cleanyourtv-debloat early/.test(h) &&
+        at('sh $L/15-cleanyourtv-debloat early') > at('[ -e $L/DISABLE ] && exit 0') &&
+        at('sh $L/15-cleanyourtv-debloat early') < at('sh $L/stage-home.sh') &&
+        at('wait $DT') > at('sh $L/stage-home.sh') &&
+        at('wait $DT') < at('mount --bind $L/home-standin.sh') &&
+        at('wait $DT') < at('mount --bind $L/home-overlay $H') &&
+        at('wait $DT') < at('systemctl restart sam') &&
+        /10-cleanyourtv-home setup <\/dev\/null/.test(bootText),
+      "10-cleanyourtv-home: at boot WebAppMgr's restart (before sam's) and the early debloat; setup and update only mount the copy"
+    );
+  }
+  // devtools-close.sh and devtools-undo.sh run for real against a stand-in for LG's start script, /proc/mounts, /proc/<pid>/cmdline and
+  // mount, umount and systemctl: the copy has no --remote-debugging-port, it is mounted once, WebAppMgr is restarted once (only when it
+  // runs with the port), and the undo removes the mount and the copy
+  {
+    const W = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cytv-devtools-')),
+      wb = path.join(W, 'bin'),
+      wp = path.join(W, 'proc');
+    fs.mkdirSync(wb);
+    fs.mkdirSync(path.join(wp, '100'), { recursive: true });
+    const S = path.join(W, 'webapp-mgr.sh'),
+      C = path.join(W, 'tmp-copy.sh'),
+      M = path.join(W, 'mounts'),
+      SLOG = path.join(W, 'systemctl.log'),
+      PIDF = path.join(W, 'mainpid');
+    // the shape of LG's script on webOS 25: the switches in one quoted variable, a backslash at the end of each line
+    const LG = [
+      '#!/bin/sh',
+      'export WAM_EXE_PATH="/usr/bin/WebAppMgr"',
+      'export WAM_COMMON_SWITCHES=" \\',
+      '    --ozone-platform=wayland \\',
+      '    --remote-debugging-port=9998 \\',
+      '    --touch-events=disabled \\',
+      '    "',
+      'exec $WAM_EXE_PATH $WAM_COMMON_SWITCHES',
+      '',
+    ].join('\n');
+    const stand = (name, body) => {
+      fs.writeFileSync(path.join(wb, name), '#!/bin/sh\n' + body + '\n');
+      fs.chmodSync(path.join(wb, name), 0o755);
+    };
+    // mount --bind <copy> <script> adds a line; umount <script> takes it out; a restart starts WebAppMgr as the script then at
+    // <script> would: from the copy while it is mounted, else from LG's own
+    stand('mount', 'echo "tmpfs $3 tmpfs rw 0 0" >> "' + M + '"');
+    stand('umount', 'grep -v " $1 " "' + M + '" > "' + M + '.new"; mv "' + M + '.new" "' + M + '"');
+    stand(
+      'systemctl',
+      [
+        'echo "$*" >> "' + SLOG + '"',
+        'case "$*" in',
+        '  "show -p MainPID --value webapp-mgr.service") cat "' + PIDF + '" ;;',
+        '  "is-active webapp-mgr.service") echo active ;;',
+        '  *restart*)',
+        '    n=$(( $(cat "' + PIDF + '") + 1 )); mkdir -p "' + wp + '/$n"',
+        '    src="' + S + '"; grep -q " ' + S + ' " "' + M + '" && src="' + C + '"',
+        '    printf "/usr/bin/WebAppMgr\\0%s\\0" "$(grep -o -- "--remote-debugging-port=[0-9]*" "$src")" > "' + wp + '/$n/cmdline"',
+        '    echo $n > "' + PIDF + '" ;;',
+        'esac',
+      ].join('\n')
+    );
+    const env = {
+      CYTV_TEST_BIN: wb,
+      CYTV_DIR: W,
+      CYTV_WAM_SCRIPT: S,
+      CYTV_WAM_COPY: C,
+      CYTV_MOUNTS: M,
+      CYTV_PROC: wp,
+      CYTV_BOOT_LOG: path.join(W, 'boot.log'),
+      CYTV_WAM_WAIT: '5',
+    };
+    const reset = (lg, withPort) => {
+      for (const f of [C, SLOG, path.join(W, 'devtools-open')]) cp.spawnSync('rm', ['-f', f]);
+      fs.writeFileSync(S, lg);
+      fs.writeFileSync(M, 'overlay /etc overlay ro 0 0\n');
+      fs.writeFileSync(path.join(wp, '100', 'cmdline'), '/usr/bin/WebAppMgr\0' + (withPort ? '--remote-debugging-port=9998\0' : ''));
+      fs.writeFileSync(PIDF, '100\n');
+    };
+    const sh = (script, args) =>
+      cp.spawnSync('sh', [path.join(root, 'scripts', script)].concat(args || []), {
+        encoding: 'utf8',
+        env: Object.assign({}, process.env, env),
+      }).status;
+    const mounts = () => fs.readFileSync(M, 'utf8').split(' ' + S + ' ').length - 1;
+    const restarts = () => (fs.existsSync(SLOG) ? (fs.readFileSync(SLOG, 'utf8').match(/restart webapp-mgr/g) || []).length : 0);
+    const running = () => fs.readFileSync(path.join(wp, fs.readFileSync(PIDF, 'utf8').trim(), 'cmdline'), 'utf8');
+    reset(LG, true);
+    const first = sh('devtools-close.sh', ['restart']);
+    const copy = fs.existsSync(C) ? fs.readFileSync(C, 'utf8') : '';
+    const copyParses = cp.spawnSync('sh', ['-n', C]).status === 0;
+    const after1 = { mounts: mounts(), restarts: restarts(), running: running() };
+    const second = sh('devtools-close.sh', ['restart']);
+    const after2 = { mounts: mounts(), restarts: restarts() };
+    const undone = sh('devtools-undo.sh');
+    const after3 = { mounts: mounts(), copy: fs.existsSync(C) };
+    ok(
+      first === 0 &&
+        !/remote-debugging-port/.test(copy) &&
+        copy === LG.replace('    --remote-debugging-port=9998 \\', ' \\') &&
+        copyParses &&
+        after1.mounts === 1 &&
+        after1.restarts === 1 &&
+        !/remote-debugging-port/.test(after1.running) &&
+        second === 0 &&
+        after2.mounts === 1 &&
+        after2.restarts === 1 &&
+        undone === 0 &&
+        after3.mounts === 0 &&
+        !after3.copy,
+      'devtools-close.sh: the copy has no --remote-debugging-port and parses, is mounted once, WebAppMgr restarted once and then ' +
+        'runs without the port; a second run changes nothing; devtools-undo.sh removes the mount and the copy: ' +
+        JSON.stringify([first, after1, second, after2, undone, after3])
+    );
+    // without "restart" (the setup, an update, the manager's switch): mounted, WebAppMgr left as it runs
+    reset(LG, true);
+    sh('devtools-close.sh');
+    const noRestart = { mounts: mounts(), restarts: restarts() };
+    sh('devtools-undo.sh');
+    // switched off in the manager (D/devtools-open): nothing; LG's script without the switch (a later firmware): nothing either
+    reset(LG, true);
+    fs.writeFileSync(path.join(W, 'devtools-open'), '');
+    sh('devtools-close.sh', ['restart']);
+    const optedOut = { mounts: mounts(), restarts: restarts(), copy: fs.existsSync(C) };
+    reset(LG.replace('    --remote-debugging-port=9998 \\\n', ''), false);
+    sh('devtools-close.sh', ['restart']);
+    const noFlag = { mounts: mounts(), restarts: restarts(), copy: fs.existsSync(C) };
+    // a WebAppMgr already without the port: the copy mounted, WebAppMgr not restarted
+    reset(LG, false);
+    sh('devtools-close.sh', ['restart']);
+    const alreadyClosed = { mounts: mounts(), restarts: restarts() };
+    cp.spawnSync('rm', ['-rf', W]);
+    ok(
+      noRestart.mounts === 1 &&
+        noRestart.restarts === 0 &&
+        optedOut.mounts === 0 &&
+        optedOut.restarts === 0 &&
+        !optedOut.copy &&
+        noFlag.mounts === 0 &&
+        noFlag.restarts === 0 &&
+        !noFlag.copy &&
+        alreadyClosed.mounts === 1 &&
+        alreadyClosed.restarts === 0,
+      "devtools-close.sh: no restart unless asked and WebAppMgr has the port; nothing while switched off or when LG's script has no " +
+        'port: ' +
+        JSON.stringify([noRestart, optedOut, noFlag, alreadyClosed])
+    );
+  }
   // the ad servers of the TV's country (LG's Smart Service country, here US) join the list; old marked lines (the Dutch ones alone)
   // are written again, a second run adds nothing, and the undo takes them all out
   {

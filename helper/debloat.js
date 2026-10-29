@@ -1,4 +1,5 @@
-// Switching the debloat on and off while the TV runs (the boot script 15-cleanyourtv-debloat applies it at every start). What it
+// Switching the debloat on and off while the TV runs (the boot script 15-cleanyourtv-debloat applies it at every start, as soon as the
+// boot scripts start and once more when LG's boot is done). What it
 // stops and blocks is in scripts/debloat-stop.sh; scripts/debloat-undo.sh reverses it. Its groups can be switched off one by
 // one: options.debloatOff in config.json lists those, and debloat-stop.sh reads it. The group "preload" (LG's app pre-loading) is
 // the service's own (lgpreload.js, which hears of every change through onChange); the scripts leave it alone, and so are "lgads"
@@ -8,7 +9,7 @@
 const P = require('./paths'),
   exec = require('./exec');
 
-const GROUPS = ['ads', 'adapps', 'tracking', 'logs', 'suggestions', 'preload', 'lgads'],
+const GROUPS = ['ads', 'adapps', 'tracking', 'logs', 'suggestions', 'lan', 'preload', 'lgads'],
   OPT_IN = ['hbbtv', 'miner', 'lgservers'],
   SCRIPT_OPT_IN = ['miner', 'lgservers']; // the opt-in groups debloat-stop.sh and debloat-undo.sh apply
 

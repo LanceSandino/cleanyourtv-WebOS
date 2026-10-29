@@ -19,10 +19,11 @@ run(async () => {
     realSh = exec.sh;
   const ran = [];
   let running = '';
+  let active = '';
   exec.sh = async cmd => {
     ran.push(cmd);
     if (/^pidof /.test(cmd)) return { ok: cmd === 'pidof ' + running, out: cmd === 'pidof ' + running ? '123\n' : '' };
-    if (/systemctl is-active/.test(cmd)) return { ok: true, out: 'inactive\n' };
+    if (/systemctl is-active/.test(cmd)) return { ok: true, out: cmd === 'systemctl is-active ' + active ? 'active\n' : 'inactive\n' };
     return { ok: true, out: '' };
   };
   const conf = memoryConfig({ options: { debloat: true } });
@@ -30,8 +31,16 @@ run(async () => {
   const C = req('debloatcheck').create({ config: conf, feature: n => (n === 'lgsettings' ? lgs : null) });
   let r = await C.check();
   ok(
-    r.on && r.groups.length === 6 && r.groups.every(g => g.ok),
+    r.on && r.groups.length === 7 && r.groups.every(g => g.ok),
     'everything in place: every group that is on is working: ' + r.groups.map(g => g.id + (g.ok ? '' : '!')).join()
+  );
+  // a socket unit is asked about by its own name, a daemon without a type as a .service
+  ok(
+    ran.indexOf('systemctl is-active cups-lpd.socket') >= 0 &&
+      ran.indexOf('systemctl is-active ninfod.service') >= 0 &&
+      ran.indexOf('systemctl is-active rdxd.service') >= 0 &&
+      !ran.some(c => /cups-lpd\.socket\.service|nudge\.service/.test(c)),
+    "LG's unused network services (cups-lpd's socket, ninfod) and rdxd are looked at by systemctl; nudge only as a stubbed program"
   );
   await C.repair('after the start');
   ok(!ran.some(c => /debloat-stop\.sh/.test(c)), 'in place: the repair runs nothing');
@@ -48,6 +57,12 @@ run(async () => {
   );
   await C.repair('after the start');
   ok(ran.filter(c => /debloat-stop\.sh$/.test(c)).length === 1, 'not in place: the repair runs debloat-stop.sh again');
+  // LG's print server listens again (its socket active): the group of LG's unused network services is not in place
+  active = 'cups-lpd.socket';
+  r = await C.check();
+  const lan = r.groups.filter(g => g.id === 'lan')[0];
+  active = '';
+  ok(lan && !lan.ok && lan.notes.join() === 'cups-lpd.socket is running', 'the print server back: ' + JSON.stringify(lan));
   conf.update('test', c => {
     c.options = { debloat: true, debloatOff: ['tracking', 'ads'] };
   });

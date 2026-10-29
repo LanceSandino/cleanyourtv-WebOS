@@ -172,6 +172,12 @@ function create(ctx) {
       if (!security.setTelnet(b.off !== false)) return json({ error: 'the telnet switch could not be written' }, 500);
       return json(status());
     }
+    // LG's web inspector (port 9998): closed (on by default) or left open, only when the user switches it; from the next start
+    if (act === 'devtools') {
+      if (!(await security.setDevtools(b.closed !== false)))
+        return json({ error: "the switch for LG's web inspector could not be written" }, 500);
+      return json(status());
+    }
     if (act === 'channel') {
       const err = await updates.setChannel(b.tag);
       if (err) return json({ error: err }, err === 'unknown channel' ? 400 : 409);

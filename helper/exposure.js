@@ -5,6 +5,7 @@
 // sweep of /proc/<pid>/fd to find the process that holds each socket (it stops once every socket has its owner). LG's full list of
 // running systemd services is a separate request (systemctl through exec.js, cached a minute). Nothing here names an address, a MAC,
 // a token or a key: a port is "loopback" or "LAN", nothing more.
+// LG's web inspector (9998) closed by the security option (security.js, scripts/devtools-close.sh) is listed as "closed", green.
 //   report()      {at, ports: [{proto, port, bind, program, what, how, tone}], udpReplies: {count, programs}, services: {...}}
 //   lgServices()  {at, units: [{unit, description}]}
 const fs = require('fs');
@@ -26,6 +27,13 @@ const REPORT_MS = 30000,
 const PORTS = [
   { proto: 'tcp', port: 22, what: 'SSH (a root shell)', ssh: true },
   { proto: 'tcp', port: 53, what: 'DNS for the TV itself (connman)', how: 'answers name lookups', tone: 'a' },
+  {
+    proto: 'tcp',
+    port: 515,
+    what: 'LPD print server (LG’s cups-lpd; systemd holds the port)',
+    how: 'takes print jobs from anyone on the network, with no check (a TV has no printer); the debloat group LG’s unused network services closes it',
+    tone: 'a',
+  },
   { proto: 'udp', port: 53, what: 'DNS for the TV itself (connman)', how: 'answers name lookups', tone: 'a' },
   {
     proto: 'tcp',
@@ -125,8 +133,22 @@ const PORTS = [
     proto: 'tcp',
     port: 9998,
     what: 'WebAppMgr’s web inspector (DevTools)',
-    how: 'no authentication: anyone on the network can run code inside the TV’s web apps, Home included. This TV’s kernel has no firewall table to close it: keep the TV off networks you do not trust',
+    how: 'no authentication: anyone on the network can run code inside the TV’s web apps, Home included. Security > LG’s web inspector closes it (on unless switched off)',
     tone: 'r',
+  },
+  {
+    proto: 'tcp',
+    port: 18181,
+    what: 'DIAL for apps on the TV (LG, through xinetd)',
+    how: 'phones on the network can find and start apps that support DIAL (YouTube, Netflix) and hand them a video',
+    tone: 'a',
+  },
+  {
+    proto: 'tcp',
+    port: 36866,
+    what: 'DIAL for phones (LG, through xinetd)',
+    how: 'phones on the network can find and start apps that support DIAL (YouTube, Netflix) and hand them a video',
+    tone: 'a',
   },
   {
     proto: 'udp',
@@ -147,6 +169,10 @@ const PORTS = [
   { proto: 'udp', program: /^upnpd$/, what: 'LG’s UPnP media renderer (DLNA)', how: 'discovery and media control', tone: 'a' },
 ];
 const UNKNOWN = { what: 'Unknown: not in this table', tone: 'a' };
+const DEVTOOLS = 9998; // WebAppMgr's DevTools, which LG's start script always opens (scripts/devtools-close.sh)
+// red first, then amber, then green; by port within each
+const RANK = { r: 0, a: 1, g: 2 };
+const order = (x, y) => RANK[x.tone] - RANK[y.tone] || x.port - y.port || (x.proto < y.proto ? -1 : 1);
 
 // "0100007F" (IPv4) or 32 hex digits (IPv6), as /proc/net prints them (each 32-bit word in the CPU's order, little-endian on the TVs):
 // 'loopback', 'all' (every address) or 'interface' (one address of the TV, reachable from the network); never the address itself
@@ -238,7 +264,31 @@ function classify(s, info) {
   if (s.bind === 'loopback')
     return Object.assign(out, { what: e.what, how: e.local || 'loopback only: nothing on the network reaches it', tone: 'g' });
   if (e.ssh) return Object.assign(out, { what: e.what }, sshGuard(s.program, s.cmdline, info.sshdConfig, info.rootPw));
+  // the security option is on, but this WebAppMgr was started before it took effect
+  if (s.port === DEVTOOLS && s.proto === 'tcp' && info.devtoolsClosed)
+    return Object.assign(out, {
+      what: e.what,
+      how: 'no authentication: anyone on the network can run code inside the TV’s web apps, Home included. Security > LG’s web inspector is on: closed from the next start of the TV',
+      tone: e.tone,
+    });
   return Object.assign(out, { what: e.what, how: e.how, tone: e.tone });
+}
+// the inspector closed by the security option and nothing on 9998: one row that says so (bind "closed")
+function devtoolsRow(ports, closed) {
+  if (!closed || ports.some(p => p.proto === 'tcp' && p.port === DEVTOOLS)) return ports;
+  return ports
+    .concat([
+      {
+        proto: 'tcp',
+        port: DEVTOOLS,
+        bind: 'closed',
+        program: 'WebAppMgr',
+        what: 'WebAppMgr’s web inspector (DevTools)',
+        how: 'closed: WebAppMgr starts without it (Security > LG’s web inspector, a copy of LG’s start script in RAM)',
+        tone: 'g',
+      },
+    ])
+    .sort(order);
 }
 // one row per protocol, port and program (IPv4 and IPv6 together, the wider binding kept); UDP reply ports counted apart
 function merge(rows) {
@@ -254,8 +304,7 @@ function merge(rows) {
       had = by.get(k);
     if (!had || (had.bind === 'loopback' && r.bind === 'LAN')) by.set(k, r);
   }
-  const rank = { r: 0, a: 1, g: 2 };
-  const ports = Array.from(by.values()).sort((x, y) => rank[x.tone] - rank[y.tone] || x.port - y.port || (x.proto < y.proto ? -1 : 1));
+  const ports = Array.from(by.values()).sort(order);
   replies.programs.sort();
   return { ports, udpReplies: replies };
 }
@@ -383,6 +432,7 @@ function create(ctx) {
       sonosPort: sonos && sonos.eventPort ? sonos.eventPort() : 0,
       sshdConfig: read(P.SSHD_CONFIG),
       rootPw: rootPassword(read(P.SHADOW)),
+      devtoolsClosed: !fs.existsSync(P.D + '/devtools-open'),
     };
     const rows = socks.map(s => {
       const pid = owners.get(s.inode),
@@ -396,7 +446,9 @@ function create(ctx) {
         info
       );
     });
-    return Object.assign({ at: Date.now() }, merge(rows), { services: await services(procs) });
+    const m = merge(rows);
+    m.ports = devtoolsRow(m.ports, info.devtoolsClosed);
+    return Object.assign({ at: Date.now() }, m, { services: await services(procs) });
   }
   function report() {
     if (last && Date.now() - last.at < REPORT_MS) return Promise.resolve(last);
@@ -439,4 +491,4 @@ function parseUnits(text) {
     .map(m => ({ unit: m[1], description: m[2].trim().slice(0, 80) }));
 }
 
-module.exports = { create, PORTS, bindOf, parseSockets, sshGuard, rootPassword, classify, merge, parseUnits };
+module.exports = { create, PORTS, bindOf, parseSockets, sshGuard, rootPassword, classify, merge, devtoolsRow, parseUnits };

@@ -177,4 +177,28 @@ run(async () => {
       other.ours === false,
     "the status says where updates come from (and when it is not this project's), whether the token is required, and telnet's switch works both ways"
   );
+  // LG's web inspector (port 9998): closed by default; switched off it is left open (D/devtools-open, the mount removed by
+  // devtools-undo.sh), switched on again it is closed (devtools-close.sh mounts the copy; WebAppMgr is not restarted from here)
+  const open9998 = path.join(process.env.CYTV_DIR, 'devtools-open'),
+    shRan = [];
+  exec.sh = async c => {
+    shRan.push(c);
+    return { ok: true, out: '' };
+  };
+  const byDefault = sec0.devtools && sec0.devtools.closed === true && typeof sec0.devtools.listening === 'boolean';
+  r = await ask('devtools', 'POST', { closed: false });
+  const leftOpen = r.j.security.devtools.closed === false && fs.existsSync(open9998);
+  r = await ask('devtools', 'POST', { closed: true });
+  const closedAgain = r.j.security.devtools.closed === true && !fs.existsSync(open9998);
+  exec.sh = realSh;
+  ok(
+    byDefault &&
+      leftOpen &&
+      closedAgain &&
+      shRan.length === 2 &&
+      /devtools-undo\.sh$/.test(shRan[0]) &&
+      /devtools-close\.sh$/.test(shRan[1]) &&
+      !shRan.some(c => /restart/.test(c)),
+    "LG's web inspector: closed by default, its switch works both ways and never restarts WebAppMgr: " + shRan.join(' | ')
+  );
 });

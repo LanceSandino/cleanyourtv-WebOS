@@ -15,6 +15,8 @@ done
 LASTAPP=/var/luna/preferences/bootd_last_foreground_app_id.json
 grep -q cleanyourtv $LASTAPP 2>/dev/null && echo '{"lastAppId":"com.webos.app.home"}' > $LASTAPP
 [ -f $D/debloat-undo.sh ] && sh $D/debloat-undo.sh </dev/null
+# LG's own start script for WebAppMgr again (its web inspector opens at WebAppMgr's next start; the TV restarts below)
+[ -f $D/devtools-undo.sh ] && sh $D/devtools-undo.sh </dev/null
 pkill -f "[c]leanyourtv/watchdog.sh"   # the watchdog would restart the service
 pkill -f "[1]0-cleanyourtv-home"
 pkill -f "[c]leanyourtv/helper.js"

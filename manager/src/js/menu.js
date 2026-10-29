@@ -1178,6 +1178,31 @@ function build() {
         });
       },
     });
+  /* LG's web inspector (WebAppMgr's DevTools on port 9998, open to the network): closed by default, switched only when you ask; from
+     the next start of the TV (helper/security.js, scripts/devtools-close.sh) */
+  if (sec.devtools)
+    rows.push({
+      label: 'LG\u2019s web inspector (port 9998)',
+      sub: sec.devtools.closed
+        ? sec.devtools.listening
+          ? 'Closed from the next start of the TV (open until then)'
+          : 'Closed: nothing on the network reaches it'
+        : 'Open: anyone on the network can run code in the TV\u2019s web apps. OK closes it at the next start',
+      fn: function () {
+        api('/api/manager/devtools', { closed: !sec.devtools.closed }).then(function (r) {
+          if (r.error) return banner(r.error, 'err');
+          st = r;
+          banner(
+            r.security && r.security.devtools.closed
+              ? 'LG\u2019s web inspector is closed from the next start of the TV'
+              : 'LG\u2019s web inspector is open again from the next start of the TV',
+            ''
+          );
+          build();
+          draw();
+        });
+      },
+    });
   if (sec.token)
     rows.push({
       label: 'API token',
@@ -1204,9 +1229,10 @@ function build() {
 var DEBLOAT = [
   { id: 'ads', label: 'Ads', what: 'ad overlays and ad servers' },
   { id: 'adapps', label: "LG's ad service for apps", what: 'admanager; switch it off if an app (HBO Max) will not play' },
-  { id: 'tracking', label: 'Viewing tracking (LivePlus)', what: 'acr2' },
-  { id: 'logs', label: 'Telemetry logs', what: 'remotelogger, service-logger' },
+  { id: 'tracking', label: 'Viewing tracking (LivePlus)', what: 'acr2, livepick-plus' },
+  { id: 'logs', label: 'Telemetry logs', what: 'remotelogger, service-logger, crash and log reports (rdxd, uploadd)' },
   { id: 'suggestions', label: 'Suggestions and nudges', what: 'contentminer, nudge, sportsalarm' },
+  { id: 'lan', label: "LG's unused network services", what: 'the print server on port 515 (cups-lpd), IPv6 node information (ninfod)' },
   { id: 'preload', label: 'Stop LG pre-loading apps', what: 'LG Channels, Netflix, YouTube and others; Home stays quick' },
   {
     id: 'lgads',

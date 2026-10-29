@@ -21,6 +21,17 @@ local network on request, and an optional notification endpoint and the Sonos vo
 `/var/luna/preferences/webosbrew_telnet_disabled` exists. The manager shows which, and **Telnet (Homebrew Channel)** switches it
 (from the next start of the TV); nothing changes it without you. The Share log says too.
 
+**LG's web inspector (port 9998).** LG's start script for WebAppMgr, the program that runs the TV's web apps (Home, the manager,
+YouTube and the rest), always switches on its web inspector (Chromium's DevTools) on port 9998, on every address of the TV and with
+no password: anyone on your network can open it and run code inside any web app, Home included. This TV's kernel has no firewall
+table to close the port. **LG's web inspector (port 9998)** in the manager is on by default: at every start the boot script mounts a
+copy of LG's script without that switch over LG's (`/tmp/cleanyourtv-webapp-mgr.sh` over
+`/etc/systemd/system/scripts/webapp-mgr.sh`, in RAM; LG's file is not changed) and starts WebAppMgr again once, early, before Home is
+taken over, so it costs nothing later. The switch is removed rather than narrowed to `127.0.0.1`: WebAppMgr's engine has no
+`--remote-debugging-address`. Switched off (for a developer's `ares-inspect`), the copy is unmounted and the port opens again at the
+next start of the TV; switched on in the manager, it closes at the next start (WebAppMgr is not restarted while you use the TV). By
+hand: `sh /media/developer/cleanyourtv/devtools-undo.sh` removes the mount.
+
 **Where updates come from.** Updates and themes come from this project's repository and are checked against the checksums of the
 release. A file on the TV (`/media/developer/cleanyourtv/source`, root only) can name another repository for testing; the manager
 and the Share log then show that repository with a warning, since its releases are someone else's.
@@ -45,6 +56,7 @@ only is green whatever it is. Nothing in the view names an address, a MAC, a tok
 |---|---|---|---|
 | 22/tcp | SSH (a root shell; dropbear from the Homebrew Channel) | green or amber | Green when password login is switched off (dropbear `-s` or `-g`, OpenSSH `PasswordAuthentication no`); amber otherwise: root logs in with a key, and with a password only if one was ever set |
 | 53 | DNS for the TV itself (connman) | amber | Answers name lookups; loopback only on the TVs seen |
+| 515/tcp | LPD print server (LG's `cups-lpd`; systemd holds the port) | amber | Takes print jobs from anyone on the network, with no check (a TV has no printer); the debloat group **LG's unused network services** closes it |
 | 3000, 3001/tcp | LG's second-screen API (SSAP: LG ThinQ, Home Assistant) | amber | A new device must be accepted on the TV first (LG's prompt); an accepted device can control the TV |
 | 7000/tcp | AirPlay (LG) | amber | Devices on the network can show media; LG's AirPlay settings decide whether a code is asked |
 | 8008, 8009, 8443/tcp | Google Cast (LG) | amber | Devices on the network can cast to the TV |
@@ -58,16 +70,18 @@ only is green whatever it is. Nothing in the view names an address, a MAC, a tok
 | 8794/tcp | Phone remote | green | Paired phones only (a key each, the TV keeps a hash), home-network addresses only, requests from other pages refused; plain HTTP on your Wi-Fi |
 | One the system picks | Sonos volume events (opt-in) | green | Only the chosen speaker's address, on a random path, while the option is on |
 | 9080/tcp | Netflix second screen (DIAL) | amber | Phones on the network can start Netflix and hand it a video |
-| 9998/tcp | WebAppMgr's web inspector (DevTools) | **red** | No authentication: anyone on the network can run code inside the TV's web apps, Home included. The 86UR8000's kernel has no firewall table to close it: keep the TV off networks you do not trust |
+| 9998/tcp | WebAppMgr's web inspector (DevTools) | **red**; green "closed" once closed | No authentication: anyone on the network can run code inside the TV's web apps, Home included. The kernel has no firewall table, so **LG's web inspector (port 9998)** (on by default) starts WebAppMgr without it; while it is on and WebAppMgr still has the port, the row says it closes at the next start |
+| 18181, 36866/tcp | DIAL (LG, through `xinetd`): for the TV's apps and for phones | amber | Phones on the network can find and start apps that support DIAL (YouTube, Netflix) and hand them a video |
 | 1900/udp | SSDP discovery (UPnP) | green | Discovery only |
 | 1902/udp | LG's SDDP discovery | green | Discovery only |
 | 5353/udp | mDNS discovery | green | Discovery only |
 | Any, held by `upnpd` | LG's UPnP media renderer (DLNA) | amber | Devices on the network can play media on the TV |
 
 UDP sockets from port 32768 up that are not in the table are the reply ports of discovery clients and are counted, not listed.
-On the owner's 86UR8000 (webOS 25) on 2026-10-29 this showed 9998 in red, SSH amber (dropbear without `-s`), LG's AirPlay, Cast,
-SSAP, UPnP and Netflix ports amber, our 8765 (loopback) and 8794 green, and as unknown: 515 (systemd), 1842 (a Homebrew Channel
-app's service, `org.webosbrew.inputhook`), 9761 (LG's `tvlink-network-proxy`), 18181 and 36866 (LG's `xinetd`).
+On the owner's 86UR8000 (webOS 25) on 2026-10-29, before the web inspector option, this showed 9998 in red, SSH amber (dropbear
+without `-s`), LG's AirPlay, Cast, SSAP, UPnP and Netflix ports amber, our 8765 (loopback) and 8794 green, and as unknown: 515
+(systemd: LG's `cups-lpd.socket`, now in the table), 1842 (a Homebrew Channel app's service, `org.webosbrew.inputhook`), 9761 (LG's
+`tvlink-network-proxy`), 18181 and 36866 (LG's DIAL through `xinetd`, now in the table).
 
 The same view lists **services**: our parts (and any that failed to load), the boot scripts in `/var/lib/webosbrew/init.d`, whether
 the watchdog runs, Telemachus, and LG's programs the debloat stops (stopped, or running again: from **Check that it works**, at

@@ -1,9 +1,10 @@
 // Does the debloat work? For each group that is on, what it should have done, looked at on the TV itself: the stubs mounted over
 // LG's programs (/proc/mounts) and none of them running, LG's daemons stopped (systemctl is-active), the ad servers in the hosts file,
 // no app LG would pre-load (lgpreload.js) and LG's settings as they should be (lgsettings.js). An LG update or LG starting a daemon
-// again shows here as a group "not in place" (own-your-glass's status idea). And the debloat at boot is a job that waits a minute
-// and can be lost (upstream issue 29): a minute and a half after the service starts, and when the TV wakes, a group of the scripts
-// that is not in place runs debloat-stop.sh again, once each time, and says so in the log.
+// again shows here as a group "not in place" (own-your-glass's status idea). And the debloat at boot is a background job that can be
+// lost (upstream issue 29; 15-cleanyourtv-debloat now runs it as the boot scripts start and when LG's boot is done): a minute and a
+// half after the service starts, and when the TV wakes, a group of the scripts that is not in place runs debloat-stop.sh again, once
+// each time, and says so in the log.
 //   GET /api/debloat/check    {on, groups: [{id, ok, notes: [what is wrong]}]}
 //   recent(maxMs)             the same, from the last check while it is younger than maxMs (TV health, statusdata.js)
 const fs = require('fs');
@@ -11,13 +12,15 @@ const P = require('./paths'),
   exec = require('./exec');
 
 const HOSTS = () => process.env.CYTV_HOSTS || '/etc/hosts';
-// what each group of the scripts (debloat-stop.sh) does: programs stubbed (luna dynamic services) and systemd daemons stopped
+// what each group of the scripts (debloat-stop.sh) does: programs stubbed (luna dynamic services, and nudge, which LG starts late
+// and which ignores a stop) and systemd units stopped (a name without a type is a .service)
 const SCRIPT_GROUPS = {
   ads: { bins: ['adoverlay-service'], hosts: true },
   adapps: { bins: ['admanager'] },
-  tracking: { bins: ['acr2'] },
-  logs: { units: ['remotelogger', 'service-logger'] },
-  suggestions: { units: ['contentminer', 'nudge'], bins: ['sportsalarm'] },
+  tracking: { bins: ['acr2', 'livepick-plus'] },
+  logs: { units: ['remotelogger', 'service-logger', 'rdxd'], bins: ['uploadd'] },
+  suggestions: { units: ['contentminer'], bins: ['sportsalarm', 'nudge'] },
+  lan: { units: ['cups-lpd.socket', 'ninfod'] }, // LG's network services nobody uses: LPD printing on 515, IPv6 node information
   miner: { units: ['contentminer'], bins: ['contentminer'] }, // opt-in (options.debloatOn): stopped and its program stubbed
   lgservers: { lgHosts: true }, // opt-in: LG's online servers in the hosts file (debloat-hosts.sh)
 };
@@ -50,7 +53,7 @@ function create(ctx, opts) {
       if (r.ok && r.out.trim()) notes.push(b + ' is running');
     }
     for (const u of g.units || []) {
-      const r = await exec.sh('systemctl is-active ' + u + '.service', 5000);
+      const r = await exec.sh('systemctl is-active ' + (/\./.test(u) ? u : u + '.service'), 5000);
       if (r.out.trim() === 'active') notes.push(u + ' is running');
     }
     if (g.hosts && !/(ads\.lgtvcommon|lgsmartad)\.com[^\n]*# cleanyourtv-debloat/.test(read(HOSTS())))

@@ -232,7 +232,7 @@ restart_for_update() {
 start_install() {
   say "starting (the screen blinks once while the system app manager restarts)"
   pkill -f "[c]leanyourtv/helper.js"; pkill -f "[l]una-send -i -f"; sleep 1
-  sh $D/10-cleanyourtv-home </dev/null
+  sh $D/10-cleanyourtv-home setup </dev/null
   [ "$(opt debloat)" = 1 ] && sh $D/debloat-stop.sh </dev/null
 }
 

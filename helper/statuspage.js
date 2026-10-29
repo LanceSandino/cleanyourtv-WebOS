@@ -81,6 +81,7 @@ function tvDraw(r) {
     tvLine(t('Phone remote'), on(s.remote.on) + ' · ' + t('phones paired: %d').replace('%d', s.remote.phones)),
     tvLine(t('Linked'), 'Plex ' + yes(s.linked.plex) + ' · Stremio ' + yes(s.linked.stremio) + ' · Disney+ ' + yes(s.linked.disney)),
     tvLine(t('Telnet'), s.security.telnetOff ? t('Off') : t('On: an open root shell')),
+    tvLine(t('LG’s web inspector (port 9998)'), s.security.devtoolsClosed ? t('Closed') : t('Open to the network')),
     tvLine(t('API token'), s.security.apiToken ? t('required') : t('not required yet')),
   ]);
 }
@@ -127,7 +128,7 @@ function tvPorts() {
       row.appendChild(tvEl('i', 'dot'));
       var b = tvEl('div', 'tvpb');
       b.appendChild(tvEl('b', '', p.port + '/' + p.proto + ' · ' + p.what));
-      b.appendChild(tvEl('span', '', (p.bind === 'loopback' ? t('loopback') : t('LAN')) + ' · ' + p.program + ' · ' + TONE[p.tone]));
+      b.appendChild(tvEl('span', '', (p.bind === 'loopback' ? t('loopback') : p.bind === 'closed' ? t('closed') : t('LAN')) + ' · ' + p.program + ' · ' + TONE[p.tone]));
       b.appendChild(tvEl('small', '', p.how));
       row.appendChild(b);
       return row;

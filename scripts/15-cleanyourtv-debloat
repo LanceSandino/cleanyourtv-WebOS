@@ -1,9 +1,43 @@
 #!/bin/sh
-# Boot hook: stop LG telemetry/ad daemons ~60 s after boot (the opt-in groups at once). Disable: touch /media/developer/cleanyourtv/DISABLE-DEBLOAT
-[ -e /media/developer/cleanyourtv/DISABLE-DEBLOAT ] && exit 0
-[ -e /media/developer/cleanyourtv/DISABLE ] && exit 0   # LG's own Home breaks without the services this blocks
-home() { grep -q ' /usr/palm/applications/com.webos.app.home ' /proc/mounts || [ -f /tmp/cleanyourtv-home-standin ]; }
-# the opt-in groups (LG's content miner, LG's online servers; debloat-stop.sh does nothing for one that is off): at once, before the
-# miner asks LG (about 50 s after the start) and LG Channels starts
-(home && sh /media/developer/cleanyourtv/debloat-stop.sh miner lgservers) </dev/null >/dev/null 2>&1 &
-(sleep 60; home && sh /media/developer/cleanyourtv/debloat-stop.sh) </dev/null >/dev/null 2>&1 &
+# Boot hook of the debloat (debloat-stop.sh says what it stops), linked into init.d while the debloat is on. Two runs at every start,
+# both in the background:
+#   early  from 10-cleanyourtv-home as soon as the boot scripts start (about 45 s after the TV starts), before it takes over Home:
+#          the stubs are in place before LG's activity manager starts its ad and tracking services (from about 55 s), and the
+#          daemons LG started earlier are stopped then, not a minute later
+#   (none) by the Homebrew Channel after 10-cleanyourtv-home: if Home was not taken over after all, the early run is undone (LG's
+#          own Home needs those services); else it is applied if the early run did not happen, and once more when LG's boot is
+#          done (LG touches /tmp/boot-done about 85 s after the start, as it starts its last daemons); debloat-stop.sh does only
+#          what is missing. The service checks it again later (debloatcheck.js), also after the TV wakes.
+# Disable: touch /media/developer/cleanyourtv/DISABLE-DEBLOAT
+# The paths can be pointed elsewhere for the tests (tools/test/scripts.test.js); on the TV none of these variables is set.
+L=${CYTV_DIR:-/media/developer/cleanyourtv}
+LOG=${CYTV_BOOT_LOG:-/tmp/cleanyourtv-boot.log}
+EARLY=${CYTV_DEBLOAT_EARLY:-/tmp/cleanyourtv-debloat-early}
+BOOTDONE=${CYTV_BOOT_DONE:-/tmp/boot-done}
+MOUNTS=${CYTV_MOUNTS:-/proc/mounts}
+[ -e $L/DISABLE-DEBLOAT ] && exit 0
+[ -e $L/DISABLE ] && exit 0   # LG's own Home breaks without the services this blocks
+up() { cut -d' ' -f1 /proc/uptime 2>/dev/null; }
+home() { grep -q ' /usr/palm/applications/com.webos.app.home ' "$MOUNTS" || [ -f /tmp/cleanyourtv-home-standin ]; }
+if [ "$1" = early ]; then
+  touch $EARLY
+  (
+    echo "$(up) debloat: applying at once (before Home is taken over)" >> $LOG
+    sh $L/debloat-stop.sh
+    echo "$(up) debloat: applied" >> $LOG
+  ) </dev/null >/dev/null 2>&1 &
+  exit 0
+fi
+(
+  if ! home; then
+    [ -e $EARLY ] && { echo "$(up) debloat: Home was not taken over; lifted again" >> $LOG; sh $L/debloat-undo.sh; }
+    exit 0
+  fi
+  [ -e $EARLY ] || { echo "$(up) debloat: applying" >> $LOG; sh $L/debloat-stop.sh; }
+  i=0
+  while [ ! -e $BOOTDONE ] && [ $i -lt ${CYTV_BOOT_WAIT:-90} ]; do sleep 2; i=$((i + 1)); done
+  home || exit 0
+  echo "$(up) debloat: LG's boot is done; applying again where needed" >> $LOG
+  sh $L/debloat-stop.sh
+) </dev/null >/dev/null 2>&1 &
+exit 0

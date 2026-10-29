@@ -1,6 +1,7 @@
 # What it changes on the TV
 
-Only the takeover of Home and the debloat's `/etc/hosts` lines are applied in RAM at boot, as mounts. Everything else is stored in
+Only the takeover of Home, the debloat's stubs and `/etc/hosts` lines and the copy of LG's WebAppMgr start script without its web
+inspector are applied in RAM at boot, as mounts. Everything else is stored in
 the writable partitions listed below and stays after a reboot until you uninstall. Nothing under `/usr`, `/etc` or the firmware
 is modified on disk, and a reboot without the boot scripts brings LG's Home back.
 
@@ -21,7 +22,11 @@ uninstall. Optional features contact other services only when you switch them on
 ## At boot
 
 1. The Homebrew Channel runs the boot scripts in `/var/lib/webosbrew/init.d/`.
-2. `10-cleanyourtv-home` starts the service and, unless `/media/developer/cleanyourtv/DISABLE` exists, replaces LG's Home. How
+2. `10-cleanyourtv-home` starts the service, closes LG's web inspector (port 9998) unless that is switched off: a copy of LG's
+   `/etc/systemd/system/scripts/webapp-mgr.sh` without `--remote-debugging-port=9998` (`/tmp/cleanyourtv-webapp-mgr.sh`) is
+   **bind-mounted** over it and WebAppMgr is restarted once, before Home is taken over (see [Security](security.md#what-this-changes-on-a-tv)).
+   With the debloat on it starts the debloat at once (step 3). Then, unless `/media/developer/cleanyourtv/DISABLE` exists, it
+   replaces LG's Home. How
    depends on LG's Home app as it came with the TV (`helper/tvprofile.js`, `homeTakeover`; see
    [what differs between webOS versions](tested-tvs.md#what-differs-between-webos-versions)):
 
@@ -43,9 +48,12 @@ uninstall. Optional features contact other services only when you switch them on
    On webOS 26 (SDK 11) with the flutter or web Home, the same hook restarts `arccontroller` after the app manager, if it runs: on
    an OLED65C35LA HDMI ARC to the soundbar stayed silent although the right output was chosen and the controller was running, and
    restarting that controller brought the sound back (issue 21, found by karim7878). webOS 25 is left alone; eARC keeps working there.
-3. About a minute later the debloat runs, if it is on.
+3. The debloat, if it is on, runs as soon as the boot scripts start (about 45 seconds after the TV starts, on a webOS 25 TV), before
+   LG's activity manager starts its ad and tracking services, and once more when LG's boot is done (LG's `/tmp/boot-done`, about
+   85 seconds). See [Debloat](debloat.md).
 
-Either bind mount lives in RAM. A reboot without the boot scripts, or the Homebrew Channel's failsafe mode, leaves LG's Home as it was.
+Every bind mount lives in RAM. A reboot without the boot scripts, or the Homebrew Channel's failsafe mode, leaves LG's Home and
+WebAppMgr as they were.
 
 ## While it runs
 

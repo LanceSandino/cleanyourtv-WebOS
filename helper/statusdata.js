@@ -60,8 +60,16 @@ function summary(ctx, debloatCheck) {
     },
     options: { liveTv: o.liveTv !== false, inputKey: o.inputKey !== false },
     security: s
-      ? { telnetOff: !!s.security.telnet.off, apiToken: !!s.security.token.enforced }
-      : { telnetOff: fs.existsSync(P.TELNET_OFF), apiToken: fs.existsSync(P.D + '/api-token-on') },
+      ? {
+          telnetOff: !!s.security.telnet.off,
+          apiToken: !!s.security.token.enforced,
+          devtoolsClosed: !!(s.security.devtools && s.security.devtools.closed),
+        }
+      : {
+          telnetOff: fs.existsSync(P.TELNET_OFF),
+          apiToken: fs.existsSync(P.D + '/api-token-on'),
+          devtoolsClosed: !fs.existsSync(P.D + '/devtools-open'),
+        },
   };
 }
 

@@ -455,6 +455,10 @@
       },
       "repo": "LanceSandino/cleanyourtv-WebOS",
       "security": {
+        "devtools": {
+          "closed": true,
+          "listening": true
+        },
         "source": {
           "ours": true,
           "repo": "LanceSandino/cleanyourtv-WebOS"
@@ -551,6 +555,10 @@
       },
       "repo": "LanceSandino/cleanyourtv-WebOS",
       "security": {
+        "devtools": {
+          "closed": true,
+          "listening": true
+        },
         "source": {
           "ours": true,
           "repo": "LanceSandino/cleanyourtv-WebOS"
@@ -665,6 +673,10 @@
       },
       "repo": "LanceSandino/cleanyourtv-WebOS",
       "security": {
+        "devtools": {
+          "closed": true,
+          "listening": true
+        },
         "source": {
           "ours": true,
           "repo": "LanceSandino/cleanyourtv-WebOS"
@@ -1079,7 +1091,7 @@
       "ports": [
         {
           "bind": "LAN",
-          "how": "no authentication: anyone on the network can run code inside the TV’s web apps, Home included. This TV’s kernel has no firewall table to close it: keep the TV off networks you do not trust",
+          "how": "no authentication: anyone on the network can run code inside the TV’s web apps, Home included. Security > LG’s web inspector is on: closed from the next start of the TV",
           "port": 9998,
           "program": "WebAppMgr",
           "proto": "tcp",

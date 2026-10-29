@@ -166,7 +166,7 @@ function healthRows() {
     x.ports.forEach(function (p) {
       rows.push({
         label: p.port + ' · ' + p.what,
-        sub: (p.bind === 'loopback' ? 'loopback' : 'LAN') + ' · ' + p.program,
+        sub: (p.bind === 'loopback' ? 'loopback' : p.bind === 'closed' ? 'closed' : 'LAN') + ' · ' + p.program,
         tone: p.tone,
         fn: null,
         info: { t: p.port + '/' + p.proto + ' · ' + p.what, d: hCap(p.how) + '. ' + TONES[p.tone] + '.' },
