@@ -257,6 +257,14 @@ function create(ctx) {
       frame = await fetchBuf(base() + '/' + id + '/' + ov, MAX_WALLPAPER, 25000);
       if (!imageOk(frame, ov, MAX_WALLPAPER)) throw new Error('the frame is not an image of that type');
     }
+    // the front of the wallpaper (effects.foreground), drawn over the clock
+    const fgName = getPath(raw, 'effects.foreground');
+    let front = null;
+    if (typeof fgName === 'string' && fgName !== '') {
+      if (!FILE.test(fgName) || !/\.(png|webp)$/i.test(fgName)) throw new Error('the foreground name is not valid');
+      front = await fetchBuf(base() + '/' + id + '/' + fgName, MAX_WALLPAPER, 25000);
+      if (!imageOk(front, fgName, MAX_WALLPAPER)) throw new Error('the foreground is not an image of that type');
+    }
     const f = getPath(raw, 'type.fontFile');
     let font = null;
     if (typeof f === 'string' && f !== '') {
@@ -269,6 +277,7 @@ function create(ctx) {
     mkdirs(d);
     if (wall) writeAtomic(path.join(d, w), wall);
     if (frame) writeAtomic(path.join(d, ov), frame);
+    if (front) writeAtomic(path.join(d, fgName), front);
     if (font) writeAtomic(path.join(d, f), font);
     writeAtomic(path.join(d, 'theme.json'), JSON.stringify(raw));
     cache = null;
@@ -357,8 +366,8 @@ function create(ctx) {
     m = /^wallpaper\/([a-z0-9-]{1,30})\/([\w-]{1,40}\.(?:jpg|png|webp))$/.exec(act);
     if (m) {
       const t = load()[m[1]];
-      // a theme's wallpaper or its frame (effects.overlay), from that theme's folder
-      if (!t || (t.v['effects.wallpaper'] !== m[2] && t.v['effects.overlay'] !== m[2])) {
+      // a theme's wallpaper, its frame (effects.overlay) or the front of its wallpaper (effects.foreground), from that theme's folder
+      if (!t || [t.v['effects.wallpaper'], t.v['effects.overlay'], t.v['effects.foreground']].indexOf(m[2]) < 0) {
         res.writeHead(404);
         return res.end();
       }

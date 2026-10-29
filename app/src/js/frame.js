@@ -20,5 +20,27 @@ var FRAME = (function () {
     }
     el.style.backgroundImage = 'url("' + u + '")';
   }
-  return { set: set };
+  /* the front of the theme's wallpaper (effects.foreground): over the clock, under the apps, the cards and the menus, so the clock
+     stands behind the scenery. Not over the user's own photos: it belongs to the theme's picture. */
+  var fgEl = null,
+    fgUrl = '';
+  function fg(o) {
+    var u = o && o.file ? API + '/api/theme/wallpaper/' + o.id + '/' + o.file : '';
+    if (u === fgUrl) return;
+    fgUrl = u;
+    if (u) document.body.setAttribute('data-fg', '');
+    else document.body.removeAttribute('data-fg');
+    if (!u) {
+      if (fgEl) fgEl.remove();
+      fgEl = null;
+      return;
+    }
+    if (!fgEl) {
+      fgEl = document.createElement('div');
+      fgEl.id = 'thfg';
+      document.body.insertBefore(fgEl, $('shelf'));
+    }
+    fgEl.style.backgroundImage = 'url("' + u + '")';
+  }
+  return { set: set, fg: fg };
 })();

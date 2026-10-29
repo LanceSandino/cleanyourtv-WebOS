@@ -172,6 +172,17 @@ body {
   margin: 8px 0 0 6px;
   padding: 0;
 }
+/* clock.dateAbove: the date over the time, as on a phone's lock screen (the greeting stays on top) */
+[data-clock="stack"][data-dateabove] #date {
+  order: -1;
+  margin: 0 0 4px 6px;
+}
+[data-clock="stack"][data-dateabove] #greet {
+  order: -2;
+}
+#time {
+  opacity: var(--time-op, 1);
+}
 #bar {
   pointer-events: auto;
   position: absolute;

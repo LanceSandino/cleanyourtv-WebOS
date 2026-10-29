@@ -908,3 +908,25 @@ commit_ref: "fix/ci-runner (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T02:40:12Z"
 ```
+
+```yaml
+id: CU-20261028-6
+type: feature
+title: "Dawn theme, with the clock behind the scenery (effects.foreground), the date above the time and a larger clock"
+description: "The owner liked couch-tv's Dawn home and asked for it in our own way. Themes gain effects.foreground: a png or webp in the
+  theme folder, the wallpaper with its sky cut away, downloaded with the theme (theme.js) and served like the wallpaper, drawn by
+  frame.js as a layer over the clock (#thfg, z 6 over #top's 5) while the apps, the cards and the name come forward over it (z 7 when
+  a theme has one); hidden while the user's own photos are the wallpaper, since the cut-out belongs to the theme's picture (cut-outs
+  for the user's photos would have to come with each photo from its server). clock.scale now goes to 5, clock.dateAbove puts the date
+  over the time in the stack layout, and clock.alpha lets the picture show through the digits; all three reach the page only when a
+  theme sets them. themes/dawn uses couch-tv's 'Rainforest dawn' scene and its cut-out (MIT, credited in themes/dawn/CREDITS.md; made
+  there with an image model and free to use) with our own layout: the time 4.6 times as large and light, behind the hills, the date
+  above, round top buttons, eight tiles in a dark glass dock at the foot, all apps over the picture. The page checks now serve a
+  theme's pictures from the repository as the TV serves its downloaded copy."
+impact: low
+affected_modules: ["helper/themeschema.js", "helper/theme.js", "app/src/js/frame.js", "app/src/js/theme.js", "app/src/css/frame.css", "app/src/css/home.css", "themes/dawn", "themes/index.json", "themes/README.md", "docs/themes.md", "tools/oldchrome.js"]
+related_tests: ["tools/test/theme.test.js (effects.foreground names a png or webp in the theme folder, with clock.dateAbove, clock.alpha and a larger time; a theme's foreground is downloaded with it and served; the themes that do not use the new settings resolve without them)", "tools/oldchrome.js (dawn front: the foreground is a layer over the clock and under the apps, its picture loads, the date stands above the time)"]
+commit_ref: "feature/dawn-theme (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T02:47:48Z"
+```

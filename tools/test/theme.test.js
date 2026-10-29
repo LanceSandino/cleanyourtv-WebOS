@@ -83,7 +83,7 @@ run(async () => {
       bad.v['type.scale'] === 1 &&
       bad.v['type.font'] === 'default' &&
       bad.v['clock.layout'] === 'inline' &&
-      bad.v['clock.scale'] === 2.5,
+      bad.v['clock.scale'] === 5,
     'numbers are clamped, enums and types are checked'
   );
   ok(
@@ -109,8 +109,8 @@ run(async () => {
   // settings added for the Glass theme (focus plate, name under a tile, name motion, clock typography, centred glow, pill sheen, dock
   // panel colour, header fade): each reaches the launcher, a bad value falls back, and a theme that does not use them gets a reply
   // without them, so the existing themes look and answer exactly as before
-  const LATER_VARS = ['--clock-wt', '--name-wt', '--pill-sheen', '--dock-panel-rgb'],
-    LATER_ATTRS = ['datecaps', 'divider', 'ampm', 'shelfm', 'label', 'hdr', 'focus', 'glow', 'dockpanel'];
+  const LATER_VARS = ['--clock-wt', '--name-wt', '--pill-sheen', '--dock-panel-rgb', '--time-op'],
+    LATER_ATTRS = ['datecaps', 'divider', 'ampm', 'shelfm', 'label', 'hdr', 'focus', 'glow', 'dockpanel', 'dateabove'];
   const later = themeMod.resolve(
     themeMod.normalize(
       {
@@ -170,7 +170,7 @@ run(async () => {
   );
   const untouched = [];
   for (const id of folders) {
-    if (id === 'glass') continue;
+    if (id === 'glass' || id === 'dawn') continue; // they use the later settings
     const fd = path.join(tdir, id),
       rv = themeMod.resolve(themeMod.normalize(JSON.parse(fs.readFileSync(path.join(fd, 'theme.json'), 'utf8')), id, null, fd));
     if (LATER_VARS.some(k => k in rv.vars) || LATER_ATTRS.some(k => k in rv.attrs)) untouched.push(id);
@@ -179,6 +179,26 @@ run(async () => {
     !untouched.length && !LATER_VARS.some(k => k in plain.vars) && !LATER_ATTRS.some(k => k in plain.attrs),
     'the themes that do not use the new settings resolve without them (their look and reply are unchanged)' +
       (untouched.length ? ': ' + untouched.join(', ') : '')
+  );
+  // Dawn: the clock large with the date above it, a little of the picture through the digits, and the front of the wallpaper (its
+  // sky cut away) drawn over the clock; the reply names that file only for a theme that has one
+  const dawnDir = path.join(tdir, 'dawn'),
+    dawn = themeMod.resolve(
+      themeMod.normalize(JSON.parse(fs.readFileSync(path.join(dawnDir, 'theme.json'), 'utf8')), 'dawn', null, dawnDir)
+    );
+  const noFront = themeMod.resolve(themeMod.normalize({ effects: { foreground: 'missing.webp' } }, 'nofront', null, dawnDir)),
+    jpgFront = themeMod.resolve(themeMod.normalize({ effects: { foreground: 'dawn.jpg' } }, 'jpgfront', null, dawnDir));
+  ok(
+    dawn.fg &&
+      dawn.fg.id === 'dawn' &&
+      dawn.fg.file === 'dawn-front.webp' &&
+      dawn.attrs.dateabove === 'on' &&
+      dawn.vars['--time-op'] === '0.92' &&
+      dawn.vars['--clock-s'] === '4.6' &&
+      !('fg' in plain) &&
+      !('fg' in noFront) &&
+      !('fg' in jpgFront),
+    'effects.foreground names a png or webp in the theme folder (drawn over the clock), with clock.dateAbove, clock.alpha and a time up to 5 times as large'
   );
   // dock.tileFrost and dock.tileFrostColor: a tint over the resting tiles, its colour resolved to an rgb triple
   const frost = themeMod.resolve(themeMod.normalize({ dock: { tileFrost: 0.4, tileFrostColor: '#ffffff' } }, 'frost'));
@@ -361,6 +381,18 @@ run(async () => {
   ok(r.code === 404, 'a file the theme does not name is not served');
   r = await tcall('wallpaper/..%2f..%2fpasswd', null, 'GET');
   ok(r.code === 404, 'a path is not served as a wallpaper');
+  // Dawn: the front of its wallpaper is downloaded with it and served from its folder, like the wallpaper
+  r = await tcall('set', { id: 'dawn' });
+  const front = await tcall('wallpaper/dawn/dawn-front.webp', null, 'GET');
+  ok(
+    r.j.current.id === 'dawn' &&
+      fs.existsSync(path.join(tlocal, 'dawn', 'dawn-front.webp')) &&
+      front.code === 200 &&
+      th.resolved().fg &&
+      th.resolved().fg.file === 'dawn-front.webp',
+    "a theme's foreground (effects.foreground) is downloaded with it and served"
+  );
+  await tcall('set', { id: 'bloom' });
   // a theme's own typeface: downloaded with the theme, served from its folder, named first in --font
   ok(
     themeMod.fontOk(Buffer.from('wOF2' + 'x'.repeat(40)), 'a.woff2') &&

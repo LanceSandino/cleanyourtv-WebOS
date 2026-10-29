@@ -78,7 +78,7 @@ const SCHEMA = [
   ['clock.align', 'enum', POS, 'left', 'Which side `clock.x` counts from; `center` centres it.'],
   ['clock.x', 'int', [0, 900], 96, 'Distance from that side, in px (on a 1920 x 1080 canvas). Not used when centred.'],
   ['clock.y', 'int', [0, 900], 54, 'Distance from the top or bottom edge, in px.'],
-  ['clock.scale', 'num', [0.6, 2.5], 1, 'Scale of the time.'],
+  ['clock.scale', 'num', [0.6, 5], 1, "Scale of the time (above 2.5: a time as large as a lock screen's)."],
   [
     'clock.weight',
     'int',
@@ -89,6 +89,8 @@ const SCHEMA = [
   ['clock.dateScale', 'num', [0.6, 2], 1, 'Scale of the date.'],
   ['clock.dateCaps', 'bool', null, false, 'The date in capitals, with wider letter spacing.'],
   ['clock.divider', 'bool', null, false, 'A thin upright line between the time and the date (`inline` layout).'],
+  ['clock.dateAbove', 'bool', null, false, "The date above the time instead of under it (`stack` layout), as on a phone's lock screen."],
+  ['clock.alpha', 'num', [0.3, 1], 1, 'Opacity of the time: below 1 the picture shows a little through the digits.'],
   [
     'clock.ampm',
     'enum',
@@ -237,6 +239,15 @@ const SCHEMA = [
     'A decorative frame: a `.png` or `.webp` with transparency in the theme folder, at most 1.5 MB, drawn at 1920 x 1080 over the ' +
       'background, the wallpaper and your photos and under the clock, the buttons and the apps (the holiday themes use one). It is still: nothing in it moves.',
   ],
+  [
+    'effects.foreground',
+    'file',
+    null,
+    '',
+    'The front of the wallpaper: a `.png` or `.webp` in the theme folder, at most 1.5 MB, drawn at 1920 x 1080 over the clock and ' +
+      'under the apps, the cards and the menus: the wallpaper with its sky cut away, so the clock stands behind the hills (Dawn uses ' +
+      "one). Only for the theme's own wallpaper; it is not drawn over your photos (Wallpapers on).",
+  ],
 ];
 const DEFAULTS = {};
 for (const r of SCHEMA) DEFAULTS[r[0]] = r[3];
@@ -334,6 +345,16 @@ function normalize(raw, id, base, wallDir) {
       }
     } catch (_) {}
   } else if (ovl === '') v['effects.overlay'] = '';
+  // the front of the wallpaper (png or webp: the sky is cut away), kept with the folder that holds it in the same way
+  const fg = getPath(raw, 'effects.foreground');
+  if (typeof fg === 'string' && FILE.test(fg) && /\.(png|webp)$/i.test(fg)) {
+    try {
+      if (imageOk(fs.readFileSync(path.join(wallDir || path.join(dir(), id), fg)), fg, MAX_WALLPAPER)) {
+        v['effects.foreground'] = fg;
+        v.foregroundTheme = id;
+      }
+    } catch (_) {}
+  } else if (fg === '') v['effects.foreground'] = '';
   // a typeface: kept with the id of the theme whose folder holds it, so a theme that extends this one uses the same file
   const f = getPath(raw, 'type.fontFile');
   if (typeof f === 'string' && FONT_FILE.test(f)) {
@@ -527,6 +548,8 @@ function resolve(t, accent) {
   if (v['clock.dateCaps']) attrs.datecaps = 'on';
   if (v['clock.divider']) attrs.divider = 'on';
   if (v['clock.ampm'] === 'small') attrs.ampm = 'small';
+  if (v['clock.dateAbove']) attrs.dateabove = 'on';
+  if (v['clock.alpha'] !== 1) vars['--time-op'] = String(v['clock.alpha']);
   if (v['shelf.motion'] !== 'none') attrs.shelfm = v['shelf.motion'];
   if (v['grid.label'] === 'focus') attrs.label = 'focus';
   if (v['grid.header'] === 'fade') attrs.hdr = 'fade';
@@ -553,6 +576,7 @@ function resolve(t, accent) {
   };
   // only a theme with a frame has this key, so the replies for the other themes stay as they were
   if (v['effects.overlay']) out.frame = { id: v.overlayTheme || t.id, file: v['effects.overlay'] }; // (out.overlay is the grid mode)
+  if (v['effects.foreground']) out.fg = { id: v.foregroundTheme || t.id, file: v['effects.foreground'] };
   // only a theme with slots has this key (the same reason)
   if (v.slots && v.slots.length)
     out.slots = v.slots.map(sl => {

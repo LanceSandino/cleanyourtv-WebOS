@@ -1,0 +1,87 @@
+{
+  "name": "Dawn",
+  "author": "CleanYourTV",
+  "description": "A misty dawn over the forest: the time large and light in the sky, standing behind the far hills, and the apps in a dark glass dock along the foot. Down opens all apps over the picture. With Wallpapers on, your photos take its place.",
+  "colors": {
+    "night": "#0d1507",
+    "panel": "#1c181e",
+    "ink": "#f5f5f7",
+    "accent": "#ffffff",
+    "focus": "#ffffff",
+    "pill": "#1e141c",
+    "dockPanel": "#1e141c"
+  },
+  "surface": {
+    "pillAlpha": 0.32,
+    "pillRing": 0.16,
+    "pillRadius": 32,
+    "menuAlpha": 0.8,
+    "rowRadius": 24
+  },
+  "clock": {
+    "layout": "stack",
+    "anchor": "top",
+    "align": "center",
+    "y": 296,
+    "scale": 4.6,
+    "weight": 200,
+    "dateScale": 1.1,
+    "dateAbove": true,
+    "alpha": 0.92,
+    "ampm": "small"
+  },
+  "bar": {
+    "style": "round",
+    "labels": "hide",
+    "anchor": "top",
+    "align": "right",
+    "x": 80,
+    "y": 60,
+    "size": 88,
+    "gap": 12
+  },
+  "shelf": {
+    "show": false
+  },
+  "dock": {
+    "anchor": "bottom",
+    "align": "center",
+    "y": 46,
+    "count": 8,
+    "w": 120,
+    "h": 120,
+    "gap": 26,
+    "radius": 26,
+    "panel": 0.32,
+    "panelPad": 20,
+    "tileFrost": 0.18,
+    "tileFrostColor": "#000000",
+    "lift": 10,
+    "focusScale": 1.16
+  },
+  "grid": {
+    "mode": "overlay",
+    "cols": 12,
+    "tileH": 112,
+    "gapX": 26,
+    "gapY": 48,
+    "radius": 26,
+    "x": 145,
+    "width": 1630,
+    "align": "center",
+    "focusScale": 1.16,
+    "label": "focus",
+    "overlayDim": 0.4
+  },
+  "tile": {
+    "focus": "ring",
+    "ringWidth": 4,
+    "ringOffset": 0
+  },
+  "effects": {
+    "glow": 0,
+    "wallpaper": "dawn.jpg",
+    "wallpaperDim": 0,
+    "foreground": "dawn-front.webp"
+  }
+}

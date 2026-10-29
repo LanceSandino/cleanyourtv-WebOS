@@ -37,6 +37,7 @@ var TH0 = {
     'data-focus',
     'data-glow',
     'data-dockpanel',
+    'data-dateabove',
   ];
 function applyTheme(t) {
   var st = document.documentElement.style,
@@ -50,6 +51,7 @@ function applyTheme(t) {
   if (!t || !t.vars) {
     TH = TH0;
     FRAME.set(null);
+    FRAME.fg(null);
     decoTheme();
     return;
   }
@@ -82,6 +84,7 @@ function applyTheme(t) {
   }
   for (k in t.attrs) b.setAttribute('data-' + k, t.attrs[k]);
   FRAME.set(t.frame); /* a holiday theme's still frame (frame.js) */
+  FRAME.fg(t.fg); /* the front of the theme's wallpaper, over the clock (frame.js) */
   var at = t.attrs || {},
     tw = parseFloat(t.vars['--tile-w']) || 151;
   TH = {

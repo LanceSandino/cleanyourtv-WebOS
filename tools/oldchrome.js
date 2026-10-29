@@ -258,6 +258,18 @@ const WALL_FIT =
   'var landscape=!!l&&!l.classList.contains("fit")&&after(l)==="cover";' +
   'document.body.setAttribute("data-fit",portrait&&landscape?"ok":"bad portrait="+portrait+" landscape="+landscape)})})},500)})()</script>';
 // a holiday theme's frame (Halloween): one still picture behind the clock and the apps, not catching the pointer; nothing animates
+// Dawn (effects.foreground): the front of its wallpaper is a layer over the clock (after #top, above it) and under the apps (#view
+// comes forward), its picture loads, and the date stands above the time (clock.dateAbove). The outcome lands in data-front.
+const FG_CHECK =
+  '<script>(function(){var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);setTimeout(function(){' +
+  'var fg=document.getElementById("thfg"),top=document.getElementById("top"),view=document.getElementById("view"),cs=fg&&getComputedStyle(fg);' +
+  'var over=!!fg&&!!(top.compareDocumentPosition(fg)&Node.DOCUMENT_POSITION_FOLLOWING);' +
+  'var pic=!!cs&&/\\/api\\/theme\\/wallpaper\\/dawn\\/dawn-front\\.webp/.test(cs.backgroundImage);' +
+  'var z=!!cs&&+cs.zIndex>+getComputedStyle(top).zIndex&&+getComputedStyle(view).zIndex>+cs.zIndex;' +
+  'var above=getComputedStyle(document.getElementById("date")).order==="-1";' +
+  'var im=new Image();im.onload=im.onerror=function(){var ok=over&&pic&&z&&above&&im.naturalWidth===1920&&cs.pointerEvents==="none";' +
+  'document.body.setAttribute("data-front",ok?"ok":"bad fg="+!!fg+" over="+over+" pic="+pic+" z="+z+" above="+above+" w="+im.naturalWidth)};' +
+  'im.src=cs?cs.backgroundImage.replace(/^url\\("?|"?\\)$/g,""):""},800)},300)})()</script>';
 const FX_CHECK =
   '<script>(function(){var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);setTimeout(function(){' +
   'var fr=document.getElementById("thframe"),top=document.getElementById("top");' +
@@ -287,6 +299,7 @@ const PAGES = [
   ['wallpaper fit', 'app/index.html', /data-fit="ok"/g, 1, 15000, WALL_FIT],
   ['dock row in glass', 'app/index.html', /data-dock="ok"/g, 1, 15000, DOCK_ROW, 'glass'],
   ['holiday frame', 'app/index.html', /data-fx="ok"/g, 1, 15000, FX_CHECK, 'halloween'],
+  ['dawn front', 'app/index.html', /data-front="ok"/g, 1, 15000, FG_CHECK, 'dawn'],
 ];
 let famN = 0,
   plexState = 'idle',
@@ -351,6 +364,13 @@ function serve() {
       return (
         r.writeHead(200, { 'content-type': 'text/javascript' }),
         r.end(fs.readFileSync(path.join(ROOT, 'third-party', 'qrcode-generator', 'qrcode.js')))
+      );
+    // a theme's pictures (wallpaper, frame, foreground), from the repository's themes folder as the TV serves its downloaded copy
+    const tp = /^\/api\/theme\/wallpaper\/([a-z0-9-]{1,30})\/([\w-]{1,40}\.(jpg|png|webp))$/.exec(u);
+    if (tp && fs.existsSync(path.join(ROOT, 'themes', tp[1], tp[2])))
+      return (
+        r.writeHead(200, { 'content-type': tp[3] === 'jpg' ? 'image/jpeg' : 'image/' + tp[3] }),
+        r.end(fs.readFileSync(path.join(ROOT, 'themes', tp[1], tp[2])))
       );
     if (u.indexOf('/api/theme/') === 0) return theme.handle(q, r, u, async () => ({}));
     if (u === '/api/apps')

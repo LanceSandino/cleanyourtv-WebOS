@@ -177,6 +177,17 @@ body {
   margin: 8px 0 0 6px;
   padding: 0;
 }
+/* clock.dateAbove: the date over the time, as on a phone's lock screen (the greeting stays on top) */
+[data-clock="stack"][data-dateabove] #date {
+  order: -1;
+  margin: 0 0 4px 6px;
+}
+[data-clock="stack"][data-dateabove] #greet {
+  order: -2;
+}
+#time {
+  opacity: var(--time-op, 1);
+}
 #bar {
   pointer-events: auto;
   position: absolute;
@@ -2353,6 +2364,26 @@ svg.st {
   background: center / 1920px 1080px no-repeat;
   pointer-events: none;
 }
+/* the front of the theme's wallpaper (frame.js, effects.foreground): over the clock (#top), under the apps, the cards and the name,
+   which come forward over it; hidden while your own photos are the wallpaper (it belongs to the theme's picture) */
+#thfg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 1080px;
+  z-index: 6;
+  background: center / 1920px 1080px no-repeat;
+  pointer-events: none;
+}
+body.wpon #thfg {
+  display: none;
+}
+[data-fg] #view,
+[data-fg] #cards,
+[data-fg] #shelf {
+  z-index: 7;
+}
 /* right-to-left languages (_dir "rtl" in i18n/<language>.json, set on <html dir>): the home screen, its menus and the shelf are
    mirrored. Flex rows and the app grid follow the direction by themselves; what is placed by left/right is swapped here. Live TV keeps
    its own left-to-right layout for now. */
@@ -3293,6 +3324,7 @@ var TH0 = {
     'data-focus',
     'data-glow',
     'data-dockpanel',
+    'data-dateabove',
   ];
 function applyTheme(t) {
   var st = document.documentElement.style,
@@ -3306,6 +3338,7 @@ function applyTheme(t) {
   if (!t || !t.vars) {
     TH = TH0;
     FRAME.set(null);
+    FRAME.fg(null);
     decoTheme();
     return;
   }
@@ -3338,6 +3371,7 @@ function applyTheme(t) {
   }
   for (k in t.attrs) b.setAttribute('data-' + k, t.attrs[k]);
   FRAME.set(t.frame); /* a holiday theme's still frame (frame.js) */
+  FRAME.fg(t.fg); /* the front of the theme's wallpaper, over the clock (frame.js) */
   var at = t.attrs || {},
     tw = parseFloat(t.vars['--tile-w']) || 151;
   TH = {
@@ -4241,7 +4275,29 @@ var FRAME = (function () {
     }
     el.style.backgroundImage = 'url("' + u + '")';
   }
-  return { set: set };
+  /* the front of the theme's wallpaper (effects.foreground): over the clock, under the apps, the cards and the menus, so the clock
+     stands behind the scenery. Not over the user's own photos: it belongs to the theme's picture. */
+  var fgEl = null,
+    fgUrl = '';
+  function fg(o) {
+    var u = o && o.file ? API + '/api/theme/wallpaper/' + o.id + '/' + o.file : '';
+    if (u === fgUrl) return;
+    fgUrl = u;
+    if (u) document.body.setAttribute('data-fg', '');
+    else document.body.removeAttribute('data-fg');
+    if (!u) {
+      if (fgEl) fgEl.remove();
+      fgEl = null;
+      return;
+    }
+    if (!fgEl) {
+      fgEl = document.createElement('div');
+      fgEl.id = 'thfg';
+      document.body.insertBefore(fgEl, $('shelf'));
+    }
+    fgEl.style.backgroundImage = 'url("' + u + '")';
+  }
+  return { set: set, fg: fg };
 })();
 /* ---------- Screensaver: after cfg.saver.after seconds without a key or a pointer move on Home, or when the TV is about to start
    LG's own screensaver, the photo feed's photos (the service's /api/photofeed/next: one photo at a time, never the whole library;

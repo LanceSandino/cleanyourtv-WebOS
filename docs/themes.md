@@ -190,11 +190,13 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `clock.align` | `left`, `center`, `right` | `left` | Which side `clock.x` counts from; `center` centres it. |
 | `clock.x` | 0 to 900 | `96` | Distance from that side, in px (on a 1920 x 1080 canvas). Not used when centred. |
 | `clock.y` | 0 to 900 | `54` | Distance from the top or bottom edge, in px. |
-| `clock.scale` | 0.6 to 2.5 | `1` | Scale of the time. |
+| `clock.scale` | 0.6 to 5 | `1` | Scale of the time (above 2.5: a time as large as a lock screen's). |
 | `clock.weight` | 100 to 900 | `600` | Weight of the time: 300 light, 400 regular, 600 semibold, 700 bold. A typeface without that weight shows its nearest one. |
 | `clock.dateScale` | 0.6 to 2 | `1` | Scale of the date. |
 | `clock.dateCaps` | `true` or `false` | `false` | The date in capitals, with wider letter spacing. |
 | `clock.divider` | `true` or `false` | `false` | A thin upright line between the time and the date (`inline` layout). |
+| `clock.dateAbove` | `true` or `false` | `false` | The date above the time instead of under it (`stack` layout), as on a phone's lock screen. |
+| `clock.alpha` | 0.3 to 1 | `1` | Opacity of the time: below 1 the picture shows a little through the digits. |
 | `clock.ampm` | `inline`, `small` | `inline` | AM and PM of a 12-hour clock: `inline` as the language writes it; `small`: smaller, in capitals, beside the time. |
 | **bar** | | | |
 | `bar.show` | `true` or `false` | `true` | Show the top buttons (Inputs, Settings, Customise, ...). |
@@ -264,6 +266,7 @@ when the focus moves down into it (Back or Up closes it); a dock at the top leav
 | `effects.wallpaper` | a file name | none | A file name in `themes/wallpapers/`: `.jpg`, `.png` or `.webp`, at most 1.5 MB; drawn at 1920 x 1080. |
 | `effects.wallpaperDim` | 0 to 0.9 | `0.4` | How far the wallpaper is darkened with the background colour. |
 | `effects.overlay` | a file name | none | A decorative frame: a `.png` or `.webp` with transparency in the theme folder, at most 1.5 MB, drawn at 1920 x 1080 over the background, the wallpaper and your photos and under the clock, the buttons and the apps (the holiday themes use one). It is still: nothing in it moves. |
+| `effects.foreground` | a file name | none | The front of the wallpaper: a `.png` or `.webp` in the theme folder, at most 1.5 MB, drawn at 1920 x 1080 over the clock and under the apps, the cards and the menus: the wallpaper with its sky cut away, so the clock stands behind the hills (Dawn uses one). Only for the theme's own wallpaper; it is not drawn over your photos (Wallpapers on). |
 <!-- schema:end -->
 
 ### Slots for cards

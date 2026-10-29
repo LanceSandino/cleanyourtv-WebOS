@@ -13,6 +13,7 @@ without a release.
 | `<id>/theme.json` | The theme: colours, positions, sizes, effects. Every key is optional. |
 | `<id>/preview.jpg` | The screenshot shown in the manager. |
 | `<id>/<wallpaper>` | The wallpaper, if the theme uses one. |
+| `<id>/<front>` | The wallpaper with its sky cut away (`effects.foreground`, a `.png` or `.webp`), drawn over the clock so the clock stands behind the scenery. |
 | `<id>/<typeface>` | A typeface (`type.fontFile`), if the theme uses one, with its licence file. |
 
 Every setting, with its range and default, is in the [Themes page of the documentation](https://lancesandino.github.io/cleanyourtv-WebOS/themes/).
@@ -62,6 +63,16 @@ A row of seven square apps along the bottom of a dusk landscape, the clock on th
 [![Horizon](horizon/preview.jpg)](horizon/preview.jpg)
 
 Folder: [`horizon/`](horizon/)
+
+### Dawn
+
+A misty dawn over the forest with the time large and light in the sky, standing behind the far hills (the picture's front is drawn
+over the clock, `effects.foreground`), the date above it and the apps in a dark glass dock along the foot. Down opens all apps over
+the picture. The picture is couch-tv's "Rainforest dawn" scene (MIT): see [`dawn/CREDITS.md`](dawn/CREDITS.md).
+
+[![Dawn](dawn/preview.jpg)](dawn/preview.jpg)
+
+Folder: [`dawn/`](dawn/)
 
 ### Pixel
 

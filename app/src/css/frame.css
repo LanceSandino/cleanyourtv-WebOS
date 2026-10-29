@@ -9,3 +9,23 @@
   background: center / 1920px 1080px no-repeat;
   pointer-events: none;
 }
+/* the front of the theme's wallpaper (frame.js, effects.foreground): over the clock (#top), under the apps, the cards and the name,
+   which come forward over it; hidden while your own photos are the wallpaper (it belongs to the theme's picture) */
+#thfg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 1080px;
+  z-index: 6;
+  background: center / 1920px 1080px no-repeat;
+  pointer-events: none;
+}
+body.wpon #thfg {
+  display: none;
+}
+[data-fg] #view,
+[data-fg] #cards,
+[data-fg] #shelf {
+  z-index: 7;
+}
