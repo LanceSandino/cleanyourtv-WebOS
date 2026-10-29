@@ -888,5 +888,7 @@
  "Series": "Series",
  "Film": "Film",
  "Also: %s": "Also: %s",
- "On: what you type is sent to Plex's catalogue (with your linked Plex account), to Disney+ when it is linked, to Stremio's public catalogue and to your Plex server, to say where a title is. Off: Search looks only at the apps on this TV.": "On: what you type is sent to Plex's catalogue (with your linked Plex account), to Disney+ when it is linked, to Stremio's public catalogue and to your Plex server, to say where a title is. Off: Search looks only at the apps on this TV."
+ "On: what you type is sent to Plex's catalogue (with your linked Plex account), to Disney+ when it is linked, to Stremio's public catalogue and to your Plex server, to say where a title is. Off: Search looks only at the apps on this TV.": "On: what you type is sent to Plex's catalogue (with your linked Plex account), to Disney+ when it is linked, to Stremio's public catalogue and to your Plex server, to say where a title is. Off: Search looks only at the apps on this TV.",
+ "Recent searches": "Recent searches",
+ "OK searches for it again, Back to close": "OK searches for it again, Back to close"
 }

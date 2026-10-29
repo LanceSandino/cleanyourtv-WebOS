@@ -1647,3 +1647,29 @@ commit_ref: "feature/doc-screenshots (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T22:41:13Z"
 ```
+
+```yaml
+id: CU-20261029-48
+type: fix
+title: "LG pre-loading: AirPlay never closed, and an app closed once is left alone (Home pulled over the app in use every two minutes)"
+description: "On the owner's TV Home came to the front every two minutes, over the app in use (Stremio) and over Search and the menus, which closed (the launcher logged a relaunch with {keepAlive: true} every 120 s, the same as the Home key on webOS 25). LG's log: lgpreload's closeByAppId on airplay at 3465.17 s; AirPlay, paused, calls launchDefaultApp {category: LastInputApp}; SAM launches com.webos.app.home (caller airplay, keep_alive); the foreground changes io.strem.tv -> com.webos.app.home. Something other than the preload manager starts AirPlay again at once, so the two-minute look closed it every time. helper/lgpreload.js: airplay is in KEEP (its pre-loading never switched off, never closed, also when an earlier version recorded it); every other app is closed at most once per run of the service, and one that is back is left running and noted. Mitigated on the TV before the release by switching the preload group off (options.debloatOff [\"preload\"]), switched on again after the update."
+impact: high
+affected_modules: ["helper/lgpreload.js", "docs/debloat.md"]
+related_tests: ["tools/test/lgpreload.test.js (a copy back after being closed is left running; AirPlay is neither switched off nor closed, even when an earlier version switched it off)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T23:35:00Z"
+```
+
+```yaml
+id: CU-20261029-49
+type: fix
+title: "Search: an empty field with the recent searches, Back to the results first, and Look in only without Where to watch"
+description: "The owner: search closed by itself (CU-20261029-48: Home's relaunch every two minutes), the last words stayed in the field with no history, and Telemachus or Stremio under Look in did not search (they open the app at its Home: Telemachus takes only {play}, Stremio's app is encrypted and takes nothing known). app/src/js/search.js: the field is cleared at every open and shows Recent searches (the last six, newest first, in the page's localStorage search.recent; saved when a result is opened or Search closes with results; OK fills the field and asks again, without the keyboard); Back from the field goes to the first result when there is one and the field has the focus (a Back meant for the TV's keyboard no longer closes Search), Back from a result closes; the try group (Look in) is left out while Where to watch is on, which asks Telemachus, Plex and Stremio's catalogue itself. docs/launcher.md says so."
+impact: medium
+affected_modules: ["app/src/js/search.js", "app/index.html", "i18n/en.json", "docs/launcher.md", "tools/oldchrome.js"]
+related_tests: ["tools/oldchrome.js (Chromium 120 search: reopened, the field is empty with Recent searches and the last words; Back from the field goes to the results, a second Back closes)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T23:35:00Z"
+```

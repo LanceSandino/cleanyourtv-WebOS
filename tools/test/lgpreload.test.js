@@ -165,8 +165,45 @@ run(async () => {
       cc.join() === 'close netflix,close com.webos.app.lgchannels,kill com.webos.app.lgchannels',
       'the pre-loaded copies are closed (killApp where closeByAppId did not take); the browser someone opened stays: ' + cc.join()
     );
+    // the next look: the same copies are back (something else starts them): left running, not closed again every two minutes
+    cc.length = 0;
+    await pre2.sync();
+    ok(cc.length === 0 && /left running/.test(pre2.status().last), 'a copy back after being closed is left running: ' + cc.join());
     try {
       fs.unlinkSync(rec2);
+    } catch (_) {}
+  }
+  // LG's AirPlay is never switched off or closed: closed, it launches the last input app (Home), over the app in use
+  {
+    const cc = [];
+    const luna3 = async (uri, p) => {
+      if (/applicationManager\/running$/.test(uri)) return { returnValue: true, running: [{ id: 'airplay', processid: '2001' }] };
+      if (/closeByAppId$|killApp$/.test(uri)) {
+        cc.push((p.id || p.appId) + '');
+        return { returnValue: true };
+      }
+      return luna(uri, p);
+    };
+    pmRestart();
+    pm.apps.filter(a => a.id === 'airplay')[0].isEnabled = true;
+    const rec3 = path.join(tmp, 'lgpreload3.json');
+    fs.writeFileSync(rec3, JSON.stringify(['airplay'])); // switched off by an earlier version
+    const pre3 = G.create(
+      {
+        config: memoryConfig({ options: { debloat: true } }),
+        luna: luna3,
+        profile: { get: () => ({ lgPreload: 'api' }) },
+        feature: n => (n === 'apps' ? { onScreen: () => ({}) } : null),
+      },
+      { record: rec3, startMs: 1e6, checkMs: 1e6 }
+    );
+    await pre3.sync();
+    ok(
+      cc.length === 0 && pm.apps.filter(a => a.id === 'airplay')[0].isEnabled === true,
+      'AirPlay is neither switched off nor closed, even when an earlier version switched it off: ' + cc.join()
+    );
+    try {
+      fs.unlinkSync(rec3);
     } catch (_) {}
   }
 });

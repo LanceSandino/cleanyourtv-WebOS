@@ -101,6 +101,8 @@ Nothing is restarted and no file of LG's changes: on webOS 25 that call also mar
 (`/var/preferences/webos-preload-manager-conf.json`), so it is only made for apps that are allowed already. The copies the preload
 manager already started in the background (running, and never on the screen in that process) are closed then (`closeByAppId`, and
 the web app manager's `killApp` where that does not take), so their memory is free at once; an app someone opened is never closed.
+Each is closed once: one that is back at the next look is started by something else, and is left running. LG's AirPlay is never
+switched off or closed: closed, it launches the last input app, which brought Home over the app on the screen every two minutes.
 When the TV wakes from standby (the service slept with it, so its clock jumps) it looks again, as LG pre-loads again on waking. It
 does nothing while LG's Home is chosen.
 

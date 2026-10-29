@@ -156,11 +156,14 @@ keyboard, or with the [phone remote](remote.md)'s **Type**; the results follow w
   installed.
 - **Search in:** the installed apps that can open their own search with words (YouTube and YouTube TV do). OK opens that app's
   search for what you typed.
-- **Look in:** when none of your apps has the title, Telemachus, Plex (or PLX) and Stremio, opened at their Home to look there.
+- **Look in:** only while Where to watch is switched off: Telemachus, Plex (or PLX) and Stremio, opened at their Home to look there
+  (none of them can be handed the words; with Where to watch on, those three are asked for the title instead).
 
 ![Search with words typed: In your apps, Where to watch with the apps on this TV as chips and the other services named, Search in](screenshots/search-where.jpg)
 
-OK or Down goes from the field to the results, Up from the first result back to the field, OK opens a result, Back closes. The
+The field is empty each time Search opens, and lists your last six searches under it (**Recent searches**, kept on this TV; OK
+searches again). OK or Down goes from the field to the results, Up from the first result back to the field, OK opens a result. Back
+from the field goes to the results (the TV's keyboard goes away), Back from a result closes. The
 titles in **In your apps** are the ones Home has already read for Continue watching, with the same switches: with **Show on Home**
 off, a row switched off or a card removed, those titles are not found there either.
 

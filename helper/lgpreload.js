@@ -11,6 +11,10 @@
 // /var/preferences/webos-preload-manager-conf.json, so it is only called for apps that are allowed already (the file stays as it is). The
 // app list in configd (supportAppList) is not what it follows while it runs: it keeps its own state.
 // Not while LG's Home is chosen (DISABLE), like the rest of the debloat at boot. Only where tvprofile.js says lgPreload: 'api'.
+// Closing must never take the screen from what is on it. LG's AirPlay app answers being closed (paused) by launching the last input
+// app, which is Home: Home came to the front over the app in use (Stremio, seen on the owner's TV) and Home took it for the Home key
+// (Search and the menus closed), every two minutes, because something other than the preload manager starts AirPlay again at once. So
+// AirPlay is left alone (KEEP), and an app this closed that is back at the next look is left running for the rest of this run.
 const fs = require('fs');
 const P = require('./paths');
 
@@ -19,8 +23,9 @@ const SVC = 'luna://com.webos.service.preloadmanager/',
   GROUP = 'preload'; // its name in options.debloatOff
 const RECORD = process.env.CYTV_LGPRELOAD_RECORD || '/tmp/cleanyourtv-lgpreload.json'; // the apps switched off, while the TV runs
 
-// apps whose pre-loading is never switched off: Home (our launcher) and anything of the Homebrew Channel's
-const KEEP = id => id === HOME || /^org\.webosbrew\./.test(String(id || ''));
+// apps whose pre-loading is never switched off and that are never closed: Home (our launcher), anything of the Homebrew Channel's, and
+// LG's AirPlay (closed, it brings Home to the front)
+const KEEP = id => id === HOME || id === 'airplay' || /^org\.webosbrew\./.test(String(id || ''));
 // the apps the preload manager would pre-load now and that are switched off here
 const toStop = apps => apps.filter(a => a && a.id && a.isEnabled === true && a.isAllowed === true && !KEEP(a.id)).map(a => a.id);
 
@@ -57,6 +62,7 @@ function create(ctx, opts) {
   let busy = false,
     again = false,
     last = '';
+  const closedOnce = new Set(); // closed in this run: back again means something else starts it, so it is left running
   const note = m => {
     last = m;
     console.log('lgpreload: ' + m);
@@ -74,10 +80,14 @@ function create(ctx, opts) {
     if (!seen || !ids.length) return;
     const r = await luna('luna://com.webos.applicationManager/running', {});
     const loaded = (Array.isArray(r.running) ? r.running : []).filter(
-      x => x && ids.indexOf(x.id) >= 0 && seen[x.id] !== String(x.processid)
+      x => x && ids.indexOf(x.id) >= 0 && !KEEP(x.id) && seen[x.id] !== String(x.processid)
     );
-    const closed = [];
+    const closed = [],
+      back = loaded.filter(x => closedOnce.has(x.id)).map(x => x.id);
+    if (back.length) note('left running (started again after being closed): ' + back.join(', '));
     for (const x of loaded) {
+      if (closedOnce.has(x.id)) continue;
+      closedOnce.add(x.id);
       // closeByAppId answers yes and leaves some apps running (own-your-glass saw it on webOS 25): the web app manager's killApp then
       let c = await luna('luna://com.webos.applicationManager/closeByAppId', { id: x.id });
       if (!c || c.returnValue !== true) c = await luna('luna://com.palm.webappmanager/killApp', { appId: x.id });

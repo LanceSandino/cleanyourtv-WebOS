@@ -5867,8 +5867,10 @@ var WALLPICK = (function () {
    (/api/search/where, helper/where.js: the words go to Plex's catalogue, Disney+, Stremio's catalogue, your Plex server and
    Telemachus): one row per title with its services, the apps on this TV as chips (Left and Right choose, OK opens), the others named
    with their offer. The field has the keys while it has the focus (the TV's keyboard shows); OK or Down goes to the results, Up from
-   the first one back to the field; OK opens a result when it is let go, Back closes. Over Home and its menus, under the screensaver;
-   the words stay in the page until it is reloaded. ---------- */
+   the first one back to the field; OK opens a result when it is let go; Back from the field goes to the results (the keyboard goes
+   away), Back from a result closes. Over Home and its menus, under the screensaver. The field is empty each time it opens and shows the
+   last searches (kept in this page's storage, the last six; OK searches again). "Look in" (Telemachus, Plex and Stremio opened as they
+   are, which cannot take the words) only when Where to watch is off: Where to watch asks those three itself. ---------- */
 var SEARCH = (function () {
   var open = false,
     els = null,
@@ -5888,10 +5890,48 @@ var SEARCH = (function () {
     okDown = false,
     lastKeyAt = 0,
     lastWheel = 0,
-    ROOM = 700; /* the height the rows may take under the field */
+    ROOM = 700 /* the height the rows may take under the field */,
+    RECENT = 'search.recent',
+    RECENT_MAX = 6;
+  /* the last searches, newest first */
+  function recent() {
+    try {
+      var r = JSON.parse(localStorage.getItem(RECENT) || '[]');
+      return Array.isArray(r)
+        ? r
+            .filter(function (x) {
+              return typeof x === 'string' && x;
+            })
+            .slice(0, RECENT_MAX)
+        : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  function remember(w) {
+    w = String(w || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (w.replace(/[^\w\u00c0-\uffff]/g, '').length < 2) return;
+    var r = recent().filter(function (x) {
+      return x.toLowerCase() !== w.toLowerCase();
+    });
+    r.unshift(w);
+    try {
+      localStorage.setItem(RECENT, JSON.stringify(r.slice(0, RECENT_MAX)));
+    } catch (e) {}
+  }
   /* a group's heading */
   function head(id) {
-    return id === 'have' ? t('In your apps') : id === 'where' ? t('Where to watch') : id === 'search' ? t('Search in') : t('Look in');
+    return id === 'have'
+      ? t('In your apps')
+      : id === 'where'
+        ? t('Where to watch')
+        : id === 'search'
+          ? t('Search in')
+          : id === 'recent'
+            ? t('Recent searches')
+            : t('Look in');
   }
   function whereOn() {
     return !(cfg.search && cfg.search.where === false);
@@ -5925,6 +5965,7 @@ var SEARCH = (function () {
     var out = [];
     ((r && r.groups) || []).forEach(function (g) {
       if (!g.items || !g.items.length) return;
+      if (g.id === 'try' && whereOn()) return; /* only opens the app; Where to watch looks in those apps itself */
       out.push({ head: head(g.id), id: g.id });
       g.items.forEach(function (it) {
         out.push({ item: it, group: g.id });
@@ -5954,10 +5995,17 @@ var SEARCH = (function () {
     var w = words(),
       n = ++asked;
     if (!w) {
-      local = [];
+      var rc = recent();
+      local = rc.length
+        ? [{ head: head('recent'), id: 'recent' }].concat(
+            rc.map(function (q) {
+              return { item: { key: 'recent-' + q, recent: q, app: '' }, group: 'recent' };
+            })
+          )
+        : [];
       whereRows = [];
       ++askedWhere;
-      note = t('Type a title: Home looks for it in the apps on this TV.');
+      note = rc.length ? '' : t('Type a title: Home looks for it in the apps on this TV.');
       at = -1;
       compose();
       return draw();
@@ -6086,6 +6134,7 @@ var SEARCH = (function () {
     var it = x.item;
     if (x.group === 'have') return [it.title, [it.sub, it.appTitle].filter(Boolean).join(' \u00b7 ')];
     if (x.group === 'search') return [it.appTitle, '\u201c' + shownQ + '\u201d'];
+    if (x.group === 'recent') return [it.recent, ''];
     return [t('Open %s').replace('%s', it.appTitle), ''];
   }
   /* how tall a row is drawn, for what fits on the screen (a Where to watch row: its title, its chips, the other services; search.css) */
@@ -6141,7 +6190,8 @@ var SEARCH = (function () {
       if (x.where) return fillWhere(el, x, k);
       var txt = label(x),
         img = el.querySelector('img');
-      icon(img, x.item.app);
+      if (x.item.recent) img.style.visibility = 'hidden';
+      else icon(img, x.item.app);
       el.querySelector('.lb').textContent = txt[0];
       el.querySelector('.st').textContent = txt[1];
       el.addEventListener('click', function () {
@@ -6158,7 +6208,9 @@ var SEARCH = (function () {
         : o
           ? (o.exact ? t('OK opens it in %s') : t('OK opens %s: find the title there')).replace('%s', o.appTitle) +
             (chips(cur).length > 1 ? ' \u00b7 ' + t('Left and Right: another app') : '')
-          : t('OK to open, Back to close');
+          : cur && cur.item && cur.item.recent
+            ? t('OK searches for it again, Back to close')
+            : t('OK to open, Back to close');
   }
   function icon(img, app) {
     img.onerror = function () {
@@ -6252,8 +6304,18 @@ var SEARCH = (function () {
   function pick() {
     var x = list[at];
     if (!x) return;
+    if (x.item && x.item.recent) {
+      /* a last search: its words in the field and the results asked again; the focus stays off the field, so no keyboard */
+      els.q.value = x.item.recent;
+      els.q.blur();
+      at = -1;
+      ask();
+      askWhere();
+      return;
+    }
     var go = x.item ? x.item.launch : x.where ? (chips(x)[chip] || {}).launch : null;
     if (!go) return;
+    remember(words());
     close();
     launch(go.id, go.params || {});
   }
@@ -6263,6 +6325,7 @@ var SEARCH = (function () {
     open = true;
     at = -1;
     start = 0;
+    l.q.value = ''; /* a new search each time: the last ones are listed under the field */
     l.q.placeholder = t('A film, a show, a video...');
     l.w.className = 'on';
     ask();
@@ -6275,6 +6338,7 @@ var SEARCH = (function () {
   }
   function close() {
     if (!open) return;
+    if (first() >= 0 && list[first()].group !== 'recent') remember(words()); /* searched, and there were results */
     open = false;
     clearTimeout(typeT);
     clearTimeout(whereT);
@@ -6301,8 +6365,11 @@ var SEARCH = (function () {
       if (at < 0) {
         if (k === 13 || k === 40) {
           if (first() >= 0) toRow(first());
-        } else if (k === 461 || k === 27) close();
-        else {
+        } else if (k === 461 || k === 27) {
+          /* Back from the field: to the results first (the keyboard goes away), so a Back meant for the keyboard does not close */
+          if (first() >= 0 && document.activeElement === els.q) toRow(first());
+          else close();
+        } else {
           /* typing, Backspace, Left and Right in the text: the field's own, Home does not see them */
           e.stopPropagation();
           if (e.stopImmediatePropagation) e.stopImmediatePropagation();

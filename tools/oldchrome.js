@@ -479,11 +479,12 @@ const SEARCH_KEYS =
   'var texts=/^Show A/.test(rows[0])&&/Telemachus$/.test(rows[0])&&/^Video/.test(rows[1])&&/show a/.test(rows[1]);' +
   'key(40);var first=fi()===0&&!inField();key(40);var second=fi()===1;key(40);var last=fi()===1;key(38);key(38);var back=inField()&&fi()===-1;' +
   'key(40);key(13,"keydown");var held=on()&&!launched.length;key(13,"keyup");setTimeout(function(){var l=launched[0]||[];' +
-  'var opens=l[0]==="com.telemachus.screen"&&!!l[1]&&!!l[1].play&&l[1].play.episode===6&&!on();SEARCH.show();var again=on()&&q.value==="show a";key(461);' +
+  'var opens=l[0]==="com.telemachus.screen"&&!!l[1]&&!!l[1].play&&l[1].play.episode===6&&!on();SEARCH.show();var rl=document.querySelector("#sr-list .srow .lb"),rh=document.querySelector("#sr-list .srh");' +
+  'var again=on()&&q.value===""&&!!rl&&rl.textContent==="show a"&&!!rh&&rh.textContent==="Recent searches";key(461);var toRes=on()&&fi()===0&&!inField();key(461);' +
   'setTimeout(function(){var closed=!on()&&!document.getElementById("ov")&&!stack.length&&r===home[0]&&c===home[1];' +
-  'var ok=label==="Search"&&opened&&stay&&heads==="In your apps|Search in"&&texts&&first&&second&&last&&back&&held&&opens&&again&&closed;' +
+  'var ok=label==="Search"&&opened&&stay&&heads==="In your apps|Search in"&&texts&&first&&second&&last&&back&&held&&opens&&again&&toRes&&closed;' +
   'out(ok?"ok":"bad label="+label+" opened="+opened+" stay="+stay+" heads="+heads+" rows="+rows.join("|")+" first="+first+" second="+second+" last="+last+' +
-  '" back="+back+" held="+held+" opens="+opens+" again="+again+" closed="+closed+" launched="+JSON.stringify(launched))},500)},500)},"the results")},"the tiles")})()</script>';
+  '" back="+back+" held="+held+" opens="+opens+" again="+again+" toRes="+toRes+" closed="+closed+" launched="+JSON.stringify(launched))},500)},500)},"the results")},"the tiles")})()</script>';
 // [name, file, what it draws, how many at least, milliseconds of page time to wait, a script to run in it, a theme id]; a name is its
 // address too (spaces as dashes), so letters, digits and spaces only: Chromium 120 sends an apostrophe as %27
 const PAGES = [
