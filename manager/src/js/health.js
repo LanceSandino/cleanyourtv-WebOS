@@ -10,7 +10,12 @@ var hm = null, // /api/metrics
   hSeq = 0,
   hFor = ''; // the screen the reading in progress is for ('' when none is)
 var HEALTH_VIEWS = { health: 1, healthproc: 1, exposure: 1, lgservices: 1 };
-var TONES = { g: 'guarded as it should be', a: 'open by design or with its own rules', r: 'open with no check at all' };
+var TONES = { g: 'Guarded as it should be', a: 'Open by design or with its own rules', r: 'Open with no check at all' };
+/* a sentence from the table (exposure.js), with its first letter in capitals */
+function hCap(s) {
+  s = String(s || '');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 function hBytes(b) {
   if (b === null || b === undefined) return '?';
   if (b >= 1073741824) return (b / 1073741824).toFixed(1) + ' GB';
@@ -164,7 +169,7 @@ function healthRows() {
         sub: (p.bind === 'loopback' ? 'loopback' : 'LAN') + ' · ' + p.program,
         tone: p.tone,
         fn: null,
-        info: { t: p.port + '/' + p.proto + ' · ' + p.what, d: p.how + '. ' + TONES[p.tone] + '.' },
+        info: { t: p.port + '/' + p.proto + ' · ' + p.what, d: hCap(p.how) + '. ' + TONES[p.tone] + '.' },
       });
     });
     if (x.udpReplies && x.udpReplies.count)
@@ -243,26 +248,23 @@ function healthRows() {
       .map(function (c) {
         return c.mhz;
       })
-      .filter(Boolean);
+      .filter(Boolean),
+    lo = Math.min.apply(null, mhz),
+    hi = Math.max.apply(null, mhz),
+    clock = !mhz.length ? '' : ' · ' + (lo / 1000).toFixed(2) + (hi !== lo ? '–' + (hi / 1000).toFixed(2) : '') + ' GHz';
+  var cpuInfo = {
+    t: 'Processor',
+    d:
+      'How busy the cores were over the last ' +
+      (m.window || 2) +
+      ' s, from the kernel’s own counters. A core LG switches off counts as idle. The load average is not shown: on these TVs it stays near 32 even when idle, because of kernel threads that wait for ever.',
+  };
   rows.push({
     label: 'Processor',
-    sub:
-      (cpu.total === null ? 'measuring…' : cpu.total + '%') +
-      ' · ' +
-      cpu.cores.length +
-      ' cores' +
-      (mhz.length
-        ? ' · ' + (Math.min.apply(null, mhz) / 1000).toFixed(2) + '–' + (Math.max.apply(null, mhz) / 1000).toFixed(2) + ' GHz'
-        : ''),
+    sub: (cpu.total === null ? 'measuring…' : cpu.total + '%') + ' · ' + cpu.cores.length + ' cores' + clock,
     bar: cpu.total === null ? 0 : cpu.total / 100,
     fn: null,
-    info: {
-      t: 'Processor',
-      d:
-        'How busy the cores were over the last ' +
-        (m.window || 2) +
-        ' s, from the kernel’s own counters. A core LG switches off counts as idle. The load average is not shown: on these TVs it stays near 32 even when idle, because of kernel threads that wait for ever.',
-    },
+    info: cpuInfo,
   });
   cpu.cores.forEach(function (c) {
     rows.push({
@@ -271,6 +273,7 @@ function healthRows() {
       bar: c.busy ? c.busy / 100 : 0,
       dim: !c.online,
       fn: null,
+      info: cpuInfo,
     });
   });
   if (m.temp)
