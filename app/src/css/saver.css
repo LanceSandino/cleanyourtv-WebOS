@@ -65,53 +65,164 @@
   left: auto;
   right: 96px;
 }
-/* the frame (Style: Frame, saver.js): the photo in a mat, behind a frame around the screen, a small label and clock; nothing moves */
+/* the frame (Style: Frame, saver.js), like a frame TV: the frame's four sides under the photo layers (--b: its width), the mat with
+   its windows inside it, the frame's shadow on the mat, a little light from above over it all. Nothing here moves. */
+#svfr,
+#svlt {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+}
+#sv.framed #svfr,
+#sv.framed #svlt {
+  display: block;
+}
+#svfr .svside {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  background-repeat: no-repeat, repeat-x;
+}
+#svlt {
+  background: radial-gradient(ellipse 70% 55% at 50% 0, rgba(255, 248, 236, 0.07), rgba(255, 248, 236, 0) 100%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.08));
+}
+#sv.framed .svp {
+  left: var(--b);
+  top: var(--b);
+  width: calc(100% - 2 * var(--b));
+  height: calc(100% - 2 * var(--b));
+}
 #sv .svp.fr {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
+  background-repeat: repeat;
+  background-position: 0 0;
+  background-size: auto;
+}
+/* the frame's shadow on the mat (or on a photo that fills it): deeper under the top, where the light comes from */
+#sv .svp.fr::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.4),
+    inset 0 3px 4px -1px rgba(0, 0, 0, 0.35),
+    inset 0 16px 22px -10px rgba(0, 0, 0, 0.5),
+    inset 12px 0 18px -11px rgba(0, 0, 0, 0.34),
+    inset -5px 0 10px -7px rgba(0, 0, 0, 0.22),
+    inset 0 -5px 9px -6px rgba(0, 0, 0, 0.2);
+}
+#sv .svp.fr-none::after {
+  display: none;
 }
 #sv .svrow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
+#sv .svcol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* a window cut in the mat: the cut's bevel shows the white core of the board, lit from above (its top edge faces away) */
+#sv .svw {
+  position: relative;
+  border: 5px solid;
+  border-color: #e2ded5 #f6f4ef #fdfcf9 #e9e5dd;
+}
+#sv .fr-core .svw {
+  border-color: #0c0c0c #262626 #303030 #121212;
+}
+#sv .fr-full .svw {
+  border: 0;
+}
+#sv .svf,
+#sv .svx {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
 #sv .svf {
-  background: center / cover no-repeat;
+  background: center 42% / cover no-repeat;
+}
+/* the mat's edge throws a hairline of shadow on the photo */
+#sv .svw::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.18),
-    0 18px 40px rgba(0, 0, 0, 0.28);
+    inset 0 2px 3px rgba(0, 0, 0, 0.3),
+    inset 2px 0 3px rgba(0, 0, 0, 0.16);
 }
-#sv .svf + .svf {
-  margin-left: 64px;
+#sv .fr-full .svw::after {
+  display: none;
 }
-#sv .fr-bleed .svf {
-  box-shadow: none;
+/* Finish: Canvas, the weave of a canvas over the photo; Painting, also a warm varnish, darker towards the edges, less saturated */
+#sv .fin-canvas .svx,
+#sv .fin-painting .svx {
+  background: url("saver-canvas.webp") repeat;
+  opacity: 0.45;
 }
-#sv .fr-wood {
-  border: 30px solid #6b4423;
-  box-shadow:
-    inset 0 0 0 4px #4a2d16,
-    inset 0 0 0 8px rgba(255, 255, 255, 0.07);
+#sv .fin-painting .svx {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(40, 22, 5, 0) 55%, rgba(40, 22, 5, 0.42)),
+    linear-gradient(rgba(150, 100, 30, 0.12), rgba(150, 100, 30, 0.12)),
+    url("saver-canvas.webp") repeat;
+  opacity: 0.85;
 }
-#sv .fr-black {
-  border: 26px solid #151515;
+#sv .fin-painting .svf {
+  filter: sepia(0.14) saturate(0.9) contrast(1.05);
 }
-#sv .fr-gold {
-  border: 28px solid #a8813a;
-  box-shadow: inset 0 0 0 4px #7a5a22;
+/* Label: under the photo, in pencil as on a signed print */
+#sv .svs {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  font:
+    italic 19px Georgia,
+    "Times New Roman",
+    serif;
+  color: rgba(70, 63, 54, 0.7);
+  white-space: nowrap;
 }
-#sv .fr-white {
-  border: 26px solid #f2f0ea;
+#sv .svs1 {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 18px;
 }
+#sv .svs2 {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+#sv .fr-dark .svs {
+  color: rgba(232, 226, 214, 0.6);
+}
+/* over a photo that fills the frame: its corner */
 #sv .svl {
   position: absolute;
-  right: 110px;
-  bottom: 80px;
+  right: 44px;
+  bottom: 36px;
   text-align: right;
   font-family: Georgia, "Times New Roman", serif;
-  color: #4f4a42;
+  color: #f2ede4;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 #sv .svl1 {
   font-size: 30px;
@@ -119,43 +230,84 @@
 #sv .svl2 {
   margin-top: 6px;
   font-size: 24px;
-  color: #857e72;
+  color: #d9d2c6;
 }
-#sv .fr-dark .svl1,
-#sv .fr-bleed .svl1 {
-  color: #f2ede4;
+/* Label: Plaque, a brass plate on the frame's bottom side (on the mat under a thin frame) */
+#sv .svq {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: calc(var(--b) / -2 - 16px);
+  height: 32px;
+  line-height: 32px;
+  padding: 0 34px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font:
+    15px Georgia,
+    "Times New Roman",
+    serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #3a2a10;
+  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.45);
+  background: linear-gradient(to bottom, #e4cd8e, #b8964f 48%, #a8853f 52%, #cdb06a);
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 1px #6f5424,
+    0 3px 5px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 250, 225, 0.6);
 }
-#sv .fr-dark .svl2,
-#sv .fr-bleed .svl2 {
-  color: #c9c2b6;
+#sv .svq::before,
+#sv .svq::after {
+  content: "";
+  position: absolute;
+  top: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f1dfa8, #8a6a30);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
 }
-#sv .fr-bleed .svl {
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+#sv .svq::before {
+  left: 12px;
 }
+#sv .svq::after {
+  right: 12px;
+}
+#sv .fr-narrow .svq,
+#sv .fr-none .svq {
+  bottom: 30px;
+}
+/* the clock in the mat's top corner, smaller, in the mat's ink */
 #sv.framed #svc {
-  left: 110px;
-  bottom: 80px;
+  left: auto;
+  bottom: auto;
+  right: calc(var(--b) + 44px);
+  top: calc(var(--b) + 30px);
+  text-align: right;
 }
 #sv.framed #svt {
-  font-size: 64px;
+  font-size: 56px;
 }
 #sv.framed #svd {
-  font-size: 24px;
-  margin-top: 8px;
+  font-size: 22px;
+  margin-top: 6px;
 }
 #sv.framed.inkdark #svc {
-  color: #4f4a42;
+  color: rgba(60, 54, 46, 0.82);
   text-shadow: none;
 }
 #sv.framed.inkdark #svd {
-  color: #857e72;
+  color: rgba(80, 73, 64, 0.7);
 }
 [dir="rtl"] #sv .svl {
   right: auto;
-  left: 110px;
+  left: 44px;
   text-align: left;
 }
 [dir="rtl"] #sv.framed #svc {
-  left: auto;
-  right: 110px;
+  right: auto;
+  left: calc(var(--b) + 44px);
+  text-align: left;
 }

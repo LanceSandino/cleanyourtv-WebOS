@@ -101,18 +101,39 @@ run(async () => {
   await call(apps, '/api/config', 'POST', { saver: { on: true, secs: 900 } });
   const sDefault = JSON.stringify(config.get().saver);
   await call(apps, '/api/config', 'POST', {
-    saver: { on: true, secs: 300, style: 'photos', frame: 'gold', mat: 'charcoal', label: false },
+    saver: {
+      on: true,
+      secs: 300,
+      style: 'photos',
+      frame: 'brass',
+      profile: 'classic',
+      mat: 'linen',
+      layout: 'three',
+      finish: 'painting',
+      label: 'plaque',
+    },
   });
-  const sSet = JSON.stringify(config.get().saver);
+  const sSet = config.get().saver;
+  await call(apps, '/api/config', 'POST', { saver: { on: true, label: false, frame: 'none' } });
+  const sOff = config.get().saver;
   await call(apps, '/api/config', 'POST', {
-    saver: { on: true, secs: 7, style: 'x', frame: 'url(x)', mat: '#fff', label: 0 },
+    saver: { on: true, secs: 7, style: 'x', frame: 'gold', profile: 'url(x)', mat: '#fff', layout: 2, finish: 'oil', label: 'yes' },
   });
   ok(
     sDefault === '{"on":true,"after":300,"secs":900,"clock":true}' &&
-      sSet === '{"on":true,"after":300,"secs":300,"clock":true,"style":"photos","frame":"gold","mat":"charcoal","label":false}' &&
+      sSet.secs === 300 &&
+      sSet.style === 'photos' &&
+      sSet.frame === 'brass' &&
+      sSet.profile === 'classic' &&
+      sSet.mat === 'linen' &&
+      sSet.layout === 'three' &&
+      sSet.finish === 'painting' &&
+      sSet.label === 'plaque' &&
+      sOff.label === false &&
+      sOff.frame === 'none' &&
       config.get().saver.secs === 15 &&
-      ['style', 'frame', 'mat', 'label'].every(k => config.get().saver[k] === undefined),
-    'the screensaver keeps its Style, Frame, Mat and Label only when they are one of the choices (Frame, wood, from the photo and the label are the defaults), and photos stay 5 or 15 minutes'
+      ['style', 'frame', 'profile', 'mat', 'layout', 'finish', 'label'].every(k => config.get().saver[k] === undefined),
+    'the screensaver keeps its Style, Frame, Profile, Mat, Photos at a time, Finish and Label only when they are one of the choices (the defaults are not saved), and photos stay 5 or 15 minutes'
   );
   await call(apps, '/api/config', 'POST', { wall: { on: true, secs: 10 } });
   const w10 = config.get().wall;

@@ -172,15 +172,17 @@ const SAVER_HDMI =
   'var allowed=calls.some(function(c){return /responseScreenSaverRequest/.test(c)&&/"ack":true/.test(c)&&/"timestamp":43/.test(c)});' +
   'var ok=allowed&&!launched.length&&!SAVER.active();' +
   'document.body.setAttribute("data-hdmi",ok?"ok":"bad allowed="+allowed+" launched="+launched.join()+" active="+SAVER.active())},1500)},500)})()</script>';
-// the frame (Style: Frame, the default): two portrait photos of the same day hang side by side in the mat, with the caption and the
-// day on a label; the clock is the small one of the frame
+// the frame (Style: Frame, the default): an oak frame of the bevelled profile, four mitred sides 70 px wide around the mat; two
+// portrait photos hang side by side in their windows, with the caption and the day pencilled under them; the board (WebP) decodes
 const SAVER_FRAME =
   '<script>(function(){var A=window.api,n=0;window.api=function(p,b){return p==="/api/photofeed/next"?Promise.resolve({id:"q"+(++n),date:"2026-10-25",caption:"Pumpkin patch",color:"#c08a5a"}):A(p,b)};' +
-  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);SAVER.start(true);var k=0,w=setInterval(function(){' +
-  'var p=document.querySelector("#sv .svp.on");if(++k<60&&!(p&&p.querySelectorAll(".svf").length))return;clearInterval(w);' +
-  'var pair=!!p&&/fr-pair/.test(p.className)&&p.querySelectorAll(".svf").length===2,lab=p&&p.querySelector(".svl"),txt=lab?lab.textContent:"";' +
-  'var label=/Pumpkin patch/.test(txt)&&/2026/.test(txt),framed=document.getElementById("sv").classList.contains("framed")&&/fr-wood/.test(p.className);' +
-  'document.body.setAttribute("data-frame",pair&&label&&framed?"ok":"bad pair="+pair+" label="+txt+" framed="+framed+" class="+(p&&p.className))},300)},500)})()</script>';
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);cfg.saver={on:true,frame:"oak",profile:"bevel",layout:"two"};SAVER.start(true);var k=0,w=setInterval(function(){' +
+  'var p=document.querySelector("#sv .svp.on");if(++k<60&&!(p&&p.querySelectorAll(".svw").length))return;clearInterval(w);' +
+  'var pair=!!p&&p.querySelectorAll(".svw").length===2,lab=p&&p.querySelector(".svs"),txt=lab?lab.textContent:"",sides=document.querySelectorAll("#svfr .svside");' +
+  'var label=/Pumpkin patch/.test(txt)&&/2026/.test(txt),sv=document.getElementById("sv"),framed=sv.classList.contains("framed")&&/\\bfr\\b/.test(p.className);' +
+  'var frame=sides.length===4&&/saver-wood-oak\\.webp/.test(sides[0].style.backgroundImage)&&sides[1].offsetHeight===70&&getComputedStyle(p).left==="70px";' +
+  'var im=new Image();im.onload=im.onerror=function(){var wood=im.naturalWidth===2048;' +
+  'document.body.setAttribute("data-frame",pair&&label&&framed&&frame&&wood?"ok":"bad pair="+pair+" label="+txt+" framed="+framed+" frame="+frame+" wood="+wood+" sides="+sides.length+" left="+getComputedStyle(p).left+" class="+(p&&p.className))};im.src="saver-wood-oak.webp"},300)},500)})()</script>';
 // the remote's Home key over a menu and over the photo chooser: the TV relaunches Home with launchType homeKey (webOS 6 to 24), or
 // with plain {keepAlive: true} (webOS 25, over the chooser here); both close
 const HOME_KEY =
@@ -308,6 +310,9 @@ function serve() {
     const json = o => (r.writeHead(200, { 'content-type': 'application/json' }), r.end(JSON.stringify(o)));
     const p = PAGES.filter(x => '/' + x[0].replace(/ /g, '-') + '.html' === u)[0];
     // the API token (apitoken.js): served next to the pages as on the TV, and every API call of a page must carry it
+    // the screensaver's materials sit next to the launcher page, as on the TV
+    if (/^\/saver-[a-z-]+\.webp$/.test(u) && fs.existsSync(path.join(ROOT, 'app', u)))
+      return r.writeHead(200, { 'content-type': 'image/webp' }), r.end(fs.readFileSync(path.join(ROOT, 'app', u)));
     if (u === '/cytv-token.js')
       return r.writeHead(200, { 'content-type': 'text/javascript' }), r.end("var CYTV_TOKEN = '" + TOKEN + "';\n");
     if (

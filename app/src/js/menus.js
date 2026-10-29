@@ -684,21 +684,105 @@ function saverMenu() {
       fam = (cfg.photoFeed && cfg.photoFeed.photos) || 0,
       wall = +String((cfg.wallpapers && cfg.wallpapers.stamp) || '0').split(':')[0] || 0,
       framed = s.style !== 'photos',
-      FR = ['wood', 'black', 'gold', 'white', 'none'],
-      FRN = { wood: t('Wood'), black: t('Black'), gold: t('Gold'), white: t('White'), none: t('None') },
-      MA = ['auto', 'white', 'cream', 'charcoal'],
-      MAN = { auto: t('From the photo'), white: t('White'), cream: t('Cream'), charcoal: t('Charcoal') },
-      fr = FRN[s.frame] ? s.frame : 'wood',
-      ma = MAN[s.mat] ? s.mat : 'auto',
+      /* the frame's choices (saver.js): the first of each list is the default */
+      FR = 'walnut oak teak ash cherry greyoak blackash black white charcoal sand navy sage burgundy brass silver none'.split(' '),
+      FRN = {
+        walnut: t('Walnut'),
+        oak: t('Oak'),
+        teak: t('Teak'),
+        ash: t('Ash'),
+        cherry: t('Cherry'),
+        greyoak: t('Grey oak'),
+        blackash: t('Black ash'),
+        black: t('Black'),
+        white: t('White'),
+        charcoal: t('Charcoal'),
+        sand: t('Sand'),
+        navy: t('Navy'),
+        sage: t('Sage'),
+        burgundy: t('Burgundy'),
+        brass: t('Brass'),
+        silver: t('Silver'),
+        none: t('No frame'),
+      },
+      PR = ['modern', 'thin', 'bevel', 'classic'],
+      PRN = { modern: t('Modern'), thin: t('Thin'), bevel: t('Bevelled'), classic: t('Classic') },
+      MA = ['auto', 'white', 'cream', 'grey', 'charcoal', 'black', 'linen'],
+      MAN = {
+        auto: t('From the photo'),
+        white: t('White'),
+        cream: t('Cream'),
+        grey: t('Grey'),
+        charcoal: t('Charcoal'),
+        black: t('Black'),
+        linen: t('Linen'),
+      },
+      LA = ['two', 'three', 'one'],
+      LAN = { one: t('One (fills the frame unless portrait)'), two: t('Up to two side by side'), three: t('Up to three side by side') },
+      FI = ['none', 'canvas', 'painting'],
+      FIN = { none: t('None'), canvas: t('Canvas'), painting: t('Painting (canvas and varnish)') },
+      LB = ['under', 'plaque', 'off'],
+      LBN = { under: t('Under the photo'), plaque: t('Plaque'), off: t('Off') },
+      val = function (k, list) {
+        return list.indexOf(s[k]) >= 0 ? s[k] : list[0];
+      },
+      lb = s.label === false ? 'off' : s.label === 'plaque' ? 'plaque' : 'under',
       set = function (k, v) {
         var o = { on: s.on === true, after: after, secs: secs, clock: s.clock !== false };
         if (s.style === 'photos') o.style = 'photos';
-        if (fr !== 'wood') o.frame = fr;
-        if (ma !== 'auto') o.mat = ma;
-        if (s.label === false) o.label = false;
-        o[k] = v;
+        [
+          ['frame', FR],
+          ['profile', PR],
+          ['mat', MA],
+          ['layout', LA],
+          ['finish', FI],
+        ].forEach(function (p) {
+          var x = val(p[0], p[1]);
+          if (x !== p[1][0]) o[p[0]] = x;
+        });
+        if (lb !== 'under') o.label = lb === 'off' ? false : 'plaque';
+        if (k === 'label') {
+          delete o.label;
+          if (v !== 'under') o.label = v === 'off' ? false : 'plaque';
+        } else if (v === undefined) delete o[k];
+        else o[k] = v;
         cfg.saver = o;
         saveCfg();
+      },
+      /* a list to pick one from, with a tick at the chosen one; Back goes back */
+      choose = function (title, k, list, names) {
+        return {
+          label: title,
+          sub: names[val(k, list)],
+          fn: function () {
+            openBuilt(title, function () {
+              s = cfg.saver || {}; /* read again: the list is built again after each pick */
+              var now = val(k, list);
+              return list.map(function (x) {
+                return {
+                  label: names[x],
+                  sub: x === now ? '\u2713' : '',
+                  stay: true,
+                  fn: function () {
+                    set(k, x === list[0] ? undefined : x);
+                  },
+                };
+              });
+            });
+          },
+        };
+      },
+      cycle = function (title, k, list, names) {
+        var now = val(k, list);
+        return {
+          label: title,
+          sub: names[now],
+          stay: true,
+          fn: function () {
+            var nx = list[(list.indexOf(now) + 1) % list.length];
+            set(k, nx === list[0] ? undefined : nx);
+          },
+        };
       };
     return [
       {
@@ -745,33 +829,18 @@ function saverMenu() {
           set('style', framed ? 'photos' : 'frame');
         },
       },
-      framed
-        ? {
-            label: t('Frame'),
-            sub: FRN[fr],
-            stay: true,
-            fn: function () {
-              set('frame', FR[(FR.indexOf(fr) + 1) % FR.length]);
-            },
-          }
-        : null,
-      framed
-        ? {
-            label: t('Mat'),
-            sub: MAN[ma],
-            stay: true,
-            fn: function () {
-              set('mat', MA[(MA.indexOf(ma) + 1) % MA.length]);
-            },
-          }
-        : null,
+      framed ? choose(t('Frame'), 'frame', FR, FRN) : null,
+      framed && val('frame', FR) !== 'none' ? cycle(t('Profile'), 'profile', PR, PRN) : null,
+      framed ? choose(t('Mat'), 'mat', MA, MAN) : null,
+      framed ? cycle(t('Photos at a time'), 'layout', LA, LAN) : null,
+      framed ? cycle(t('Finish'), 'finish', FI, FIN) : null,
       framed
         ? {
             label: t('Label'),
-            sub: s.label !== false ? t('Date and caption') : t('Off'),
+            sub: LBN[lb],
             stay: true,
             fn: function () {
-              set('label', s.label === false);
+              set('label', LB[(LB.indexOf(lb) + 1) % LB.length]);
             },
           }
         : null,

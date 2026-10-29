@@ -861,3 +861,31 @@ commit_ref: "feature/frame-saver (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T01:42:20Z"
 ```
+
+```yaml
+id: CU-20261028-4
+type: feature
+title: "Screensaver frame rebuilt like a frame TV: real-looking woods, paints and metals, profiles, bevel-cut mats, more options"
+description: "The owner found the first frames (flat CSS borders, then ornate SVG mouldings) fake and asked for realistic frames like any
+  frame TV, with wood looks, plain black or colours, more options, one photo filling the frame unless it is portrait, or several, and
+  painting-like finishes. tools/saver-art.mjs now makes the materials pixel by pixel in Chrome (seeded noise) as small WebP files in
+  app/: seven boards (walnut, oak, teak, ash, cherry, grey oak, black ash: rings that drift, fibres, pores), brushed brass and silver,
+  the tooth of mat board, a canvas weave and linen (about 300 KB together). saver.js builds the frame from four mitred sides (clip-path
+  trapezoids turned into place by a matrix), each a different length of the board, and lights each side from its profile (Modern,
+  Thin, Bevelled, Classic: the height across the side gives the normal; diffuse and a satin, paint or metal shine from one light above
+  and to the left, written as a CSS gradient of shade and light over the material); seven paints need no picture. The frame is its own
+  layer under the two photo layers and is drawn again only when its material, profile or the screen size change. The photos hang in
+  bevel-cut windows (the core lit from above), the frame throws its shadow on the mat, a faint room light lies over it all. Photos at
+  a time: up to two (default), up to three portraits, or One (a landscape photo fills the inside, cut to fit; a portrait hangs in the
+  mat). Finish: Canvas (a weave over the photo) or Painting (also a varnish and a darker edge). Label: pencilled under each window,
+  a brass plaque on the frame, or off. Mats: also Grey, Black (black core) and Linen. The clock sits small in the mat's top corner.
+  Frame and Mat are lists with a tick in the menu. apps.js keeps each choice only when it is one of the list and not the default. The
+  harness serves the app's saver-*.webp to the pages as the TV does, and the frame check proves the board decodes in Chromium 68. The
+  ornate frames and the gilded/wood/gold/white set of CU-20261028-3 are gone (unreleased)."
+impact: medium
+affected_modules: ["app/src/js/saver.js", "app/src/css/saver.css", "app/src/js/menus.js", "helper/apps.js", "tools/saver-art.mjs", "app/saver-*.webp", "tools/oldchrome.js", "docs/screensaver.md", "docs/fork.md", "README.md"]
+related_tests: ["tools/test/apps.test.js (the screensaver keeps its Style, Frame, Profile, Mat, Photos at a time, Finish and Label only when they are one of the choices)", "tools/oldchrome.js (saver frame: an oak bevelled frame of four 70 px sides around the mat, two portraits in windows with pencilled labels, the board decodes; saver; saver keys)"]
+commit_ref: "feature/frame-saver (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T02:16:13Z"
+```

@@ -30,11 +30,14 @@ var SAVER = (function () {
       after: s.after || 300,
       secs: s.secs || 15,
       clock: s.clock !== false,
-      /* Style: Frame (the default) shows each photo like a print on a wall; Photos fits it whole on black */
+      /* Style: Frame (the default) hangs the photos in a mat behind a frame, like a frame TV; Photos fits each whole on black */
       style: s.style === 'photos' ? 'photos' : 'frame',
-      frame: FRAMES[s.frame] ? s.frame : 'wood',
-      mat: s.mat === 'white' || s.mat === 'cream' || s.mat === 'charcoal' ? s.mat : 'auto',
-      label: s.label !== false,
+      frame: FRAMES.indexOf(s.frame) >= 0 ? s.frame : 'walnut',
+      profile: PROFILES[s.profile] ? s.profile : 'modern',
+      mat: MATS[s.mat] ? s.mat : 'auto',
+      layout: s.layout === 'one' || s.layout === 'three' ? s.layout : 'two',
+      finish: s.finish === 'canvas' || s.finish === 'painting' ? s.finish : 'none',
+      label: s.label === false ? 'off' : s.label === 'plaque' ? 'plaque' : 'under',
     };
   }
   function famN() {
@@ -53,10 +56,12 @@ var SAVER = (function () {
     if (els) return els;
     var w = document.createElement('div');
     w.id = 'sv';
+    /* the frame under the two photo layers (it does not fade: it is drawn once), the light of the room over them, the night dim */
     w.innerHTML =
-      '<div class="svp"></div><div class="svp"></div><div id="svn"></div><div id="svc"><div id="svt"></div><div id="svd"></div></div>';
+      '<div id="svfr"></div><div class="svp"></div><div class="svp"></div><div id="svlt"></div><div id="svn"></div>' +
+      '<div id="svc"><div id="svt"></div><div id="svd"></div></div>';
     document.body.appendChild(w);
-    els = { w: w, p: [w.childNodes[0], w.childNodes[1]], n: w.childNodes[2] };
+    els = { w: w, fr: w.childNodes[0], p: [w.childNodes[1], w.childNodes[2]], n: w.childNodes[4] };
     return els;
   }
   /* the time and the date, as on Home (the Clock setting), and darker from ten at night to seven in the morning */
@@ -131,15 +136,156 @@ var SAVER = (function () {
     };
     im.src = url;
   }
-  /* ---- the frame (Style: Frame): the photo in a mat behind a frame, like a print on a wall, with the day it was taken and its
-     caption on a small label; two portrait photos of the same day side by side; a photo near the screen's shape fills it inside
-     the frame. Still: only the cross-fade moves. The mat takes a little of the photo's colour when the feed says it. ---- */
-  var FRAMES = { wood: 1, black: 1, gold: 1, white: 1, none: 1 },
-    MATS = { white: '#f4f1ea', cream: '#ece2cc', charcoal: '#2c2b28' },
-    spare = null;
+  /* ---- the frame (Style: Frame), like a frame TV: a frame of four mitred sides (a wood, a paint or a metal) around the screen, lit
+     from above by its profile; the photos hang in a mat behind it, each in its own bevel-cut window with the day and the caption
+     pencilled under it, or one photo fills the inside. Still: only the cross-fade moves, and the frame is drawn once, under the photos.
+     The materials are small pictures next to the page (tools/saver-art.mjs). ---- */
+  var FRAMES = 'walnut oak teak ash cherry greyoak blackash black white charcoal sand navy sage burgundy brass silver none'.split(' '),
+    /* a material: its picture (a board or brushed metal along the side), its colour and how it shines */
+    MATERIAL = {
+      walnut: ['wood-walnut', '#523726'],
+      oak: ['wood-oak', '#b8966b'],
+      teak: ['wood-teak', '#946338'],
+      ash: ['wood-ash', '#d2c0a0'],
+      cherry: ['wood-cherry', '#8f4f33'],
+      greyoak: ['wood-grey', '#8d877e'],
+      blackash: ['wood-black', '#232120'],
+      black: ['', '#161616'],
+      white: ['', '#ecebe6'],
+      charcoal: ['', '#3a3a3c'],
+      sand: ['', '#c6b89e'],
+      navy: ['', '#1f2a3d'],
+      sage: ['', '#86967e'],
+      burgundy: ['', '#5a2127'],
+      brass: ['metal-brass', '#a98b55'],
+      silver: ['metal-silver', '#b7bbc0'],
+    },
+    /* the width of each profile, px on the 1920 x 1080 page */
+    PROFILES = { thin: 34, modern: 58, bevel: 70, classic: 86 },
+    MATS = { white: '#f2f0eb', cream: '#ebe3cf', grey: '#c8c6c1', charcoal: '#2e2d2b', black: '#151515', linen: '#d9cfbc' },
+    SIDES = ['top', 'right', 'bottom', 'left'],
+    spare = null,
+    frameKey = '';
+  /* the height of the profile at each px across the side, from the outer edge (0) to the inside (b) */
+  function heights(p, b) {
+    var h = [],
+      v,
+      q = function (r, x) {
+        return Math.sqrt(Math.max(0, r * r - x * x));
+      };
+    for (v = 0; v <= b; v++)
+      h.push(
+        p === 'thin'
+          ? v < 5
+            ? 1 + q(5, 5 - v)
+            : v > b - 3
+              ? 6 - (v - b + 3)
+              : 6
+          : p === 'bevel'
+            ? v < 6
+              ? 12 + q(6, 6 - v)
+              : v > b - 3
+                ? 6 - (v - b + 3) * 0.7
+                : 18 - ((v - 6) * 12) / (b - 9)
+            : p === 'classic'
+              ? v < 6
+                ? 12 + q(6, 6 - v)
+                : v < 50
+                  ? 18
+                  : v < 64
+                    ? 9 + 9 * (1 - q(1, (64 - v) / 14))
+                    : v < b - 8
+                      ? 9
+                      : 9 + 0.8 * q(4, v - b + 4)
+              : v < 8
+                ? 2 + q(8, 8 - v)
+                : v > b - 4
+                  ? 6 + q(4, v - b + 4)
+                  : 10
+      );
+    return h;
+  }
+  function unit(x) {
+    var l = Math.sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]);
+    return [x[0] / l, x[1] / l, x[2] / l];
+  }
+  function dot(a, b) {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  }
+  var TOLIGHT = unit([-0.3, -0.75, 0.85]) /* the light: above, a little to the left, in front */,
+    HALF = unit([TOLIGHT[0], TOLIGHT[1], TOLIGHT[2] + 1]);
+  /* the light on one side, across it: a gradient of black (shade) and white (light, shine) over the material */
+  function shading(prof, b, side, kind, color) {
+    var h = heights(prof, b),
+      inX = side === 'left' ? 1 : side === 'right' ? -1 : 0,
+      inY = side === 'top' ? 1 : side === 'bottom' ? -1 : 0,
+      room = { top: 0.05, right: -0.03, bottom: -0.07, left: 0.02 }[side] /* more light from above than from below */,
+      shine = kind === 'metal' ? [30, 0.7] : kind === 'paint' ? [26, 0.2] : [16, 0.14],
+      flat = Math.pow(HALF[2], shine[0]) * shine[1],
+      base = lum(color) / 255,
+      stops = [];
+    for (var v = 0; v < b; v++) {
+      var d = (h[Math.min(b, v + 1)] - h[Math.max(0, v - 1)]) / 2,
+        n = unit([-d * inX, -d * inY, 1]),
+        m = Math.max(0, dot(n, TOLIGHT)) / TOLIGHT[2] + room,
+        sp = Math.pow(Math.max(0, dot(n, HALF)), shine[0]) * shine[1] - flat,
+        want = Math.max(0, base * m + sp),
+        col =
+          want < base
+            ? 'rgba(0,0,0,' + Math.min(0.9, 1 - want / Math.max(base, 0.01)).toFixed(3) + ')'
+            : 'rgba(255,255,255,' + Math.min(0.75, (want - base) / Math.max(1 - base, 0.05)).toFixed(3) + ')';
+      stops.push(col + ' ' + v + 'px', col + ' ' + (v + 1) + 'px');
+    }
+    return 'linear-gradient(to bottom,' + stops.join(',') + ')';
+  }
+  function lum(c) {
+    var m = /(\d+),\s*(\d+),\s*(\d+)/.exec(c),
+      v = m ? [+m[1], +m[2], +m[3]] : [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+    return v[0] * 0.3 + v[1] * 0.59 + v[2] * 0.11;
+  }
+  /* the four sides, each a strip along its edge (turned into place), mitred where they meet; drawn again only when it changes */
+  function drawFrame(o, b, W, H) {
+    var l = layers(),
+      key = o.frame + ' ' + o.profile + ' ' + W + 'x' + H;
+    if (frameKey === key) return;
+    frameKey = key;
+    l.fr.textContent = '';
+    if (!b) return;
+    var mt = MATERIAL[o.frame],
+      kind = !mt[0] ? 'paint' : mt[0].indexOf('metal') === 0 ? 'metal' : 'wood',
+      at = { top: [1, 0, 0, 1, 0, 0], right: [0, 1, -1, 0, W, 0], bottom: [1, 0, 0, -1, 0, H], left: [0, 1, 1, 0, 0, 0] };
+    SIDES.forEach(function (sd, i) {
+      var len = sd === 'top' || sd === 'bottom' ? W : H,
+        d = document.createElement('div'),
+        clip = 'polygon(0 0,' + len + 'px 0,' + (len - b) + 'px ' + b + 'px,' + b + 'px ' + b + 'px)';
+      d.className = 'svside';
+      d.style.width = len + 'px';
+      d.style.height = b + 'px';
+      d.style.transform = 'matrix(' + at[sd].join(',') + ')';
+      d.style.webkitClipPath = clip;
+      d.style.clipPath = clip;
+      d.style.backgroundColor = mt[1];
+      d.style.backgroundImage = shading(o.profile, b, sd, kind, mt[1]) + (mt[0] ? ',url("saver-' + mt[0] + '.webp")' : '');
+      /* each side a different stretch of the board, as if cut from different lengths */
+      d.style.backgroundPosition = '0 0,' + -[0, 640, 128, 900][i] + 'px ' + -[0, 6, 3, 9][i] + 'px';
+      l.fr.appendChild(d);
+    });
+  }
+  function ratio(im) {
+    return im && im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : 1.5;
+  }
   function shape(im) {
-    var r = im && im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : 1.5;
+    var r = ratio(im);
     return Math.abs(r - 16 / 9) / (16 / 9) < 0.12 ? 'bleed' : r < 0.9 ? 'port' : 'land';
+  }
+  /* how many photos hang together: one that fills the frame alone; up to three portraits, or two landscapes, side by side */
+  function groupOf(im, o) {
+    var sh = shape(im);
+    if (sh === 'bleed' || o.layout === 'one') return 1;
+    return sh === 'port' ? (o.layout === 'three' ? 3 : 2) : 2;
+  }
+  function fills(im, o, n) {
+    return n === 1 && (shape(im) === 'bleed' || (o.layout === 'one' && ratio(im) >= 1.25));
   }
   function matOf(meta) {
     var m = opts().mat;
@@ -148,7 +294,7 @@ var SAVER = (function () {
     if (!c) return '#efe9df';
     var n = parseInt(c.slice(1), 16),
       rgb = [n >> 16, (n >> 8) & 255, n & 255];
-    if (rgb[0] * 0.3 + rgb[1] * 0.59 + rgb[2] * 0.11 < 60) return MATS.charcoal; /* a dark photo: a dark mat */
+    if (lum(c) < 60) return MATS.charcoal; /* a dark photo: a dark mat */
     return (
       'rgb(' +
       rgb
@@ -159,25 +305,28 @@ var SAVER = (function () {
       ')'
     );
   }
-  function darkMat(col) {
-    var m = /(\d+),(\d+),(\d+)/.exec(col),
-      v = m ? [+m[1], +m[2], +m[3]] : [parseInt(col.slice(1, 3), 16), parseInt(col.slice(3, 5), 16), parseInt(col.slice(5, 7), 16)];
-    return v[0] * 0.3 + v[1] * 0.59 + v[2] * 0.11 < 128;
+  function el(cls, text) {
+    var d = document.createElement('div');
+    d.className = cls;
+    if (text) d.textContent = text;
+    return d;
   }
-  /* a photo's box inside the mat, by its shape and how many hang side by side */
-  function box(im, maxW, maxH) {
-    var r = im.naturalWidth / im.naturalHeight,
+  /* a window cut in the mat with the photo behind it (and the canvas over it, Finish: Canvas or Painting) */
+  function windowFor(im, maxW, maxH, o) {
+    var r = ratio(im),
       w = maxW,
       h = w / r;
     if (h > maxH) {
       h = maxH;
       w = h * r;
     }
-    var d = document.createElement('div');
-    d.className = 'svf';
+    var d = el('svw'),
+      f = el('svf');
     d.style.width = Math.round(w) + 'px';
     d.style.height = Math.round(h) + 'px';
-    d.style.backgroundImage = 'url("' + im.src + '")';
+    f.style.backgroundImage = 'url("' + im.src + '")';
+    d.appendChild(f);
+    if (o.finish !== 'none') d.appendChild(el('svx'));
     return d;
   }
   function dayText(meta) {
@@ -188,84 +337,109 @@ var SAVER = (function () {
       return meta.date;
     }
   }
-  function paintFrame(a, it, im, im2) {
+  /* pencilled under a window, as on a signed print: the caption on the left, the day on the right */
+  function pencil(meta, w) {
+    var d = el('svs'),
+      cap = (meta && meta.caption) || '',
+      day = dayText(meta);
+    d.style.width = w + 'px';
+    if (cap) d.appendChild(el('svs1', cap));
+    if (day) d.appendChild(el('svs2', day));
+    return d;
+  }
+  function paintFrame(a, items, ims) {
     var o = opts(),
-      sh = shape(im),
-      mat = sh === 'bleed' ? '#111' : matOf(it.meta);
-    a.style.backgroundImage = '';
-    a.style.backgroundColor = mat;
-    a.className = 'svp fr fr-' + o.frame + ' fr-' + (im2 ? 'pair' : sh) + (darkMat(mat) ? ' fr-dark' : '');
+      l = layers(),
+      W = window.innerWidth || 1920,
+      H = window.innerHeight || 1080,
+      b = o.frame === 'none' ? 0 : PROFILES[o.profile],
+      Wi = W - 2 * b,
+      Hi = H - 2 * b,
+      n = ims.length,
+      full = fills(ims[0], o, n),
+      mat = full ? '#111111' : matOf(items[0].meta),
+      dark = lum(mat) < 128;
+    drawFrame(o, b, W, H);
+    l.w.style.setProperty('--b', b + 'px');
     a.textContent = '';
-    var row = document.createElement('div');
-    row.className = 'svrow';
-    if (sh === 'bleed') {
-      /* near the screen's shape: it fills the inside of the frame (cut by a few percent at most) */
-      var full = box(im, 1, 1);
-      full.style.width = full.style.height = '100%';
-      row.style.width = row.style.height = '100%';
-      row.appendChild(full);
-    } else if (im2) {
-      row.appendChild(box(im, 600, 760));
-      row.appendChild(box(im2, 600, 760));
-    } else if (sh === 'port') row.appendChild(box(im, 780, 800));
-    else row.appendChild(box(im, 1190, 720));
+    a.style.backgroundColor = mat;
+    a.style.backgroundImage = full ? '' : o.mat === 'linen' ? 'url("saver-linen.webp")' : 'url("saver-paper.webp")';
+    a.className =
+      'svp fr fin-' +
+      o.finish +
+      (full ? ' fr-full' : '') +
+      (dark ? ' fr-dark' : '') +
+      (o.mat === 'black' ? ' fr-core' : '') +
+      (b ? (b < 50 ? ' fr-narrow' : '') : ' fr-none');
+    var row = el('svrow');
+    if (full) {
+      var fw = windowFor(ims[0], Wi, Hi, o);
+      fw.style.width = Wi + 'px';
+      fw.style.height = Hi + 'px';
+      row.appendChild(fw);
+    } else {
+      var port = shape(ims[0]) === 'port',
+        maxW = Wi * (n === 1 ? (port ? 0.5 : 0.68) : n === 2 ? (port ? 0.3 : 0.4) : 0.23),
+        maxH = Hi * (n === 1 ? (port ? 0.76 : 0.68) : n === 2 ? (port ? 0.74 : 0.58) : 0.7);
+      for (var i = 0; i < n; i++) {
+        var col = el('svcol'),
+          win = windowFor(ims[i], maxW, maxH, o);
+        if (i) col.style.marginLeft = Math.round(Wi * (n === 3 ? 0.035 : 0.055)) + 'px';
+        col.appendChild(win);
+        if (o.label === 'under') col.appendChild(pencil(items[i].meta, parseInt(win.style.width, 10) + 10));
+        row.appendChild(col);
+      }
+      row.style.marginTop = -Math.round(Hi * 0.04) + 'px'; /* a mat is cut a little higher than the middle */
+    }
     a.appendChild(row);
-    var day = dayText(it.meta),
-      cap = it.meta && it.meta.caption;
-    if (o.label && (day || cap)) {
-      var lb = document.createElement('div');
-      lb.className = 'svl';
-      if (cap) {
-        var c = document.createElement('div');
-        c.className = 'svl1';
-        c.textContent = cap;
-        lb.appendChild(c);
-      }
-      if (day) {
-        var dd = document.createElement('div');
-        dd.className = 'svl2';
-        dd.textContent = day;
-        lb.appendChild(dd);
-      }
+    var m0 = items[0].meta,
+      cap = (m0 && m0.caption) || '',
+      day = dayText(m0);
+    if (o.label === 'plaque' && (cap || day)) a.appendChild(el('svq', cap && day ? cap + ' · ' + day : cap || day));
+    else if (o.label === 'under' && full && (cap || day)) {
+      var lb = el('svl');
+      if (cap) lb.appendChild(el('svl1', cap));
+      if (day) lb.appendChild(el('svl2', day));
       a.appendChild(lb);
     }
-    layers().w.classList.toggle('framed', true);
-    layers().w.classList.toggle('inkdark', !darkMat(mat) && sh !== 'bleed');
+    l.w.classList.add('framed');
+    l.w.classList.toggle('inkdark', !dark && !full);
+  }
+  function loadAll(items, cb) {
+    var out = [];
+    (function one(i) {
+      if (i >= items.length) return cb(out);
+      load(items[i].url, function (im) {
+        if (im) out.push(im);
+        one(i + 1);
+      });
+    })(0);
   }
   /* loaded first, then swapped in, so the cross-fade never shows a half-drawn photo */
   function show(it) {
-    load(it.url, function (im) {
-      if (!im || !on || hist[at] !== it) return; /* failed, or stepped on meanwhile */
-      var paint = function (im2) {
-        if (!on || hist[at] !== it) return;
-        var l = layers(),
-          a = l.p[side],
-          b = l.p[side ^ 1];
-        side ^= 1;
-        if (opts().style === 'frame') paintFrame(a, it, im, im2);
-        else {
-          a.textContent = '';
-          a.style.backgroundColor = '';
-          a.style.backgroundImage = 'url("' + it.url + '")';
-          l.w.classList.remove('framed');
-          l.w.classList.remove('inkdark');
-        }
-        a.classList.add('on');
-        b.classList.remove('on');
-        cur = it.url;
-      };
-      if (it.with) load(it.with.url, paint);
-      else paint(null);
+    var items = [it].concat(it.more || []);
+    loadAll(items, function (ims) {
+      if (!ims.length || !on || hist[at] !== it) return; /* failed, or stepped on meanwhile */
+      var l = layers(),
+        a = l.p[side],
+        b = l.p[side ^ 1];
+      side ^= 1;
+      if (opts().style === 'frame') paintFrame(a, items.slice(0, ims.length), ims);
+      else {
+        a.textContent = '';
+        a.className = 'svp';
+        a.style.backgroundColor = '';
+        a.style.backgroundImage = 'url("' + it.url + '")';
+        l.w.classList.remove('framed');
+        l.w.classList.remove('inkdark');
+      }
+      a.classList.add('on');
+      b.classList.remove('on');
+      cur = it.url;
     });
   }
-  /* the same day (or no day known for either): two portraits that belong together */
-  function sameDay(a, b) {
-    var x = a.meta && a.meta.date,
-      y = b.meta && b.meta.date;
-    return !x || !y || x === y;
-  }
-  /* a new photo, remembered so Left can go back to it. In the frame, a portrait looks for a second one of the same day to hang
-     beside it (a photo that does not fit is kept for the next turn) */
+  /* a new photo, remembered so Left can go back to it. In the frame, the photos after it of the same orientation hang beside it (up
+     to two or three, Photos at a time); the first one that does not fit is kept for the next turn */
   var fetching = false;
   function nextPhoto() {
     if (fetching) return;
@@ -279,17 +453,26 @@ var SAVER = (function () {
       show(it);
     };
     nextUrl(function (it) {
-      if (!it || opts().style !== 'frame') return keep(it);
+      var o = opts();
+      if (!it || o.style !== 'frame') return keep(it);
       load(it.url, function (im) {
-        if (!im || shape(im) !== 'port') return keep(it);
-        nextUrl(function (it2) {
-          if (!it2) return keep(it);
-          load(it2.url, function (im2) {
-            if (im2 && shape(im2) === 'port' && sameDay(it, it2)) it.with = it2;
-            else spare = it2;
-            keep(it);
+        var g = im ? groupOf(im, o) : 1,
+          port = im && shape(im) === 'port';
+        if (g < 2) return keep(it);
+        it.more = [];
+        (function more() {
+          nextUrl(function (it2) {
+            if (!it2) return keep(it);
+            load(it2.url, function (im2) {
+              var sh2 = im2 && shape(im2);
+              if (im2 && sh2 !== 'bleed' && (sh2 === 'port') === port) {
+                it.more.push(it2);
+                if (it.more.length + 1 < g) return more();
+              } else if (im2) spare = it2;
+              keep(it);
+            });
           });
-        });
+        })();
       });
     });
   }

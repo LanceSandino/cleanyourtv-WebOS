@@ -15,7 +15,7 @@ picture notifications, optional on-device voice recognition and an optional debl
 > [!IMPORTANT]
 > **This is a fork** of [lasharor/cleanyourtv-WebOS](https://github.com/lasharor/cleanyourtv-WebOS): CleanYourTV is the work of
 > lasharor and its contributors, and the credit for it goes to them. This fork adds a **screensaver** with your photos instead of
-> LG's clock, fed by a small documented **photo feed** (for example family-calendar's Frameo photos; the TV keeps only the next few),
+> LG's clock, in a frame like a frame TV's (woods, paints, metals, mats), fed by a small documented **photo feed** (for example family-calendar's Frameo photos; the TV keeps only the next few),
 > a **Glass theme** and UI polish (ideas from [Razdva122/clean-your-tv-lg-webos](https://github.com/Razdva122/clean-your-tv-lg-webos)),
 > **security hardening** from an audit, and updates that come only from this fork. See
 > [About this fork](https://lancesandino.github.io/cleanyourtv-WebOS/fork/).

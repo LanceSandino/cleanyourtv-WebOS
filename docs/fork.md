@@ -11,7 +11,7 @@ The fork stays close to upstream and adds a few things on top.
 
 | Area | What | Read more |
 |---|---|---|
-| Screensaver | Your photos full screen with the time and the date when Home is left alone, instead of LG's clock screensaver. Left and Right step through them. | [Screensaver](screensaver.md) |
+| Screensaver | Your photos with the time and the date when Home is left alone, instead of LG's clock screensaver: in a mat behind a frame like a frame TV's (seven woods, seven paints, two metals, four profiles), or full screen. Left and Right step through them. | [Screensaver](screensaver.md) |
 | Photo feed | A small, documented, read-only feed any server can offer: the TV fetches one photo at a time and keeps at most 30, never the whole library. family-calendar offers one with its Frameo photos. | [The photo feed contract](screensaver.md#the-photo-feed-contract) |
 | Glass theme and UI | A Glass theme, a focus that glides between tiles, the app name under the focused grid tile and a name that slides, clock and greeting typography, and Up/Down that land on the tile above or below and go straight back. Ideas from [Razdva122/clean-your-tv-lg-webos](https://github.com/Razdva122/clean-your-tv-lg-webos) (MIT); no code was copied. | [Themes](themes.md), [The launcher](launcher.md) |
 | Security | From an audit of the whole repository: our apps send a per-install API token a web page cannot read, the service answers only requests addressed to `127.0.0.1`/`localhost`, picture downloads cannot reach the TV through a name, and every GitHub Action is pinned to a commit. | [Security](security.md) |

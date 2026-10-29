@@ -8,22 +8,29 @@ is off until you switch it on in **Customise** > **Screensaver**.
 | Use the screensaver | On or off. The line under it says where the photos come from. |
 | Starts after | 1, 2, 5, 10, 15 or 30 minutes without a key or a pointer move on Home. |
 | New photo | Every 10, 15, 30 or 60 seconds, or every 5 or 15 minutes, cross-faded. |
-| Time and date | Shown at the bottom left, or not. |
-| Style | **Frame** (the default): each photo like a print on a wall, below. **Photos**: whole on black. |
-| Frame | Wood, Black, Gold, White or None: the frame around the screen (Style: Frame). |
-| Mat | **From the photo** (a light mat with a little of the photo's own colour, a dark one for a dark photo; warm white when the feed does not say the colour), White, Cream or Charcoal. |
-| Label | The day the photo was taken and its caption, in the mat's corner, or off. |
+| Time and date | Shown at the bottom left (with the frame: small, in the mat's top corner), or not. |
+| Style | **Frame** (the default): the photos in a mat behind a frame, like a frame TV, below. **Photos**: each whole on black. |
+| Frame | A wood (**Walnut**, the default, Oak, Teak, Ash, Cherry, Grey oak, Black ash), a paint (Black, White, Charcoal, Sand, Navy, Sage, Burgundy), a metal (Brass, Silver), or No frame. A list: OK ticks one, Back goes back. |
+| Profile | The frame's shape: **Modern** (flat, rounded outside), Thin, Bevelled (sloping down to the picture) or Classic (a flat, a hollow and a bead). |
+| Mat | **From the photo** (a light mat with a little of the photo's own colour, a dark one for a dark photo; warm white when the feed does not say the colour), White, Cream, Grey, Charcoal, Black or Linen. A list. |
+| Photos at a time | **Up to two side by side** (the default), up to three, or **One**: then a landscape photo fills the inside of the frame (cut at the top and bottom as needed) and a portrait one hangs in the mat. |
+| Finish | None; **Canvas**: the weave of a canvas over the photo; **Painting**: the canvas with a warm varnish, a little darker towards the edges. |
+| Label | **Under the photo**: the caption and the day in pencil, as on a signed print; **Plaque**: on a brass plate on the frame; or off. |
 | Show it now | Starts it at once, to see how it looks. |
 
 While it shows, **Left** and **Right** step back and forward through the last 50 photos (Right past the last one brings a new photo,
 and the timer starts again); right-to-left languages mirror them. Any other key or a move of the Magic Remote ends it, and that key
 does nothing else. It does not start over Live TV, and it is darker from ten at night to seven in the morning.
 
-**The frame.** A photo far from the screen's shape (most phone photos) hangs in a mat, behind the frame, whole: a landscape one large,
-a portrait one tall, and two portraits of the same day side by side (a photo that does not pair is shown next on its own). A photo
-near the screen's shape fills the inside of the frame. The time and the date are smaller, in the mat's corner, and the label, when the
-photo feed says when the photo was taken (or else when it was added) or gives a caption, sits in the other. Nothing moves but the
-cross-fade from one photo to the next. With **Style** set to **Photos**, photos are shown whole on black (portrait photos too).
+**The frame.** Like a frame TV: the frame goes round the screen, four mitred sides of real-looking wood (the grain along each side,
+each side its own length of board), paint or brushed metal, lit from above by its profile, and it throws a soft shadow on the mat.
+The photos hang behind the mat, each in its own window with a bevelled edge, whole: one landscape photo large, a portrait one tall,
+and the photos that follow it of the same orientation beside it (up to two, or three portraits with **Photos at a time**: up to
+three); the first that does not fit is shown next. A photo near the screen's shape, and with **One** any landscape photo, fills the
+inside of the frame instead. The label shows what the photo feed says: the caption and the day it was taken (or else added).
+Nothing moves but the cross-fade from one photo to the next; the frame is drawn once, from a few small pictures that come with the
+launcher (`app/saver-*.webp`, made by `tools/saver-art.mjs`). With **Style** set to **Photos**, photos are shown whole on black
+(portrait photos too).
 
 **LG's screensaver.** Before the TV starts its own screensaver it asks the apps that registered for it. While the screensaver is on
 and there are photos, the launcher answers no and shows the photos instead; otherwise LG's screensaver starts as before. When
