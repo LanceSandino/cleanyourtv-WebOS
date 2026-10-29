@@ -478,6 +478,13 @@ run(async () => {
       hv.vars['--acc'] === '#4dff9a',
     "switched on in Halloween's dates: its theme and its still frame are downloaded and applied, with its colours"
   );
+  // Dawn chosen in Halloween's dates: Halloween over it, with the clock in front as usual (no cut-out of Dawn's picture)
+  const th3 = themeMod.create({ config: memoryConfig({ theme: { id: 'dawn', holidays: true } }), noStartup: true, now: () => today });
+  const dh = th3.resolved();
+  ok(
+    dh.id === 'halloween' && !dh.fg && dh.vars['--clock-s'] === '4.6',
+    'a holiday theme over Dawn keeps its clock but not the cut-out over it'
+  );
   ok(
     hv.vars['--cols'] === bloomRv.vars['--cols'] &&
       hv.vars['--tile-h'] === bloomRv.vars['--tile-h'] &&

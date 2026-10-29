@@ -169,7 +169,8 @@ function create(ctx) {
       all = load(),
       h = holiday();
     if (h && h !== c.id) {
-      const t = normalize(all[h].raw, h, all[c.id].v);
+      // over a holiday the clock stands in front as usual: the chosen theme's cut-out of its picture is left out (the owner's choice)
+      const t = normalize(all[h].raw, h, Object.assign({}, all[c.id].v, { 'effects.foreground': '' }));
       if (t) return resolve(t, '');
     }
     return resolve(all[c.id], c.accent);
