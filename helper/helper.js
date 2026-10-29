@@ -32,6 +32,8 @@ const ctx = {
   luna,
   profile: tvprofile.create({ luna }),
   feature: name => loaded.filter(f => f.name === name)[0] || null,
+  // which parts run and which failed to load (TV health)
+  parts: () => ({ running: loaded.map(f => f.name), failed: Object.keys(failed) }),
   apiToken,
 };
 function load(name, make) {
@@ -77,6 +79,7 @@ load('debloatcheck', () => require('./debloatcheck').create(ctx));
 const manager = load('manager', () => require('./manager').create(ctx));
 load('apps', () => require('./apps').create(ctx));
 load('running', () => require('./running').create(ctx));
+load('metrics', () => require('./metrics').create(ctx));
 
 require('./server')
   .create({

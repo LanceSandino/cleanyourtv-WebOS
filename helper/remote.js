@@ -24,7 +24,8 @@
 //                                   to clear) that stays on when the TV sleeps: the QR code and the address shown then point there, so
 //                                   phones pair through it and it can wake the TV
 // On the LAN server: GET / (the phone page), POST /pair {code, name} -> {key, id}; with the key: POST /press {key}, /move {dx, dy},
-// /click, /scroll {dy}, /hold {key}, /text {text}, /backspace, /enter, /launch {id}, /power, GET /apps, GET /icon/<id>, GET /ping.
+// /click, /scroll {dy}, /hold {key}, /text {text}, /backspace, /enter, /launch {id}, /power, GET /apps, GET /icon/<id>, GET /ping, and the
+// TV tab's read-only GET /status-data, /status-exposure, /status-services (statusdata.js: TV health and a summary, nothing secret).
 const http = require('http'),
   stream = require('stream'),
   net = require('net'),
@@ -32,7 +33,8 @@ const http = require('http'),
 const web = require('./web'),
   i18n = require('./i18n'),
   nc = require('./netcompat'),
-  page = require('./remotepage');
+  page = require('./remotepage'),
+  statusdata = require('./statusdata');
 
 const PORT = +process.env.CYTV_REMOTE_PORT || 8794, // after the phone pages' ports (8766-8792; Telemachus holds 8770 on the TV)
   PAIR_MS = 5 * 60 * 1000, // time to type the address by hand when the camera does not open it
@@ -96,6 +98,7 @@ function create(ctx) {
     return !!m && homeAddress(m[1]) && +m[2] < 65536;
   };
   const helper = () => (hubOk(String(conf().helper || '')) ? conf().helper : '');
+  const tvStatus = statusdata.create(ctx); // the TV tab's read-only data
 
   // ---- LG's network input: one socket, opened when a press comes and again after it closed ----
   let sock = null,
@@ -235,6 +238,7 @@ function create(ctx) {
   }
   async function act(u, b, res) {
     if (u === '/ping') return { ok: true };
+    if (statusdata.PATHS.indexOf(u) >= 0) return tvStatus.get(u);
     if (u === '/press') {
       const k = String(b.key || '');
       if (KEYS.indexOf(k) < 0) return { error: 'unknown key', code: 400 };

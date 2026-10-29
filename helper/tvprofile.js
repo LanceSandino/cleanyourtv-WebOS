@@ -109,6 +109,21 @@ const homeKindOf = file => {
   return a ? (a.id || '') + ' ' + (a.type || '') : '';
 };
 
+// Where this TV reports its temperature and its cores' clock (helper/metrics.js, TV health), from what exists in /proc and /sys:
+// LG's own pm/temperature under /proc/lg (whole degrees; it reads 0 for about 80 s after a start, glasshouse found) where the kernel
+// has it, else the thermal zones under /sys/class/thermal (millidegrees; the 86UR8000's Realtek SoC has one, rtk-thermal, and no
+// /proc/lg at all); the clock from cpufreq per core (scaling_cur_freq, kHz). The load average is never a source: on the Realtek TVs
+// about 30 kernel threads wait in D state for ever and hold it near 32 while the cores are idle; CPU comes from /proc/stat deltas.
+// proc, sys: the roots (helper/paths.js); exists(path) -> boolean.
+function sensors(proc, sys, exists) {
+  const lg = proc + '/lg/pm/temperature';
+  return {
+    temperature: exists(lg) ? { kind: 'lg', path: lg } : { kind: 'thermal', dir: sys + '/class/thermal' },
+    cpu: sys + '/devices/system/cpu', // present (the cores there are), cpu<N>/cpufreq/scaling_cur_freq
+    emmc: sys + '/block/mmcblk0/device', // life_time, pre_eol_info
+  };
+}
+
 // the service's view: facts from luna once after start, kept in tv.json
 function create(ctx) {
   const P = require('./paths');
@@ -133,7 +148,7 @@ function create(ctx) {
   return { get: () => profile, refresh };
 }
 
-module.exports = { FLOOR, decide, create, sdkMajor, compatMatch, compatEntries, homeKindOf };
+module.exports = { FLOOR, decide, create, sdkMajor, compatMatch, compatEntries, homeKindOf, sensors };
 
 if (require.main === module) {
   const a = process.argv.slice(2);

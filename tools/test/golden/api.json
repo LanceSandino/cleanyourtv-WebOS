@@ -884,6 +884,290 @@
     "status": 200,
     "type": "application/json"
   },
+  "tv health, first reading": {
+    "body": {
+      "at": "<time>",
+      "cpu": {
+        "cores": [
+          {
+            "busy": null,
+            "id": 0,
+            "mhz": 1156,
+            "online": true
+          },
+          {
+            "busy": null,
+            "id": 1,
+            "mhz": 1156,
+            "online": true
+          },
+          {
+            "busy": null,
+            "id": 2,
+            "mhz": 1156,
+            "online": true
+          },
+          {
+            "busy": null,
+            "id": 3,
+            "mhz": 1156,
+            "online": true
+          }
+        ],
+        "total": null
+      },
+      "disks": "<time>",
+      "emmc": {
+        "eol": "normal",
+        "used": ["0-10%", "0-10%"]
+      },
+      "memory": {
+        "available": 416423936,
+        "swap": {
+          "devices": [
+            {
+              "name": "f2io-0",
+              "size": 629141504,
+              "type": "partition",
+              "used": 337018880
+            }
+          ],
+          "total": 629141504,
+          "used": 337018880
+        },
+        "total": 1796939776
+      },
+      "net": [
+        {
+          "dbm": -40,
+          "name": "wlan0",
+          "quality": null,
+          "rx": null,
+          "tx": null
+        }
+      ],
+      "self": "<time>",
+      "temp": {
+        "c": 66,
+        "source": "rtk-thermal"
+      },
+      "uptime": "<time>",
+      "window": "<time>"
+    },
+    "cors": "null",
+    "status": 200,
+    "type": "application/json"
+  },
+  "tv health, 2 s later": {
+    "body": {
+      "at": "<time>",
+      "cpu": {
+        "cores": [
+          {
+            "busy": 40,
+            "id": 0,
+            "mhz": 1156,
+            "online": true
+          },
+          {
+            "busy": 60,
+            "id": 1,
+            "mhz": 1156,
+            "online": true
+          },
+          {
+            "busy": 80,
+            "id": 2,
+            "mhz": 1156,
+            "online": true
+          },
+          {
+            "busy": 100,
+            "id": 3,
+            "mhz": 1156,
+            "online": true
+          }
+        ],
+        "total": 70
+      },
+      "disks": "<time>",
+      "emmc": {
+        "eol": "normal",
+        "used": ["0-10%", "0-10%"]
+      },
+      "memory": {
+        "available": 416423936,
+        "swap": {
+          "devices": [
+            {
+              "name": "f2io-0",
+              "size": 629141504,
+              "type": "partition",
+              "used": 337018880
+            }
+          ],
+          "total": 629141504,
+          "used": 337018880
+        },
+        "total": 1796939776
+      },
+      "net": [
+        {
+          "dbm": -40,
+          "name": "wlan0",
+          "quality": null,
+          "rx": 0,
+          "tx": 0
+        }
+      ],
+      "self": "<time>",
+      "temp": {
+        "c": 66,
+        "source": "rtk-thermal"
+      },
+      "uptime": "<time>",
+      "window": "<time>"
+    },
+    "cors": "null",
+    "status": 200,
+    "type": "application/json"
+  },
+  "top processes": {
+    "body": {
+      "byCpu": [
+        {
+          "cpu": 0,
+          "name": "WebAppMgr",
+          "pid": 4343,
+          "rss": 163840000,
+          "threads": 30
+        },
+        {
+          "cpu": 0,
+          "name": "lginput2",
+          "pid": 4242,
+          "rss": 10240000,
+          "threads": 4
+        }
+      ],
+      "byMemory": [
+        {
+          "cpu": 0,
+          "name": "WebAppMgr",
+          "pid": 4343,
+          "rss": 163840000,
+          "threads": 30
+        },
+        {
+          "cpu": 0,
+          "name": "lginput2",
+          "pid": 4242,
+          "rss": 10240000,
+          "threads": 4
+        }
+      ],
+      "tasks": 2,
+      "window": "<time>"
+    },
+    "cors": "null",
+    "status": 200,
+    "type": "application/json"
+  },
+  "open ports and services": {
+    "body": {
+      "at": "<time>",
+      "ports": [
+        {
+          "bind": "LAN",
+          "how": "no authentication: anyone on the network can run code inside the TV’s web apps, Home included. This TV’s kernel has no firewall table to close it: keep the TV off networks you do not trust",
+          "port": 9998,
+          "program": "WebAppMgr",
+          "proto": "tcp",
+          "tone": "r",
+          "what": "WebAppMgr’s web inspector (DevTools)"
+        },
+        {
+          "bind": "loopback",
+          "how": "loopback only; web pages and other hosts are refused (Origin and Host checks); our apps send the API token",
+          "port": 8765,
+          "program": "?",
+          "proto": "tcp",
+          "tone": "g",
+          "what": "CleanYourTV service"
+        }
+      ],
+      "services": {
+        "boot": {
+          "home": true,
+          "scripts": [
+            {
+              "name": "10-cleanyourtv-home",
+              "ours": true
+            }
+          ],
+          "watchdog": false
+        },
+        "debloat": {
+          "at": "<time>",
+          "daemons": [],
+          "groups": [],
+          "on": false
+        },
+        "parts": {
+          "failed": [],
+          "running": [
+            "core",
+            "notify",
+            "voice",
+            "live",
+            "theme",
+            "wallpapers",
+            "photofeed",
+            "watch",
+            "cards",
+            "remote",
+            "inputkey",
+            "notifyapi",
+            "sonos",
+            "lgpreload",
+            "lgsettings",
+            "debloatcheck",
+            "manager",
+            "apps",
+            "running",
+            "metrics"
+          ]
+        },
+        "telemachus": null
+      },
+      "udpReplies": {
+        "count": 0,
+        "programs": []
+      }
+    },
+    "cors": "null",
+    "status": 200,
+    "type": "application/json"
+  },
+  "LG's running services": {
+    "body": {
+      "at": "<time>",
+      "error": "",
+      "units": [
+        {
+          "description": "System and Application Manager",
+          "unit": "sam.service"
+        },
+        {
+          "description": "Web App Manager",
+          "unit": "webappmgr.service"
+        }
+      ]
+    },
+    "cors": "null",
+    "status": 200,
+    "type": "application/json"
+  },
   "icon": {
     "body": {
       "bytes": 8

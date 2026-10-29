@@ -16,6 +16,10 @@ function build() {
     sonosRows();
     return;
   }
+  if (HEALTH_VIEWS[view]) {
+    healthRows();
+    return;
+  }
   if (view === 'channel') {
     var cc = (st && st.channel) || '',
       db = ((tst && tst.builds) || [])[0];
@@ -1145,6 +1149,7 @@ function build() {
       push('debloat');
     },
   });
+  rows.push({ label: 'TV health', sub: 'processor, temperature, memory, open ports', fn: openHealth });
   rows.push({
     label: 'More',
     sub: 'Home Assistant, voice, language, network notifications',

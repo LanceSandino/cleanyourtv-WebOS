@@ -34,6 +34,9 @@
 | `cards.js`, `weather.js` | Cards: the shape check of the cards the launcher saves, the phone page on port 8792 where their options are typed, and the weather card's Open-Meteo requests (kept 30 minutes). |
 | `theme.js`, `themeschema.js` | Themes: `themeschema.js` holds every setting a theme can make, the checks and how a theme becomes CSS variables; `theme.js` reads themes from GitHub and keeps them on the TV. |
 | `voice.js`, `answers.js` | Voice: the microphone, the recogniser, the phone setup page; `answers.js` asks Home Assistant, a language model or your server. |
+| `metrics.js` | TV health (`/api/metrics`, `/processes`): per-core CPU from `/proc/stat` deltas, temperature and clock (where they are: `tvprofile.js` `sensors`), memory, swap, free space, eMMC wear, Wi-Fi, uptime, the service's own use. Read in the service, only when asked, one reading per 2 s shared by every viewer; never the load average; no timer and no history. |
+| `exposure.js` | The open ports (`/proc/net/*` and the owners from `/proc/<pid>/fd`), how each is guarded (its table `PORTS`), our parts, boot scripts, watchdog and LG's programs the debloat stops; LG's systemd services on request. |
+| `statusdata.js`, `statuspage.js` | The phone remote's read-only TV tab: what a paired phone may read (a whitelist, nothing secret) and the tab's markup and script. |
 | `selfupdate.js`, `sharelog.js` | Programs the manager runs when the service is not running. |
 
 ## The pages

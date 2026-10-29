@@ -5,6 +5,7 @@
 // and can be lost (upstream issue 29): a minute and a half after the service starts, and when the TV wakes, a group of the scripts
 // that is not in place runs debloat-stop.sh again, once each time, and says so in the log.
 //   GET /api/debloat/check    {on, groups: [{id, ok, notes: [what is wrong]}]}
+//   recent(maxMs)             the same, from the last check while it is younger than maxMs (TV health, statusdata.js)
 const fs = require('fs');
 const P = require('./paths'),
   exec = require('./exec');
@@ -103,7 +104,26 @@ function create(ctx, opts) {
       tick = now;
     }, o.tickMs);
   }
-  return { name: 'debloatcheck', paths: ['/api/debloat/check'], handle, start, check, repair };
+  // the last check if it is younger than maxMs, else a new one (TV health and a paired phone ask often; a check starts a few programs)
+  let lastCheck = null,
+    checking = null;
+  function recent(maxMs) {
+    if (lastCheck && Date.now() - lastCheck.at < maxMs) return Promise.resolve(lastCheck);
+    if (!checking)
+      checking = check().then(
+        r => {
+          checking = null;
+          lastCheck = Object.assign({ at: Date.now() }, r);
+          return lastCheck;
+        },
+        e => {
+          checking = null;
+          throw e;
+        }
+      );
+    return checking;
+  }
+  return { name: 'debloatcheck', paths: ['/api/debloat/check'], handle, start, check, recent, repair };
 }
 
 module.exports = { create, SCRIPT_GROUPS };

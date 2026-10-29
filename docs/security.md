@@ -15,7 +15,7 @@ local network on request, and an optional notification endpoint and the Sonos vo
 | 8791 | Wallpapers page | While the QR screen is open in the manager app: a 6-digit code shown on the TV, at most an hour; see [Wallpapers](wallpapers.md) |
 | One the system picks | Sonos volume events | Only while **Sonos volume on screen** is on: takes `NOTIFY` from the chosen speaker's address on a random path, nothing else; see [Sonos volume on screen](sonos.md) |
 | 8792 | Cards page | The same, for the options of the cards on Home; see [Cards](launcher.md#cards) |
-| 8794 | Phone remote | Only while a phone is paired or pairing is open: the home network only, a key per phone (the TV keeps its SHA-256), requests from other pages refused; see [Phone remote](remote.md) |
+| 8794 | Phone remote | Only while a phone is paired or pairing is open: the home network only, a key per phone (the TV keeps its SHA-256), requests from other pages refused; also the read-only TV tab (TV health, nothing secret); see [Phone remote](remote.md) |
 
 **Telnet.** The Homebrew Channel starts a telnet server, an open root shell for anyone on your network, unless the file
 `/var/luna/preferences/webosbrew_telnet_disabled` exists. The manager shows which, and **Telnet (Homebrew Channel)** switches it
@@ -30,6 +30,48 @@ is answered without it; everything else needs it once it is required. The bare `
 one of our apps only on webOS 4 (and while the TV's version is not known yet).
 
 What the setup changes on the TV is listed in [What it changes on the TV](tv-changes.md).
+
+## What is open on the TV
+
+**TV health > Open ports and services** in the manager app, and the phone remote's TV tab (paired phones only), list every port
+that listens on the TV: the program that holds it, whether the network can reach it (**LAN**) or only the TV itself
+(**loopback**), and how it is guarded, in green (guarded as it should be, or discovery only), amber (open by design, or with
+someone else's rules) or red (open with no check at all). It reads `/proc/net/tcp`, `tcp6`, `udp` and `udp6` and finds each
+socket's program in `/proc/<pid>/fd`, in the service, only when the view is opened (kept 30 seconds). The answers come from this
+table in `helper/exposure.js`; a port that is not in it is shown as **unknown** (amber), with its program. A port held on loopback
+only is green whatever it is. Nothing in the view names an address, a MAC, a token or a key.
+
+| Port | What | On the network | Why |
+|---|---|---|---|
+| 22/tcp | SSH (a root shell; dropbear from the Homebrew Channel) | green or amber | Green when password login is switched off (dropbear `-s` or `-g`, OpenSSH `PasswordAuthentication no`); amber otherwise: root logs in with a key, and with a password only if one was ever set |
+| 53 | DNS for the TV itself (connman) | amber | Answers name lookups; loopback only on the TVs seen |
+| 3000, 3001/tcp | LG's second-screen API (SSAP: LG ThinQ, Home Assistant) | amber | A new device must be accepted on the TV first (LG's prompt); an accepted device can control the TV |
+| 7000/tcp | AirPlay (LG) | amber | Devices on the network can show media; LG's AirPlay settings decide whether a code is asked |
+| 8008, 8009, 8443/tcp | Google Cast (LG) | amber | Devices on the network can cast to the TV |
+| 8765/tcp | CleanYourTV service | red | It must listen on loopback only (it does: green there, with the Origin, Host and API-token checks) |
+| 8766/tcp | Live TV setup page | green | While it is open: a 6-digit code, ten minutes |
+| 8767/tcp | Network notifications (opt-in) | green | A token; wrong tokens lock an address out for ten minutes; an optional allow list; the notification call only |
+| 8768 to 8790/tcp | Share log page (its own `node sharelog.js`) | green | While it is open: a random address, ten minutes, a masked report |
+| 8769/tcp | Voice and Home Assistant setup page (in the service) | green | While it is open: a random address, ten minutes |
+| 8770/tcp | Telemachus (a separate program) | amber | Its own access rules, not CleanYourTV's (green when it listens on loopback only) |
+| 8791, 8792/tcp | Wallpapers and Cards phone pages | green | While they are open: a 6-digit code, 15 and 10 minutes |
+| 8794/tcp | Phone remote | green | Paired phones only (a key each, the TV keeps a hash), home-network addresses only, requests from other pages refused; plain HTTP on your Wi-Fi |
+| One the system picks | Sonos volume events (opt-in) | green | Only the chosen speaker's address, on a random path, while the option is on |
+| 9080/tcp | Netflix second screen (DIAL) | amber | Phones on the network can start Netflix and hand it a video |
+| 9998/tcp | WebAppMgr's web inspector (DevTools) | **red** | No authentication: anyone on the network can run code inside the TV's web apps, Home included. The 86UR8000's kernel has no firewall table to close it: keep the TV off networks you do not trust |
+| 1900/udp | SSDP discovery (UPnP) | green | Discovery only |
+| 1902/udp | LG's SDDP discovery | green | Discovery only |
+| 5353/udp | mDNS discovery | green | Discovery only |
+| Any, held by `upnpd` | LG's UPnP media renderer (DLNA) | amber | Devices on the network can play media on the TV |
+
+UDP sockets from port 32768 up that are not in the table are the reply ports of discovery clients and are counted, not listed.
+On the owner's 86UR8000 (webOS 25) on 2026-10-29 this showed 9998 in red, SSH amber (dropbear without `-s`), LG's AirPlay, Cast,
+SSAP, UPnP and Netflix ports amber, our 8765 (loopback) and 8794 green, and as unknown: 515 (systemd), 1842 (a Homebrew Channel
+app's service, `org.webosbrew.inputhook`), 9761 (LG's `tvlink-network-proxy`), 18181 and 36866 (LG's `xinetd`).
+
+The same view lists **services**: our parts (and any that failed to load), the boot scripts in `/var/lib/webosbrew/init.d`, whether
+the watchdog runs, Telemachus, and LG's programs the debloat stops (stopped, or running again: from **Check that it works**, at
+most every five minutes from here). **LG's running services** lists all of LG's systemd services (`systemctl`, only when opened).
 
 ## Network notifications
 

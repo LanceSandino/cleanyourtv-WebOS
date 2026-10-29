@@ -28,7 +28,7 @@ module.exports = {
   APP: D + '/app',
   HOME_OVERLAY: D + '/home-overlay', // what stage-home.sh mounts over LG's Home: a copy of app/ with LG's appinfo.json
   COMPAT: [D + '/compat.json', SERVICE_DIR + '/compat.json'],
-  INITD: '/var/lib/webosbrew/init.d',
+  INITD: env.CYTV_INITD || '/var/lib/webosbrew/init.d',
   SETUP_LOG: '/media/developer/cytv-setup.log',
   SERVICE_LOG: '/tmp/cleanyourtv-helper.log',
   RUNFILE: env.CYTV_RUNFILE || '/tmp/cytv-run.json',
@@ -37,6 +37,11 @@ module.exports = {
   HOOK_LOG: '/tmp/lginput-hook-lginput2.log',
   LASTAPP: '/var/luna/preferences/bootd_last_foreground_app_id.json',
   PROC: env.CYTV_PROC || '/proc',
+  SYS: env.CYTV_SYS || '/sys', // the kernel's devices: thermal zones, the cores' clock, the eMMC's wear (metrics.js)
+  // the writable places whose free space TV health shows (metrics.js); a list separated by ':' in the tests
+  DISKS: (env.CYTV_DISKS || '/var:/tmp:/media/developer').split(':'),
+  SSHD_CONFIG: env.CYTV_SSHD_CONFIG || '/etc/ssh/sshd_config', // OpenSSH's settings, where a TV runs it (exposure.js)
+  SYSTEMCTL: env.CYTV_SYSTEMCTL || 'systemctl', // LG's running services, on request (exposure.js)
   SBIN: env.CYTV_SBIN || '/usr/sbin', // LG's programs the debloat stubs (debloatcheck.js)
   HOME_APP: '/usr/palm/applications/com.webos.app.home',
   FULLHOME_APP: '/usr/palm/applications/com.webos.app.fullhome',

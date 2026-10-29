@@ -621,6 +621,7 @@ function create(ctx, opts) {
     set,
     find,
     lgSync,
+    eventPort: () => srvPort, // the port its events arrive on while it is on (TV health names it)
     stop: () => set({ enabled: false }),
   };
 }

@@ -21,6 +21,28 @@ forgetting them.
 | Touchpad | Drag to move the pointer (a quick drag goes further, a slow one is precise), tap to click where the pointer is, two fingers to scroll, as with the Magic Remote; Back, OK and Home under it. |
 | Type | Text for a search box on the TV: open the box first, the text goes where its cursor is; Delete and Enter. |
 | Apps | The apps in the order of your dock, then the others; a tap opens one. |
+| TV | The TV's health, read only: the processor per core, temperature, memory and swap, storage and the flash's wear, Wi-Fi, how long it has been up and this service's own use; a summary of the settings (versions, update channel, CleanYourTV as Home, the debloat groups and whether they work, the phone remote, Plex, Stremio and Disney+ linked or not, telnet, the API token); and, on a tap, the open ports with how each is guarded and the services. See below. |
+
+## The TV tab
+
+The tab asks the TV every 3 seconds, only while it is shown and the page is in front, with the phone's own key like every
+other command (`GET /status-data`; `/status-exposure` and `/status-services` on a tap). It shows nothing secret: no token, key,
+address, MAC, playlist, account or phone name, and a port is only ever "loopback" or "LAN". It changes nothing on the TV and keeps
+nothing: the TV makes one reading every 2 seconds at most, whoever asks, and none while nobody looks. A phone that is not paired, or
+removed on the TV, gets nothing.
+
+What one look costs on the TV (an 86UR8000, webOS 25, read in place with the service's own code on 2026-10-29): a health reading
+about 3.5 ms of processor time (one every 2 s while someone looks: about 0.2% of one core), free space one `df` a minute (about
+15 ms); **Top processes** about 75 ms per look at the 330 processes (the first look waits 2 s for its second); **Open ports and
+services** 0.2 to 0.4 s, since it looks through about 5 000 open files to find who holds each port (only when opened, kept 30 s);
+LG's running services one `systemctl` (about 50 to 100 ms). The service holds about 1 MB more memory for all of it.
+
+### History and alerts: on a computer that stays on
+
+The TV keeps no history. Graphs over hours and alerts (the temperature, a debloat group that stopped working, a new open port)
+belong on a computer at home that stays on, not on the TV: that computer pairs once like a phone, keeps its own key, and reads
+`/status-data` every 30 to 60 seconds, which costs the TV one reading each time. The always-on helper that serves the phone pages
+through your home server reaches the TV tab the same way.
 
 ## How it works, and what it can reach
 

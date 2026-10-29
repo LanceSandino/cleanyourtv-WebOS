@@ -6,7 +6,8 @@
 // dock. It pairs itself from the code in its address (#p=<code>, from the QR code on the TV) or one typed in, keeps its key in this
 // browser (localStorage) and sends it with every press. Add to Home Screen opens it full screen, like an app.
 const web = require('./web'),
-  i18n = require('./i18n');
+  i18n = require('./i18n'),
+  statuspage = require('./statuspage'); // the TV tab
 
 const JS = String.raw`
 var K = 'cytv-remote-key', key = '';
@@ -201,6 +202,7 @@ function tab(p) {
   [].forEach.call(document.querySelectorAll('nav button'), function (x) { x.className = x.getAttribute('data-p') === p ? 'on' : ''; });
   [].forEach.call(document.querySelectorAll('section'), function (s) { s.className = s.id === p ? '' : 'hide'; });
   if (p === 'apps') apps();
+  tvTab(p === 'tv');
 }
 [].forEach.call(document.querySelectorAll('nav button'), function (b) {
   b.onclick = function () { tab(b.getAttribute('data-p')); };
@@ -495,7 +497,8 @@ small{display:block;margin-top:${u(16)};font-size:${u(12)};line-height:1.45;colo
 #msg.e{color:#ffe9e7;background:#4a1a1a}
 .hap{position:fixed;left:-60px;top:0;opacity:0;pointer-events:none}
 .ack{box-shadow:0 0 0 3px rgba(48,209,88,.9)!important}.nak{box-shadow:0 0 0 3px rgba(255,69,58,.9)!important}
-.gear{margin-right:${u(8)}}.gear svg{width:${u(20)};height:${u(20)}}`;
+.gear{margin-right:${u(8)}}.gear svg{width:${u(20)};height:${u(20)}}
+${statuspage.css(u)}`;
 
 // the icons, drawn on a 24 px grid in the text's colour (the filled ones with class f)
 const ICONS = {
@@ -579,7 +582,7 @@ function html(lang) {
 <div class=top><button class="key pw" id=off aria-label="${T('Turn the TV off')}">${icon('power')}</button><div id=st><i id=dot></i><span id=tv></span></div>
 <button class="key nb gear" id=fbset aria-label="${T('Feedback')}">${icon('gear')}</button><button class="key nb" id=nb aria-label="${T('Numbers')}">123</button></div>
 <button class="key p" id=wakeb>${icon('power')}<span>${T('Turn the TV on')}</span></button>
-<nav><button class=on data-p=keys>${T('Remote')}</button><button data-p=touch>${T('Touchpad')}</button><button data-p=type>${T('Type')}</button><button data-p=apps>${T('Apps')}</button></nav>
+<nav><button class=on data-p=keys>${T('Remote')}</button><button data-p=touch>${T('Touchpad')}</button><button data-p=type>${T('Type')}</button><button data-p=apps>${T('Apps')}</button><button data-p=tv>${T('TV')}</button></nav>
 <section id=keys>
 <div class=rk>${rocker('VOLUMEUP', 'Volume up', 'plus', 'VOL', 'VOLUMEDOWN', 'Volume down', 'minus', true)}
 <div class=mid>${k('MUTE', 'Mute', icon('mute'), { cls: 'rd' })}${k('HOME', 'Home', icon('home'), { cls: 'rd' })}</div>
@@ -596,13 +599,15 @@ ${k('ENTER', '', 'OK', { cls: 'ok' })}</div></div>
 <section id=type class=hide><input id=txt autocomplete=off autocapitalize=off autocorrect=off spellcheck=false enterkeyhint=send placeholder="${T('Text for the box on the TV')}">
 <div class=row><button class="key p" id=send>${T('Send')}</button><button class=key id=bs>${T('Delete')}</button><button class=key id=ent>${T('Enter')}</button></div>
 <small>${T('Open a search box on the TV first; the text goes where its cursor is.')}</small></section>
-<section id=apps class=hide><div id=grid></div><small>${T('Works on the same Wi-Fi as the TV. Add it to the Home Screen to open it like an app.')}</small></section></div>
+<section id=apps class=hide><div id=grid></div><small>${T('Works on the same Wi-Fi as the TV. Add it to the Home Screen to open it like an app.')}</small></section>
+${statuspage.html(T)}</div>
 <div id=sheet class=hide><div class=sh><h2 id=sheettitle></h2><p id=sheetp></p><div id=sheetlist></div>
 <button class=key id=sheetno>${T('Cancel')}</button></div></div>
 ` +
-    i18n.script(lang, JS) +
+    i18n.script(lang, JS + statuspage.JS) +
     '<script>' +
     JS +
+    statuspage.JS +
     '</script></html>'
   );
 }

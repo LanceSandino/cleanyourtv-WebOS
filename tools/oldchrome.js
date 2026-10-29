@@ -344,6 +344,24 @@ const MANAGER_LEFT =
   'Object.defineProperty(document,"hidden",{get:function(){return true}});var t0=Date.now(),e=document.createEvent("Event");e.initEvent("visibilitychange",true,true);document.dispatchEvent(e);' +
   'setTimeout(function(){var early=closed;setTimeout(function(){var ok=!early&&!!closed;' +
   'document.body.setAttribute("data-left",ok?"ok":"bad early="+early+" closed="+closed)},30000)},100000)},300)})()</script>';
+// the manager's TV health: Processor with its bar scaled to the total (transform, not a width), the four cores, Memory; read again while
+// shown; OK on Open ports and services lists WebAppMgr's DevTools in red; Back twice to the main list and the readings stop there. The
+// outcome lands in data-health.
+const TV_HEALTH =
+  '<script>(function(){var calls=0,A=window.api;window.api=function(p,b,ms){if(p==="/api/metrics")calls++;return A(p,b,ms)};' +
+  'function out(v){document.body.setAttribute("data-health",v)}function row(l){for(var i=0;i<rows.length;i++)if(rows[i].label===l)return i;return -1}' +
+  'function until(c,then,what){var n=0,t=setInterval(function(){var ok=false;try{ok=c()}catch(e){}if(ok){clearInterval(t);then()}else if(++n>120){clearInterval(t);out("bad waiting for "+what)}},100)}' +
+  'until(function(){return rows.length&&row("TV health")>=0},function(){idx=row("TV health");act();' +
+  'until(function(){return view==="health"&&row("Processor")>=0},function(){var el=document.querySelectorAll("#list .row"),p=el[row("Processor")],' +
+  'bar=p&&p.querySelector(".bar b"),scaled=!!bar&&/scaleX\\(0\\.7\\)/.test(bar.style.transform)&&!bar.style.width,' +
+  'cores=rows.filter(function(r){return /^Core \\d$/.test(r.label)}).length,cpu=/70%/.test(p.textContent),mem=/GB/.test(rows[row("Memory")].sub),c0=calls;' +
+  'until(function(){return calls>c0},function(){idx=row("Open ports and services");act();' +
+  'until(function(){return view==="exposure"&&document.querySelector("#list .tone.t-r")},function(){' +
+  'var devtools=/9998/.test(document.querySelector("#list .tone.t-r").parentNode.textContent);pop();var back=view==="health";' +
+  'until(function(){return calls>c0+1},function(){pop();var c1=calls;setTimeout(function(){var stopped=view==="main"&&calls===c1;' +
+  'var ok=scaled&&cores===4&&cpu&&mem&&devtools&&back&&stopped;' +
+  'out(ok?"ok":"bad scaled="+scaled+" cores="+cores+" cpu="+cpu+" mem="+mem+" devtools="+devtools+" back="+back+" stopped="+stopped)},6000)},' +
+  '"a reading after Back")},"the red port")},"a second reading")},"the health screen")},"the main list")})()</script>';
 // the Magic Remote's wheel (after upstream PR 68): one notch down moves an open menu one row and, with the menus closed, the focus on
 // Home one tile along (lastWheel reset between the two: Date.now does not follow the virtual time here). The outcome lands in data-wheel.
 const WHEEL =
@@ -438,6 +456,7 @@ const PAGES = [
   ['watch strip fits in dawn', 'app/index.html', /data-sfit="ok"/g, 1, 20000, STRIP_FIT, 'dawn'],
   ['manager update check', 'manager/app/index.html', /data-check="ok"/g, 1, 12000, MANAGER_CHECK],
   ['manager closes when left', 'manager/app/index.html', /data-left="ok"/g, 1, 150000, MANAGER_LEFT],
+  ['tv health', 'manager/app/index.html', /data-health="ok"/g, 1, 30000, TV_HEALTH],
   ['weather in a short place', 'app/index.html', /data-slim="ok"/g, 1, 12000, SLIM_WX, 'glass'],
 ];
 let famN = 0,
@@ -535,6 +554,18 @@ function serve() {
     // Check for updates: the same status, with a release that came out on a known day
     if (u === '/api/manager/check')
       return json(Object.assign({}, golden['manager status'].body, { release: { version: '9.9.9', date: '2026-10-28' }, checking: false }));
+    // TV health, from the recorded replies (with what the recording leaves out: the window, the service's own use, the free space)
+    if (u === '/api/metrics')
+      return json(
+        Object.assign({}, golden['tv health, 2 s later'].body, {
+          window: 2.5,
+          self: { cpu: 1.2, rss: 66000000, heap: 9000000 },
+          disks: [{ path: '/var', size: 1012822016, free: 550502400 }],
+        })
+      );
+    if (u === '/api/metrics/processes') return json(Object.assign({}, golden['top processes'].body, { window: 2 }));
+    if (u === '/api/metrics/exposure') return json(golden['open ports and services'].body);
+    if (u === '/api/metrics/services') return json(golden["LG's running services"].body);
     if (u === '/api/watch/rows')
       return json({
         items: [

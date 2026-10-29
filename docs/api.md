@@ -22,6 +22,10 @@ you can call it from a shell on the TV (for example over SSH).
 | `GET /api/live/status`, `/api/live/channels`, `/api/live/epg` | Live TV data |
 | `POST /api/live/settings`, `/api/live/refresh`, `/api/live/reset` | Live TV setup |
 | `GET /api/manager/status` | Versions, updates, options, hook state |
+| `GET /api/metrics` | TV health: CPU per core (`busy` %, `null` on the first reading: measuring), clock, temperature, memory and swap, free space, eMMC wear, Wi-Fi (dBm, bytes/s), uptime and the service's own use (`self`). One reading per 2 s, shared; read in the service from `/proc` and `/sys`, never the load average |
+| `GET /api/metrics/processes?n=8` | The top processes by CPU (two looks 2 s apart) and by memory |
+| `GET /api/metrics/exposure` | The ports that listen (`loopback` or `LAN`, the program, `what`, `how` and `tone`: `g`, `a` or `r`), our parts, boot scripts, watchdog and LG's programs the debloat stops; kept 30 s. See [What is open on the TV](security.md#what-is-open-on-the-tv) |
+| `GET /api/metrics/services` | LG's running systemd services (kept a minute) |
 | `GET /api/version` | The service's version |
 | `GET /api/tv` | What the service found out about this TV and the decisions that follow from it (Input key mode, notification window, tested firmware) |
 | `GET /api/service` | The service's version, its Node.js version and which parts are running (a part that failed to load is listed with the reason) |

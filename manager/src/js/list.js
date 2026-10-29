@@ -34,8 +34,11 @@ function draw() {
         (r.dim ? ' dim' : '') +
         '" data-i="' +
         i +
-        '"><span class="lb"></span>' +
+        '">' +
+        (r.tone ? '<i class="tone t-' + r.tone + '"></i>' : '') +
+        '<span class="lb"></span>' +
         (r.sub ? '<span class="st"></span>' : '') +
+        (typeof r.bar === 'number' ? '<i class="bar"><b></b></i>' : '') +
         '</div>';
   });
   $('list').innerHTML = h;
@@ -45,6 +48,8 @@ function draw() {
     if (r.sep) return;
     el[i].querySelector('.lb').textContent = tr(r.label);
     if (r.sub) el[i].querySelector('.st').textContent = tr(r.sub);
+    /* a row's meter (TV health): its fill is scaled, never resized */
+    if (typeof r.bar === 'number') el[i].querySelector('.bar b').style.transform = 'scaleX(' + Math.max(0, Math.min(1, r.bar || 0)) + ')';
   });
   var inf = infoFor(rows[idx]),
     ie = $('info');
@@ -138,6 +143,10 @@ function draw() {
     b.textContent = tr(inf.t);
     ie.appendChild(b);
     ie.appendChild(document.createTextNode(tr(inf.d)));
+  }
+  if (HEALTH_VIEWS[view]) {
+    $('sub').textContent = tr(healthTitle());
+    return;
   }
   if (view === 'inputkey') {
     $('sub').textContent = tr('Input key');

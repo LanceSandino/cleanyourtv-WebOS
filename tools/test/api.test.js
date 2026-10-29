@@ -32,6 +32,43 @@ fs.writeFileSync(path.join(PROC, 'mounts'), '/dev/root / ext4 ro 0 0\n');
 fs.writeFileSync(path.join(PROC, '4242', 'comm'), 'lginput2\n');
 fs.writeFileSync(path.join(PROC, '4242', 'maps'), '00400000-00401000 r-xp 00000000 00:00 0 /usr/bin/lginput2\n');
 fs.writeFileSync(path.join(APPS, 'netflix', 'icon.png'), Buffer.from('89504e470d0a1a0a', 'hex'));
+// TV health (metrics.js, exposure.js): /proc and /sys as a webOS 25 Realtek TV has them, two listening ports and their owner
+const SYS = path.join(tmp, 'sys'),
+  INITD = path.join(tmp, 'initd');
+const put = (f, t) => {
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  fs.writeFileSync(f, t);
+};
+const cpuStat = n =>
+  'cpu  0 0 0 0 0 0 0 0 0 0\n' +
+  [0, 1, 2, 3].map(i => 'cpu' + i + ' ' + [n * (i + 1), 0, n, 1000 + n * (3 - i), 0, 0, 0, 0, 0, 0].join(' ')).join('\n') +
+  '\n';
+put(path.join(PROC, 'stat'), cpuStat(100));
+put(path.join(PROC, 'loadavg'), '31.90 32.00 29.70 1/336 4242\n');
+put(
+  path.join(PROC, 'meminfo'),
+  'MemTotal: 1754824 kB\nMemFree: 79164 kB\nMemAvailable: 406664 kB\nSwapTotal: 614396 kB\nSwapFree: 285276 kB\n'
+);
+put(path.join(PROC, 'swaps'), 'Filename Type Size Used Priority\n/dev/f2io-0 partition 614396 329120 -2\n');
+put(path.join(PROC, 'net', 'dev'), 'h1\nh2\n wlan0: 1000 1 0 0 0 0 0 0 2000 1 0 0 0 0 0 0\n');
+put(path.join(PROC, 'net', 'wireless'), 'h1\nh2\n wlan0: 0000    0.  216.    0.  0 0 0 0 0 0\n');
+put(
+  path.join(PROC, 'net', 'tcp'),
+  'sl local rem st\n 0: 0100007F:223D 00000000:0000 0A 00000000:00000000 00:00000000 00000000 0 0 111 1\n' +
+    ' 1: 00000000:270E 00000000:0000 0A 00000000:00000000 00:00000000 00000000 0 0 112 1\n'
+);
+put(path.join(PROC, '4242', 'stat'), '4242 (lginput2) S 1 1 1 0 -1 0 0 0 0 0 300 100 0 0 20 0 4 0 100 1000 2500 4294967295\n');
+put(path.join(PROC, '4343', 'comm'), 'WebAppMgr\n');
+put(path.join(PROC, '4343', 'stat'), '4343 (WebAppMgr) S 1 1 1 0 -1 0 0 0 0 0 900 300 0 0 20 0 30 0 100 1000 40000 4294967295\n');
+fs.mkdirSync(path.join(PROC, '4343', 'fd'));
+fs.symlinkSync('socket:[112]', path.join(PROC, '4343', 'fd', '7'));
+put(path.join(SYS, 'devices', 'system', 'cpu', 'present'), '0-3\n');
+for (let i = 0; i < 4; i++) put(path.join(SYS, 'devices', 'system', 'cpu', 'cpu' + i, 'cpufreq', 'scaling_cur_freq'), '1156000\n');
+put(path.join(SYS, 'class', 'thermal', 'thermal_zone0', 'type'), 'rtk-thermal\n');
+put(path.join(SYS, 'class', 'thermal', 'thermal_zone0', 'temp'), '66000\n');
+put(path.join(SYS, 'block', 'mmcblk0', 'device', 'life_time'), '0x01 0x01\n');
+put(path.join(SYS, 'block', 'mmcblk0', 'device', 'pre_eol_info'), '0x01\n');
+put(path.join(INITD, '10-cleanyourtv-home'), '#!/bin/sh\n');
 fs.writeFileSync(
   path.join(D, 'config.json'),
   JSON.stringify(
@@ -85,6 +122,12 @@ fs.writeFileSync(
     JSON.stringify(path.join(tmp, 'luna.log')) +
     ',k+"\\n");' +
     'process.stdout.write(JSON.stringify(t[k]||{returnValue:true}))'
+);
+// systemctl list-units, for LG's running services
+fs.writeFileSync(
+  path.join(BIN, 'systemctl'),
+  '#!/bin/sh\nprintf "sam.service loaded active running System and Application Manager\\nwebappmgr.service loaded active running Web App Manager\\n"\n',
+  { mode: 0o755 }
 );
 fs.writeFileSync(
   path.join(BIN, 'luna-send'),
@@ -155,7 +198,23 @@ function request(method, p, body, origin) {
 }
 
 // what changes from run to run (times, temporary paths, the version under test) is replaced before comparing
-const VOLATILE = ['ip', 'checking', 'checkedAt', 'at', 'now', 'pickerShownAt', 'fetchedAt', 'started', 'seconds', 'expires', 'uptime'];
+// (TV health: the window its shares are over, this service's own CPU and memory, the free space of this computer's folders)
+const VOLATILE = [
+  'ip',
+  'checking',
+  'checkedAt',
+  'at',
+  'now',
+  'pickerShownAt',
+  'fetchedAt',
+  'started',
+  'seconds',
+  'expires',
+  'uptime',
+  'window',
+  'self',
+  'disks',
+];
 function clean(v, version) {
   if (Array.isArray(v)) return v.map(x => clean(x, version));
   if (v && typeof v === 'object') {
@@ -197,6 +256,22 @@ const CALLS = [
   ['live state', 'GET', '/api/live/state'],
   ['themes', 'GET', '/api/theme/list'],
   ['voice', 'GET', '/api/voice/status'],
+  // TV health: the first reading has no CPU shares yet; 2 s later the cores' counters have moved (and the load average was never read)
+  ['tv health, first reading', 'GET', '/api/metrics'],
+  [
+    'tv health, 2 s later',
+    'GET',
+    '/api/metrics',
+    undefined,
+    undefined,
+    async () => {
+      fs.writeFileSync(path.join(PROC, 'stat'), cpuStat(200));
+      await sleep(2100);
+    },
+  ],
+  ['top processes', 'GET', '/api/metrics/processes?n=3'],
+  ['open ports and services', 'GET', '/api/metrics/exposure'],
+  ["LG's running services", 'GET', '/api/metrics/services'],
   ['icon', 'GET', '/icon/netflix'],
   ['icon of an app without the file', 'GET', '/icon/youtube.leanback.v4'],
   ['icon of an unknown app', 'GET', '/icon/nope'],
@@ -218,6 +293,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     CYTV_API: ghUrl,
     CYTV_RUNFILE: path.join(tmp, 'run.json'),
     CYTV_PROC: PROC,
+    CYTV_SYS: SYS,
+    CYTV_INITD: INITD,
+    CYTV_DISKS: [D, tmp].join(':'),
+    CYTV_SYSTEMCTL: path.join(BIN, 'systemctl'),
   });
   const log = fs.openSync(path.join(tmp, 'service.log'), 'w');
   const svc = cp.spawn(process.execPath, [path.join(helperDir, 'helper.js')], { env, cwd: helperDir, stdio: ['ignore', log, log] });
@@ -243,7 +322,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await sleep(1500); // let the start-up work (system info, theme catalogue) settle
   const version = JSON.parse((await request('GET', '/api/version')).body).version;
   const out = {};
-  for (const [name, method, p, body, origin] of CALLS) {
+  for (const [name, method, p, body, origin, before] of CALLS) {
+    if (before) await before();
     const r = await request(method, p, body, origin === undefined ? 'null' : origin);
     let b;
     try {
@@ -301,6 +381,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       'manager',
       'apps',
       'running',
+      'metrics',
     ];
     const okTv = tv.sdk === '10.2.2' && tv.pickerMode === 'overlay' && tv.notifyWindow === 'topui';
     const okSv = JSON.stringify(sv.features) === JSON.stringify(want) && !Object.keys(sv.failed).length;

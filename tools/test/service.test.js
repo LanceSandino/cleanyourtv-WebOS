@@ -33,11 +33,12 @@ run(async () => {
     ],
     [/\.(union|intersection|symmetricDifference|isSubsetOf|isSupersetOf|isDisjointFrom)\(/, 'a Set method newer than Node 16'],
     [/\bstructuredClone\b|\bAbortSignal\.any\b/, 'a global function newer than Node 16'],
-    // the phone page (remotepage.js) is a page for the phone's browser kept in a string: fetch and navigator are the browser's there
+    // the phone page (remotepage.js, and its TV tab statuspage.js) is a page for the phone's browser kept in a string: fetch and
+    // navigator are the browser's there
     [
       /(^|[^.\w$])fetch\(|\bnew (Blob|File|FormData|Headers|Request|Response|WebSocket|ReadableStream|WritableStream|TransformStream|CompressionStream|DecompressionStream|BroadcastChannel)\(|\bnavigator\./,
       'a global of Node 18 or newer (fetch.js downloads)',
-      ['remotepage.js'],
+      ['remotepage.js', 'statuspage.js'],
     ],
     [
       /\bfs\.(globSync|glob)\b|\bprocess\.loadEnvFile\b|\butil\.(styleText|parseEnv)\b|\bcrypto\.hash\(/,

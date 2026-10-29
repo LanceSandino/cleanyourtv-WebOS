@@ -49,6 +49,14 @@ its tile, a name that slides when the focus moves, a light clock with a divider,
 for the grid) take their ideas from the launcher of [Clean Your TV for LG webOS](https://github.com/Razdva122/clean-your-tv-lg-webos)
 by Razdva122 (MIT). They are written anew for this launcher; no code, image or other file from that project is used.
 
+## TV health
+
+**TV health** (the manager's screen) and the phone remote's read-only **TV** tab take their ideas from
+[glasshouse](https://github.com/rorygallagher2024/glasshouse) by rorygallagher2024 (MIT): metrics and an off-TV status view, with the
+CPU per core from `/proc/stat` deltas and offline cores counted idle, the Wi-Fi level as an unsigned byte, the eMMC's wear, and
+processes only on request. They are written anew for this service (in-process readings shared by every viewer, nothing kept on the TV,
+off the TV only for paired phones); no code from that project is used.
+
 ## This documentation
 
 Built with [Zensical](https://zensical.org).
