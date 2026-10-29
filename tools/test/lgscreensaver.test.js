@@ -66,6 +66,27 @@ run(async () => {
     c.some(x => /responseScreenSaverRequest/.test(x[0]) && x[1].ack === true) && !c.some(x => /applicationManager\/launch/.test(x[0])),
     'over an HDMI input: left to LG'
   );
+  // a subscription left by an earlier run of the service is ended before ours starts; other programs are left alone
+  const proc = path.join(tmp, 'ss-proc'),
+    killed = [];
+  [
+    [
+      '4242',
+      'luna-send\0-i\0luna://com.webos.service.tvpower/power/registerScreenSaverRequest\0{"subscribe":true,"clientName":"cleanyourtv"}\0',
+    ],
+    ['4343', 'luna-send\0-i\0luna://com.webos.service.tvpower/power/getPowerState\0{}\0'],
+    ['4444', 'node\0helper.js\0'],
+  ].forEach(([pid, cmd]) => {
+    fs.mkdirSync(path.join(proc, pid), { recursive: true });
+    fs.writeFileSync(path.join(proc, pid, 'cmdline'), cmd);
+  });
+  const sw = S.create(
+    { config: memoryConfig(on), luna: async () => ({ returnValue: true }) },
+    { bin, proc, kill: pid => killed.push(pid), minWaitMs: 100 }
+  );
+  sw.start();
+  sw.stop();
+  ok(killed.join() === '4242', 'a subscription of ours left by an earlier run is ended at start, nothing else: ' + killed.join());
   // the subscription ends: it is asked again
   fs.writeFileSync(count, '');
   await once(on, 'netflix', true);

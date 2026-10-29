@@ -1499,3 +1499,16 @@ commit_ref: "feature/profile-labels (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T18:53:48Z"
 ```
+
+```yaml
+id: CU-20261029-38
+type: fix
+title: "LG's screensaver question: a subscription left by an earlier run of the service is ended"
+description: "After the update to 1.6.37 the owner's TV had two subscriptions to LG's screensaver question: the luna-send -i of the service before the update had outlived it (a restarted service does not take its children with it; its parent was init). It could no longer answer, and an unanswered question is the fault lgscreensaver.js exists to prevent; it was ended by hand on the TV. lgscreensaver.js now ends any such subscription of ours (registerScreenSaverRequest with cleanyourtv in /proc/<pid>/cmdline) before it starts its own, and ends its own when the service exits."
+impact: medium
+affected_modules: ["helper/lgscreensaver.js"]
+related_tests: ["tools/test/lgscreensaver.test.js (a subscription of ours left by an earlier run is ended at start, nothing else)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T21:00:00Z"
+```

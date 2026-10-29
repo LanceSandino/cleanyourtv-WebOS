@@ -7,12 +7,24 @@
 // Ours (the photos, saver.js) when the screensaver is on and has photos and the TV is not on an HDMI input (a console or a set-top box
 // is in use even when the remote is not): LG is told no, and Home is opened with {saver: 'start', from: the app that was in front}, so
 // the launcher shows the photos and a key goes back to that app. Otherwise LG decides, as before this launcher.
-const cp = require('child_process');
+const cp = require('child_process'),
+  fs = require('fs'),
+  path = require('path');
+const P = require('./paths');
 
 const URI = 'luna://com.webos.service.tvpower/power/';
 
 function create(ctx, opts) {
-  const o = Object.assign({ bin: process.env.CYTV_LUNA_SEND || 'luna-send', minWaitMs: 1000, maxWaitMs: 30000 }, opts);
+  const o = Object.assign(
+    {
+      bin: process.env.CYTV_LUNA_SEND || 'luna-send',
+      minWaitMs: 1000,
+      maxWaitMs: 30000,
+      proc: P.PROC,
+      kill: (pid, sig) => process.kill(pid, sig),
+    },
+    opts
+  );
   const config = ctx.config;
   let child = null,
     timer = null,
@@ -89,9 +101,33 @@ function create(ctx, opts) {
       wait = Math.min(o.maxWaitMs, wait * 2);
     });
   }
+  // a subscription of ours left by an earlier run of the service (a restarted service does not take its children with it): it can no
+  // longer answer, and an unanswered question is the fault this part exists to prevent, so it goes before ours starts
+  function sweep() {
+    let gone = 0;
+    let pids = [];
+    try {
+      pids = fs.readdirSync(o.proc).filter(x => /^\d+$/.test(x));
+    } catch (_) {}
+    for (const pid of pids) {
+      if (child && +pid === child.pid) continue;
+      let cmd = '';
+      try {
+        cmd = fs.readFileSync(path.join(o.proc, pid, 'cmdline'), 'utf8');
+      } catch (_) {}
+      if (cmd.indexOf('registerScreenSaverRequest') >= 0 && cmd.indexOf('cleanyourtv') >= 0)
+        try {
+          o.kill(+pid, 'SIGTERM');
+          gone++;
+        } catch (_) {}
+    }
+    if (gone) log('ended ' + gone + ' subscription(s) left by an earlier run');
+  }
   function start() {
     stopped = false;
+    sweep();
     listen();
+    process.once('exit', stop); // ours ends with the service
   }
   function stop() {
     stopped = true;
