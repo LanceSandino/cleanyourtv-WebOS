@@ -127,16 +127,18 @@ const page = (f, extra) =>
     .replace('</body>', (extra || '') + '</body>');
 // the screensaver's remote keys, pressed once it shows its first photo: Right (a new photo), Left (back), Right (forward again, no new
 // photo), Right (a new one), then Down, which ends it and goes no further (the focus on Home stays). After each key it waits for the
-// photo to change (up to 6 s: the frame loads a photo before it hangs it, slow on a busy machine). The outcome lands in data-keys.
+// photo to change (up to 30 checks 200 ms apart, counted, not timed: Date.now and virtual time differ between engines). The outcome
+// lands in data-keys, and how far it got while it runs.
 const SAVER_KEYS =
   '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
   'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}' +
   'function photo(){var p=document.querySelector("#sv .svp.on");p=p&&(p.querySelector(".svf")||p);return p?(/photo\\/(p\\d+)/.exec(p.style.backgroundImage)||[])[1]||"":""}' +
   'function foc(){var f=document.querySelector(".f");return [].indexOf.call(document.querySelectorAll(".tile,.pill"),f)}' +
+  'document.body.setAttribute("data-keys","waiting for the screensaver");' +
   'var seen=[],steps=[39,37,39,39],f0=-1,go=setInterval(function(){if(!SAVER.active()||!photo())return;clearInterval(go);f0=foc();seen.push(photo());' +
   '(function next(){if(!steps.length){key(40);var ok=seen.join()==="p1,p2,p1,p2,p3"&&!SAVER.active()&&foc()===f0;' +
   'document.body.setAttribute("data-keys",ok?"ok":"bad "+seen.join()+" active="+SAVER.active()+" focus="+foc()+"/"+f0);return}' +
-  'var was=photo(),t0=Date.now();key(steps.shift());(function wait(){var p=photo();if((p===was||!p)&&Date.now()-t0<6000)return setTimeout(wait,200);seen.push(p);next()})()})()},500)})()</script>';
+  'var was=photo(),n=0;document.body.setAttribute("data-keys","pressing, seen "+seen.join());key(steps.shift());(function wait(){var p=photo();if((p===was||!p)&&++n<30)return setTimeout(wait,200);seen.push(p);next()})()})()},500)})()</script>';
 // choosing one wallpaper (wallpick.js): open the chooser, Right to the second photo, OK; that photo is then the wallpaper on Home and
 // the chooser is gone. The outcome lands in data-pick.
 const WALLPICK_KEYS =
