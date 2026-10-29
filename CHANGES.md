@@ -1595,3 +1595,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T21:01:39Z"
 ```
+
+```yaml
+id: CU-20261029-44
+type: fix
+title: "Phone remote: a vibration test, and a second way to make an iPhone tap"
+description: "The owner's iPhone did not vibrate on presses (System Haptics on). Safari has no navigator.vibrate; the page flips a switch input (iOS 18) through its label, hidden (display none, in head) and removed at once; normal keys do it from the click, so a third guess at the trigger would not be evidence. helper/remotepage.js: buzz(way) has a second way, the switch drawn out of sight in the body (fixed, opacity .01, no pointer events) and removed 400 ms later, for an iPhone that taps only for a switch with a renderer or still in the page. Feedback (the gear) has a Vibration test: Way 1 and Way 2 each tap once and the chosen one is kept on the phone (cytv-remote-feedback.way, 1 by default), and a real switch (The iPhone's own switch) shows whether the iPhone taps for a page at all. Checked in Chrome at phone size: the sheet's rows, Way 2 adds the label to the body and removes it, the choice is saved and used by the next press, no page errors. Not checked: the tap itself (an iPhone only; the iOS Simulator has none)."
+impact: low
+affected_modules: ["helper/remotepage.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (the vibration test offers both ways and the iPhone switch, and the chosen way is kept)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T22:40:00Z"
+```

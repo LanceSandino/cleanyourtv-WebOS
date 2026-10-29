@@ -103,6 +103,16 @@ run(async () => {
       /frame-ancestors|DENY/.test(JSON.stringify(pageR.headers)),
     'the phone page is served, and may not be framed by another site'
   );
+  // an iPhone's tap: two ways to flip a hidden switch, the one chosen in the vibration test kept on the phone, and the iPhone's own switch
+  ok(
+    /fbs\.way === 2 \? 2 : 1/.test(pageR.text) &&
+      /\(way \|\| fb\.way\) === 2/.test(pageR.text) &&
+      /document\.body\.appendChild\(l\)/.test(pageR.text) &&
+      /document\.head\.appendChild\(l\)/.test(pageR.text) &&
+      /Vibration test/.test(pageR.text) &&
+      /The iPhone's own switch/.test(pageR.text),
+    'the vibration test offers both ways and the iPhone switch, and the chosen way is kept'
+  );
   // wrong codes: five of them close pairing
   for (let i = 0; i < 4; i++) await lan('POST', '/pair', { code: '000000' });
   r = await lan('POST', '/pair', { code: '000000' });

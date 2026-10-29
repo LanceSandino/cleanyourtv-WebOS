@@ -29,8 +29,8 @@ function note(s, bad) {
 $('msg').onclick = function () { note(''); };
 /* feedback on each press, as this phone's owner chose it (the gear by the status): a vibration (on by default) and a click sound
    (off by default, a few milliseconds made here, no file) */
-var FB = 'cytv-remote-feedback', fb = { vibrate: true, sound: false };
-try { var fbs = JSON.parse(localStorage.getItem(FB) || 'null'); if (fbs) fb = { vibrate: fbs.vibrate !== false, sound: !!fbs.sound }; } catch (e) {}
+var FB = 'cytv-remote-feedback', fb = { vibrate: true, sound: false, way: 1 };
+try { var fbs = JSON.parse(localStorage.getItem(FB) || 'null'); if (fbs) fb = { vibrate: fbs.vibrate !== false, sound: !!fbs.sound, way: fbs.way === 2 ? 2 : 1 }; } catch (e) {}
 var actx = null;
 function tick() {
   try {
@@ -49,24 +49,34 @@ function tick() {
   } catch (e) {}
 }
 /* a short buzz: vibrate where there is one. Safari on the iPhone has no vibrate, but toggling a switch through its label taps
-   (iOS 18 and later): a fresh hidden one each time, clicked and removed at once, so it never keeps the focus (a switch left focused
-   made every later buzz look like typing and skip). Not while typing into a text box (the click would close the keyboard). */
-function buzz() {
-  if (fb.sound) tick();
-  if (!fb.vibrate) return;
+   (iOS 18 and later): a fresh one each time, so it never keeps the focus (a switch left focused made every later buzz look like typing
+   and skip). Two ways, chosen on the phone in Feedback (Vibration test): 1, hidden and removed at once; 2, drawn (out of sight) and
+   removed a moment later, for an iPhone that taps only for a switch on the screen. Not while typing into a text box (the click would
+   close the keyboard). */
+function buzz(way) {
+  if (fb.sound && !way) tick();
+  if (!fb.vibrate && !way) return;
   try {
     if (navigator.vibrate) { navigator.vibrate(8); return; }
     var a = document.activeElement;
     if (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && /^(text|search|number|tel|email|url|password)$/.test(a.type)))) return;
     var l = document.createElement('label'), i = document.createElement('input');
     l.setAttribute('aria-hidden', 'true');
-    l.style.display = 'none';
     i.type = 'checkbox';
+    i.tabIndex = -1;
     i.setAttribute('switch', '');
     l.appendChild(i);
-    document.head.appendChild(l);
-    l.click();
-    document.head.removeChild(l);
+    if ((way || fb.way) === 2) {
+      l.style.cssText = 'position:fixed;left:0;top:0;width:52px;height:32px;opacity:.01;pointer-events:none;z-index:-1';
+      document.body.appendChild(l);
+      l.click();
+      setTimeout(function () { if (l.parentNode) l.parentNode.removeChild(l); }, 400);
+    } else {
+      l.style.display = 'none';
+      document.head.appendChild(l);
+      l.click();
+      document.head.removeChild(l);
+    }
   } catch (e) {}
 }
 var up = null;
@@ -381,6 +391,30 @@ function feedbackSheet() {
     };
     list.appendChild(b);
   });
+  /* the vibration test: each way taps once and is kept when chosen; the iPhone's own switch says whether it taps for a page at all */
+  var h = document.createElement('p');
+  h.className = 'sheetnote';
+  h.textContent = t('Vibration test: tap each and keep the one you feel. If even the switch does not vibrate, turn on Settings > Sounds & Haptics > System Haptics (iOS 18 or later).');
+  list.appendChild(h);
+  [1, 2].forEach(function (w) {
+    var b = document.createElement('button');
+    b.className = 'key opt' + (fb.way === w ? ' on' : '');
+    b.textContent = t('Way %d').replace('%d', w) + (fb.way === w ? ': ' + t('In use') : '');
+    b.onclick = function () {
+      buzz(w);
+      fb.way = w;
+      try { localStorage.setItem(FB, JSON.stringify(fb)); } catch (e) {}
+      setTimeout(feedbackSheet, 450);
+    };
+    list.appendChild(b);
+  });
+  var sw = document.createElement('label'), si = document.createElement('input');
+  sw.className = 'key opt sw';
+  si.type = 'checkbox';
+  si.setAttribute('switch', '');
+  sw.appendChild(si);
+  sw.appendChild(document.createTextNode(' ' + t("The iPhone's own switch")));
+  list.appendChild(sw);
   $('sheet').className = '';
 }
 $('fbset').onclick = feedbackSheet;
@@ -469,6 +503,7 @@ section{flex:1 0 auto;display:flex;flex-direction:column}
 #sheet h2{margin:0 0 ${u(4)};font-size:${u(18)}}#sheet p{margin:0 0 ${u(12)};font-size:${u(12.5)};color:#8a8d96}
 #sheetlist{overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:${u(12)}}
 .opt{width:100%;height:${u(46)};margin-bottom:${u(8)};border-radius:${u(14)};justify-content:flex-start;padding:0 ${u(16)};font-size:${u(15)}}.opt.on{box-shadow:inset 0 0 0 2px #4d8ef7}
+.sheetnote{margin:${u(10)} ${u(2)} ${u(10)};font-size:${u(13)};line-height:1.35;color:#9aa3b2}.sw{display:flex;align-items:center}
 #sheetno{width:100%;height:${u(46)};border-radius:${u(14)}}
 #num{position:absolute;z-index:2;left:0;top:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);grid-gap:${u(16)} ${u(18)};align-content:center;padding:${u(12)} ${u(16)};border-radius:${u(26)};background:#18191d;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);opacity:0;visibility:hidden;transform:translateY(${u(10)});transition:opacity .16s,transform .16s,visibility 0s .16s}
 #num.open{opacity:1;visibility:visible;transform:none;transition:opacity .16s,transform .16s}
@@ -484,6 +519,7 @@ section{flex:1 0 auto;display:flex;flex-direction:column}
 .p{color:#111216;background:linear-gradient(180deg,#f4f5f7,#d8dade)}.p.dn,.p:active{background:linear-gradient(180deg,#d9dbdf,#c3c5ca)}
 input{display:block;width:100%;height:${u(52)};padding:0 ${u(16)};border:0;border-radius:${u(16)};outline:none;font:inherit;font-size:max(16px,${u(17)});color:#f2f3f5;background:#0f1013;box-shadow:inset 0 1px 3px rgba(0,0,0,.7),0 1px 0 rgba(255,255,255,.05);user-select:text;-webkit-user-select:text}
 input:focus{box-shadow:inset 0 1px 3px rgba(0,0,0,.7),0 0 0 2px #4d8ef7}input::placeholder{color:#4f525a}
+.sw input{display:inline-block;flex:none;width:auto;height:auto;padding:0;margin:0 ${u(12)} 0 0;border-radius:0;background:none;box-shadow:none;accent-color:#34c759}
 small{display:block;margin-top:${u(16)};font-size:${u(12)};line-height:1.45;color:#7a7d86}
 #apps{display:block}#grid{display:grid;grid-template-columns:repeat(4,1fr);grid-gap:${u(10)} ${u(6)}}
 .app{flex-direction:column;min-width:0;padding:${u(8)} 0;border-radius:${u(16)}}.app.dn,.app:active{background:rgba(255,255,255,.06)}
