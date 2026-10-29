@@ -216,5 +216,109 @@ run(async () => {
     (await req('luna')('luna://x/y', {}, { as: 'bad name; rm -rf /' })).errorText === 'bad service name',
     'a service name that is not one is refused before anything runs'
   );
+
+  // for an app the miner has nothing of, the app manager's copy of its row (getAllContents, read only, not as another service): the
+  // rows apps write themselves (Netflix, Prime Video), an app's Continue watching first
+  config.update('test', c => {
+    c.watch = { on: true };
+  });
+  let samAs = 'unasked',
+    nfLink = 'expireAt=100&iid=1&m=2&source_type=27';
+  const amazon = (id, title, category, extra) =>
+    Object.assign(
+      {
+        type: 'content',
+        titleText: title,
+        category,
+        contentId: 'lp-' + id,
+        onClick: { contentId: 'detail?gti=' + id, targetAppId: 'amazon', launchParam: '' },
+        image: { url: 'https://images-na.ssl-images-amazon.com/images/' + id + '.jpg', width: 480, height: 270 },
+        onShow: { method: 'invoke', service: 'amazon.service', contentId: 'detail?gti=' + id },
+      },
+      extra || {}
+    );
+  const samLuna = async (uri, payload, opts) => {
+    if (/applicationManager\/getAllContents$/.test(uri)) {
+      samAs = (opts && opts.as) || '';
+      return {
+        returnValue: true,
+        allContents: [
+          {
+            launchPointId: 'amazon_default',
+            contents: [
+              { type: 'title', titleText: '', onClick: { targetAppId: 'amazon' } },
+              amazon('m1', 'A Suggestion', 'You might like', { catalog: { release_year: 2026, rating: '7+' } }),
+              amazon('m2', 'A Series - Season 2', 'Continue watching', {
+                catalog: { title: 'A Series', season_number: 2, episode_number: 1 },
+                watch_state: { episodeNumber: 1, watchNextType: 'NEW', totalTimeSeconds: 1689 },
+              }),
+              amazon('m3', 'Another - Season 5', 'Must watch', { catalog: { title: 'Another', season_number: 5 } }),
+            ],
+          },
+          {
+            launchPointId: 'netflix_default',
+            contents: [
+              amazon('n1', 'Popular', "Everyone's Watching", { onClick: { contentId: 'm=1&source_type=27', targetAppId: 'netflix' } }),
+              amazon('n2', 'Half Seen', 'Continue Watching for Kids', {
+                onClick: { contentId: nfLink, targetAppId: 'netflix' },
+              }),
+            ],
+          },
+          { launchPointId: 'youtube.leanback.v4_default', contents: [content('y1', 'From the app manager')] },
+          { launchPointId: 'youtube.leanback.v4_pinned1', contents: [content('y2', 'A pinned copy')] },
+          {
+            launchPointId: 'com.webos.app.browser_default',
+            contents: [{ type: 'bookmark', titleText: 'A site', category: 'Recommended Sites', onClick: { targetAppId: 'x' } }],
+          },
+        ],
+      };
+    }
+    return minerLuna(uri, payload, opts);
+  };
+  const samItems = (await call(W.create({ config, luna: samLuna, feature: () => null }), '/api/watch/rows')).j.items.filter(
+    i => i.source === 'lg'
+  );
+  const of = app => samItems.filter(i => i.app === app).map(i => i.title + (i.sub ? ' / ' + i.sub : ''));
+  ok(samAs === '', "the app manager's rows are read as ourselves, not as another service");
+  ok(
+    of('amazon').join('|') === 'A Series / S2 E1|A Suggestion / You might like|Another - Season 5 / Must watch',
+    "Prime Video's own row: its Continue watching first, the series and its episode apart (" + of('amazon').join('|') + ')'
+  );
+  ok(
+    of('netflix').join('|') === "Half Seen / Continue Watching for Kids|Popular / Everyone's Watching",
+    "Netflix's own row, its Continue watching first (" + of('netflix').join('|') + ')'
+  );
+  ok(
+    of('youtube.leanback.v4').join('|') === 'First video|No HTTPS picture|Nothing to show' &&
+      of('com.disney.disneyplus-prod').join('|') === 'A Film',
+    "an app the miner has keeps the miner's row, once; the app manager's copy only for an app the miner has nothing of"
+  );
+  ok(
+    of('com.webos.app.browser').length === 0 && samItems.filter(i => /pinned/.test(i.title)).length === 0,
+    "no bookmarks, and only an app's own row (not a pinned copy's)"
+  );
+  const pv = samItems.filter(i => i.app === 'amazon')[0];
+  ok(
+    pv.launch.id === 'amazon' &&
+      pv.launch.params.contentTarget === 'detail?gti=m2' &&
+      Object.keys(pv.launch.params).join() === 'contentTarget' &&
+      /^\/api\/watch\/img\/[0-9a-f]{16}$/.test(pv.img) &&
+      JSON.stringify(samItems).indexOf('amazon.service') < 0,
+    "opened the way LG's Home opens it (contentTarget), the picture by id, the app's own shown-call never passed on"
+  );
+  // Netflix writes its row again with a new expiry and impression id: the same card (Remove from this row keeps it removed)
+  const nfKey = samItems.filter(i => i.app === 'netflix')[0].group;
+  nfLink = 'expireAt=200&iid=9&m=2&source_type=27';
+  const again = (await call(W.create({ config, luna: samLuna, feature: () => null }), '/api/watch/rows')).j.items.filter(
+    i => i.app === 'netflix'
+  )[0];
+  ok(again.group === nfKey && again.launch.params.contentTarget === nfLink, 'a row written again keeps its cards, with the new link');
+  const samDown = async (uri, payload, opts) =>
+    /getAllContents$/.test(uri) ? { returnValue: false, errorText: 'Unknown method' } : minerLuna(uri, payload, opts);
+  ok(
+    (await call(W.create({ config, luna: samDown, feature: () => null }), '/api/watch/rows')).j.items.filter(i => i.source === 'lg')
+      .length === 4,
+    "a TV whose app manager has no getAllContents keeps the miner's rows"
+  );
   tm.close();
 });

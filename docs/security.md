@@ -102,11 +102,13 @@ shows them and keeps at most 12 MB of pictures in memory, never on disk; the Hom
 
 For the other apps, the service reads the rows LG's own Home shows (YouTube, Disney+, Apple TV and the like) from LG's content miner
 on the TV: its database, which only that LG service may read, is read as that service (`luna-send -a com.webos.service.contentminer`,
-a read, nothing written). LG's advertisements in those rows come from another LG service (`com.webos.service.admanager`), which is
-never called; items marked as promoted are dropped. The pictures named there are fetched by the service over HTTPS from the app's
-own image server, or from LG's (`aic.imagesvc.lgtvcommon.com`, `ngfts.lge.com`, plain HTTP as LG uses them), images only, at most
-1 MB each and 12 MB in memory all together, never on disk; **Customize** > **Continue watching** > **Rows from LG for other apps**
-switches this off.
+a read, nothing written). For an app the miner has nothing of, the row the app wrote itself (Netflix, Prime Video) is read from
+LG's app manager (`com.webos.applicationManager/getAllContents`, a read); the calls those apps ask LG's Home to make when a row is
+shown (`onShow`, to the app's own service) are never made. LG's advertisements in those rows come from another LG service
+(`com.webos.service.admanager`), which is never called; items marked as promoted are dropped. The pictures named there are fetched by
+the service over HTTPS from the app's own image server, or from LG's (`aic.imagesvc.lgtvcommon.com`, `ngfts.lge.com`, plain HTTP as
+LG uses them), images only, at most 1 MB each and 12 MB in memory all together, never on disk; **Customize** > **Continue watching** >
+**Rows from LG for other apps** switches this off.
 
 Plex and Stremio are read only once you link them there, with their own TV sign-in (no password on the TV):
 

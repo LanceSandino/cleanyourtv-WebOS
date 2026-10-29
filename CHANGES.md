@@ -1180,3 +1180,16 @@ commit_ref: "feature/plex-link (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T14:38:29Z"
 ```
+
+```yaml
+id: CU-20261029-13
+type: feature
+title: "LG's rows: Netflix and Prime Video's own rows, their Continue watching first"
+description: "Read on the owner's TV (read only): LG's content miner keeps rows only for the apps LG's server fills (YouTube, Disney+, Apple TV, LG Channels: LG's picks, nothing personal, no progress); Netflix and Prime Video write their own rows through their in-app services (NFService, amazon.service) into LG's app manager with applicationManager/setContents, where getAllContents shows them: Netflix 'Continue Watching for <profile>' and 'Everyone's Watching', Prime Video 'Continue watching' (with catalog {title, season_number, episode_number} and watch_state {episodeNumber, watchNextType, totalTimeSeconds, lastEngagementTime}), 'You might like' and 'Must watch'. lgrows.js now also reads getAllContents (read only, as ourselves) and adds the row of an app's own launch point (<appId>_default) for each app the miner has nothing of; the miner's rows stay as they were. Within an app the Continue watching shelf comes first (its category, or a watch_state); a Prime Video episode shows the series as its title and 'S2 E1' under it. Bookmarks and pinned copies are left out, and the apps' onShow calls (Netflix 'impression', Prime Video 'invoke') are never made. A TV whose app manager does not answer keeps the miner's rows. A card is now keyed on the item's own id (YouTube v, Netflix m, Prime Video gti, Disney+ contentId; else an address without its query, as Apple TV's carries the place in the row), so a row written again (Netflix renews expireAt and iid) keeps its cards and Remove from this row keeps them removed; a card removed before this may come back once."
+impact: low
+affected_modules: ["helper/lgrows.js", "docs/launcher.md", "docs/security.md", "DECISIONS.md"]
+related_tests: ["tools/test/watch.test.js (the app manager's rows read as ourselves; Prime Video's and Netflix's Continue watching first, the series and episode apart; the miner's row kept for an app it has; no bookmarks or pinned copies; contentTarget; no onShow passed on; a row written again keeps its cards; a TV without getAllContents keeps the miner's rows)"]
+commit_ref: "feature/plex-link (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T14:49:13Z"
+```

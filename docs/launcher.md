@@ -84,7 +84,10 @@ Highlight an app on Home and, a moment later, a row of its episodes, films or vi
   or else the next one to watch (marked **Up next on Telemachus**). Never its channel's whole lineup.
 - **Plex (or PLX), Stremio:** what you started and did not finish, with a bar for how far you got.
 - **The other apps** (YouTube, Disney+, Apple TV and the like): the row LG's own Home shows for that app, as LG keeps it on the TV,
-  without LG's advertisements. Which apps have one is LG's choice; an app LG has nothing for shows no row.
+  without LG's advertisements. Which apps have one is LG's choice; an app LG has nothing for shows no row. Netflix and Prime Video
+  keep their own row there, from the profile last used in the app: their **Continue watching** comes first (Prime Video with the
+  season and episode), then their suggestions. These rows are as fresh as the app last made them; there is no bar for how far you
+  got, because the apps do not give it.
  Down goes into the row; OK opens it in that app: Telemachus at that episode or film (an older Telemachus app
 without the `play` launch option just opens), Plex, PLX or Stremio at their own Home, where their Continue Watching row has
 the same item first, and the other apps at that video or film, as LG's Home opens it. For an app in the dock, Home slides up to show the row under the dock (as it does when you go down
