@@ -184,6 +184,65 @@ function create(ctx) {
     });
     return { ok: true };
   }
+  // the manager's Cards screen, without a phone: a weather card's place by its ZIP or postal code, searched in the TV's country
+  // (LG's smartServiceCountryCode2; any country when the TV does not say or nothing is found there). A first place in the US also
+  // sets °F when no unit was chosen.
+  async function country() {
+    try {
+      const r = await ctx.luna('luna://com.webos.settingsservice/getSystemSettings', {
+        category: 'option',
+        keys: ['smartServiceCountryCode2'],
+      });
+      const cc = r && r.settings && r.settings.smartServiceCountryCode2;
+      return /^[a-z]{2}$/i.test(cc || '') ? cc.toUpperCase() : '';
+    } catch (_) {
+      return '';
+    }
+  }
+  async function setPlace(slot, zip, lang) {
+    const card = (config.get().cards || {})[slot];
+    if (!card || card.type !== 'weather') return { error: 'choose the weather card here first' };
+    const z = String(zip || '')
+      .trim()
+      .toUpperCase();
+    if (!/^[0-9A-Z][0-9A-Z -]{1,9}$/.test(z)) return { error: 'type a ZIP or postal code' };
+    const cc = await country();
+    let found = [];
+    try {
+      found = await weather.search(z, lang, cc);
+      if (!found.length && cc) found = await weather.search(z, lang);
+    } catch (e) {
+      return { error: 'the weather service did not answer' };
+    }
+    if (!found.length) return { error: 'no place has that code' };
+    const p = found[0];
+    config.update('cards (manager: place)', conf => {
+      const c = Object.assign({}, conf.cards || {}),
+        old = c[slot] || {};
+      if (old.type !== 'weather') return;
+      const n = Object.assign({}, old, { place: p.name, lat: p.lat, lon: p.lon });
+      if (n.unit === undefined && p.country === 'US') n.unit = 'f';
+      c[slot] = n;
+      conf.cards = c;
+    });
+    return { ok: true, place: { name: p.name, area: p.area } };
+  }
+  // the manager's Cards screen: one of a card's choices (the weather's unit, what it shows), only to a value its type offers
+  function setOption(slot, key, val) {
+    const card = (config.get().cards || {})[slot],
+      ty = card && TYPES.filter(x => x.type === card.type)[0],
+      fd = ty && ty.fields.filter(f => f.key === key && f.kind === 'choice')[0];
+    if (!fd || !fd.choices.some(c => c[0] === val)) return { error: 'not an option of this card' };
+    config.update('cards (manager: ' + key + ')', conf => {
+      const c = Object.assign({}, conf.cards || {}),
+        n = Object.assign({}, c[slot]);
+      if (val === '') delete n[key];
+      else n[key] = val;
+      c[slot] = n;
+      conf.cards = c;
+    });
+    return { ok: true };
+  }
   // when the phone page last saved (the manager's Cards screen leaves its QR code then)
   let savedAt = 0;
   function save(cards) {
@@ -279,6 +338,8 @@ function create(ctx) {
     // the manager's Cards screen: the theme's places with their cards, and a card type picked for one of them
     if (u === '/api/cards/status') return web.json(res, state(i18n.lang(req, config.get().lang)));
     if (u === '/api/cards/set') return web.json(res, setType(String(b.slot || ''), String(b.type || '')));
+    if (u === '/api/cards/place') return web.json(res, await setPlace(String(b.slot || ''), b.zip, i18n.lang(req, config.get().lang)));
+    if (u === '/api/cards/option') return web.json(res, setOption(String(b.slot || ''), String(b.key || ''), String(b.value || '')));
     // the weather card: {lat, lon, unit} -> the weather there (Open-Meteo, at most every 30 minutes)
     if (u === '/api/cards/weather') return web.json(res, await weather.get(b.lat, b.lon, b.unit));
     // Home Assistant cards: {ids} -> their states (kept 20 s); {id} -> switched (lights, switches, fans, scenes, scripts)

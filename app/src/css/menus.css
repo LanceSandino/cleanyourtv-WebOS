@@ -180,18 +180,20 @@
 }
 /* inside a section (menus.js): the list it came from on the left, the open section lit; the section's rows on the right, with
    pictures and ticks in the rows and a hint at the foot. Here the background is solid; a menu on its own keeps Home in view. */
-#ov.two {
+#ov.nest,
+#ov.root,
+#ov.pic {
   display: block;
   padding: 0;
   background: radial-gradient(ellipse 60% 70% at 0 0, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0)), rgb(var(--night-rgb));
 }
-#ov.two .secs {
+#ov.nest .secs {
   position: absolute;
   left: 110px;
   top: 92px;
   width: 470px;
 }
-#ov.two .secs h2 {
+#ov.nest .secs h2 {
   font-size: 44px;
   margin-bottom: 30px;
 }
@@ -237,24 +239,24 @@
   background: rgba(255, 255, 255, 0.11);
   color: var(--ink);
 }
-#ov.two .panel {
+#ov.nest .panel {
   position: absolute;
   left: 650px;
   top: 92px;
   width: 1160px;
 }
-#ov.two .panel h2 {
+#ov.nest .panel h2 {
   font-size: 38px;
   margin-bottom: 8px;
 }
-#ov.two .row {
+#ov.nest .row {
   height: 66px;
   padding: 0 28px;
   font-size: calc(27px * var(--fs));
   background: rgba(255, 255, 255, 0.07);
   box-shadow: none;
 }
-#ov.two .row.f {
+#ov.nest .row.f {
   background: var(--acc);
 }
 #ov .row .th {
@@ -292,15 +294,154 @@
   font-size: calc(20px * var(--fs));
   color: var(--ink2);
 }
-[dir="rtl"] #ov.two .secs {
+[dir="rtl"] #ov.nest .secs {
   left: auto;
   right: 110px;
 }
-[dir="rtl"] #ov.two .panel {
+[dir="rtl"] #ov.nest .panel {
   left: auto;
   right: 650px;
 }
 [dir="rtl"] #ov .sec .si {
   margin-right: 0;
   margin-left: 18px;
+}
+/* the same two panes for every menu (menus.js): a first menu's own rows on the left, what the focused row opens on the right */
+#ov.root .secs,
+#ov.pic .pvl {
+  position: absolute;
+  left: 110px;
+  top: 92px;
+}
+#ov.root .secs {
+  width: 560px;
+}
+#ov.root .secs h2,
+#ov.pic .pvl h2 {
+  font-size: 44px;
+  margin-bottom: 22px;
+}
+#ov.root .secs .row {
+  height: 58px;
+  padding: 0 18px;
+  font-size: calc(26px * var(--fs));
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink2);
+}
+#ov.root .secs .row + .row,
+#ov.root .secs .mhead + .row {
+  margin-top: 4px;
+}
+#ov.root .secs .row svg {
+  width: 26px;
+  height: 26px;
+}
+#ov.root .secs .row.f {
+  background: var(--acc);
+  color: var(--acc-ink);
+}
+#ov.root .secs .mhead {
+  padding: 14px 18px 4px;
+}
+#ov.root .secs .mnote {
+  padding: 12px 18px 0;
+  font-size: calc(20px * var(--fs));
+}
+#ov.root .panel,
+#ov.pic .panel {
+  position: absolute;
+  top: 92px;
+}
+#ov.root .panel {
+  left: 760px;
+  width: 1050px;
+}
+#ov.root .panel .row {
+  height: 62px;
+  padding: 0 28px;
+  font-size: calc(26px * var(--fs));
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+  opacity: 0.75;
+}
+#ov.root .panel h2,
+#ov.pic .panel h2 {
+  font-size: 38px;
+  margin-bottom: 8px;
+}
+#ov.root .pdesc {
+  margin-top: 40px;
+  padding: 34px 38px;
+  border-radius: var(--row-r);
+  background: rgba(255, 255, 255, 0.06);
+}
+#ov.root .pdt {
+  font-size: 40px;
+  font-weight: 700;
+}
+#ov.root .pds {
+  margin-top: 12px;
+  font-size: 28px;
+  color: var(--ink2);
+  line-height: 1.35;
+}
+/* a list with pictures: the focused one's picture, large, on the left (a theme's screenshot, the screensaver's frame) */
+#ov.pic .pvl {
+  width: 880px;
+}
+#ov.pic .pvbox {
+  position: relative;
+  width: 880px;
+  height: 495px;
+  overflow: hidden;
+  border-radius: var(--row-r);
+  background: var(--panel2);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+#ov.pic .pvbox img {
+  display: block;
+  width: 880px;
+  height: 495px;
+  object-fit: cover;
+}
+#ov.pic .pt {
+  margin-top: 26px;
+  font-size: 40px;
+  font-weight: 700;
+}
+#ov.pic .pd {
+  margin-top: 10px;
+  font-size: 26px;
+  line-height: 1.35;
+  color: var(--ink2);
+  max-height: 140px;
+  overflow: hidden;
+}
+#ov.pic .panel {
+  left: 1060px;
+  width: 750px;
+}
+#ov.pic .row {
+  height: 64px;
+  padding: 0 28px;
+  font-size: calc(27px * var(--fs));
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: none;
+}
+#ov.pic .row.f {
+  background: var(--acc);
+}
+[dir="rtl"] #ov.root .secs,
+[dir="rtl"] #ov.pic .pvl {
+  left: auto;
+  right: 110px;
+}
+[dir="rtl"] #ov.root .panel {
+  left: auto;
+  right: 760px;
+}
+[dir="rtl"] #ov.pic .panel {
+  left: auto;
+  right: 1060px;
 }

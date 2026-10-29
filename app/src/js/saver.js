@@ -24,7 +24,9 @@ var SAVER = (function () {
     deckStamp = '';
   var HIST = 50;
   function opts() {
-    var s = cfg.saver || {};
+    return optsFrom(cfg.saver || {});
+  }
+  function optsFrom(s) {
     return {
       on: s.on === true,
       after: s.after || 300,
@@ -250,7 +252,9 @@ var SAVER = (function () {
     if (frameKey === key) return;
     frameKey = key;
     l.fr.textContent = '';
-    if (!b) return;
+    if (b) buildSides(l.fr, o, b, W, H);
+  }
+  function buildSides(box, o, b, W, H) {
     var mt = MATERIAL[o.frame],
       kind = !mt[0] ? 'paint' : mt[0].indexOf('metal') === 0 ? 'metal' : 'wood',
       at = { top: [1, 0, 0, 1, 0, 0], right: [0, 1, -1, 0, W, 0], bottom: [1, 0, 0, -1, 0, H], left: [0, 1, 1, 0, 0, 0] };
@@ -268,8 +272,88 @@ var SAVER = (function () {
       d.style.backgroundImage = shading(o.profile, b, sd, kind, mt[1]) + (mt[0] ? ',url("saver-' + mt[0] + '.webp")' : '');
       /* each side a different stretch of the board, as if cut from different lengths */
       d.style.backgroundPosition = '0 0,' + -[0, 640, 128, 900][i] + 'px ' + -[0, 6, 3, 9][i] + 'px';
-      l.fr.appendChild(d);
+      box.appendChild(d);
     });
+  }
+  /* a still example of the frame for the menus (the Screensaver menu and its lists): the screen drawn small in a box, with a made-up
+     picture (a sky, a sun, hills), never one of the photos; s: the screensaver settings to show */
+  var SAMPLE =
+    'radial-gradient(circle at 68% 34%, #fff1c4 0, #ffe2a0 7%, rgba(255,226,160,0) 8%),' +
+    'linear-gradient(170deg, rgba(0,0,0,0) 58%, #5d7a4f 58.5%, #3e5634 100%),' +
+    'linear-gradient(190deg, rgba(0,0,0,0) 50%, #7f9a6c 50.5%, #6a855a 100%),' +
+    'linear-gradient(to bottom, #8db4d6 0%, #d9c5a8 48%, #e8b98f 60%)';
+  function sample(host, s) {
+    var o = optsFrom(s || {}),
+      W = 1920,
+      H = 1080,
+      b = o.style === 'frame' && o.frame !== 'none' ? PROFILES[o.profile] : 0,
+      box = document.createElement('div');
+    box.id = 'svdemo';
+    box.style.transform = 'scale(' + (host.clientWidth || 880) / W + ')';
+    host.textContent = '';
+    host.appendChild(box);
+    var pic = function (w, h) {
+      var win = document.createElement('div'),
+        f = document.createElement('div');
+      win.className = 'svw';
+      win.style.width = w + 'px';
+      win.style.height = h + 'px';
+      f.className = 'svf';
+      f.style.backgroundImage = SAMPLE;
+      win.appendChild(f);
+      if (o.finish !== 'none') win.appendChild(el('svx'));
+      return win;
+    };
+    if (o.style !== 'frame') {
+      /* Style: Photos: the picture whole on black */
+      var only = pic(1440, 1080);
+      only.style.margin = '0 auto';
+      only.style.border = '0';
+      box.style.background = '#000';
+      box.appendChild(only);
+      return;
+    }
+    if (b) buildSides(box, o, b, W, H);
+    var Wi = W - 2 * b,
+      Hi = H - 2 * b,
+      full = o.layout === 'one',
+      mat = full ? '#111111' : MATS[o.mat] || '#efe9df',
+      m = document.createElement('div');
+    m.className =
+      'svp fr fin-' +
+      o.finish +
+      (full ? ' fr-full' : '') +
+      (lum(mat) < 128 ? ' fr-dark' : '') +
+      (o.mat === 'black' ? ' fr-core' : '') +
+      (b ? '' : ' fr-none');
+    m.style.cssText = 'position:absolute;left:' + b + 'px;top:' + b + 'px;width:' + Wi + 'px;height:' + Hi + 'px;opacity:1';
+    m.style.backgroundColor = mat;
+    m.style.backgroundImage = full ? '' : o.mat === 'linen' ? 'url("saver-linen.webp")' : 'url("saver-paper.webp")';
+    var row = el('svrow');
+    if (full) row.appendChild(pic(Wi, Hi));
+    else {
+      var n = o.layout === 'three' ? 3 : 2,
+        w = Math.round(n === 3 ? Hi * 0.7 * 0.75 : Hi * 0.74 * 0.75),
+        h = Math.round(w / 0.75);
+      for (var i = 0; i < n; i++) {
+        var col = el('svcol'),
+          one = pic(w, h);
+        if (i) col.style.marginLeft = Math.round(Wi * (n === 3 ? 0.035 : 0.055)) + 'px';
+        col.appendChild(one);
+        if (o.label === 'under') {
+          var lab = el('svs');
+          lab.style.width = w + 10 + 'px';
+          lab.appendChild(el('svs1', t('Example')));
+          lab.appendChild(el('svs2', dayText({ date: '2026-10-29' })));
+          col.appendChild(lab);
+        }
+        row.appendChild(col);
+      }
+      row.style.marginTop = -Math.round(Hi * 0.04) + 'px';
+    }
+    m.appendChild(row);
+    if (o.label === 'plaque') m.appendChild(el('svq', t('Example') + ' \u00B7 ' + dayText({ date: '2026-10-29' })));
+    box.appendChild(m);
   }
   function ratio(im) {
     return im && im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : 1.5;
@@ -739,6 +823,7 @@ var SAVER = (function () {
     sync: sync,
     start: start,
     stop: stop,
+    sample: sample,
     active: function () {
       return on;
     },

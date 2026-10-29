@@ -773,6 +773,20 @@ function build() {
     });
     return;
   }
+  if (view === 'zip') {
+    var zv = $('zipin').value;
+    rows.push({
+      label: 'ZIP code',
+      sub: zv || 'press OK to type it',
+      fn: function () {
+        $('zipin').focus();
+      },
+    });
+    rows.push({ label: 'Look it up', dim: !zv, fn: zipGo });
+    rows.push({ sep: true });
+    rows.push({ label: 'Back', fn: closeZip });
+    return;
+  }
   if (view === 'cardtype') {
     var curT = cardTypeOf(cardSlot) || 'none';
     rows.push({
@@ -793,6 +807,26 @@ function build() {
         },
       });
     });
+    var wc = cardOf(cardSlot);
+    if (curT === 'weather' && wc.type === 'weather') {
+      /* the weather card's options, set here without the phone */
+      rows.push({ sep: true });
+      rows.push({ label: 'Place', sub: wc.place || 'not set \u00B7 type a ZIP code', fn: openZip });
+      rows.push({
+        label: 'Temperature',
+        sub: choiceName('unit', wc.unit),
+        fn: function () {
+          nextCardOption('unit');
+        },
+      });
+      rows.push({
+        label: 'Show',
+        sub: choiceName('show', wc.show),
+        fn: function () {
+          nextCardOption('show');
+        },
+      });
+    }
     rows.push({ sep: true });
     rows.push({ label: 'Back', fn: pop });
     return;

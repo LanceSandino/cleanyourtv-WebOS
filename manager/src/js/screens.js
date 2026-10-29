@@ -191,13 +191,125 @@ function setCardType(ty) {
         banner(r.error, 'err');
         return;
       }
-      pop();
-      openCards();
+      api('/api/cards/status', {}).then(function (s) {
+        cs = s;
+        /* a weather card without a place: straight to its ZIP code */
+        if (ty === 'weather' && !cardOf(cardSlot).lat) {
+          build();
+          draw();
+          openZip();
+        } else {
+          pop();
+          openCards();
+        }
+      });
     },
     function () {
       banner('The service did not answer', 'err');
     }
   );
+}
+function cardOf(sl) {
+  return ((cs && cs.cards) || {})[sl.id] || {};
+}
+/* a card's choice from the TV (the weather's unit, what it shows): the next of its type's choices */
+function nextCardOption(key) {
+  var c = cardOf(cardSlot),
+    fd = null;
+  ((cs && cs.types) || []).forEach(function (x) {
+    if (x.type === c.type)
+      x.fields.forEach(function (f) {
+        if (f.key === key) fd = f;
+      });
+  });
+  if (!fd) return;
+  var vals = fd.choices.map(function (ch) {
+    return ch[0];
+  });
+  var nv = vals[(vals.indexOf(c[key] || '') + 1) % vals.length];
+  api('/api/cards/option', { slot: cardSlot.id, key: key, value: nv }).then(function (r) {
+    if (r.error) return banner(r.error, 'err');
+    c[key] = nv;
+    if (nv === '') delete c[key];
+    build();
+    draw();
+  });
+}
+function choiceName(key, v) {
+  var c = cardOf(cardSlot),
+    n = v;
+  ((cs && cs.types) || []).forEach(function (x) {
+    if (x.type === c.type)
+      x.fields.forEach(function (f) {
+        if (f.key === key)
+          f.choices.forEach(function (ch) {
+            if (ch[0] === (v || '')) n = ch[1];
+          });
+      });
+  });
+  return n;
+}
+/* the weather card's place by its ZIP or postal code, typed on the TV (POST /api/cards/place, searched in the TV's country) */
+function openZip() {
+  $('zipin').value = '';
+  $('zipmsg').textContent = '';
+  push('zip');
+}
+function closeZip() {
+  $('zipin').blur();
+  pop();
+}
+function zipGo() {
+  var v = $('zipin').value.replace(/^\s+|\s+$/g, '');
+  if (!v) return;
+  $('zipmsg').textContent = tr('Looking it up\u2026');
+  api('/api/cards/place', { slot: cardSlot.id, zip: v }).then(
+    function (r) {
+      if (view !== 'zip') return;
+      if (r.error) {
+        $('zipmsg').textContent = tr(r.error);
+        return;
+      }
+      api('/api/cards/status', {}).then(function (s) {
+        cs = s;
+        closeZip();
+        banner(tr('Weather for %s').replace('%s', r.place.name + (r.place.area ? ', ' + r.place.area : '')), '');
+      });
+    },
+    function () {
+      $('zipmsg').textContent = tr('The service did not answer.');
+    }
+  );
+}
+/* keys while the ZIP screen is up: typing in the field, the remote's numbers anywhere; true when the key was used here */
+function zipKey(e) {
+  var inp = $('zipin'),
+    k = e.keyCode;
+  if (document.activeElement === inp) {
+    if (k === 13 || k === 461 || k === 27) {
+      inp.blur();
+      if (k === 13) zipGo();
+      e.preventDefault();
+      return true;
+    }
+    if (k === 38 || k === 40) {
+      inp.blur();
+      return false;
+    }
+    setTimeout(zipTyped, 0);
+    return true;
+  }
+  var d = k >= 48 && k <= 57 ? k - 48 : k >= 96 && k <= 105 ? k - 96 : -1;
+  if (d < 0) return false;
+  inp.value = (inp.value + d).slice(0, 10);
+  zipTyped();
+  e.preventDefault();
+  return true;
+}
+function zipTyped() {
+  $('zipmsg').textContent = '';
+  build();
+  draw();
 }
 /* Cards: the options of the cards in the theme's slots, typed on a phone page (helper/cards.js) */
 function openCardsPair() {
@@ -265,7 +377,7 @@ function openRemotePair() {
   $('qrbox').style.visibility = 'hidden';
   $('share').querySelector('h2').textContent = tr('Phone remote');
   $('share').querySelector('ol').innerHTML = tr(
-    '<li>Phone on the <b>same Wi-Fi</b> as the TV.</li><li>Scan the code with the camera.</li><li>The remote opens on the phone. Add it to the Home Screen to open it like an app.</li>'
+    '<li>Phone on the <b>same Wi-Fi</b> as the TV.</li><li>Scan the code with the camera.</li><li>The remote opens on the phone. To keep it as an app, add it to the Home Screen; on an iPhone, open the icon and pair it again there (a new code).</li>'
   );
   $('sharemsg').textContent = tr('Preparing\u2026');
   api('/api/remote/pair', {}).then(
@@ -279,7 +391,7 @@ function openRemotePair() {
       $('qrbox').style.visibility = 'visible';
       $('shareurl').textContent = tr(r.url + '   code ' + r.code);
       $('sharemsg').textContent = tr(
-        'The code works for two minutes. Each phone gets its own key, and you can remove a phone here. Only for the home network.'
+        'The code works for five minutes. Each phone gets its own key, and you can remove a phone here. Only for the home network.'
       );
       watchRemotePair();
     },

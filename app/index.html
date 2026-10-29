@@ -1362,18 +1362,20 @@ body.wpon .halo.on {
 }
 /* inside a section (menus.js): the list it came from on the left, the open section lit; the section's rows on the right, with
    pictures and ticks in the rows and a hint at the foot. Here the background is solid; a menu on its own keeps Home in view. */
-#ov.two {
+#ov.nest,
+#ov.root,
+#ov.pic {
   display: block;
   padding: 0;
   background: radial-gradient(ellipse 60% 70% at 0 0, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0)), rgb(var(--night-rgb));
 }
-#ov.two .secs {
+#ov.nest .secs {
   position: absolute;
   left: 110px;
   top: 92px;
   width: 470px;
 }
-#ov.two .secs h2 {
+#ov.nest .secs h2 {
   font-size: 44px;
   margin-bottom: 30px;
 }
@@ -1419,24 +1421,24 @@ body.wpon .halo.on {
   background: rgba(255, 255, 255, 0.11);
   color: var(--ink);
 }
-#ov.two .panel {
+#ov.nest .panel {
   position: absolute;
   left: 650px;
   top: 92px;
   width: 1160px;
 }
-#ov.two .panel h2 {
+#ov.nest .panel h2 {
   font-size: 38px;
   margin-bottom: 8px;
 }
-#ov.two .row {
+#ov.nest .row {
   height: 66px;
   padding: 0 28px;
   font-size: calc(27px * var(--fs));
   background: rgba(255, 255, 255, 0.07);
   box-shadow: none;
 }
-#ov.two .row.f {
+#ov.nest .row.f {
   background: var(--acc);
 }
 #ov .row .th {
@@ -1474,17 +1476,156 @@ body.wpon .halo.on {
   font-size: calc(20px * var(--fs));
   color: var(--ink2);
 }
-[dir="rtl"] #ov.two .secs {
+[dir="rtl"] #ov.nest .secs {
   left: auto;
   right: 110px;
 }
-[dir="rtl"] #ov.two .panel {
+[dir="rtl"] #ov.nest .panel {
   left: auto;
   right: 650px;
 }
 [dir="rtl"] #ov .sec .si {
   margin-right: 0;
   margin-left: 18px;
+}
+/* the same two panes for every menu (menus.js): a first menu's own rows on the left, what the focused row opens on the right */
+#ov.root .secs,
+#ov.pic .pvl {
+  position: absolute;
+  left: 110px;
+  top: 92px;
+}
+#ov.root .secs {
+  width: 560px;
+}
+#ov.root .secs h2,
+#ov.pic .pvl h2 {
+  font-size: 44px;
+  margin-bottom: 22px;
+}
+#ov.root .secs .row {
+  height: 58px;
+  padding: 0 18px;
+  font-size: calc(26px * var(--fs));
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink2);
+}
+#ov.root .secs .row + .row,
+#ov.root .secs .mhead + .row {
+  margin-top: 4px;
+}
+#ov.root .secs .row svg {
+  width: 26px;
+  height: 26px;
+}
+#ov.root .secs .row.f {
+  background: var(--acc);
+  color: var(--acc-ink);
+}
+#ov.root .secs .mhead {
+  padding: 14px 18px 4px;
+}
+#ov.root .secs .mnote {
+  padding: 12px 18px 0;
+  font-size: calc(20px * var(--fs));
+}
+#ov.root .panel,
+#ov.pic .panel {
+  position: absolute;
+  top: 92px;
+}
+#ov.root .panel {
+  left: 760px;
+  width: 1050px;
+}
+#ov.root .panel .row {
+  height: 62px;
+  padding: 0 28px;
+  font-size: calc(26px * var(--fs));
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+  opacity: 0.75;
+}
+#ov.root .panel h2,
+#ov.pic .panel h2 {
+  font-size: 38px;
+  margin-bottom: 8px;
+}
+#ov.root .pdesc {
+  margin-top: 40px;
+  padding: 34px 38px;
+  border-radius: var(--row-r);
+  background: rgba(255, 255, 255, 0.06);
+}
+#ov.root .pdt {
+  font-size: 40px;
+  font-weight: 700;
+}
+#ov.root .pds {
+  margin-top: 12px;
+  font-size: 28px;
+  color: var(--ink2);
+  line-height: 1.35;
+}
+/* a list with pictures: the focused one's picture, large, on the left (a theme's screenshot, the screensaver's frame) */
+#ov.pic .pvl {
+  width: 880px;
+}
+#ov.pic .pvbox {
+  position: relative;
+  width: 880px;
+  height: 495px;
+  overflow: hidden;
+  border-radius: var(--row-r);
+  background: var(--panel2);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+#ov.pic .pvbox img {
+  display: block;
+  width: 880px;
+  height: 495px;
+  object-fit: cover;
+}
+#ov.pic .pt {
+  margin-top: 26px;
+  font-size: 40px;
+  font-weight: 700;
+}
+#ov.pic .pd {
+  margin-top: 10px;
+  font-size: 26px;
+  line-height: 1.35;
+  color: var(--ink2);
+  max-height: 140px;
+  overflow: hidden;
+}
+#ov.pic .panel {
+  left: 1060px;
+  width: 750px;
+}
+#ov.pic .row {
+  height: 64px;
+  padding: 0 28px;
+  font-size: calc(27px * var(--fs));
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: none;
+}
+#ov.pic .row.f {
+  background: var(--acc);
+}
+[dir="rtl"] #ov.root .secs,
+[dir="rtl"] #ov.pic .pvl {
+  left: auto;
+  right: 110px;
+}
+[dir="rtl"] #ov.root .panel {
+  left: auto;
+  right: 760px;
+}
+[dir="rtl"] #ov.pic .panel {
+  left: auto;
+  right: 1060px;
 }
 /* Live TV (inside the launcher). The channel banner, the guide and its menus take the theme's colours (--panel, --acc, ...);
    the error and setup cards keep their own. */
@@ -2138,12 +2279,27 @@ svg.st {
 #sv.framed #svlt {
   display: block;
 }
-#svfr .svside {
+#svfr .svside,
+#svdemo .svside {
   position: absolute;
   left: 0;
   top: 0;
   transform-origin: 0 0;
   background-repeat: no-repeat, repeat-x;
+}
+/* the still example in the Screensaver menu (SAVER.sample): the screen at 1920 x 1080, scaled into the menu's picture */
+#svdemo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: #000;
+  transform-origin: 0 0;
+}
+#svdemo .svp {
+  background-color: #111;
 }
 #svlt {
   background: radial-gradient(ellipse 70% 55% at 50% 0, rgba(255, 248, 236, 0.07), rgba(255, 248, 236, 0) 100%),
@@ -2155,7 +2311,8 @@ svg.st {
   width: calc(100% - 2 * var(--b));
   height: calc(100% - 2 * var(--b));
 }
-#sv .svp.fr {
+#sv .svp.fr,
+#svdemo .svp.fr {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2164,7 +2321,8 @@ svg.st {
   background-size: auto;
 }
 /* the frame's shadow on the mat (or on a photo that fills it): deeper under the top, where the light comes from */
-#sv .svp.fr::after {
+#sv .svp.fr::after,
+#svdemo .svp.fr::after {
   content: "";
   position: absolute;
   left: 0;
@@ -2179,44 +2337,54 @@ svg.st {
     inset -5px 0 10px -7px rgba(0, 0, 0, 0.22),
     inset 0 -5px 9px -6px rgba(0, 0, 0, 0.2);
 }
-#sv .svp.fr-none::after {
+#sv .svp.fr-none::after,
+#svdemo .svp.fr-none::after {
   display: none;
 }
-#sv .svrow {
+#sv .svrow,
+#svdemo .svrow {
   display: flex;
   align-items: flex-start;
   justify-content: center;
 }
-#sv .svcol {
+#sv .svcol,
+#svdemo .svcol {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 /* a window cut in the mat: the cut's bevel shows the white core of the board, lit from above (its top edge faces away) */
-#sv .svw {
+#sv .svw,
+#svdemo .svw {
   position: relative;
   border: 5px solid;
   border-color: #e2ded5 #f6f4ef #fdfcf9 #e9e5dd;
 }
-#sv .fr-core .svw {
+#sv .fr-core .svw,
+#svdemo .fr-core .svw {
   border-color: #0c0c0c #262626 #303030 #121212;
 }
-#sv .fr-full .svw {
+#sv .fr-full .svw,
+#svdemo .fr-full .svw {
   border: 0;
 }
 #sv .svf,
-#sv .svx {
+#sv .svx,
+#svdemo .svf,
+#svdemo .svx {
   position: absolute;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
 }
-#sv .svf {
+#sv .svf,
+#svdemo .svf {
   background: center 42% / cover no-repeat;
 }
 /* the mat's edge throws a hairline of shadow on the photo */
-#sv .svw::after {
+#sv .svw::after,
+#svdemo .svw::after {
   content: "";
   position: absolute;
   left: 0;
@@ -2227,27 +2395,33 @@ svg.st {
     inset 0 2px 3px rgba(0, 0, 0, 0.3),
     inset 2px 0 3px rgba(0, 0, 0, 0.16);
 }
-#sv .fr-full .svw::after {
+#sv .fr-full .svw::after,
+#svdemo .fr-full .svw::after {
   display: none;
 }
 /* Finish: Canvas, the weave of a canvas over the photo; Painting, also a warm varnish, darker towards the edges, less saturated */
 #sv .fin-canvas .svx,
-#sv .fin-painting .svx {
+#sv .fin-painting .svx,
+#svdemo .fin-canvas .svx,
+#svdemo .fin-painting .svx {
   background: url("saver-canvas.webp") repeat;
   opacity: 0.45;
 }
-#sv .fin-painting .svx {
+#sv .fin-painting .svx,
+#svdemo .fin-painting .svx {
   background:
     radial-gradient(ellipse at 50% 45%, rgba(40, 22, 5, 0) 55%, rgba(40, 22, 5, 0.42)),
     linear-gradient(rgba(150, 100, 30, 0.12), rgba(150, 100, 30, 0.12)),
     url("saver-canvas.webp") repeat;
   opacity: 0.85;
 }
-#sv .fin-painting .svf {
+#sv .fin-painting .svf,
+#svdemo .fin-painting .svf {
   filter: sepia(0.14) saturate(0.9) contrast(1.05);
 }
 /* Label: under the photo, in pencil as on a signed print */
-#sv .svs {
+#sv .svs,
+#svdemo .svs {
   display: flex;
   justify-content: space-between;
   margin-top: 14px;
@@ -2258,22 +2432,26 @@ svg.st {
   color: rgba(70, 63, 54, 0.7);
   white-space: nowrap;
 }
-#sv .svs1 {
+#sv .svs1,
+#svdemo .svs1 {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-right: 18px;
 }
-#sv .svs2 {
+#sv .svs2,
+#svdemo .svs2 {
   flex: 0 0 auto;
   margin-left: auto;
 }
-#sv .fr-dark .svs {
+#sv .fr-dark .svs,
+#svdemo .fr-dark .svs {
   color: rgba(232, 226, 214, 0.6);
 }
 /* over a photo that fills the frame: its corner */
-#sv .svl {
+#sv .svl,
+#svdemo .svl {
   position: absolute;
   right: 44px;
   bottom: 36px;
@@ -2282,16 +2460,19 @@ svg.st {
   color: #f2ede4;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
-#sv .svl1 {
+#sv .svl1,
+#svdemo .svl1 {
   font-size: 30px;
 }
-#sv .svl2 {
+#sv .svl2,
+#svdemo .svl2 {
   margin-top: 6px;
   font-size: 24px;
   color: #d9d2c6;
 }
 /* Label: Plaque, a brass plate on the frame's bottom side (on the mat under a thin frame) */
-#sv .svq {
+#sv .svq,
+#svdemo .svq {
   position: absolute;
   z-index: 1;
   left: 50%;
@@ -2317,7 +2498,9 @@ svg.st {
     inset 0 1px 0 rgba(255, 250, 225, 0.6);
 }
 #sv .svq::before,
-#sv .svq::after {
+#sv .svq::after,
+#svdemo .svq::before,
+#svdemo .svq::after {
   content: "";
   position: absolute;
   top: 12px;
@@ -2327,14 +2510,18 @@ svg.st {
   background: radial-gradient(circle at 35% 30%, #f1dfa8, #8a6a30);
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
 }
-#sv .svq::before {
+#sv .svq::before,
+#svdemo .svq::before {
   left: 12px;
 }
-#sv .svq::after {
+#sv .svq::after,
+#svdemo .svq::after {
   right: 12px;
 }
 #sv .fr-narrow .svq,
-#sv .fr-none .svq {
+#sv .fr-none .svq,
+#svdemo .fr-narrow .svq,
+#svdemo .fr-none .svq {
   bottom: 30px;
 }
 /* the clock in the mat's top corner, smaller, in the mat's ink */
@@ -2572,6 +2759,17 @@ svg.st {
 body.wpon #thfg {
   display: none;
 }
+/* and with it the clock that stood behind the scenery goes back to a usual place and size, top left, out of the way of the photo */
+body.wpon[data-fg] {
+  --clock-l: 96px;
+  --clock-r: auto;
+  --clock-t: 64px;
+  --clock-b: auto;
+  --clock-tx: none;
+  --clock-txr: none;
+  --clock-ai: flex-start;
+  --clock-s: 1.5;
+}
 [data-fg] #view,
 [data-fg] #cards,
 [data-fg] #shelf {
@@ -2763,7 +2961,7 @@ body.wpon #thfg {
 <div id="toast"></div>
 <script src="cytv-token.js"></script>
 <script>
-var I18N = {"ar":{"_name":"العربية","_dir":"rtl","_pct":80,"%d channels":{"zero":"%d قناة","one":"%d قناة","two":"%d قناتان","few":"%d قنوات","many":"%d قناة","other":"%d قناة"},"%d of %d":"%d من %d","%d of %d on":"%d من %d مفعّل","%d photos":{"zero":"%d صورة","one":"%d صورة","two":"%d صورتان","few":"%d صور","many":"%d صورة","other":"%d صورة"},"%s added to Home":"أُضيف %s إلى الشاشة الرئيسية","%s is hidden. Customize > Hidden apps shows it again.":"تم إخفاء %s. يعيده تخصيص > التطبيقات المخفية.","%s removed from Home":"أُزيل %s من الشاشة الرئيسية","12-hour":"‏12 ساعة","24-hour":"‏24 ساعة","A photo":"صورة","A to Z":"أ إلى ي","Accent colour":"لون التمييز","Active":"نشط","Add a button":"إضافة زر","Add a button...":"إضافة زر...","Add an app...":"إضافة تطبيق...","Add photos...":"إضافة صور...","Add to dock":"إضافة إلى الشريط","Add to dock...":"إضافة إلى الشريط...","Add to Home":"إضافة إلى الشاشة الرئيسية","Added to favourites":"أُضيف إلى المفضلة","All":"الكل","All channels":"كل القنوات","An app...":"تطبيق...","and enter this code:":"وأدخل هذا الرمز:","App order":"ترتيب التطبيقات","Automatic":"تلقائي","Back":"رجوع","buffer":"التخزين المؤقت","build %s":"البناء %s","Cancel":"إلغاء","Cards":"البطاقات","Checking why...":"جارٍ معرفة السبب...","Choose a camera from your phone":"اختر كاميرا من هاتفك","Choose a place from your phone":"اختر مكانًا من هاتفك","Choose an entity from your phone":"اختر كيانًا من هاتفك","Choose entities from your phone":"اختر كيانات من هاتفك","Clear":"صافٍ","Clear filters":"مسح عوامل التصفية","Clock":"الساعة","Close":"إغلاق","Close all":"إغلاق الكل","Closed":"مغلق","Cloudy":"غائم","Connected":"متصل","Continue":"متابعة","Could not change Home":"تعذّر تغيير الشاشة الرئيسية","Could not change Home. Try again in a moment.":"تعذّر تغيير الشاشة الرئيسية. حاول مرة أخرى بعد قليل.","Could not close the app. Try again, or close it from the app itself.":"تعذّر إغلاق التطبيق. حاول مرة أخرى أو أغلقه من داخله.","Could not load the themes. Try again in a moment.":"تعذّر تحميل السمات. حاول مرة أخرى بعد قليل.","Could not open %s. Is it still installed?":"تعذّر فتح %s. هل ما زال مثبّتًا؟","Could not reach GitHub: showing the themes on this TV":"تعذّر الوصول إلى GitHub: تُعرض السمات الموجودة على التلفاز","Could not read the open apps. Try again in a moment.":"تعذّرت قراءة التطبيقات المفتوحة. حاول مرة أخرى بعد قليل.","Could not save the settings. Try again in a moment.":"تعذّر حفظ الإعدادات. حاول مرة أخرى بعد قليل.","Country":"البلد","Customize":"تخصيص","Debloat":"Debloat","default":"افتراضي","default (%s)":"افتراضي (%s)","Dock":"الشريط","Downloads when chosen":"يُنزَّل عند اختياره","Drizzle":"رذاذ","dropped":"تم التخطي","Each time Home opens":"في كل مرة تُفتح الشاشة الرئيسية","Every %s min":"كل %s د","Every %s s":"كل %s ث","Every minute":"كل دقيقة","Favourite":"المفضلة","Favourites":"المفضلة","Filters":"عوامل التصفية","Fog":"ضباب","frames":"إطارات","Getting the theme...":"جارٍ جلب السمة...","Go back to the previous theme":"العودة إلى السمة السابقة","Good afternoon":"مساء الخير","Good afternoon, %s":"مساء الخير يا %s","Good evening":"مساء الخير","Good evening, %s":"مساء الخير يا %s","Good morning":"صباح الخير","Good morning, %s":"صباح الخير يا %s","Good night":"ليلة سعيدة","Good night, %s":"ليلة سعيدة يا %s","Green dot":"نقطة خضراء","Greeting":"تحية","Guide":"الدليل","guide: %s":"الدليل: %s","Helper not reachable, retrying...":"تعذّر الوصول إلى الخدمة، جارٍ إعادة المحاولة...","Hidden apps":"التطبيقات المخفية","Hide app":"إخفاء التطبيق","Hold OK on an app for its options. Back on Home lists the open apps.":"اضغط مطوّلًا على OK فوق تطبيق لعرض خياراته. زر الرجوع في الشاشة الرئيسية يعرض التطبيقات المفتوحة.","Home":"Home","Home Assistant camera":"كاميرا Home Assistant","Home Assistant entities":"كيانات Home Assistant","Home Assistant entity":"كيان Home Assistant","Home, Live TV, Debloat, updates":"الشاشة الرئيسية، البث المباشر، Debloat، التحديثات","Immich":"Immich","in the CleanYourTV app":"في تطبيق CleanYourTV","Input":"Input","Inputs":"المداخل","Language":"اللغة","Large":"كبير","Later":"لاحقًا","Live TV":"البث المباشر","Loading channels...":"جارٍ تحميل القنوات...","Mark running apps":"تمييز التطبيقات المفتوحة","More":"المزيد","More settings...":"المزيد من الإعدادات...","Most used first":"الأكثر استخدامًا أولًا","Move left":"نقل لليسار","Move left in dock":"نقل لليسار في الشريط","Move right":"نقل لليمين","Move right in dock":"نقل لليمين في الشريط","never":"أبدًا","New photo":"صورة جديدة","Next":"التالي","No apps are running":"لا تطبيقات مفتوحة","No channels match.":"لا قنوات مطابقة.","No dot":"بلا نقطة","No favourites yet. Press the green button on a channel.":"لا مفضلة بعد. اضغط الزر الأخضر على قناة.","No guide data":"لا بيانات في الدليل","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"لا تطبيقات مخفية. لإخفاء تطبيق اضغط مطوّلًا على OK فوقه في الشاشة الرئيسية واختر إخفاء التطبيق.","no photos yet":"لا صور بعد","None":"لا شيء","not available":"غير متاح","not set":"غير مضبوط","not set up":"غير مُعدّ","Nothing watched yet.":"لم تُشاهد شيئًا بعد.","Now":"الآن","now: %s":"الآن: %s","Off":"إيقاف","OK shows an app on Home again.":"‏OK يعيد التطبيق إلى الشاشة الرئيسية.","On":"تشغيل","Open":"فتح","Open this address on your phone or computer:":"افتح هذا العنوان على هاتف أو حاسوب:","optional":"اختياري","Partly cloudy":"غائم جزئيًا","Pick an app":"اختر تطبيقًا","Press OK to try again.":"اضغط OK للمحاولة مجددًا.","Quality":"الجودة","Rain":"مطر","Recent":"الأخيرة","refused":"مرفوض","reloaded":"أُعيد تحميله","Remove from dock":"إزالة من الشريط","Remove from Home":"إزالة من الشاشة الرئيسية","Remove this button":"إزالة هذا الزر","Removed from favourites":"أُزيل من المفضلة","Replace which app?":"أي تطبيق تريد استبداله؟","Replace with...":"استبدال بـ...","Running apps":"التطبيقات المفتوحة","Save":"حفظ","Search":"بحث","Search...":"بحث...","Selected":"محدد","Service":"الخدمة","set up":"مُعدّ","Set up Live TV":"إعداد البث المباشر","Settings":"الإعدادات","Share log":"مشاركة السجل","Show":"العرض","Size":"الحجم","Small":"صغير","Snow":"ثلج","Start":"ابدأ","Statistics":"الإحصاءات","Stream":"البث","streams":"بثوث","Text":"نص","The address answers with a web page, not a video.":"العنوان يعيد صفحة ويب، لا فيديو.","The helper is not reachable.":"تعذّر الوصول إلى الخدمة.","The server refused the stream: it may be blocked in your country or need special request headers.":"رفض الخادم البث: قد يكون محجوبًا في بلدك أو يحتاج رؤوس طلب خاصة.","The service did not answer":"لم تستجب الخدمة","The service did not answer.":"لم تستجب الخدمة.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"يستجيب البث لكن التلفاز لم يستطع تشغيله: على الأرجح صيغة لا يستطيع فكّها.","The stream is too slow to start.":"يستغرق بدء البث وقتًا طويلًا.","The stream server cannot be reached.":"تعذّر الوصول إلى خادم البث.","The stream server reported an error.":"أبلغ خادم البث عن خطأ.","The stream was not found (404): the channel is offline or its address has changed.":"لم يُعثر على البث (404): القناة متوقفة أو تغيّر عنوانها.","Theme":"السمة","Theme default":"افتراضي السمة","Then paste your M3U playlist address. This page closes by itself.":"ثم الصق عنوان قائمة تشغيل M3U. تُغلق هذه الصفحة تلقائيًا.","This channel is not available.":"هذه القناة غير متاحة.","This stream is protected by DRM and cannot be played here.":"هذا البث محمي بـ DRM ولا يمكن تشغيله هنا.","Thunderstorm":"عاصفة رعدية","Top buttons":"الأزرار العلوية","Try again":"حاول مجددًا","Tuning...":"جارٍ ضبط القناة...","Uninstall":"إلغاء التثبيت","Use Wallpapers":"استخدام Wallpapers","Voice":"الصوت","Wallpapers":"Wallpapers","Weather":"الطقس"},"de":{"_name":"Deutsch","_dir":"ltr","_pct":80,"%d channels":{"one":"%d Sender","other":"%d Sender"},"%d of %d":"%d von %d","%d of %d on":"%d von %d an","%d photos":{"one":"%d Foto","other":"%d Fotos"},"%s added to Home":"%s zu Home hinzugefügt","%s is hidden. Customize > Hidden apps shows it again.":"%s ist ausgeblendet. Anpassen > Ausgeblendete Apps zeigt sie wieder.","%s removed from Home":"%s von Home entfernt","12-hour":"12 Stunden","24-hour":"24 Stunden","A photo":"Ein Foto","A to Z":"A bis Z","Accent colour":"Akzentfarbe","Active":"Aktiv","Add a button":"Schaltfläche hinzufügen","Add a button...":"Schaltfläche hinzufügen...","Add an app...":"App hinzufügen...","Add photos...":"Fotos hinzufügen...","Add to dock":"Zum Dock hinzufügen","Add to dock...":"Zum Dock hinzufügen...","Add to Home":"Zu Home hinzufügen","Added to favourites":"Zu Favoriten hinzugefügt","All":"Alle","All channels":"Alle Sender","An app...":"Eine App...","and enter this code:":"und gib diesen Code ein:","App order":"App-Reihenfolge","Automatic":"Automatisch","Back":"Zurück","buffer":"Puffer","build %s":"Build %s","Cancel":"Abbrechen","Cards":"Karten","Checking why...":"Ursache wird gesucht...","Choose a camera from your phone":"Wähle eine Kamera über dein Telefon","Choose a place from your phone":"Wähle einen Ort über dein Telefon","Choose an entity from your phone":"Wähle eine Entität über dein Telefon","Choose entities from your phone":"Wähle Entitäten über dein Telefon","Clear":"Klar","Clear filters":"Filter löschen","Clock":"Uhr","Close":"Schließen","Close all":"Alle schließen","Closed":"Geschlossen","Cloudy":"Bewölkt","Connected":"Verbunden","Continue":"Weiter","Could not change Home":"Home konnte nicht geändert werden","Could not change Home. Try again in a moment.":"Home konnte nicht geändert werden. Gleich noch einmal versuchen.","Could not close the app. Try again, or close it from the app itself.":"Die App konnte nicht geschlossen werden. Noch einmal versuchen oder in der App selbst schließen.","Could not load the themes. Try again in a moment.":"Designs konnten nicht geladen werden. Gleich noch einmal versuchen.","Could not open %s. Is it still installed?":"%s konnte nicht geöffnet werden. Ist die App noch installiert?","Could not reach GitHub: showing the themes on this TV":"GitHub nicht erreichbar: Designs auf diesem Fernseher werden gezeigt","Could not read the open apps. Try again in a moment.":"Geöffnete Apps konnten nicht gelesen werden. Gleich noch einmal versuchen.","Could not save the settings. Try again in a moment.":"Einstellungen konnten nicht gespeichert werden. Gleich noch einmal versuchen.","Country":"Land","Customize":"Anpassen","Debloat":"Debloat","default":"Standard","default (%s)":"Standard (%s)","Dock":"Dock","Downloads when chosen":"Wird bei Auswahl geladen","Drizzle":"Nieselregen","dropped":"verworfen","Each time Home opens":"Bei jedem Öffnen von Home","Every %s min":"Alle %s Min.","Every %s s":"Alle %s s","Every minute":"Jede Minute","Favourite":"Favorit","Favourites":"Favoriten","Filters":"Filter","Fog":"Nebel","frames":"Bilder","Getting the theme...":"Design wird geladen...","Go back to the previous theme":"Zurück zum vorherigen Design","Good afternoon":"Guten Tag","Good afternoon, %s":"Guten Tag, %s","Good evening":"Guten Abend","Good evening, %s":"Guten Abend, %s","Good morning":"Guten Morgen","Good morning, %s":"Guten Morgen, %s","Good night":"Gute Nacht","Good night, %s":"Gute Nacht, %s","Green dot":"Grüner Punkt","Greeting":"Begrüßung","Guide":"Guide","guide: %s":"Programmführer: %s","Helper not reachable, retrying...":"Helper nicht erreichbar, neuer Versuch...","Hidden apps":"Ausgeblendete Apps","Hide app":"App ausblenden","Hold OK on an app for its options. Back on Home lists the open apps.":"OK auf einer App gedrückt halten für ihre Optionen. Zurück auf Home zeigt die geöffneten Apps.","Home":"Home","Home Assistant camera":"Home Assistant-Kamera","Home Assistant entities":"Home Assistant-Entitäten","Home Assistant entity":"Home Assistant-Entität","Home, Live TV, Debloat, updates":"Home, Live-TV, Debloat, Updates","Immich":"Immich","in the CleanYourTV app":"in der CleanYourTV-App","Input":"Input","Inputs":"Eingänge","Language":"Sprache","Large":"Groß","Later":"Später","Live TV":"Live-TV","Loading channels...":"Sender werden geladen...","Mark running apps":"Geöffnete Apps markieren","More":"Mehr","More settings...":"Weitere Einstellungen...","Most used first":"Meistgenutzte zuerst","Move left":"Nach links","Move left in dock":"Im Dock nach links","Move right":"Nach rechts","Move right in dock":"Im Dock nach rechts","never":"nie","New photo":"Neues Foto","Next":"Danach","No apps are running":"Keine Apps geöffnet","No channels match.":"Keine passenden Sender.","No dot":"Kein Punkt","No favourites yet. Press the green button on a channel.":"Noch keine Favoriten. Drücke bei einem Sender die grüne Taste.","No guide data":"Keine Programmdaten","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"Keine ausgeblendeten Apps. Zum Ausblenden OK auf der App gedrückt halten und App ausblenden wählen.","no photos yet":"noch keine Fotos","None":"Keine","not available":"nicht verfügbar","not set":"nicht eingerichtet","not set up":"nicht eingerichtet","Nothing watched yet.":"Noch nichts angesehen.","Now":"Jetzt","now: %s":"jetzt: %s","Off":"Aus","OK shows an app on Home again.":"OK zeigt eine App wieder auf Home.","On":"An","Open":"Öffnen","Open this address on your phone or computer:":"Öffne diese Adresse auf dem Handy oder Computer:","optional":"optional","Partly cloudy":"Teilweise bewölkt","Pick an app":"App auswählen","Press OK to try again.":"OK drücken, um es erneut zu versuchen.","Quality":"Qualität","Rain":"Regen","Recent":"Zuletzt","refused":"abgelehnt","reloaded":"neu geladen","Remove from dock":"Aus dem Dock entfernen","Remove from Home":"Von Home entfernen","Remove this button":"Diese Schaltfläche entfernen","Removed from favourites":"Aus Favoriten entfernt","Replace which app?":"Welche App ersetzen?","Replace with...":"Ersetzen durch...","Running apps":"Geöffnete Apps","Save":"Speichern","Search":"Suchen","Search...":"Suchen...","Selected":"Ausgewählt","Service":"Dienst","set up":"eingerichtet","Set up Live TV":"Live-TV einrichten","Settings":"Einstellungen","Share log":"Protokoll teilen","Show":"Anzeigen","Size":"Größe","Small":"Klein","Snow":"Schnee","Start":"Start","Statistics":"Statistik","Stream":"Stream","streams":"Streams","Text":"Text","The address answers with a web page, not a video.":"Die Adresse liefert eine Webseite, kein Video.","The helper is not reachable.":"Der Helper ist nicht erreichbar.","The server refused the stream: it may be blocked in your country or need special request headers.":"Der Server verweigert den Stream: vielleicht in deinem Land gesperrt oder es werden spezielle Header benötigt.","The service did not answer":"Der Dienst hat nicht geantwortet","The service did not answer.":"Der Dienst hat nicht geantwortet.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"Der Stream antwortet, aber der Fernseher konnte ihn nicht abspielen: wahrscheinlich ein Format, das er nicht dekodieren kann.","The stream is too slow to start.":"Der Stream startet zu langsam.","The stream server cannot be reached.":"Der Stream-Server ist nicht erreichbar.","The stream server reported an error.":"Der Stream-Server meldet einen Fehler.","The stream was not found (404): the channel is offline or its address has changed.":"Der Stream wurde nicht gefunden (404): Der Sender ist offline oder die Adresse hat sich geändert.","Theme":"Design","Theme default":"Standard des Designs","Then paste your M3U playlist address. This page closes by itself.":"Füge dann die Adresse deiner M3U-Playlist ein. Diese Seite schließt sich von selbst.","This channel is not available.":"Dieser Sender ist nicht verfügbar.","This stream is protected by DRM and cannot be played here.":"Dieser Stream ist DRM-geschützt und kann hier nicht abgespielt werden.","Thunderstorm":"Gewitter","Top buttons":"Obere Schaltflächen","Try again":"Erneut versuchen","Tuning...":"Sender wird eingestellt...","Uninstall":"Deinstallieren","Use Wallpapers":"Wallpapers verwenden","Voice":"Sprachsteuerung","Wallpapers":"Wallpapers","Weather":"Wetter"},"es":{"_name":"Español","_dir":"ltr","_pct":80,"%d channels":{"one":"%d canal","other":"%d canales"},"%d of %d":"%d de %d","%d of %d on":"%d de %d activados","%d photos":{"one":"%d foto","other":"%d fotos"},"%s added to Home":"%s añadido a Inicio","%s is hidden. Customize > Hidden apps shows it again.":"%s está oculta. Personalizar > Apps ocultas la muestra de nuevo.","%s removed from Home":"%s quitado de Inicio","12-hour":"12 horas","24-hour":"24 horas","A photo":"Una foto","A to Z":"De la A a la Z","Accent colour":"Color de acento","Active":"Activo","Add a button":"Añadir un botón","Add a button...":"Añadir un botón...","Add an app...":"Añadir una app...","Add photos...":"Añadir fotos...","Add to dock":"Añadir al dock","Add to dock...":"Añadir al dock...","Add to Home":"Añadir a Inicio","Added to favourites":"Añadido a favoritos","All":"Todos","All channels":"Todos los canales","An app...":"Una app...","and enter this code:":"e introduce este código:","App order":"Orden de las apps","Automatic":"Automático","Back":"Atrás","buffer":"búfer","build %s":"versión %s","Cancel":"Cancelar","Cards":"Tarjetas","Checking why...":"Buscando la causa...","Choose a camera from your phone":"Elige una cámara desde tu teléfono","Choose a place from your phone":"Elige un lugar desde tu teléfono","Choose an entity from your phone":"Elige una entidad desde tu teléfono","Choose entities from your phone":"Elige entidades desde tu teléfono","Clear":"Despejado","Clear filters":"Quitar filtros","Clock":"Reloj","Close":"Cerrar","Close all":"Cerrar todas","Closed":"Cerrado","Cloudy":"Nublado","Connected":"Conectado","Continue":"Continuar","Could not change Home":"No se pudo cambiar Inicio","Could not change Home. Try again in a moment.":"No se pudo cambiar Inicio. Inténtalo de nuevo en un momento.","Could not close the app. Try again, or close it from the app itself.":"No se pudo cerrar la app. Inténtalo de nuevo o ciérrala desde la propia app.","Could not load the themes. Try again in a moment.":"No se pudieron cargar los temas. Inténtalo de nuevo en un momento.","Could not open %s. Is it still installed?":"No se pudo abrir %s. ¿Sigue instalada?","Could not reach GitHub: showing the themes on this TV":"No se puede acceder a GitHub: se muestran los temas de este televisor","Could not read the open apps. Try again in a moment.":"No se pudieron leer las apps abiertas. Inténtalo de nuevo en un momento.","Could not save the settings. Try again in a moment.":"No se pudieron guardar los ajustes. Inténtalo de nuevo en un momento.","Country":"País","Customize":"Personalizar","Debloat":"Debloat","default":"predeterminado","default (%s)":"predeterminado (%s)","Dock":"Dock","Downloads when chosen":"Se descarga al elegirlo","Drizzle":"Llovizna","dropped":"perdidas","Each time Home opens":"Cada vez que se abre Inicio","Every %s min":"Cada %s min","Every %s s":"Cada %s s","Every minute":"Cada minuto","Favourite":"Favorito","Favourites":"Favoritos","Filters":"Filtros","Fog":"Niebla","frames":"imágenes","Getting the theme...":"Descargando el tema...","Go back to the previous theme":"Volver al tema anterior","Good afternoon":"Buenas tardes","Good afternoon, %s":"Buenas tardes, %s","Good evening":"Buenas noches","Good evening, %s":"Buenas noches, %s","Good morning":"Buenos días","Good morning, %s":"Buenos días, %s","Good night":"Buenas noches","Good night, %s":"Buenas noches, %s","Green dot":"Punto verde","Greeting":"Saludo","Guide":"Guide","guide: %s":"guía: %s","Helper not reachable, retrying...":"Helper no disponible, reintentando...","Hidden apps":"Apps ocultas","Hide app":"Ocultar app","Hold OK on an app for its options. Back on Home lists the open apps.":"Mantén OK en una app para ver sus opciones. Atrás en Inicio muestra las apps abiertas.","Home":"Home","Home Assistant camera":"Cámara de Home Assistant","Home Assistant entities":"Entidades de Home Assistant","Home Assistant entity":"Entidad de Home Assistant","Home, Live TV, Debloat, updates":"Inicio, TV en directo, Debloat, actualizaciones","Immich":"Immich","in the CleanYourTV app":"en la app CleanYourTV","Input":"Input","Inputs":"Entradas","Language":"Idioma","Large":"Grande","Later":"Más tarde","Live TV":"TV en directo","Loading channels...":"Cargando canales...","Mark running apps":"Marcar apps abiertas","More":"Más","More settings...":"Más ajustes...","Most used first":"Más usadas primero","Move left":"Mover a la izquierda","Move left in dock":"Mover a la izquierda en el dock","Move right":"Mover a la derecha","Move right in dock":"Mover a la derecha en el dock","never":"nunca","New photo":"Nueva foto","Next":"Después","No apps are running":"No hay apps abiertas","No channels match.":"Ningún canal coincide.","No dot":"Sin punto","No favourites yet. Press the green button on a channel.":"Aún no hay favoritos. Pulsa el botón verde en un canal.","No guide data":"Sin guía","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"No hay apps ocultas. Para ocultar una, mantén OK sobre ella en Inicio y elige Ocultar app.","no photos yet":"aún no hay fotos","None":"Ninguna","not available":"no disponible","not set":"sin configurar","not set up":"sin configurar","Nothing watched yet.":"Todavía no has visto nada.","Now":"Ahora","now: %s":"ahora: %s","Off":"Desactivado","OK shows an app on Home again.":"OK vuelve a poner una app en Inicio.","On":"Activado","Open":"Abrir","Open this address on your phone or computer:":"Abre esta dirección en tu móvil u ordenador:","optional":"opcional","Partly cloudy":"Parcialmente nublado","Pick an app":"Elige una app","Press OK to try again.":"Pulsa OK para reintentar.","Quality":"Calidad","Rain":"Lluvia","Recent":"Recientes","refused":"rechazada","reloaded":"recargado","Remove from dock":"Quitar del dock","Remove from Home":"Quitar de Inicio","Remove this button":"Quitar este botón","Removed from favourites":"Quitado de favoritos","Replace which app?":"¿Qué app reemplazar?","Replace with...":"Reemplazar por...","Running apps":"Apps abiertas","Save":"Guardar","Search":"Buscar","Search...":"Buscar...","Selected":"Elegido","Service":"Servicio","set up":"configurado","Set up Live TV":"Configurar TV en directo","Settings":"Ajustes","Share log":"Compartir el registro","Show":"Mostrar","Size":"Tamaño","Small":"Pequeño","Snow":"Nieve","Start":"Empezar","Statistics":"Estadísticas","Stream":"Emisión","streams":"emisiones","Text":"Texto","The address answers with a web page, not a video.":"La dirección devuelve una página web, no un vídeo.","The helper is not reachable.":"El helper no está disponible.","The server refused the stream: it may be blocked in your country or need special request headers.":"El servidor rechaza la emisión: puede estar bloqueada en tu país o necesitar cabeceras especiales.","The service did not answer":"El servicio no respondió","The service did not answer.":"El servicio no respondió.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"La emisión responde, pero el televisor no pudo reproducirla: probablemente un formato que no sabe decodificar.","The stream is too slow to start.":"La emisión tarda demasiado en empezar.","The stream server cannot be reached.":"No se puede acceder al servidor de la emisión.","The stream server reported an error.":"El servidor de la emisión informa de un error.","The stream was not found (404): the channel is offline or its address has changed.":"No se encontró la emisión (404): el canal está fuera de línea o su dirección cambió.","Theme":"Tema","Theme default":"El del tema","Then paste your M3U playlist address. This page closes by itself.":"Después pega la dirección de tu lista M3U. Esta página se cierra sola.","This channel is not available.":"Este canal no está disponible.","This stream is protected by DRM and cannot be played here.":"Esta emisión está protegida con DRM y no se puede reproducir aquí.","Thunderstorm":"Tormenta","Top buttons":"Botones superiores","Try again":"Reintentar","Tuning...":"Sintonizando...","Uninstall":"Desinstalar","Use Wallpapers":"Usar Wallpapers","Voice":"Voz","Wallpapers":"Wallpapers","Weather":"Tiempo"},"fr":{"_name":"Français","_dir":"ltr","_pct":80,"%d channels":{"one":"%d chaîne","other":"%d chaînes"},"%d of %d":"%d sur %d","%d of %d on":"%d sur %d activés","%d photos":{"one":"%d photo","other":"%d photos"},"%s added to Home":"%s ajouté à l’accueil","%s is hidden. Customize > Hidden apps shows it again.":"%s est masquée. Personnaliser > Apps masquées l’affiche à nouveau.","%s removed from Home":"%s retiré de l’accueil","12-hour":"12 heures","24-hour":"24 heures","A photo":"Une photo","A to Z":"De A à Z","Accent colour":"Couleur d’accent","Active":"Actif","Add a button":"Ajouter un bouton","Add a button...":"Ajouter un bouton...","Add an app...":"Ajouter une app...","Add photos...":"Ajouter des photos...","Add to dock":"Ajouter au dock","Add to dock...":"Ajouter au dock...","Add to Home":"Ajouter à l’accueil","Added to favourites":"Ajouté aux favoris","All":"Tous","All channels":"Toutes les chaînes","An app...":"Une app...","and enter this code:":"et saisissez ce code :","App order":"Ordre des apps","Automatic":"Automatique","Back":"Retour","buffer":"tampon","build %s":"version %s","Cancel":"Annuler","Cards":"Cartes","Checking why...":"Recherche de la cause...","Choose a camera from your phone":"Choisissez une caméra depuis votre téléphone","Choose a place from your phone":"Choisissez un lieu depuis votre téléphone","Choose an entity from your phone":"Choisissez une entité depuis votre téléphone","Choose entities from your phone":"Choisissez des entités depuis votre téléphone","Clear":"Dégagé","Clear filters":"Effacer les filtres","Clock":"Horloge","Close":"Fermer","Close all":"Tout fermer","Closed":"Fermé","Cloudy":"Nuageux","Connected":"Connecté","Continue":"Continuer","Could not change Home":"Impossible de modifier l’accueil","Could not change Home. Try again in a moment.":"Impossible de modifier l’accueil. Réessayez dans un instant.","Could not close the app. Try again, or close it from the app itself.":"Impossible de fermer l’app. Réessayez, ou fermez-la depuis l’app elle-même.","Could not load the themes. Try again in a moment.":"Impossible de charger les thèmes. Réessayez dans un instant.","Could not open %s. Is it still installed?":"Impossible d’ouvrir %s. Est-elle toujours installée ?","Could not reach GitHub: showing the themes on this TV":"GitHub injoignable : thèmes de ce téléviseur affichés","Could not read the open apps. Try again in a moment.":"Impossible de lire les apps ouvertes. Réessayez dans un instant.","Could not save the settings. Try again in a moment.":"Impossible d’enregistrer les réglages. Réessayez dans un instant.","Country":"Pays","Customize":"Personnaliser","Debloat":"Debloat","default":"par défaut","default (%s)":"par défaut (%s)","Dock":"Dock","Downloads when chosen":"Téléchargé au choix","Drizzle":"Bruine","dropped":"perdues","Each time Home opens":"À chaque ouverture de l’accueil","Every %s min":"Toutes les %s min","Every %s s":"Toutes les %s s","Every minute":"Toutes les minutes","Favourite":"Favori","Favourites":"Favoris","Filters":"Filtres","Fog":"Brouillard","frames":"images","Getting the theme...":"Téléchargement du thème...","Go back to the previous theme":"Revenir au thème précédent","Good afternoon":"Bon après-midi","Good afternoon, %s":"Bon après-midi, %s","Good evening":"Bonsoir","Good evening, %s":"Bonsoir, %s","Good morning":"Bonjour","Good morning, %s":"Bonjour, %s","Good night":"Bonne nuit","Good night, %s":"Bonne nuit, %s","Green dot":"Point vert","Greeting":"Salutation","Guide":"Guide","guide: %s":"guide : %s","Helper not reachable, retrying...":"Assistant injoignable, nouvel essai...","Hidden apps":"Apps masquées","Hide app":"Masquer l’app","Hold OK on an app for its options. Back on Home lists the open apps.":"Maintenez OK sur une app pour ses options. Retour sur l’accueil liste les apps ouvertes.","Home":"Home","Home Assistant camera":"Caméra Home Assistant","Home Assistant entities":"Entités Home Assistant","Home Assistant entity":"Entité Home Assistant","Home, Live TV, Debloat, updates":"Accueil, TV en direct, Debloat, mises à jour","Immich":"Immich","in the CleanYourTV app":"dans l’app CleanYourTV","Input":"Input","Inputs":"Entrées","Language":"Langue","Large":"Grand","Later":"Plus tard","Live TV":"TV en direct","Loading channels...":"Chargement des chaînes...","Mark running apps":"Signaler les apps ouvertes","More":"Plus","More settings...":"Plus de réglages...","Most used first":"Les plus utilisées d’abord","Move left":"Déplacer à gauche","Move left in dock":"Déplacer à gauche dans le dock","Move right":"Déplacer à droite","Move right in dock":"Déplacer à droite dans le dock","never":"jamais","New photo":"Nouvelle photo","Next":"Ensuite","No apps are running":"Aucune app ouverte","No channels match.":"Aucune chaîne trouvée.","No dot":"Pas de point","No favourites yet. Press the green button on a channel.":"Pas encore de favoris. Appuyez sur la touche verte sur une chaîne.","No guide data":"Pas de guide","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"Aucune app masquée. Pour en masquer une, maintenez OK dessus sur l’accueil et choisissez Masquer l’app.","no photos yet":"pas encore de photos","None":"Aucune","not available":"non disponible","not set":"non configuré","not set up":"non configuré","Nothing watched yet.":"Rien de regardé pour l’instant.","Now":"Maintenant","now: %s":"actuel : %s","Off":"Désactivé","OK shows an app on Home again.":"OK remet une app sur l’accueil.","On":"Activé","Open":"Ouvrir","Open this address on your phone or computer:":"Ouvrez cette adresse sur votre téléphone ou ordinateur :","optional":"facultatif","Partly cloudy":"Partiellement nuageux","Pick an app":"Choisir une app","Press OK to try again.":"Appuyez sur OK pour réessayer.","Quality":"Qualité","Rain":"Pluie","Recent":"Récents","refused":"refusée","reloaded":"rechargé","Remove from dock":"Retirer du dock","Remove from Home":"Retirer de l’accueil","Remove this button":"Supprimer ce bouton","Removed from favourites":"Retiré des favoris","Replace which app?":"Remplacer quelle app ?","Replace with...":"Remplacer par...","Running apps":"Apps ouvertes","Save":"Enregistrer","Search":"Rechercher","Search...":"Rechercher...","Selected":"Choisi","Service":"Service","set up":"configuré","Set up Live TV":"Configurer la TV en direct","Settings":"Paramètres","Share log":"Partager le journal","Show":"Afficher","Size":"Taille","Small":"Petit","Snow":"Neige","Start":"Démarrer","Statistics":"Statistiques","Stream":"Flux","streams":"flux","Text":"Texte","The address answers with a web page, not a video.":"L’adresse renvoie une page web, pas une vidéo.","The helper is not reachable.":"L’assistant est injoignable.","The server refused the stream: it may be blocked in your country or need special request headers.":"Le serveur refuse le flux : il est peut-être bloqué dans votre pays ou nécessite des en-têtes spéciaux.","The service did not answer":"Le service n’a pas répondu","The service did not answer.":"Le service n’a pas répondu.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"Le flux répond, mais le téléviseur n’a pas pu le lire : probablement un format qu’il ne sait pas décoder.","The stream is too slow to start.":"Le flux démarre trop lentement.","The stream server cannot be reached.":"Le serveur de flux est injoignable.","The stream server reported an error.":"Le serveur de flux signale une erreur.","The stream was not found (404): the channel is offline or its address has changed.":"Flux introuvable (404) : la chaîne est hors ligne ou son adresse a changé.","Theme":"Thème","Theme default":"Celle du thème","Then paste your M3U playlist address. This page closes by itself.":"Collez ensuite l’adresse de votre liste M3U. Cette page se ferme toute seule.","This channel is not available.":"Cette chaîne n’est pas disponible.","This stream is protected by DRM and cannot be played here.":"Ce flux est protégé par DRM et ne peut pas être lu ici.","Thunderstorm":"Orage","Top buttons":"Boutons du haut","Try again":"Réessayer","Tuning...":"Connexion...","Uninstall":"Désinstaller","Use Wallpapers":"Utiliser Wallpapers","Voice":"Voix","Wallpapers":"Wallpapers","Weather":"Météo"},"nl":{"_name":"Nederlands","_dir":"ltr","_pct":80,"%d channels":{"one":"%d zender","other":"%d zenders"},"%d of %d":"%d van %d","%d of %d on":"%d van %d aan","%d photos":{"one":"%d foto","other":"%d foto’s"},"%s added to Home":"%s is aan Home toegevoegd","%s is hidden. Customize > Hidden apps shows it again.":"%s is verborgen. Aanpassen > Verborgen apps toont de app weer.","%s removed from Home":"%s is van Home verwijderd","12-hour":"12-uurs","24-hour":"24-uurs","A photo":"Een foto","A to Z":"A tot Z","Accent colour":"Accentkleur","Active":"Actief","Add a button":"Knop toevoegen","Add a button...":"Knop toevoegen...","Add an app...":"App toevoegen...","Add photos...":"Foto’s toevoegen...","Add to dock":"Aan dock toevoegen","Add to dock...":"Aan dock toevoegen...","Add to Home":"Aan Home toevoegen","Added to favourites":"Toegevoegd aan favorieten","All":"Alle","All channels":"Alle zenders","An app...":"Een app...","and enter this code:":"en voer deze code in:","App order":"Volgorde van apps","Automatic":"Automatisch","Back":"Terug","buffer":"buffer","build %s":"build %s","Cancel":"Annuleren","Cards":"Kaarten","Checking why...":"Oorzaak wordt gezocht...","Choose a camera from your phone":"Kies een camera via je telefoon","Choose a place from your phone":"Kies een plaats via je telefoon","Choose an entity from your phone":"Kies een entiteit via je telefoon","Choose entities from your phone":"Kies entiteiten via je telefoon","Clear":"Helder","Clear filters":"Filters wissen","Clock":"Klok","Close":"Sluiten","Close all":"Alles sluiten","Closed":"Dicht","Cloudy":"Bewolkt","Connected":"Verbonden","Continue":"Doorgaan","Could not change Home":"Kan Home niet aanpassen","Could not change Home. Try again in a moment.":"Kan Home niet aanpassen. Probeer het zo opnieuw.","Could not close the app. Try again, or close it from the app itself.":"Kan de app niet sluiten. Probeer het opnieuw, of sluit hem in de app zelf.","Could not load the themes. Try again in a moment.":"Kan de thema’s niet laden. Probeer het zo opnieuw.","Could not open %s. Is it still installed?":"Kan %s niet openen. Is de app nog geïnstalleerd?","Could not reach GitHub: showing the themes on this TV":"GitHub is niet bereikbaar: de thema’s op deze TV worden getoond","Could not read the open apps. Try again in a moment.":"Kan de geopende apps niet lezen. Probeer het zo opnieuw.","Could not save the settings. Try again in a moment.":"Kan de instellingen niet opslaan. Probeer het zo opnieuw.","Country":"Land","Customize":"Aanpassen","Debloat":"Debloat","default":"standaard","default (%s)":"standaard (%s)","Dock":"Dock","Downloads when chosen":"Wordt gedownload als je het kiest","Drizzle":"Motregen","dropped":"gemist","Each time Home opens":"Elke keer dat Home opent","Every %s min":"Elke %s min","Every %s s":"Elke %s s","Every minute":"Elke minuut","Favourite":"Favoriet","Favourites":"Favorieten","Filters":"Filters","Fog":"Mist","frames":"beelden","Getting the theme...":"Thema ophalen...","Go back to the previous theme":"Terug naar het vorige thema","Good afternoon":"Goedemiddag","Good afternoon, %s":"Goedemiddag, %s","Good evening":"Goedenavond","Good evening, %s":"Goedenavond, %s","Good morning":"Goedemorgen","Good morning, %s":"Goedemorgen, %s","Good night":"Goedenacht","Good night, %s":"Goedenacht, %s","Green dot":"Groene stip","Greeting":"Begroeting","Guide":"Guide","guide: %s":"gids: %s","Helper not reachable, retrying...":"Helper niet bereikbaar, opnieuw proberen...","Hidden apps":"Verborgen apps","Hide app":"App verbergen","Hold OK on an app for its options. Back on Home lists the open apps.":"Houd OK ingedrukt op een app voor de opties. Terug op Home toont de geopende apps.","Home":"Home","Home Assistant camera":"Home Assistant-camera","Home Assistant entities":"Home Assistant-entiteiten","Home Assistant entity":"Home Assistant-entiteit","Home, Live TV, Debloat, updates":"Home, Live TV, Debloat, updates","Immich":"Immich","in the CleanYourTV app":"in de CleanYourTV-app","Input":"Input","Inputs":"Ingangen","Language":"Taal","Large":"Groot","Later":"Later","Live TV":"Live TV","Loading channels...":"Zenders laden...","Mark running apps":"Geopende apps markeren","More":"Meer","More settings...":"Meer instellingen...","Most used first":"Meest gebruikt eerst","Move left":"Naar links","Move left in dock":"Naar links in dock","Move right":"Naar rechts","Move right in dock":"Naar rechts in dock","never":"nooit","New photo":"Nieuwe foto","Next":"Straks","No apps are running":"Er zijn geen apps geopend","No channels match.":"Geen zenders gevonden.","No dot":"Geen stip","No favourites yet. Press the green button on a channel.":"Nog geen favorieten. Druk op de groene knop bij een zender.","No guide data":"Geen programmagegevens","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"Geen verborgen apps. Houd OK ingedrukt op een app op Home en kies App verbergen.","no photos yet":"nog geen foto’s","None":"Geen","not available":"niet beschikbaar","not set":"niet ingesteld","not set up":"niet ingesteld","Nothing watched yet.":"Nog niets bekeken.","Now":"Nu","now: %s":"nu: %s","Off":"Uit","OK shows an app on Home again.":"OK zet een app weer op Home.","On":"Aan","Open":"Openen","Open this address on your phone or computer:":"Open dit adres op je telefoon of computer:","optional":"optioneel","Partly cloudy":"Half bewolkt","Pick an app":"Kies een app","Press OK to try again.":"Druk op OK om het opnieuw te proberen.","Quality":"Kwaliteit","Rain":"Regen","Recent":"Recent","refused":"geweigerd","reloaded":"opnieuw geladen","Remove from dock":"Uit dock verwijderen","Remove from Home":"Van Home verwijderen","Remove this button":"Deze knop verwijderen","Removed from favourites":"Verwijderd uit favorieten","Replace which app?":"Welke app vervangen?","Replace with...":"Vervangen door...","Running apps":"Geopende apps","Save":"Opslaan","Search":"Zoeken","Search...":"Zoeken...","Selected":"Gekozen","Service":"Service","set up":"ingesteld","Set up Live TV":"Live TV instellen","Settings":"Instellingen","Share log":"Log delen","Show":"Tonen","Size":"Grootte","Small":"Klein","Snow":"Sneeuw","Start":"Start","Statistics":"Statistieken","Stream":"Stream","streams":"streams","Text":"Tekst","The address answers with a web page, not a video.":"Het adres geeft een webpagina, geen video.","The helper is not reachable.":"De helper is niet bereikbaar.","The server refused the stream: it may be blocked in your country or need special request headers.":"De server weigert de stream: mogelijk geblokkeerd in jouw land of er zijn speciale headers nodig.","The service did not answer":"De service antwoordde niet","The service did not answer.":"De service antwoordde niet.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"De stream antwoordt, maar de tv kon hem niet afspelen: waarschijnlijk een formaat dat hij niet kan decoderen.","The stream is too slow to start.":"De stream start te langzaam.","The stream server cannot be reached.":"De streamserver is niet bereikbaar.","The stream server reported an error.":"De streamserver meldt een fout.","The stream was not found (404): the channel is offline or its address has changed.":"De stream is niet gevonden (404): de zender is offline of het adres is gewijzigd.","Theme":"Thema","Theme default":"Standaard van het thema","Then paste your M3U playlist address. This page closes by itself.":"Plak daarna het adres van je M3U-afspeellijst. Deze pagina sluit vanzelf.","This channel is not available.":"Deze zender is niet beschikbaar.","This stream is protected by DRM and cannot be played here.":"Deze stream is met DRM beveiligd en kan hier niet worden afgespeeld.","Thunderstorm":"Onweer","Top buttons":"Knoppen bovenaan","Try again":"Opnieuw proberen","Tuning...":"Afstemmen...","Uninstall":"Verwijderen","Use Wallpapers":"Wallpapers gebruiken","Voice":"Spraak","Wallpapers":"Wallpapers","Weather":"Weer"},"ru":{"_name":"Русский","_dir":"ltr","_pct":80,"%d channels":{"one":"%d канал","few":"%d канала","many":"%d каналов","other":"%d канала"},"%d of %d":"%d из %d","%d of %d on":"%d из %d включено","%d photos":{"one":"%d фото","few":"%d фото","many":"%d фото","other":"%d фото"},"%s added to Home":"%s добавлено на главный экран","%s is hidden. Customize > Hidden apps shows it again.":"%s скрыто. Настроить > Скрытые приложения вернёт его.","%s removed from Home":"%s убрано с главного экрана","12-hour":"12 часов","24-hour":"24 часа","A photo":"Фото","A to Z":"От А до Я","Accent colour":"Цвет акцента","Active":"Активен","Add a button":"Добавить кнопку","Add a button...":"Добавить кнопку...","Add an app...":"Добавить приложение...","Add photos...":"Добавить фото...","Add to dock":"Добавить в док","Add to dock...":"Добавить в док...","Add to Home":"Добавить на главный экран","Added to favourites":"Добавлено в избранное","All":"Все","All channels":"Все каналы","An app...":"Приложение...","and enter this code:":"и введите этот код:","App order":"Порядок приложений","Automatic":"Автоматически","Back":"Назад","buffer":"буфер","build %s":"сборка %s","Cancel":"Отмена","Cards":"Карточки","Checking why...":"Выясняем причину...","Choose a camera from your phone":"Выберите камеру с телефона","Choose a place from your phone":"Выберите место с телефона","Choose an entity from your phone":"Выберите объект с телефона","Choose entities from your phone":"Выберите объекты с телефона","Clear":"Ясно","Clear filters":"Сбросить фильтры","Clock":"Часы","Close":"Закрыть","Close all":"Закрыть все","Closed":"Закрыто","Cloudy":"Облачно","Connected":"Подключено","Continue":"Продолжить","Could not change Home":"Не удалось изменить главный экран","Could not change Home. Try again in a moment.":"Не удалось изменить главный экран. Попробуйте ещё раз чуть позже.","Could not close the app. Try again, or close it from the app itself.":"Не удалось закрыть приложение. Попробуйте ещё раз или закройте его в самом приложении.","Could not load the themes. Try again in a moment.":"Не удалось загрузить темы. Попробуйте ещё раз чуть позже.","Could not open %s. Is it still installed?":"Не удалось открыть %s. Приложение ещё установлено?","Could not reach GitHub: showing the themes on this TV":"Нет связи с GitHub: показаны темы, которые есть на телевизоре","Could not read the open apps. Try again in a moment.":"Не удалось прочитать открытые приложения. Попробуйте ещё раз чуть позже.","Could not save the settings. Try again in a moment.":"Не удалось сохранить настройки. Попробуйте ещё раз чуть позже.","Country":"Страна","Customize":"Настроить","Debloat":"Debloat","default":"по умолчанию","default (%s)":"по умолчанию (%s)","Dock":"Док","Downloads when chosen":"Загрузится при выборе","Drizzle":"Морось","dropped":"пропущено","Each time Home opens":"При каждом открытии главного экрана","Every %s min":"Каждые %s мин","Every %s s":"Каждые %s с","Every minute":"Каждую минуту","Favourite":"Избранное","Favourites":"Избранное","Filters":"Фильтры","Fog":"Туман","frames":"кадры","Getting the theme...":"Загрузка темы...","Go back to the previous theme":"Вернуть предыдущую тему","Good afternoon":"Добрый день","Good afternoon, %s":"Добрый день, %s","Good evening":"Добрый вечер","Good evening, %s":"Добрый вечер, %s","Good morning":"Доброе утро","Good morning, %s":"Доброе утро, %s","Good night":"Доброй ночи","Good night, %s":"Доброй ночи, %s","Green dot":"Зелёная точка","Greeting":"Приветствие","Guide":"Guide","guide: %s":"программа передач: %s","Helper not reachable, retrying...":"Служба недоступна, повторная попытка...","Hidden apps":"Скрытые приложения","Hide app":"Скрыть приложение","Hold OK on an app for its options. Back on Home lists the open apps.":"Удерживайте OK на приложении для его параметров. «Назад» на главном экране показывает открытые приложения.","Home":"Home","Home Assistant camera":"Камера Home Assistant","Home Assistant entities":"Объекты Home Assistant","Home Assistant entity":"Объект Home Assistant","Home, Live TV, Debloat, updates":"Главный экран, прямой эфир, Debloat, обновления","Immich":"Immich","in the CleanYourTV app":"в приложении CleanYourTV","Input":"Input","Inputs":"Входы","Language":"Язык","Large":"Большой","Later":"Позже","Live TV":"Прямой эфир","Loading channels...":"Загрузка каналов...","Mark running apps":"Отмечать открытые приложения","More":"Ещё","More settings...":"Другие настройки...","Most used first":"Сначала часто используемые","Move left":"Влево","Move left in dock":"Влево в доке","Move right":"Вправо","Move right in dock":"Вправо в доке","never":"никогда","New photo":"Новое фото","Next":"Далее","No apps are running":"Нет открытых приложений","No channels match.":"Нет подходящих каналов.","No dot":"Без точки","No favourites yet. Press the green button on a channel.":"Избранного пока нет. Нажмите зелёную кнопку на канале.","No guide data":"Нет данных программы","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"Нет скрытых приложений. Чтобы скрыть приложение, удерживайте на нём OK на главном экране и выберите «Скрыть приложение».","no photos yet":"фото пока нет","None":"Нет","not available":"недоступно","not set":"не задано","not set up":"не настроен","Nothing watched yet.":"Пока ничего не смотрели.","Now":"Сейчас","now: %s":"сейчас: %s","Off":"Выкл.","OK shows an app on Home again.":"OK возвращает приложение на главный экран.","On":"Вкл.","Open":"Открыть","Open this address on your phone or computer:":"Откройте этот адрес на телефоне или компьютере:","optional":"необязательно","Partly cloudy":"Переменная облачность","Pick an app":"Выберите приложение","Press OK to try again.":"Нажмите OK, чтобы попробовать снова.","Quality":"Качество","Rain":"Дождь","Recent":"Недавние","refused":"отклонено","reloaded":"перезагружено","Remove from dock":"Убрать из дока","Remove from Home":"Убрать с главного экрана","Remove this button":"Удалить эту кнопку","Removed from favourites":"Удалено из избранного","Replace which app?":"Какое приложение заменить?","Replace with...":"Заменить на...","Running apps":"Открытые приложения","Save":"Сохранить","Search":"Найти","Search...":"Поиск...","Selected":"Выбрано","Service":"Служба","set up":"настроен","Set up Live TV":"Настроить прямой эфир","Settings":"Настройки","Share log":"Поделиться журналом","Show":"Показывать","Size":"Размер","Small":"Маленький","Snow":"Снег","Start":"Начать","Statistics":"Статистика","Stream":"Поток","streams":"потоки","Text":"Текст","The address answers with a web page, not a video.":"Адрес отвечает веб-страницей, а не видео.","The helper is not reachable.":"Служба недоступна.","The server refused the stream: it may be blocked in your country or need special request headers.":"Сервер отклонил поток: возможно, он заблокирован в вашей стране или требует особых заголовков запроса.","The service did not answer":"Служба не ответила","The service did not answer.":"Служба не ответила.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"Поток отвечает, но телевизор не смог его воспроизвести: вероятно, формат, который он не умеет декодировать.","The stream is too slow to start.":"Поток слишком долго запускается.","The stream server cannot be reached.":"Сервер потока недоступен.","The stream server reported an error.":"Сервер потока сообщил об ошибке.","The stream was not found (404): the channel is offline or its address has changed.":"Поток не найден (404): канал не в эфире или его адрес изменился.","Theme":"Тема","Theme default":"По умолчанию для темы","Then paste your M3U playlist address. This page closes by itself.":"Затем вставьте адрес вашего плейлиста M3U. Эта страница закроется сама.","This channel is not available.":"Этот канал недоступен.","This stream is protected by DRM and cannot be played here.":"Этот поток защищён DRM и здесь не воспроизводится.","Thunderstorm":"Гроза","Top buttons":"Верхние кнопки","Try again":"Попробовать снова","Tuning...":"Настройка канала...","Uninstall":"Удалить","Use Wallpapers":"Использовать Wallpapers","Voice":"Голос","Wallpapers":"Wallpapers","Weather":"Погода"},"tr":{"_name":"Türkçe","_dir":"ltr","_pct":80,"%d channels":"%d kanal","%d of %d":"%d / %d","%d of %d on":"%d / %d açık","%d photos":"%d fotoğraf","%s added to Home":"%s ana ekrana eklendi","%s is hidden. Customize > Hidden apps shows it again.":"%s gizlendi. Özelleştir > Gizli uygulamalar ile geri getirebilirsiniz.","%s removed from Home":"%s ana ekrandan kaldırıldı","12-hour":"12 saat","24-hour":"24 saat","A photo":"Fotoğraf","A to Z":"A'dan Z'ye","Accent colour":"Vurgu rengi","Active":"Etkin","Add a button":"Düğme ekle","Add a button...":"Düğme ekle...","Add an app...":"Uygulama ekle...","Add photos...":"Fotoğraf ekle...","Add to dock":"Dock'a ekle","Add to dock...":"Dock'a ekle...","Add to Home":"Ana ekrana ekle","Added to favourites":"Favorilere eklendi","All":"Tümü","All channels":"Tüm kanallar","An app...":"Uygulama...","and enter this code:":"ve bu kodu girin:","App order":"Uygulama sırası","Automatic":"Otomatik","Back":"Geri","buffer":"tampon","build %s":"derleme %s","Cancel":"İptal","Cards":"Kartlar","Checking why...":"Nedeni araştırılıyor...","Choose a camera from your phone":"Telefonunuzdan bir kamera seçin","Choose a place from your phone":"Telefonunuzdan bir yer seçin","Choose an entity from your phone":"Telefonunuzdan bir varlık seçin","Choose entities from your phone":"Telefonunuzdan varlıklar seçin","Clear":"Açık","Clear filters":"Filtreleri temizle","Clock":"Saat","Close":"Kapat","Close all":"Tümünü kapat","Closed":"Kapalı","Cloudy":"Bulutlu","Connected":"Bağlı","Continue":"Devam","Could not change Home":"Ana ekran değiştirilemedi","Could not change Home. Try again in a moment.":"Ana ekran değiştirilemedi. Birazdan tekrar deneyin.","Could not close the app. Try again, or close it from the app itself.":"Uygulama kapatılamadı. Tekrar deneyin veya uygulamanın içinden kapatın.","Could not load the themes. Try again in a moment.":"Temalar yüklenemedi. Birazdan tekrar deneyin.","Could not open %s. Is it still installed?":"%s açılamadı. Hâlâ yüklü mü?","Could not reach GitHub: showing the themes on this TV":"GitHub'a ulaşılamadı: TV'deki temalar gösteriliyor","Could not read the open apps. Try again in a moment.":"Açık uygulamalar okunamadı. Birazdan tekrar deneyin.","Could not save the settings. Try again in a moment.":"Ayarlar kaydedilemedi. Birazdan tekrar deneyin.","Country":"Ülke","Customize":"Özelleştir","Debloat":"Debloat","default":"varsayılan","default (%s)":"varsayılan (%s)","Dock":"Dock","Downloads when chosen":"Seçilince indirilir","Drizzle":"Çisenti","dropped":"atlandı","Each time Home opens":"Ana ekran her açıldığında","Every %s min":"Her %s dk","Every %s s":"Her %s sn","Every minute":"Her dakika","Favourite":"Favoriler","Favourites":"Favoriler","Filters":"Filtreler","Fog":"Sis","frames":"kare","Getting the theme...":"Tema alınıyor...","Go back to the previous theme":"Önceki temaya dön","Good afternoon":"İyi günler","Good afternoon, %s":"İyi günler, %s","Good evening":"İyi akşamlar","Good evening, %s":"İyi akşamlar, %s","Good morning":"Günaydın","Good morning, %s":"Günaydın, %s","Good night":"İyi geceler","Good night, %s":"İyi geceler, %s","Green dot":"Yeşil nokta","Greeting":"Selamlama","Guide":"Rehber","guide: %s":"rehber: %s","Helper not reachable, retrying...":"Hizmete ulaşılamıyor, tekrar deneniyor...","Hidden apps":"Gizli uygulamalar","Hide app":"Uygulamayı gizle","Hold OK on an app for its options. Back on Home lists the open apps.":"Seçenekleri için bir uygulamada OK'u basılı tutun. Ana ekranda Geri, açık uygulamaları gösterir.","Home":"Home","Home Assistant camera":"Home Assistant kamerası","Home Assistant entities":"Home Assistant varlıkları","Home Assistant entity":"Home Assistant varlığı","Home, Live TV, Debloat, updates":"Ana ekran, Canlı TV, Debloat, güncellemeler","Immich":"Immich","in the CleanYourTV app":"CleanYourTV uygulamasında","Input":"Input","Inputs":"Girişler","Language":"Dil","Large":"Büyük","Later":"Sonra","Live TV":"Canlı TV","Loading channels...":"Kanallar yükleniyor...","Mark running apps":"Açık uygulamaları işaretle","More":"Daha fazla","More settings...":"Diğer ayarlar...","Most used first":"Önce en çok kullanılan","Move left":"Sola taşı","Move left in dock":"Dock'ta sola taşı","Move right":"Sağa taşı","Move right in dock":"Dock'ta sağa taşı","never":"hiç","New photo":"Yeni fotoğraf","Next":"İleri","No apps are running":"Açık uygulama yok","No channels match.":"Eşleşen kanal yok.","No dot":"Nokta yok","No favourites yet. Press the green button on a channel.":"Henüz favori yok. Bir kanalda yeşil tuşa basın.","No guide data":"Rehber bilgisi yok","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"Gizli uygulama yok. Bir uygulamayı gizlemek için ana ekranda üzerinde OK'u basılı tutun ve Uygulamayı gizle'yi seçin.","no photos yet":"henüz fotoğraf yok","None":"Yok","not available":"kullanılamıyor","not set":"ayarlanmadı","not set up":"ayarlanmadı","Nothing watched yet.":"Henüz bir şey izlenmedi.","Now":"Şimdi","now: %s":"şimdi: %s","Off":"Kapalı","OK shows an app on Home again.":"OK, uygulamayı ana ekrana geri getirir.","On":"Açık","Open":"Aç","Open this address on your phone or computer:":"Bu adresi telefonda veya bilgisayarda açın:","optional":"isteğe bağlı","Partly cloudy":"Parçalı bulutlu","Pick an app":"Bir uygulama seçin","Press OK to try again.":"Tekrar denemek için OK'a basın.","Quality":"Kalite","Rain":"Yağmur","Recent":"Son","refused":"reddedildi","reloaded":"yeniden yüklendi","Remove from dock":"Dock'tan kaldır","Remove from Home":"Ana ekrandan kaldır","Remove this button":"Bu düğmeyi kaldır","Removed from favourites":"Favorilerden kaldırıldı","Replace which app?":"Hangi uygulama değiştirilsin?","Replace with...":"Şununla değiştir...","Running apps":"Açık uygulamalar","Save":"Kaydet","Search":"Ara","Search...":"Ara...","Selected":"Seçili","Service":"Hizmet","set up":"ayarlandı","Set up Live TV":"Canlı TV'yi ayarla","Settings":"Ayarlar","Share log":"Günlüğü paylaş","Show":"Göster","Size":"Boyut","Small":"Küçük","Snow":"Kar","Start":"Başlat","Statistics":"İstatistikler","Stream":"Akış","streams":"akışlar","Text":"Metin","The address answers with a web page, not a video.":"Adres bir video değil, bir web sayfası döndürüyor.","The helper is not reachable.":"Hizmete ulaşılamıyor.","The server refused the stream: it may be blocked in your country or need special request headers.":"Sunucu akışı reddetti: ülkenizde engellenmiş olabilir veya özel istek başlıkları gerektirebilir.","The service did not answer":"Hizmet yanıt vermedi","The service did not answer.":"Hizmet yanıt vermedi.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"Akış yanıt veriyor ama TV oynatamadı: büyük olasılıkla çözemediği bir biçim.","The stream is too slow to start.":"Akışın başlaması çok uzun sürüyor.","The stream server cannot be reached.":"Akış sunucusuna ulaşılamıyor.","The stream server reported an error.":"Akış sunucusu bir hata bildirdi.","The stream was not found (404): the channel is offline or its address has changed.":"Akış bulunamadı (404): kanal yayında değil veya adresi değişti.","Theme":"Tema","Theme default":"Tema varsayılanı","Then paste your M3U playlist address. This page closes by itself.":"Sonra M3U oynatma listenizin adresini yapıştırın. Bu sayfa kendiliğinden kapanır.","This channel is not available.":"Bu kanal kullanılamıyor.","This stream is protected by DRM and cannot be played here.":"Bu akış DRM korumalı ve burada oynatılamaz.","Thunderstorm":"Fırtına","Top buttons":"Üst düğmeler","Try again":"Tekrar dene","Tuning...":"Kanal ayarlanıyor...","Uninstall":"Kaldır","Use Wallpapers":"Wallpapers'ı kullan","Voice":"Ses","Wallpapers":"Wallpapers","Weather":"Hava durumu"},"en":{"%d channels":{"one":"%d channel","other":"%d channels"},"%d photos":{"one":"%d photo","other":"%d photos"},"%d minutes":{"one":"%d minute","other":"%d minutes"},"%d photos from the feed":{"one":"%d photo from the feed","other":"%d photos from the feed"}}};
+var I18N = {"ar":{"_name":"العربية","_dir":"rtl","_pct":79,"%d channels":{"zero":"%d قناة","one":"%d قناة","two":"%d قناتان","few":"%d قنوات","many":"%d قناة","other":"%d قناة"},"%d of %d":"%d من %d","%d of %d on":"%d من %d مفعّل","%d photos":{"zero":"%d صورة","one":"%d صورة","two":"%d صورتان","few":"%d صور","many":"%d صورة","other":"%d صورة"},"%s added to Home":"أُضيف %s إلى الشاشة الرئيسية","%s is hidden. Customize > Hidden apps shows it again.":"تم إخفاء %s. يعيده تخصيص > التطبيقات المخفية.","%s removed from Home":"أُزيل %s من الشاشة الرئيسية","12-hour":"‏12 ساعة","24-hour":"‏24 ساعة","A photo":"صورة","A to Z":"أ إلى ي","Accent colour":"لون التمييز","Active":"نشط","Add a button":"إضافة زر","Add a button...":"إضافة زر...","Add an app...":"إضافة تطبيق...","Add photos...":"إضافة صور...","Add to dock":"إضافة إلى الشريط","Add to dock...":"إضافة إلى الشريط...","Add to Home":"إضافة إلى الشاشة الرئيسية","Added to favourites":"أُضيف إلى المفضلة","All":"الكل","All channels":"كل القنوات","An app...":"تطبيق...","and enter this code:":"وأدخل هذا الرمز:","App order":"ترتيب التطبيقات","Automatic":"تلقائي","Back":"رجوع","buffer":"التخزين المؤقت","build %s":"البناء %s","Cancel":"إلغاء","Cards":"البطاقات","Checking why...":"جارٍ معرفة السبب...","Choose a camera from your phone":"اختر كاميرا من هاتفك","Choose a place from your phone":"اختر مكانًا من هاتفك","Choose an entity from your phone":"اختر كيانًا من هاتفك","Choose entities from your phone":"اختر كيانات من هاتفك","Clear":"صافٍ","Clear filters":"مسح عوامل التصفية","Clock":"الساعة","Close":"إغلاق","Close all":"إغلاق الكل","Closed":"مغلق","Cloudy":"غائم","Connected":"متصل","Continue":"متابعة","Could not change Home":"تعذّر تغيير الشاشة الرئيسية","Could not change Home. Try again in a moment.":"تعذّر تغيير الشاشة الرئيسية. حاول مرة أخرى بعد قليل.","Could not close the app. Try again, or close it from the app itself.":"تعذّر إغلاق التطبيق. حاول مرة أخرى أو أغلقه من داخله.","Could not load the themes. Try again in a moment.":"تعذّر تحميل السمات. حاول مرة أخرى بعد قليل.","Could not open %s. Is it still installed?":"تعذّر فتح %s. هل ما زال مثبّتًا؟","Could not reach GitHub: showing the themes on this TV":"تعذّر الوصول إلى GitHub: تُعرض السمات الموجودة على التلفاز","Could not read the open apps. Try again in a moment.":"تعذّرت قراءة التطبيقات المفتوحة. حاول مرة أخرى بعد قليل.","Could not save the settings. Try again in a moment.":"تعذّر حفظ الإعدادات. حاول مرة أخرى بعد قليل.","Country":"البلد","Customize":"تخصيص","Debloat":"Debloat","default":"افتراضي","default (%s)":"افتراضي (%s)","Dock":"الشريط","Downloads when chosen":"يُنزَّل عند اختياره","Drizzle":"رذاذ","dropped":"تم التخطي","Each time Home opens":"في كل مرة تُفتح الشاشة الرئيسية","Every %s min":"كل %s د","Every %s s":"كل %s ث","Every minute":"كل دقيقة","Favourite":"المفضلة","Favourites":"المفضلة","Filters":"عوامل التصفية","Fog":"ضباب","frames":"إطارات","Getting the theme...":"جارٍ جلب السمة...","Go back to the previous theme":"العودة إلى السمة السابقة","Good afternoon":"مساء الخير","Good afternoon, %s":"مساء الخير يا %s","Good evening":"مساء الخير","Good evening, %s":"مساء الخير يا %s","Good morning":"صباح الخير","Good morning, %s":"صباح الخير يا %s","Good night":"ليلة سعيدة","Good night, %s":"ليلة سعيدة يا %s","Green dot":"نقطة خضراء","Greeting":"تحية","Guide":"الدليل","guide: %s":"الدليل: %s","Helper not reachable, retrying...":"تعذّر الوصول إلى الخدمة، جارٍ إعادة المحاولة...","Hidden apps":"التطبيقات المخفية","Hide app":"إخفاء التطبيق","Hold OK on an app for its options. Back on Home lists the open apps.":"اضغط مطوّلًا على OK فوق تطبيق لعرض خياراته. زر الرجوع في الشاشة الرئيسية يعرض التطبيقات المفتوحة.","Home":"Home","Home Assistant camera":"كاميرا Home Assistant","Home Assistant entities":"كيانات Home Assistant","Home Assistant entity":"كيان Home Assistant","Home, Live TV, Debloat, updates":"الشاشة الرئيسية، البث المباشر، Debloat، التحديثات","Immich":"Immich","in the CleanYourTV app":"في تطبيق CleanYourTV","Input":"Input","Inputs":"المداخل","Language":"اللغة","Large":"كبير","Later":"لاحقًا","Live TV":"البث المباشر","Loading channels...":"جارٍ تحميل القنوات...","Mark running apps":"تمييز التطبيقات المفتوحة","More":"المزيد","More settings...":"المزيد من الإعدادات...","Most used first":"الأكثر استخدامًا أولًا","Move left":"نقل لليسار","Move left in dock":"نقل لليسار في الشريط","Move right":"نقل لليمين","Move right in dock":"نقل لليمين في الشريط","never":"أبدًا","New photo":"صورة جديدة","Next":"التالي","No apps are running":"لا تطبيقات مفتوحة","No channels match.":"لا قنوات مطابقة.","No dot":"بلا نقطة","No favourites yet. Press the green button on a channel.":"لا مفضلة بعد. اضغط الزر الأخضر على قناة.","No guide data":"لا بيانات في الدليل","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"لا تطبيقات مخفية. لإخفاء تطبيق اضغط مطوّلًا على OK فوقه في الشاشة الرئيسية واختر إخفاء التطبيق.","no photos yet":"لا صور بعد","None":"لا شيء","not available":"غير متاح","not set":"غير مضبوط","not set up":"غير مُعدّ","Nothing watched yet.":"لم تُشاهد شيئًا بعد.","Now":"الآن","now: %s":"الآن: %s","Off":"إيقاف","OK shows an app on Home again.":"‏OK يعيد التطبيق إلى الشاشة الرئيسية.","On":"تشغيل","Open":"فتح","Open this address on your phone or computer:":"افتح هذا العنوان على هاتف أو حاسوب:","optional":"اختياري","Partly cloudy":"غائم جزئيًا","Pick an app":"اختر تطبيقًا","Press OK to try again.":"اضغط OK للمحاولة مجددًا.","Quality":"الجودة","Rain":"مطر","Recent":"الأخيرة","refused":"مرفوض","reloaded":"أُعيد تحميله","Remove from dock":"إزالة من الشريط","Remove from Home":"إزالة من الشاشة الرئيسية","Remove this button":"إزالة هذا الزر","Removed from favourites":"أُزيل من المفضلة","Replace which app?":"أي تطبيق تريد استبداله؟","Replace with...":"استبدال بـ...","Running apps":"التطبيقات المفتوحة","Save":"حفظ","Search":"بحث","Search...":"بحث...","Selected":"محدد","Service":"الخدمة","set up":"مُعدّ","Set up Live TV":"إعداد البث المباشر","Settings":"الإعدادات","Share log":"مشاركة السجل","Show":"العرض","Size":"الحجم","Small":"صغير","Snow":"ثلج","Start":"ابدأ","Statistics":"الإحصاءات","Stream":"البث","streams":"بثوث","Text":"نص","The address answers with a web page, not a video.":"العنوان يعيد صفحة ويب، لا فيديو.","The helper is not reachable.":"تعذّر الوصول إلى الخدمة.","The server refused the stream: it may be blocked in your country or need special request headers.":"رفض الخادم البث: قد يكون محجوبًا في بلدك أو يحتاج رؤوس طلب خاصة.","The service did not answer":"لم تستجب الخدمة","The service did not answer.":"لم تستجب الخدمة.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"يستجيب البث لكن التلفاز لم يستطع تشغيله: على الأرجح صيغة لا يستطيع فكّها.","The stream is too slow to start.":"يستغرق بدء البث وقتًا طويلًا.","The stream server cannot be reached.":"تعذّر الوصول إلى خادم البث.","The stream server reported an error.":"أبلغ خادم البث عن خطأ.","The stream was not found (404): the channel is offline or its address has changed.":"لم يُعثر على البث (404): القناة متوقفة أو تغيّر عنوانها.","Theme":"السمة","Theme default":"افتراضي السمة","Then paste your M3U playlist address. This page closes by itself.":"ثم الصق عنوان قائمة تشغيل M3U. تُغلق هذه الصفحة تلقائيًا.","This channel is not available.":"هذه القناة غير متاحة.","This stream is protected by DRM and cannot be played here.":"هذا البث محمي بـ DRM ولا يمكن تشغيله هنا.","Thunderstorm":"عاصفة رعدية","Top buttons":"الأزرار العلوية","Try again":"حاول مجددًا","Tuning...":"جارٍ ضبط القناة...","Uninstall":"إلغاء التثبيت","Use Wallpapers":"استخدام Wallpapers","Voice":"الصوت","Wallpapers":"Wallpapers","Weather":"الطقس"},"de":{"_name":"Deutsch","_dir":"ltr","_pct":79,"%d channels":{"one":"%d Sender","other":"%d Sender"},"%d of %d":"%d von %d","%d of %d on":"%d von %d an","%d photos":{"one":"%d Foto","other":"%d Fotos"},"%s added to Home":"%s zu Home hinzugefügt","%s is hidden. Customize > Hidden apps shows it again.":"%s ist ausgeblendet. Anpassen > Ausgeblendete Apps zeigt sie wieder.","%s removed from Home":"%s von Home entfernt","12-hour":"12 Stunden","24-hour":"24 Stunden","A photo":"Ein Foto","A to Z":"A bis Z","Accent colour":"Akzentfarbe","Active":"Aktiv","Add a button":"Schaltfläche hinzufügen","Add a button...":"Schaltfläche hinzufügen...","Add an app...":"App hinzufügen...","Add photos...":"Fotos hinzufügen...","Add to dock":"Zum Dock hinzufügen","Add to dock...":"Zum Dock hinzufügen...","Add to Home":"Zu Home hinzufügen","Added to favourites":"Zu Favoriten hinzugefügt","All":"Alle","All channels":"Alle Sender","An app...":"Eine App...","and enter this code:":"und gib diesen Code ein:","App order":"App-Reihenfolge","Automatic":"Automatisch","Back":"Zurück","buffer":"Puffer","build %s":"Build %s","Cancel":"Abbrechen","Cards":"Karten","Checking why...":"Ursache wird gesucht...","Choose a camera from your phone":"Wähle eine Kamera über dein Telefon","Choose a place from your phone":"Wähle einen Ort über dein Telefon","Choose an entity from your phone":"Wähle eine Entität über dein Telefon","Choose entities from your phone":"Wähle Entitäten über dein Telefon","Clear":"Klar","Clear filters":"Filter löschen","Clock":"Uhr","Close":"Schließen","Close all":"Alle schließen","Closed":"Geschlossen","Cloudy":"Bewölkt","Connected":"Verbunden","Continue":"Weiter","Could not change Home":"Home konnte nicht geändert werden","Could not change Home. Try again in a moment.":"Home konnte nicht geändert werden. Gleich noch einmal versuchen.","Could not close the app. Try again, or close it from the app itself.":"Die App konnte nicht geschlossen werden. Noch einmal versuchen oder in der App selbst schließen.","Could not load the themes. Try again in a moment.":"Designs konnten nicht geladen werden. Gleich noch einmal versuchen.","Could not open %s. Is it still installed?":"%s konnte nicht geöffnet werden. Ist die App noch installiert?","Could not reach GitHub: showing the themes on this TV":"GitHub nicht erreichbar: Designs auf diesem Fernseher werden gezeigt","Could not read the open apps. Try again in a moment.":"Geöffnete Apps konnten nicht gelesen werden. Gleich noch einmal versuchen.","Could not save the settings. Try again in a moment.":"Einstellungen konnten nicht gespeichert werden. Gleich noch einmal versuchen.","Country":"Land","Customize":"Anpassen","Debloat":"Debloat","default":"Standard","default (%s)":"Standard (%s)","Dock":"Dock","Downloads when chosen":"Wird bei Auswahl geladen","Drizzle":"Nieselregen","dropped":"verworfen","Each time Home opens":"Bei jedem Öffnen von Home","Every %s min":"Alle %s Min.","Every %s s":"Alle %s s","Every minute":"Jede Minute","Favourite":"Favorit","Favourites":"Favoriten","Filters":"Filter","Fog":"Nebel","frames":"Bilder","Getting the theme...":"Design wird geladen...","Go back to the previous theme":"Zurück zum vorherigen Design","Good afternoon":"Guten Tag","Good afternoon, %s":"Guten Tag, %s","Good evening":"Guten Abend","Good evening, %s":"Guten Abend, %s","Good morning":"Guten Morgen","Good morning, %s":"Guten Morgen, %s","Good night":"Gute Nacht","Good night, %s":"Gute Nacht, %s","Green dot":"Grüner Punkt","Greeting":"Begrüßung","Guide":"Guide","guide: %s":"Programmführer: %s","Helper not reachable, retrying...":"Helper nicht erreichbar, neuer Versuch...","Hidden apps":"Ausgeblendete Apps","Hide app":"App ausblenden","Hold OK on an app for its options. Back on Home lists the open apps.":"OK auf einer App gedrückt halten für ihre Optionen. Zurück auf Home zeigt die geöffneten Apps.","Home":"Home","Home Assistant camera":"Home Assistant-Kamera","Home Assistant entities":"Home Assistant-Entitäten","Home Assistant entity":"Home Assistant-Entität","Home, Live TV, Debloat, updates":"Home, Live-TV, Debloat, Updates","Immich":"Immich","in the CleanYourTV app":"in der CleanYourTV-App","Input":"Input","Inputs":"Eingänge","Language":"Sprache","Large":"Groß","Later":"Später","Live TV":"Live-TV","Loading channels...":"Sender werden geladen...","Mark running apps":"Geöffnete Apps markieren","More":"Mehr","More settings...":"Weitere Einstellungen...","Most used first":"Meistgenutzte zuerst","Move left":"Nach links","Move left in dock":"Im Dock nach links","Move right":"Nach rechts","Move right in dock":"Im Dock nach rechts","never":"nie","New photo":"Neues Foto","Next":"Danach","No apps are running":"Keine Apps geöffnet","No channels match.":"Keine passenden Sender.","No dot":"Kein Punkt","No favourites yet. Press the green button on a channel.":"Noch keine Favoriten. Drücke bei einem Sender die grüne Taste.","No guide data":"Keine Programmdaten","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"Keine ausgeblendeten Apps. Zum Ausblenden OK auf der App gedrückt halten und App ausblenden wählen.","no photos yet":"noch keine Fotos","None":"Keine","not available":"nicht verfügbar","not set":"nicht eingerichtet","not set up":"nicht eingerichtet","Nothing watched yet.":"Noch nichts angesehen.","Now":"Jetzt","now: %s":"jetzt: %s","Off":"Aus","OK shows an app on Home again.":"OK zeigt eine App wieder auf Home.","On":"An","Open":"Öffnen","Open this address on your phone or computer:":"Öffne diese Adresse auf dem Handy oder Computer:","optional":"optional","Partly cloudy":"Teilweise bewölkt","Pick an app":"App auswählen","Press OK to try again.":"OK drücken, um es erneut zu versuchen.","Quality":"Qualität","Rain":"Regen","Recent":"Zuletzt","refused":"abgelehnt","reloaded":"neu geladen","Remove from dock":"Aus dem Dock entfernen","Remove from Home":"Von Home entfernen","Remove this button":"Diese Schaltfläche entfernen","Removed from favourites":"Aus Favoriten entfernt","Replace which app?":"Welche App ersetzen?","Replace with...":"Ersetzen durch...","Running apps":"Geöffnete Apps","Save":"Speichern","Search":"Suchen","Search...":"Suchen...","Selected":"Ausgewählt","Service":"Dienst","set up":"eingerichtet","Set up Live TV":"Live-TV einrichten","Settings":"Einstellungen","Share log":"Protokoll teilen","Show":"Anzeigen","Size":"Größe","Small":"Klein","Snow":"Schnee","Start":"Start","Statistics":"Statistik","Stream":"Stream","streams":"Streams","Text":"Text","The address answers with a web page, not a video.":"Die Adresse liefert eine Webseite, kein Video.","The helper is not reachable.":"Der Helper ist nicht erreichbar.","The server refused the stream: it may be blocked in your country or need special request headers.":"Der Server verweigert den Stream: vielleicht in deinem Land gesperrt oder es werden spezielle Header benötigt.","The service did not answer":"Der Dienst hat nicht geantwortet","The service did not answer.":"Der Dienst hat nicht geantwortet.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"Der Stream antwortet, aber der Fernseher konnte ihn nicht abspielen: wahrscheinlich ein Format, das er nicht dekodieren kann.","The stream is too slow to start.":"Der Stream startet zu langsam.","The stream server cannot be reached.":"Der Stream-Server ist nicht erreichbar.","The stream server reported an error.":"Der Stream-Server meldet einen Fehler.","The stream was not found (404): the channel is offline or its address has changed.":"Der Stream wurde nicht gefunden (404): Der Sender ist offline oder die Adresse hat sich geändert.","Theme":"Design","Theme default":"Standard des Designs","Then paste your M3U playlist address. This page closes by itself.":"Füge dann die Adresse deiner M3U-Playlist ein. Diese Seite schließt sich von selbst.","This channel is not available.":"Dieser Sender ist nicht verfügbar.","This stream is protected by DRM and cannot be played here.":"Dieser Stream ist DRM-geschützt und kann hier nicht abgespielt werden.","Thunderstorm":"Gewitter","Top buttons":"Obere Schaltflächen","Try again":"Erneut versuchen","Tuning...":"Sender wird eingestellt...","Uninstall":"Deinstallieren","Use Wallpapers":"Wallpapers verwenden","Voice":"Sprachsteuerung","Wallpapers":"Wallpapers","Weather":"Wetter"},"es":{"_name":"Español","_dir":"ltr","_pct":79,"%d channels":{"one":"%d canal","other":"%d canales"},"%d of %d":"%d de %d","%d of %d on":"%d de %d activados","%d photos":{"one":"%d foto","other":"%d fotos"},"%s added to Home":"%s añadido a Inicio","%s is hidden. Customize > Hidden apps shows it again.":"%s está oculta. Personalizar > Apps ocultas la muestra de nuevo.","%s removed from Home":"%s quitado de Inicio","12-hour":"12 horas","24-hour":"24 horas","A photo":"Una foto","A to Z":"De la A a la Z","Accent colour":"Color de acento","Active":"Activo","Add a button":"Añadir un botón","Add a button...":"Añadir un botón...","Add an app...":"Añadir una app...","Add photos...":"Añadir fotos...","Add to dock":"Añadir al dock","Add to dock...":"Añadir al dock...","Add to Home":"Añadir a Inicio","Added to favourites":"Añadido a favoritos","All":"Todos","All channels":"Todos los canales","An app...":"Una app...","and enter this code:":"e introduce este código:","App order":"Orden de las apps","Automatic":"Automático","Back":"Atrás","buffer":"búfer","build %s":"versión %s","Cancel":"Cancelar","Cards":"Tarjetas","Checking why...":"Buscando la causa...","Choose a camera from your phone":"Elige una cámara desde tu teléfono","Choose a place from your phone":"Elige un lugar desde tu teléfono","Choose an entity from your phone":"Elige una entidad desde tu teléfono","Choose entities from your phone":"Elige entidades desde tu teléfono","Clear":"Despejado","Clear filters":"Quitar filtros","Clock":"Reloj","Close":"Cerrar","Close all":"Cerrar todas","Closed":"Cerrado","Cloudy":"Nublado","Connected":"Conectado","Continue":"Continuar","Could not change Home":"No se pudo cambiar Inicio","Could not change Home. Try again in a moment.":"No se pudo cambiar Inicio. Inténtalo de nuevo en un momento.","Could not close the app. Try again, or close it from the app itself.":"No se pudo cerrar la app. Inténtalo de nuevo o ciérrala desde la propia app.","Could not load the themes. Try again in a moment.":"No se pudieron cargar los temas. Inténtalo de nuevo en un momento.","Could not open %s. Is it still installed?":"No se pudo abrir %s. ¿Sigue instalada?","Could not reach GitHub: showing the themes on this TV":"No se puede acceder a GitHub: se muestran los temas de este televisor","Could not read the open apps. Try again in a moment.":"No se pudieron leer las apps abiertas. Inténtalo de nuevo en un momento.","Could not save the settings. Try again in a moment.":"No se pudieron guardar los ajustes. Inténtalo de nuevo en un momento.","Country":"País","Customize":"Personalizar","Debloat":"Debloat","default":"predeterminado","default (%s)":"predeterminado (%s)","Dock":"Dock","Downloads when chosen":"Se descarga al elegirlo","Drizzle":"Llovizna","dropped":"perdidas","Each time Home opens":"Cada vez que se abre Inicio","Every %s min":"Cada %s min","Every %s s":"Cada %s s","Every minute":"Cada minuto","Favourite":"Favorito","Favourites":"Favoritos","Filters":"Filtros","Fog":"Niebla","frames":"imágenes","Getting the theme...":"Descargando el tema...","Go back to the previous theme":"Volver al tema anterior","Good afternoon":"Buenas tardes","Good afternoon, %s":"Buenas tardes, %s","Good evening":"Buenas noches","Good evening, %s":"Buenas noches, %s","Good morning":"Buenos días","Good morning, %s":"Buenos días, %s","Good night":"Buenas noches","Good night, %s":"Buenas noches, %s","Green dot":"Punto verde","Greeting":"Saludo","Guide":"Guide","guide: %s":"guía: %s","Helper not reachable, retrying...":"Helper no disponible, reintentando...","Hidden apps":"Apps ocultas","Hide app":"Ocultar app","Hold OK on an app for its options. Back on Home lists the open apps.":"Mantén OK en una app para ver sus opciones. Atrás en Inicio muestra las apps abiertas.","Home":"Home","Home Assistant camera":"Cámara de Home Assistant","Home Assistant entities":"Entidades de Home Assistant","Home Assistant entity":"Entidad de Home Assistant","Home, Live TV, Debloat, updates":"Inicio, TV en directo, Debloat, actualizaciones","Immich":"Immich","in the CleanYourTV app":"en la app CleanYourTV","Input":"Input","Inputs":"Entradas","Language":"Idioma","Large":"Grande","Later":"Más tarde","Live TV":"TV en directo","Loading channels...":"Cargando canales...","Mark running apps":"Marcar apps abiertas","More":"Más","More settings...":"Más ajustes...","Most used first":"Más usadas primero","Move left":"Mover a la izquierda","Move left in dock":"Mover a la izquierda en el dock","Move right":"Mover a la derecha","Move right in dock":"Mover a la derecha en el dock","never":"nunca","New photo":"Nueva foto","Next":"Después","No apps are running":"No hay apps abiertas","No channels match.":"Ningún canal coincide.","No dot":"Sin punto","No favourites yet. Press the green button on a channel.":"Aún no hay favoritos. Pulsa el botón verde en un canal.","No guide data":"Sin guía","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"No hay apps ocultas. Para ocultar una, mantén OK sobre ella en Inicio y elige Ocultar app.","no photos yet":"aún no hay fotos","None":"Ninguna","not available":"no disponible","not set":"sin configurar","not set up":"sin configurar","Nothing watched yet.":"Todavía no has visto nada.","Now":"Ahora","now: %s":"ahora: %s","Off":"Desactivado","OK shows an app on Home again.":"OK vuelve a poner una app en Inicio.","On":"Activado","Open":"Abrir","Open this address on your phone or computer:":"Abre esta dirección en tu móvil u ordenador:","optional":"opcional","Partly cloudy":"Parcialmente nublado","Pick an app":"Elige una app","Press OK to try again.":"Pulsa OK para reintentar.","Quality":"Calidad","Rain":"Lluvia","Recent":"Recientes","refused":"rechazada","reloaded":"recargado","Remove from dock":"Quitar del dock","Remove from Home":"Quitar de Inicio","Remove this button":"Quitar este botón","Removed from favourites":"Quitado de favoritos","Replace which app?":"¿Qué app reemplazar?","Replace with...":"Reemplazar por...","Running apps":"Apps abiertas","Save":"Guardar","Search":"Buscar","Search...":"Buscar...","Selected":"Elegido","Service":"Servicio","set up":"configurado","Set up Live TV":"Configurar TV en directo","Settings":"Ajustes","Share log":"Compartir el registro","Show":"Mostrar","Size":"Tamaño","Small":"Pequeño","Snow":"Nieve","Start":"Empezar","Statistics":"Estadísticas","Stream":"Emisión","streams":"emisiones","Text":"Texto","The address answers with a web page, not a video.":"La dirección devuelve una página web, no un vídeo.","The helper is not reachable.":"El helper no está disponible.","The server refused the stream: it may be blocked in your country or need special request headers.":"El servidor rechaza la emisión: puede estar bloqueada en tu país o necesitar cabeceras especiales.","The service did not answer":"El servicio no respondió","The service did not answer.":"El servicio no respondió.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"La emisión responde, pero el televisor no pudo reproducirla: probablemente un formato que no sabe decodificar.","The stream is too slow to start.":"La emisión tarda demasiado en empezar.","The stream server cannot be reached.":"No se puede acceder al servidor de la emisión.","The stream server reported an error.":"El servidor de la emisión informa de un error.","The stream was not found (404): the channel is offline or its address has changed.":"No se encontró la emisión (404): el canal está fuera de línea o su dirección cambió.","Theme":"Tema","Theme default":"El del tema","Then paste your M3U playlist address. This page closes by itself.":"Después pega la dirección de tu lista M3U. Esta página se cierra sola.","This channel is not available.":"Este canal no está disponible.","This stream is protected by DRM and cannot be played here.":"Esta emisión está protegida con DRM y no se puede reproducir aquí.","Thunderstorm":"Tormenta","Top buttons":"Botones superiores","Try again":"Reintentar","Tuning...":"Sintonizando...","Uninstall":"Desinstalar","Use Wallpapers":"Usar Wallpapers","Voice":"Voz","Wallpapers":"Wallpapers","Weather":"Tiempo"},"fr":{"_name":"Français","_dir":"ltr","_pct":79,"%d channels":{"one":"%d chaîne","other":"%d chaînes"},"%d of %d":"%d sur %d","%d of %d on":"%d sur %d activés","%d photos":{"one":"%d photo","other":"%d photos"},"%s added to Home":"%s ajouté à l’accueil","%s is hidden. Customize > Hidden apps shows it again.":"%s est masquée. Personnaliser > Apps masquées l’affiche à nouveau.","%s removed from Home":"%s retiré de l’accueil","12-hour":"12 heures","24-hour":"24 heures","A photo":"Une photo","A to Z":"De A à Z","Accent colour":"Couleur d’accent","Active":"Actif","Add a button":"Ajouter un bouton","Add a button...":"Ajouter un bouton...","Add an app...":"Ajouter une app...","Add photos...":"Ajouter des photos...","Add to dock":"Ajouter au dock","Add to dock...":"Ajouter au dock...","Add to Home":"Ajouter à l’accueil","Added to favourites":"Ajouté aux favoris","All":"Tous","All channels":"Toutes les chaînes","An app...":"Une app...","and enter this code:":"et saisissez ce code :","App order":"Ordre des apps","Automatic":"Automatique","Back":"Retour","buffer":"tampon","build %s":"version %s","Cancel":"Annuler","Cards":"Cartes","Checking why...":"Recherche de la cause...","Choose a camera from your phone":"Choisissez une caméra depuis votre téléphone","Choose a place from your phone":"Choisissez un lieu depuis votre téléphone","Choose an entity from your phone":"Choisissez une entité depuis votre téléphone","Choose entities from your phone":"Choisissez des entités depuis votre téléphone","Clear":"Dégagé","Clear filters":"Effacer les filtres","Clock":"Horloge","Close":"Fermer","Close all":"Tout fermer","Closed":"Fermé","Cloudy":"Nuageux","Connected":"Connecté","Continue":"Continuer","Could not change Home":"Impossible de modifier l’accueil","Could not change Home. Try again in a moment.":"Impossible de modifier l’accueil. Réessayez dans un instant.","Could not close the app. Try again, or close it from the app itself.":"Impossible de fermer l’app. Réessayez, ou fermez-la depuis l’app elle-même.","Could not load the themes. Try again in a moment.":"Impossible de charger les thèmes. Réessayez dans un instant.","Could not open %s. Is it still installed?":"Impossible d’ouvrir %s. Est-elle toujours installée ?","Could not reach GitHub: showing the themes on this TV":"GitHub injoignable : thèmes de ce téléviseur affichés","Could not read the open apps. Try again in a moment.":"Impossible de lire les apps ouvertes. Réessayez dans un instant.","Could not save the settings. Try again in a moment.":"Impossible d’enregistrer les réglages. Réessayez dans un instant.","Country":"Pays","Customize":"Personnaliser","Debloat":"Debloat","default":"par défaut","default (%s)":"par défaut (%s)","Dock":"Dock","Downloads when chosen":"Téléchargé au choix","Drizzle":"Bruine","dropped":"perdues","Each time Home opens":"À chaque ouverture de l’accueil","Every %s min":"Toutes les %s min","Every %s s":"Toutes les %s s","Every minute":"Toutes les minutes","Favourite":"Favori","Favourites":"Favoris","Filters":"Filtres","Fog":"Brouillard","frames":"images","Getting the theme...":"Téléchargement du thème...","Go back to the previous theme":"Revenir au thème précédent","Good afternoon":"Bon après-midi","Good afternoon, %s":"Bon après-midi, %s","Good evening":"Bonsoir","Good evening, %s":"Bonsoir, %s","Good morning":"Bonjour","Good morning, %s":"Bonjour, %s","Good night":"Bonne nuit","Good night, %s":"Bonne nuit, %s","Green dot":"Point vert","Greeting":"Salutation","Guide":"Guide","guide: %s":"guide : %s","Helper not reachable, retrying...":"Assistant injoignable, nouvel essai...","Hidden apps":"Apps masquées","Hide app":"Masquer l’app","Hold OK on an app for its options. Back on Home lists the open apps.":"Maintenez OK sur une app pour ses options. Retour sur l’accueil liste les apps ouvertes.","Home":"Home","Home Assistant camera":"Caméra Home Assistant","Home Assistant entities":"Entités Home Assistant","Home Assistant entity":"Entité Home Assistant","Home, Live TV, Debloat, updates":"Accueil, TV en direct, Debloat, mises à jour","Immich":"Immich","in the CleanYourTV app":"dans l’app CleanYourTV","Input":"Input","Inputs":"Entrées","Language":"Langue","Large":"Grand","Later":"Plus tard","Live TV":"TV en direct","Loading channels...":"Chargement des chaînes...","Mark running apps":"Signaler les apps ouvertes","More":"Plus","More settings...":"Plus de réglages...","Most used first":"Les plus utilisées d’abord","Move left":"Déplacer à gauche","Move left in dock":"Déplacer à gauche dans le dock","Move right":"Déplacer à droite","Move right in dock":"Déplacer à droite dans le dock","never":"jamais","New photo":"Nouvelle photo","Next":"Ensuite","No apps are running":"Aucune app ouverte","No channels match.":"Aucune chaîne trouvée.","No dot":"Pas de point","No favourites yet. Press the green button on a channel.":"Pas encore de favoris. Appuyez sur la touche verte sur une chaîne.","No guide data":"Pas de guide","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"Aucune app masquée. Pour en masquer une, maintenez OK dessus sur l’accueil et choisissez Masquer l’app.","no photos yet":"pas encore de photos","None":"Aucune","not available":"non disponible","not set":"non configuré","not set up":"non configuré","Nothing watched yet.":"Rien de regardé pour l’instant.","Now":"Maintenant","now: %s":"actuel : %s","Off":"Désactivé","OK shows an app on Home again.":"OK remet une app sur l’accueil.","On":"Activé","Open":"Ouvrir","Open this address on your phone or computer:":"Ouvrez cette adresse sur votre téléphone ou ordinateur :","optional":"facultatif","Partly cloudy":"Partiellement nuageux","Pick an app":"Choisir une app","Press OK to try again.":"Appuyez sur OK pour réessayer.","Quality":"Qualité","Rain":"Pluie","Recent":"Récents","refused":"refusée","reloaded":"rechargé","Remove from dock":"Retirer du dock","Remove from Home":"Retirer de l’accueil","Remove this button":"Supprimer ce bouton","Removed from favourites":"Retiré des favoris","Replace which app?":"Remplacer quelle app ?","Replace with...":"Remplacer par...","Running apps":"Apps ouvertes","Save":"Enregistrer","Search":"Rechercher","Search...":"Rechercher...","Selected":"Choisi","Service":"Service","set up":"configuré","Set up Live TV":"Configurer la TV en direct","Settings":"Paramètres","Share log":"Partager le journal","Show":"Afficher","Size":"Taille","Small":"Petit","Snow":"Neige","Start":"Démarrer","Statistics":"Statistiques","Stream":"Flux","streams":"flux","Text":"Texte","The address answers with a web page, not a video.":"L’adresse renvoie une page web, pas une vidéo.","The helper is not reachable.":"L’assistant est injoignable.","The server refused the stream: it may be blocked in your country or need special request headers.":"Le serveur refuse le flux : il est peut-être bloqué dans votre pays ou nécessite des en-têtes spéciaux.","The service did not answer":"Le service n’a pas répondu","The service did not answer.":"Le service n’a pas répondu.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"Le flux répond, mais le téléviseur n’a pas pu le lire : probablement un format qu’il ne sait pas décoder.","The stream is too slow to start.":"Le flux démarre trop lentement.","The stream server cannot be reached.":"Le serveur de flux est injoignable.","The stream server reported an error.":"Le serveur de flux signale une erreur.","The stream was not found (404): the channel is offline or its address has changed.":"Flux introuvable (404) : la chaîne est hors ligne ou son adresse a changé.","Theme":"Thème","Theme default":"Celle du thème","Then paste your M3U playlist address. This page closes by itself.":"Collez ensuite l’adresse de votre liste M3U. Cette page se ferme toute seule.","This channel is not available.":"Cette chaîne n’est pas disponible.","This stream is protected by DRM and cannot be played here.":"Ce flux est protégé par DRM et ne peut pas être lu ici.","Thunderstorm":"Orage","Top buttons":"Boutons du haut","Try again":"Réessayer","Tuning...":"Connexion...","Uninstall":"Désinstaller","Use Wallpapers":"Utiliser Wallpapers","Voice":"Voix","Wallpapers":"Wallpapers","Weather":"Météo"},"nl":{"_name":"Nederlands","_dir":"ltr","_pct":79,"%d channels":{"one":"%d zender","other":"%d zenders"},"%d of %d":"%d van %d","%d of %d on":"%d van %d aan","%d photos":{"one":"%d foto","other":"%d foto’s"},"%s added to Home":"%s is aan Home toegevoegd","%s is hidden. Customize > Hidden apps shows it again.":"%s is verborgen. Aanpassen > Verborgen apps toont de app weer.","%s removed from Home":"%s is van Home verwijderd","12-hour":"12-uurs","24-hour":"24-uurs","A photo":"Een foto","A to Z":"A tot Z","Accent colour":"Accentkleur","Active":"Actief","Add a button":"Knop toevoegen","Add a button...":"Knop toevoegen...","Add an app...":"App toevoegen...","Add photos...":"Foto’s toevoegen...","Add to dock":"Aan dock toevoegen","Add to dock...":"Aan dock toevoegen...","Add to Home":"Aan Home toevoegen","Added to favourites":"Toegevoegd aan favorieten","All":"Alle","All channels":"Alle zenders","An app...":"Een app...","and enter this code:":"en voer deze code in:","App order":"Volgorde van apps","Automatic":"Automatisch","Back":"Terug","buffer":"buffer","build %s":"build %s","Cancel":"Annuleren","Cards":"Kaarten","Checking why...":"Oorzaak wordt gezocht...","Choose a camera from your phone":"Kies een camera via je telefoon","Choose a place from your phone":"Kies een plaats via je telefoon","Choose an entity from your phone":"Kies een entiteit via je telefoon","Choose entities from your phone":"Kies entiteiten via je telefoon","Clear":"Helder","Clear filters":"Filters wissen","Clock":"Klok","Close":"Sluiten","Close all":"Alles sluiten","Closed":"Dicht","Cloudy":"Bewolkt","Connected":"Verbonden","Continue":"Doorgaan","Could not change Home":"Kan Home niet aanpassen","Could not change Home. Try again in a moment.":"Kan Home niet aanpassen. Probeer het zo opnieuw.","Could not close the app. Try again, or close it from the app itself.":"Kan de app niet sluiten. Probeer het opnieuw, of sluit hem in de app zelf.","Could not load the themes. Try again in a moment.":"Kan de thema’s niet laden. Probeer het zo opnieuw.","Could not open %s. Is it still installed?":"Kan %s niet openen. Is de app nog geïnstalleerd?","Could not reach GitHub: showing the themes on this TV":"GitHub is niet bereikbaar: de thema’s op deze TV worden getoond","Could not read the open apps. Try again in a moment.":"Kan de geopende apps niet lezen. Probeer het zo opnieuw.","Could not save the settings. Try again in a moment.":"Kan de instellingen niet opslaan. Probeer het zo opnieuw.","Country":"Land","Customize":"Aanpassen","Debloat":"Debloat","default":"standaard","default (%s)":"standaard (%s)","Dock":"Dock","Downloads when chosen":"Wordt gedownload als je het kiest","Drizzle":"Motregen","dropped":"gemist","Each time Home opens":"Elke keer dat Home opent","Every %s min":"Elke %s min","Every %s s":"Elke %s s","Every minute":"Elke minuut","Favourite":"Favoriet","Favourites":"Favorieten","Filters":"Filters","Fog":"Mist","frames":"beelden","Getting the theme...":"Thema ophalen...","Go back to the previous theme":"Terug naar het vorige thema","Good afternoon":"Goedemiddag","Good afternoon, %s":"Goedemiddag, %s","Good evening":"Goedenavond","Good evening, %s":"Goedenavond, %s","Good morning":"Goedemorgen","Good morning, %s":"Goedemorgen, %s","Good night":"Goedenacht","Good night, %s":"Goedenacht, %s","Green dot":"Groene stip","Greeting":"Begroeting","Guide":"Guide","guide: %s":"gids: %s","Helper not reachable, retrying...":"Helper niet bereikbaar, opnieuw proberen...","Hidden apps":"Verborgen apps","Hide app":"App verbergen","Hold OK on an app for its options. Back on Home lists the open apps.":"Houd OK ingedrukt op een app voor de opties. Terug op Home toont de geopende apps.","Home":"Home","Home Assistant camera":"Home Assistant-camera","Home Assistant entities":"Home Assistant-entiteiten","Home Assistant entity":"Home Assistant-entiteit","Home, Live TV, Debloat, updates":"Home, Live TV, Debloat, updates","Immich":"Immich","in the CleanYourTV app":"in de CleanYourTV-app","Input":"Input","Inputs":"Ingangen","Language":"Taal","Large":"Groot","Later":"Later","Live TV":"Live TV","Loading channels...":"Zenders laden...","Mark running apps":"Geopende apps markeren","More":"Meer","More settings...":"Meer instellingen...","Most used first":"Meest gebruikt eerst","Move left":"Naar links","Move left in dock":"Naar links in dock","Move right":"Naar rechts","Move right in dock":"Naar rechts in dock","never":"nooit","New photo":"Nieuwe foto","Next":"Straks","No apps are running":"Er zijn geen apps geopend","No channels match.":"Geen zenders gevonden.","No dot":"Geen stip","No favourites yet. Press the green button on a channel.":"Nog geen favorieten. Druk op de groene knop bij een zender.","No guide data":"Geen programmagegevens","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"Geen verborgen apps. Houd OK ingedrukt op een app op Home en kies App verbergen.","no photos yet":"nog geen foto’s","None":"Geen","not available":"niet beschikbaar","not set":"niet ingesteld","not set up":"niet ingesteld","Nothing watched yet.":"Nog niets bekeken.","Now":"Nu","now: %s":"nu: %s","Off":"Uit","OK shows an app on Home again.":"OK zet een app weer op Home.","On":"Aan","Open":"Openen","Open this address on your phone or computer:":"Open dit adres op je telefoon of computer:","optional":"optioneel","Partly cloudy":"Half bewolkt","Pick an app":"Kies een app","Press OK to try again.":"Druk op OK om het opnieuw te proberen.","Quality":"Kwaliteit","Rain":"Regen","Recent":"Recent","refused":"geweigerd","reloaded":"opnieuw geladen","Remove from dock":"Uit dock verwijderen","Remove from Home":"Van Home verwijderen","Remove this button":"Deze knop verwijderen","Removed from favourites":"Verwijderd uit favorieten","Replace which app?":"Welke app vervangen?","Replace with...":"Vervangen door...","Running apps":"Geopende apps","Save":"Opslaan","Search":"Zoeken","Search...":"Zoeken...","Selected":"Gekozen","Service":"Service","set up":"ingesteld","Set up Live TV":"Live TV instellen","Settings":"Instellingen","Share log":"Log delen","Show":"Tonen","Size":"Grootte","Small":"Klein","Snow":"Sneeuw","Start":"Start","Statistics":"Statistieken","Stream":"Stream","streams":"streams","Text":"Tekst","The address answers with a web page, not a video.":"Het adres geeft een webpagina, geen video.","The helper is not reachable.":"De helper is niet bereikbaar.","The server refused the stream: it may be blocked in your country or need special request headers.":"De server weigert de stream: mogelijk geblokkeerd in jouw land of er zijn speciale headers nodig.","The service did not answer":"De service antwoordde niet","The service did not answer.":"De service antwoordde niet.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"De stream antwoordt, maar de tv kon hem niet afspelen: waarschijnlijk een formaat dat hij niet kan decoderen.","The stream is too slow to start.":"De stream start te langzaam.","The stream server cannot be reached.":"De streamserver is niet bereikbaar.","The stream server reported an error.":"De streamserver meldt een fout.","The stream was not found (404): the channel is offline or its address has changed.":"De stream is niet gevonden (404): de zender is offline of het adres is gewijzigd.","Theme":"Thema","Theme default":"Standaard van het thema","Then paste your M3U playlist address. This page closes by itself.":"Plak daarna het adres van je M3U-afspeellijst. Deze pagina sluit vanzelf.","This channel is not available.":"Deze zender is niet beschikbaar.","This stream is protected by DRM and cannot be played here.":"Deze stream is met DRM beveiligd en kan hier niet worden afgespeeld.","Thunderstorm":"Onweer","Top buttons":"Knoppen bovenaan","Try again":"Opnieuw proberen","Tuning...":"Afstemmen...","Uninstall":"Verwijderen","Use Wallpapers":"Wallpapers gebruiken","Voice":"Spraak","Wallpapers":"Wallpapers","Weather":"Weer"},"ru":{"_name":"Русский","_dir":"ltr","_pct":79,"%d channels":{"one":"%d канал","few":"%d канала","many":"%d каналов","other":"%d канала"},"%d of %d":"%d из %d","%d of %d on":"%d из %d включено","%d photos":{"one":"%d фото","few":"%d фото","many":"%d фото","other":"%d фото"},"%s added to Home":"%s добавлено на главный экран","%s is hidden. Customize > Hidden apps shows it again.":"%s скрыто. Настроить > Скрытые приложения вернёт его.","%s removed from Home":"%s убрано с главного экрана","12-hour":"12 часов","24-hour":"24 часа","A photo":"Фото","A to Z":"От А до Я","Accent colour":"Цвет акцента","Active":"Активен","Add a button":"Добавить кнопку","Add a button...":"Добавить кнопку...","Add an app...":"Добавить приложение...","Add photos...":"Добавить фото...","Add to dock":"Добавить в док","Add to dock...":"Добавить в док...","Add to Home":"Добавить на главный экран","Added to favourites":"Добавлено в избранное","All":"Все","All channels":"Все каналы","An app...":"Приложение...","and enter this code:":"и введите этот код:","App order":"Порядок приложений","Automatic":"Автоматически","Back":"Назад","buffer":"буфер","build %s":"сборка %s","Cancel":"Отмена","Cards":"Карточки","Checking why...":"Выясняем причину...","Choose a camera from your phone":"Выберите камеру с телефона","Choose a place from your phone":"Выберите место с телефона","Choose an entity from your phone":"Выберите объект с телефона","Choose entities from your phone":"Выберите объекты с телефона","Clear":"Ясно","Clear filters":"Сбросить фильтры","Clock":"Часы","Close":"Закрыть","Close all":"Закрыть все","Closed":"Закрыто","Cloudy":"Облачно","Connected":"Подключено","Continue":"Продолжить","Could not change Home":"Не удалось изменить главный экран","Could not change Home. Try again in a moment.":"Не удалось изменить главный экран. Попробуйте ещё раз чуть позже.","Could not close the app. Try again, or close it from the app itself.":"Не удалось закрыть приложение. Попробуйте ещё раз или закройте его в самом приложении.","Could not load the themes. Try again in a moment.":"Не удалось загрузить темы. Попробуйте ещё раз чуть позже.","Could not open %s. Is it still installed?":"Не удалось открыть %s. Приложение ещё установлено?","Could not reach GitHub: showing the themes on this TV":"Нет связи с GitHub: показаны темы, которые есть на телевизоре","Could not read the open apps. Try again in a moment.":"Не удалось прочитать открытые приложения. Попробуйте ещё раз чуть позже.","Could not save the settings. Try again in a moment.":"Не удалось сохранить настройки. Попробуйте ещё раз чуть позже.","Country":"Страна","Customize":"Настроить","Debloat":"Debloat","default":"по умолчанию","default (%s)":"по умолчанию (%s)","Dock":"Док","Downloads when chosen":"Загрузится при выборе","Drizzle":"Морось","dropped":"пропущено","Each time Home opens":"При каждом открытии главного экрана","Every %s min":"Каждые %s мин","Every %s s":"Каждые %s с","Every minute":"Каждую минуту","Favourite":"Избранное","Favourites":"Избранное","Filters":"Фильтры","Fog":"Туман","frames":"кадры","Getting the theme...":"Загрузка темы...","Go back to the previous theme":"Вернуть предыдущую тему","Good afternoon":"Добрый день","Good afternoon, %s":"Добрый день, %s","Good evening":"Добрый вечер","Good evening, %s":"Добрый вечер, %s","Good morning":"Доброе утро","Good morning, %s":"Доброе утро, %s","Good night":"Доброй ночи","Good night, %s":"Доброй ночи, %s","Green dot":"Зелёная точка","Greeting":"Приветствие","Guide":"Guide","guide: %s":"программа передач: %s","Helper not reachable, retrying...":"Служба недоступна, повторная попытка...","Hidden apps":"Скрытые приложения","Hide app":"Скрыть приложение","Hold OK on an app for its options. Back on Home lists the open apps.":"Удерживайте OK на приложении для его параметров. «Назад» на главном экране показывает открытые приложения.","Home":"Home","Home Assistant camera":"Камера Home Assistant","Home Assistant entities":"Объекты Home Assistant","Home Assistant entity":"Объект Home Assistant","Home, Live TV, Debloat, updates":"Главный экран, прямой эфир, Debloat, обновления","Immich":"Immich","in the CleanYourTV app":"в приложении CleanYourTV","Input":"Input","Inputs":"Входы","Language":"Язык","Large":"Большой","Later":"Позже","Live TV":"Прямой эфир","Loading channels...":"Загрузка каналов...","Mark running apps":"Отмечать открытые приложения","More":"Ещё","More settings...":"Другие настройки...","Most used first":"Сначала часто используемые","Move left":"Влево","Move left in dock":"Влево в доке","Move right":"Вправо","Move right in dock":"Вправо в доке","never":"никогда","New photo":"Новое фото","Next":"Далее","No apps are running":"Нет открытых приложений","No channels match.":"Нет подходящих каналов.","No dot":"Без точки","No favourites yet. Press the green button on a channel.":"Избранного пока нет. Нажмите зелёную кнопку на канале.","No guide data":"Нет данных программы","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"Нет скрытых приложений. Чтобы скрыть приложение, удерживайте на нём OK на главном экране и выберите «Скрыть приложение».","no photos yet":"фото пока нет","None":"Нет","not available":"недоступно","not set":"не задано","not set up":"не настроен","Nothing watched yet.":"Пока ничего не смотрели.","Now":"Сейчас","now: %s":"сейчас: %s","Off":"Выкл.","OK shows an app on Home again.":"OK возвращает приложение на главный экран.","On":"Вкл.","Open":"Открыть","Open this address on your phone or computer:":"Откройте этот адрес на телефоне или компьютере:","optional":"необязательно","Partly cloudy":"Переменная облачность","Pick an app":"Выберите приложение","Press OK to try again.":"Нажмите OK, чтобы попробовать снова.","Quality":"Качество","Rain":"Дождь","Recent":"Недавние","refused":"отклонено","reloaded":"перезагружено","Remove from dock":"Убрать из дока","Remove from Home":"Убрать с главного экрана","Remove this button":"Удалить эту кнопку","Removed from favourites":"Удалено из избранного","Replace which app?":"Какое приложение заменить?","Replace with...":"Заменить на...","Running apps":"Открытые приложения","Save":"Сохранить","Search":"Найти","Search...":"Поиск...","Selected":"Выбрано","Service":"Служба","set up":"настроен","Set up Live TV":"Настроить прямой эфир","Settings":"Настройки","Share log":"Поделиться журналом","Show":"Показывать","Size":"Размер","Small":"Маленький","Snow":"Снег","Start":"Начать","Statistics":"Статистика","Stream":"Поток","streams":"потоки","Text":"Текст","The address answers with a web page, not a video.":"Адрес отвечает веб-страницей, а не видео.","The helper is not reachable.":"Служба недоступна.","The server refused the stream: it may be blocked in your country or need special request headers.":"Сервер отклонил поток: возможно, он заблокирован в вашей стране или требует особых заголовков запроса.","The service did not answer":"Служба не ответила","The service did not answer.":"Служба не ответила.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"Поток отвечает, но телевизор не смог его воспроизвести: вероятно, формат, который он не умеет декодировать.","The stream is too slow to start.":"Поток слишком долго запускается.","The stream server cannot be reached.":"Сервер потока недоступен.","The stream server reported an error.":"Сервер потока сообщил об ошибке.","The stream was not found (404): the channel is offline or its address has changed.":"Поток не найден (404): канал не в эфире или его адрес изменился.","Theme":"Тема","Theme default":"По умолчанию для темы","Then paste your M3U playlist address. This page closes by itself.":"Затем вставьте адрес вашего плейлиста M3U. Эта страница закроется сама.","This channel is not available.":"Этот канал недоступен.","This stream is protected by DRM and cannot be played here.":"Этот поток защищён DRM и здесь не воспроизводится.","Thunderstorm":"Гроза","Top buttons":"Верхние кнопки","Try again":"Попробовать снова","Tuning...":"Настройка канала...","Uninstall":"Удалить","Use Wallpapers":"Использовать Wallpapers","Voice":"Голос","Wallpapers":"Wallpapers","Weather":"Погода"},"tr":{"_name":"Türkçe","_dir":"ltr","_pct":79,"%d channels":"%d kanal","%d of %d":"%d / %d","%d of %d on":"%d / %d açık","%d photos":"%d fotoğraf","%s added to Home":"%s ana ekrana eklendi","%s is hidden. Customize > Hidden apps shows it again.":"%s gizlendi. Özelleştir > Gizli uygulamalar ile geri getirebilirsiniz.","%s removed from Home":"%s ana ekrandan kaldırıldı","12-hour":"12 saat","24-hour":"24 saat","A photo":"Fotoğraf","A to Z":"A'dan Z'ye","Accent colour":"Vurgu rengi","Active":"Etkin","Add a button":"Düğme ekle","Add a button...":"Düğme ekle...","Add an app...":"Uygulama ekle...","Add photos...":"Fotoğraf ekle...","Add to dock":"Dock'a ekle","Add to dock...":"Dock'a ekle...","Add to Home":"Ana ekrana ekle","Added to favourites":"Favorilere eklendi","All":"Tümü","All channels":"Tüm kanallar","An app...":"Uygulama...","and enter this code:":"ve bu kodu girin:","App order":"Uygulama sırası","Automatic":"Otomatik","Back":"Geri","buffer":"tampon","build %s":"derleme %s","Cancel":"İptal","Cards":"Kartlar","Checking why...":"Nedeni araştırılıyor...","Choose a camera from your phone":"Telefonunuzdan bir kamera seçin","Choose a place from your phone":"Telefonunuzdan bir yer seçin","Choose an entity from your phone":"Telefonunuzdan bir varlık seçin","Choose entities from your phone":"Telefonunuzdan varlıklar seçin","Clear":"Açık","Clear filters":"Filtreleri temizle","Clock":"Saat","Close":"Kapat","Close all":"Tümünü kapat","Closed":"Kapalı","Cloudy":"Bulutlu","Connected":"Bağlı","Continue":"Devam","Could not change Home":"Ana ekran değiştirilemedi","Could not change Home. Try again in a moment.":"Ana ekran değiştirilemedi. Birazdan tekrar deneyin.","Could not close the app. Try again, or close it from the app itself.":"Uygulama kapatılamadı. Tekrar deneyin veya uygulamanın içinden kapatın.","Could not load the themes. Try again in a moment.":"Temalar yüklenemedi. Birazdan tekrar deneyin.","Could not open %s. Is it still installed?":"%s açılamadı. Hâlâ yüklü mü?","Could not reach GitHub: showing the themes on this TV":"GitHub'a ulaşılamadı: TV'deki temalar gösteriliyor","Could not read the open apps. Try again in a moment.":"Açık uygulamalar okunamadı. Birazdan tekrar deneyin.","Could not save the settings. Try again in a moment.":"Ayarlar kaydedilemedi. Birazdan tekrar deneyin.","Country":"Ülke","Customize":"Özelleştir","Debloat":"Debloat","default":"varsayılan","default (%s)":"varsayılan (%s)","Dock":"Dock","Downloads when chosen":"Seçilince indirilir","Drizzle":"Çisenti","dropped":"atlandı","Each time Home opens":"Ana ekran her açıldığında","Every %s min":"Her %s dk","Every %s s":"Her %s sn","Every minute":"Her dakika","Favourite":"Favoriler","Favourites":"Favoriler","Filters":"Filtreler","Fog":"Sis","frames":"kare","Getting the theme...":"Tema alınıyor...","Go back to the previous theme":"Önceki temaya dön","Good afternoon":"İyi günler","Good afternoon, %s":"İyi günler, %s","Good evening":"İyi akşamlar","Good evening, %s":"İyi akşamlar, %s","Good morning":"Günaydın","Good morning, %s":"Günaydın, %s","Good night":"İyi geceler","Good night, %s":"İyi geceler, %s","Green dot":"Yeşil nokta","Greeting":"Selamlama","Guide":"Rehber","guide: %s":"rehber: %s","Helper not reachable, retrying...":"Hizmete ulaşılamıyor, tekrar deneniyor...","Hidden apps":"Gizli uygulamalar","Hide app":"Uygulamayı gizle","Hold OK on an app for its options. Back on Home lists the open apps.":"Seçenekleri için bir uygulamada OK'u basılı tutun. Ana ekranda Geri, açık uygulamaları gösterir.","Home":"Home","Home Assistant camera":"Home Assistant kamerası","Home Assistant entities":"Home Assistant varlıkları","Home Assistant entity":"Home Assistant varlığı","Home, Live TV, Debloat, updates":"Ana ekran, Canlı TV, Debloat, güncellemeler","Immich":"Immich","in the CleanYourTV app":"CleanYourTV uygulamasında","Input":"Input","Inputs":"Girişler","Language":"Dil","Large":"Büyük","Later":"Sonra","Live TV":"Canlı TV","Loading channels...":"Kanallar yükleniyor...","Mark running apps":"Açık uygulamaları işaretle","More":"Daha fazla","More settings...":"Diğer ayarlar...","Most used first":"Önce en çok kullanılan","Move left":"Sola taşı","Move left in dock":"Dock'ta sola taşı","Move right":"Sağa taşı","Move right in dock":"Dock'ta sağa taşı","never":"hiç","New photo":"Yeni fotoğraf","Next":"İleri","No apps are running":"Açık uygulama yok","No channels match.":"Eşleşen kanal yok.","No dot":"Nokta yok","No favourites yet. Press the green button on a channel.":"Henüz favori yok. Bir kanalda yeşil tuşa basın.","No guide data":"Rehber bilgisi yok","No hidden apps. To hide one, hold OK on it on Home and choose Hide app.":"Gizli uygulama yok. Bir uygulamayı gizlemek için ana ekranda üzerinde OK'u basılı tutun ve Uygulamayı gizle'yi seçin.","no photos yet":"henüz fotoğraf yok","None":"Yok","not available":"kullanılamıyor","not set":"ayarlanmadı","not set up":"ayarlanmadı","Nothing watched yet.":"Henüz bir şey izlenmedi.","Now":"Şimdi","now: %s":"şimdi: %s","Off":"Kapalı","OK shows an app on Home again.":"OK, uygulamayı ana ekrana geri getirir.","On":"Açık","Open":"Aç","Open this address on your phone or computer:":"Bu adresi telefonda veya bilgisayarda açın:","optional":"isteğe bağlı","Partly cloudy":"Parçalı bulutlu","Pick an app":"Bir uygulama seçin","Press OK to try again.":"Tekrar denemek için OK'a basın.","Quality":"Kalite","Rain":"Yağmur","Recent":"Son","refused":"reddedildi","reloaded":"yeniden yüklendi","Remove from dock":"Dock'tan kaldır","Remove from Home":"Ana ekrandan kaldır","Remove this button":"Bu düğmeyi kaldır","Removed from favourites":"Favorilerden kaldırıldı","Replace which app?":"Hangi uygulama değiştirilsin?","Replace with...":"Şununla değiştir...","Running apps":"Açık uygulamalar","Save":"Kaydet","Search":"Ara","Search...":"Ara...","Selected":"Seçili","Service":"Hizmet","set up":"ayarlandı","Set up Live TV":"Canlı TV'yi ayarla","Settings":"Ayarlar","Share log":"Günlüğü paylaş","Show":"Göster","Size":"Boyut","Small":"Küçük","Snow":"Kar","Start":"Başlat","Statistics":"İstatistikler","Stream":"Akış","streams":"akışlar","Text":"Metin","The address answers with a web page, not a video.":"Adres bir video değil, bir web sayfası döndürüyor.","The helper is not reachable.":"Hizmete ulaşılamıyor.","The server refused the stream: it may be blocked in your country or need special request headers.":"Sunucu akışı reddetti: ülkenizde engellenmiş olabilir veya özel istek başlıkları gerektirebilir.","The service did not answer":"Hizmet yanıt vermedi","The service did not answer.":"Hizmet yanıt vermedi.","The stream answers, but the TV could not play it: probably a format it cannot decode.":"Akış yanıt veriyor ama TV oynatamadı: büyük olasılıkla çözemediği bir biçim.","The stream is too slow to start.":"Akışın başlaması çok uzun sürüyor.","The stream server cannot be reached.":"Akış sunucusuna ulaşılamıyor.","The stream server reported an error.":"Akış sunucusu bir hata bildirdi.","The stream was not found (404): the channel is offline or its address has changed.":"Akış bulunamadı (404): kanal yayında değil veya adresi değişti.","Theme":"Tema","Theme default":"Tema varsayılanı","Then paste your M3U playlist address. This page closes by itself.":"Sonra M3U oynatma listenizin adresini yapıştırın. Bu sayfa kendiliğinden kapanır.","This channel is not available.":"Bu kanal kullanılamıyor.","This stream is protected by DRM and cannot be played here.":"Bu akış DRM korumalı ve burada oynatılamaz.","Thunderstorm":"Fırtına","Top buttons":"Üst düğmeler","Try again":"Tekrar dene","Tuning...":"Kanal ayarlanıyor...","Uninstall":"Kaldır","Use Wallpapers":"Wallpapers'ı kullan","Voice":"Ses","Wallpapers":"Wallpapers","Weather":"Hava durumu"},"en":{"%d channels":{"one":"%d channel","other":"%d channels"},"%d photos":{"one":"%d photo","other":"%d photos"},"%d minutes":{"one":"%d minute","other":"%d minutes"},"%d photos from the feed":{"one":"%d photo from the feed","other":"%d photos from the feed"}}};
 /* ---------- language: the pages are written in English and translated where text is shown ----------
    I18N holds the translations this page uses, from i18n/<language>.json, put in by tools/build-pages.js ({language: {English: text}}).
    The language is the TV's, unless the manager's Language setting chose another (setLang). t() looks a text up whole, then the parts
@@ -4561,7 +4759,9 @@ var SAVER = (function () {
     deckStamp = '';
   var HIST = 50;
   function opts() {
-    var s = cfg.saver || {};
+    return optsFrom(cfg.saver || {});
+  }
+  function optsFrom(s) {
     return {
       on: s.on === true,
       after: s.after || 300,
@@ -4787,7 +4987,9 @@ var SAVER = (function () {
     if (frameKey === key) return;
     frameKey = key;
     l.fr.textContent = '';
-    if (!b) return;
+    if (b) buildSides(l.fr, o, b, W, H);
+  }
+  function buildSides(box, o, b, W, H) {
     var mt = MATERIAL[o.frame],
       kind = !mt[0] ? 'paint' : mt[0].indexOf('metal') === 0 ? 'metal' : 'wood',
       at = { top: [1, 0, 0, 1, 0, 0], right: [0, 1, -1, 0, W, 0], bottom: [1, 0, 0, -1, 0, H], left: [0, 1, 1, 0, 0, 0] };
@@ -4805,8 +5007,88 @@ var SAVER = (function () {
       d.style.backgroundImage = shading(o.profile, b, sd, kind, mt[1]) + (mt[0] ? ',url("saver-' + mt[0] + '.webp")' : '');
       /* each side a different stretch of the board, as if cut from different lengths */
       d.style.backgroundPosition = '0 0,' + -[0, 640, 128, 900][i] + 'px ' + -[0, 6, 3, 9][i] + 'px';
-      l.fr.appendChild(d);
+      box.appendChild(d);
     });
+  }
+  /* a still example of the frame for the menus (the Screensaver menu and its lists): the screen drawn small in a box, with a made-up
+     picture (a sky, a sun, hills), never one of the photos; s: the screensaver settings to show */
+  var SAMPLE =
+    'radial-gradient(circle at 68% 34%, #fff1c4 0, #ffe2a0 7%, rgba(255,226,160,0) 8%),' +
+    'linear-gradient(170deg, rgba(0,0,0,0) 58%, #5d7a4f 58.5%, #3e5634 100%),' +
+    'linear-gradient(190deg, rgba(0,0,0,0) 50%, #7f9a6c 50.5%, #6a855a 100%),' +
+    'linear-gradient(to bottom, #8db4d6 0%, #d9c5a8 48%, #e8b98f 60%)';
+  function sample(host, s) {
+    var o = optsFrom(s || {}),
+      W = 1920,
+      H = 1080,
+      b = o.style === 'frame' && o.frame !== 'none' ? PROFILES[o.profile] : 0,
+      box = document.createElement('div');
+    box.id = 'svdemo';
+    box.style.transform = 'scale(' + (host.clientWidth || 880) / W + ')';
+    host.textContent = '';
+    host.appendChild(box);
+    var pic = function (w, h) {
+      var win = document.createElement('div'),
+        f = document.createElement('div');
+      win.className = 'svw';
+      win.style.width = w + 'px';
+      win.style.height = h + 'px';
+      f.className = 'svf';
+      f.style.backgroundImage = SAMPLE;
+      win.appendChild(f);
+      if (o.finish !== 'none') win.appendChild(el('svx'));
+      return win;
+    };
+    if (o.style !== 'frame') {
+      /* Style: Photos: the picture whole on black */
+      var only = pic(1440, 1080);
+      only.style.margin = '0 auto';
+      only.style.border = '0';
+      box.style.background = '#000';
+      box.appendChild(only);
+      return;
+    }
+    if (b) buildSides(box, o, b, W, H);
+    var Wi = W - 2 * b,
+      Hi = H - 2 * b,
+      full = o.layout === 'one',
+      mat = full ? '#111111' : MATS[o.mat] || '#efe9df',
+      m = document.createElement('div');
+    m.className =
+      'svp fr fin-' +
+      o.finish +
+      (full ? ' fr-full' : '') +
+      (lum(mat) < 128 ? ' fr-dark' : '') +
+      (o.mat === 'black' ? ' fr-core' : '') +
+      (b ? '' : ' fr-none');
+    m.style.cssText = 'position:absolute;left:' + b + 'px;top:' + b + 'px;width:' + Wi + 'px;height:' + Hi + 'px;opacity:1';
+    m.style.backgroundColor = mat;
+    m.style.backgroundImage = full ? '' : o.mat === 'linen' ? 'url("saver-linen.webp")' : 'url("saver-paper.webp")';
+    var row = el('svrow');
+    if (full) row.appendChild(pic(Wi, Hi));
+    else {
+      var n = o.layout === 'three' ? 3 : 2,
+        w = Math.round(n === 3 ? Hi * 0.7 * 0.75 : Hi * 0.74 * 0.75),
+        h = Math.round(w / 0.75);
+      for (var i = 0; i < n; i++) {
+        var col = el('svcol'),
+          one = pic(w, h);
+        if (i) col.style.marginLeft = Math.round(Wi * (n === 3 ? 0.035 : 0.055)) + 'px';
+        col.appendChild(one);
+        if (o.label === 'under') {
+          var lab = el('svs');
+          lab.style.width = w + 10 + 'px';
+          lab.appendChild(el('svs1', t('Example')));
+          lab.appendChild(el('svs2', dayText({ date: '2026-10-29' })));
+          col.appendChild(lab);
+        }
+        row.appendChild(col);
+      }
+      row.style.marginTop = -Math.round(Hi * 0.04) + 'px';
+    }
+    m.appendChild(row);
+    if (o.label === 'plaque') m.appendChild(el('svq', t('Example') + ' \u00B7 ' + dayText({ date: '2026-10-29' })));
+    box.appendChild(m);
   }
   function ratio(im) {
     return im && im.naturalWidth && im.naturalHeight ? im.naturalWidth / im.naturalHeight : 1.5;
@@ -5276,6 +5558,7 @@ var SAVER = (function () {
     sync: sync,
     start: start,
     stop: stop,
+    sample: sample,
     active: function () {
       return on;
     },
@@ -5705,15 +5988,16 @@ function setHtml(el, h) {
    new values, and the menu below is built again when Back returns to it. A note row is text only: the focus skips it. */
 /* the first menu over Home slides in (drawMenu); the ones after it, and redraws, do not */
 var ovEnter = false;
-function openMenu(title, items, idx, build) {
+function openMenu(title, items, idx, build, preview) {
+  if (PEEK) return void (PEEK.got = { title: title, items: build ? build() : items });
   if (!stack.length) ovEnter = true;
-  var m = { title: title, items: build ? build() : items, idx: idx || 0, build: build || null };
+  var m = { title: title, items: build ? build() : items, idx: idx || 0, build: build || null, preview: preview || null };
   m.idx = usable(m, m.idx);
   stack.push(m);
   drawMenu();
 }
-function openBuilt(title, build, idx) {
-  openMenu(title, null, idx, build);
+function openBuilt(title, build, idx, preview) {
+  openMenu(title, null, idx, build, preview);
 }
 function skip(it) {
   return !it || it.sep || it.note !== undefined || it.head !== undefined;
@@ -5794,12 +6078,68 @@ function hoverDir(k, start, N, len) {
   if (k === start && start > 0) return -1;
   return 0;
 }
+/* Every menu has the same two panes (after couch-tv's settings):
+   - a list with pictures (the themes) or a preview (m.preview: the screensaver's frame): the picture of the focused row, large, on the
+     left, the rows on the right;
+   - a menu opened from another: the list it came from on the left with that row lit, its own rows on the right;
+   - a first menu: its rows on the left, and on the right what the focused row opens (rows marked peek: shown, not used), or its value.
+   A hint at the foot; a solid background. */
+var PEEK = null; /* while set, openMenu keeps what it would open here instead of opening it (peekOf) */
+function peekOf(it) {
+  if (!it || !it.peek || !it.fn) return null;
+  PEEK = {};
+  try {
+    it.fn();
+  } catch (e) {}
+  var got = PEEK.got || null;
+  PEEK = null;
+  return got;
+}
+function rowHtml(it, i, m, withPv) {
+  if (it.sep) return '<div class="msep"></div>';
+  if (it.note !== undefined) return '<div class="mnote" data-n="' + i + '"></div>';
+  if (it.head !== undefined) return '<div class="mhead" data-n="' + i + '"></div>';
+  return (
+    '<div class="row' +
+    (m && i === m.idx ? ' f' : '') +
+    (it.dim ? ' dim' : '') +
+    '" data-i="' +
+    i +
+    '">' +
+    (it.icon ? svg(it.icon) : '') +
+    (withPv && it.pv ? '<span class="th"></span>' : '') +
+    '<span class="lb"></span>' +
+    (it.sub === '✓' ? '<span class="ck">' + TICK + '</span>' : it.sub ? '<span class="st"></span>' : '') +
+    '</div>'
+  );
+}
+function fillRows(box, items) {
+  [].forEach.call(box.querySelectorAll('.mnote'), function (el) {
+    el.textContent = items[+el.getAttribute('data-n')].note;
+  });
+  [].forEach.call(box.querySelectorAll('.mhead'), function (el) {
+    el.textContent = items[+el.getAttribute('data-n')].head;
+  });
+  [].forEach.call(box.querySelectorAll('.row'), function (row) {
+    var it = items[+row.getAttribute('data-i')];
+    row.querySelector('.lb').textContent = it.label;
+    if (it.sub && it.sub !== '✓') row.querySelector('.st').textContent = it.sub;
+    var th = row.querySelector('.th');
+    if (th) th.style.backgroundImage = 'url("' + API + '/api/theme/preview/' + it.pv + '")';
+  });
+}
 function drawMenu(win) {
   /* win: the first row on show, when the pointer asks for one (otherwise the selection sits on the fourth row) */
   var m = stack[stack.length - 1],
     up = stack.length > 1 ? stack[stack.length - 2] : null,
-    N = 10,
-    start = Math.max(0, Math.min(m.idx - 3, m.items.length - N)),
+    pic =
+      !!m.preview ||
+      m.items.some(function (x) {
+        return !!x.pv;
+      }),
+    mode = pic ? 'pic' : up ? 'nest' : 'root',
+    N = mode === 'root' ? 13 : 10,
+    start = Math.max(0, Math.min(m.idx - (mode === 'root' ? 6 : 3), m.items.length - N)),
     secs = [];
   if (typeof win === 'number') start = Math.max(0, Math.min(win, m.items.length - N));
   m.start = start;
@@ -5808,8 +6148,16 @@ function drawMenu(win) {
     ovEl.id = 'ov';
     document.body.appendChild(ovEl);
   }
-  var h = '';
-  if (up) {
+  var h = '',
+    rows = '',
+    i;
+  for (i = start; i < Math.min(m.items.length, start + N); i++) rows += rowHtml(m.items[i], i, m, mode !== 'pic');
+  var more = function (a, b) {
+    return '<div class="more">' + (a ? '▲' : '') + '</div>' + rows + '<div class="more">' + (b ? '▼' : '') + '</div>';
+  };
+  var cur = m.items[m.idx],
+    peek = mode === 'root' ? peekOf(cur) : null;
+  if (mode === 'nest') {
     for (var j = 0; j < up.items.length; j++) if (!skip(up.items[j])) secs.push(j);
     var at = secs.indexOf(up.idx),
       s0 = Math.max(0, Math.min(at - 6, secs.length - 13));
@@ -5824,54 +6172,63 @@ function drawMenu(win) {
         '">' +
         (up.items[secs[j]].icon ? '<span class="si">' + svg(up.items[secs[j]].icon) + '</span>' : '') +
         '<span class="lb"></span></div>';
-    h += '</div>';
-  }
-  h += '<div class="panel"><h2></h2><div class="more">' + (start > 0 ? '▲' : '') + '</div>';
-  for (var i = start; i < Math.min(m.items.length, start + N); i++) {
-    var it = m.items[i];
-    if (it.sep) {
-      h += '<div class="msep"></div>';
-      continue;
-    }
-    if (it.note !== undefined) {
-      h += '<div class="mnote" data-n="' + i + '"></div>';
-      continue;
-    }
-    if (it.head !== undefined) {
-      h += '<div class="mhead" data-n="' + i + '"></div>';
-      continue;
-    }
+    h += '</div><div class="panel"><h2></h2>' + more(start > 0, start + N < m.items.length) + '<div class="hint"></div></div>';
+  } else if (mode === 'pic') {
     h +=
-      '<div class="row' +
-      (i === m.idx ? ' f' : '') +
-      (it.dim ? ' dim' : '') +
-      '" data-i="' +
-      i +
-      '">' +
-      (it.icon ? svg(it.icon) : '') +
-      (up && it.pv ? '<span class="th"></span>' : '') +
-      '<span class="lb"></span>' +
-      (it.sub === '✓' ? '<span class="ck">' + TICK + '</span>' : it.sub ? '<span class="st"></span>' : '') +
-      '</div>';
+      '<div class="pvl"><h2 class="sh"></h2><div class="pvbox"></div><div class="pt"></div><div class="pd"></div></div>' +
+      '<div class="panel"><h2></h2>' +
+      more(start > 0, start + N < m.items.length) +
+      '<div class="hint"></div></div>';
+  } else {
+    h +=
+      '<div class="secs list"><h2 class="sh"></h2>' +
+      more(start > 0, start + N < m.items.length) +
+      '</div><div class="panel peek"><h2></h2>';
+    if (peek) for (i = 0; i < Math.min(peek.items.length, 9); i++) h += rowHtml(peek.items[i], i, null, false);
+    else if (cur && !skip(cur)) h += '<div class="pdesc"><div class="pdt"></div><div class="pds"></div></div>';
+    h += '<div class="hint"></div></div>';
   }
-  h += '<div class="more">' + (start + N < m.items.length ? '▼' : '') + '</div>';
-  if (up) h += '<div class="hint"></div>';
-  h += '</div>';
   ovEl = setHtml(ovEl, h);
-  /* a list with pictures (the themes) shows the focused one large on the left, unless the left holds the sections: then each row has
-     its picture */
-  var side =
-    !up &&
-    m.items.some(function (x) {
-      return x.desc !== undefined;
-    });
-  ovEl.className = (up ? 'two' : side ? 'ws' : '') + (ovEnter && !OLDGPU ? ' enter' : '');
+  drawSide(null);
+  ovEl.className = mode + (ovEnter && !OLDGPU ? ' enter' : '');
   ovEnter = false;
-  drawSide(side && !skip(m.items[m.idx]) ? m.items[m.idx] : null);
-  ovEl.querySelector('.panel h2').textContent = m.title;
-  if (up) {
+  var hint = ovEl.querySelector('.hint');
+  if (mode === 'root') {
+    ovEl.querySelector('.sh').textContent = m.title;
+    if (peek) {
+      ovEl.querySelector('.panel h2').textContent = peek.title;
+      fillRows(ovEl.querySelector('.panel'), peek.items);
+      hint.textContent = t('OK or Right to open, Back to close');
+    } else {
+      ovEl.querySelector('.panel h2').textContent = '';
+      if (cur && !skip(cur)) {
+        ovEl.querySelector('.pdt').textContent = cur.label;
+        ovEl.querySelector('.pds').textContent = cur.desc || cur.sub || '';
+      }
+      hint.textContent = t('OK to change, Back to close');
+    }
+  } else {
+    ovEl.querySelector('.panel h2').textContent = m.title;
+    hint.textContent = t('OK to change, Back to go back');
+  }
+  if (mode === 'pic') {
+    /* the focused row's picture: a theme's screenshot, or the menu's own preview (the screensaver's frame) */
+    ovEl.querySelector('.sh').textContent = up ? up.title : m.title;
+    var box = ovEl.querySelector('.pvbox');
+    if (m.preview) m.preview(box, cur);
+    else if (cur && cur.pv) {
+      var img = document.createElement('img');
+      img.alt = '';
+      img.src = API + '/api/theme/preview/' + cur.pv;
+      box.appendChild(img);
+    }
+    if (cur && !skip(cur)) {
+      ovEl.querySelector('.pt').textContent = cur.label;
+      ovEl.querySelector('.pd').textContent = cur.desc || '';
+    }
+  }
+  if (mode === 'nest') {
     ovEl.querySelector('.sh').textContent = up.title;
-    ovEl.querySelector('.hint').textContent = t('OK to change, Back to go back');
     [].forEach.call(ovEl.querySelectorAll('.sec'), function (el) {
       var k = +el.getAttribute('data-s');
       el.querySelector('.lb').textContent = up.items[k].label;
@@ -5884,18 +6241,11 @@ function drawMenu(win) {
       });
     });
   }
-  [].forEach.call(ovEl.querySelectorAll('.mnote'), function (el) {
-    el.textContent = m.items[+el.getAttribute('data-n')].note;
-  });
-  [].forEach.call(ovEl.querySelectorAll('.mhead'), function (el) {
-    el.textContent = m.items[+el.getAttribute('data-n')].head;
-  });
-  [].forEach.call(ovEl.querySelectorAll('.panel .row'), function (row) {
+  /* the menu's own rows: in the list on the left (a first menu) or on the right */
+  var own = mode === 'root' ? ovEl.querySelector('.secs') : ovEl.querySelector('.panel');
+  fillRows(own, m.items);
+  [].forEach.call(own.querySelectorAll('.row'), function (row) {
     var it = m.items[+row.getAttribute('data-i')];
-    row.querySelector('.lb').textContent = it.label;
-    if (it.sub && it.sub !== '✓') row.querySelector('.st').textContent = it.sub;
-    var th = row.querySelector('.th');
-    if (th) th.style.backgroundImage = 'url("' + API + '/api/theme/preview/' + it.pv + '")';
     var pt = 0,
       rowHeld = false;
     if (it.hold) {
@@ -5924,13 +6274,13 @@ function drawMenu(win) {
       if (lastMX >= 0 && Math.abs(ev.clientX - lastMX) + Math.abs(ev.clientY - lastMY) < 24) return;
       lastMX = ev.clientX;
       lastMY = ev.clientY;
-      var s0 = m.start || 0,
+      var s1 = m.start || 0,
         now = Date.now(),
-        dir = hoverDir(k, s0, N, m.items.length);
+        dir = hoverDir(k, s1, N, m.items.length);
       if (dir && now - (m.scrollAt || 0) < 350) dir = 0;
       if (dir) m.scrollAt = now;
       m.idx = k;
-      drawMenu(s0 + dir);
+      drawMenu(s1 + dir);
     });
   });
 }
@@ -5962,6 +6312,7 @@ function menuKey(k) {
   } else if (k === 13) pickMenu();
   else if (k === 461 || k === 27 || k === 8) backMenu();
   else if (k === 37 && stack.length > 1) backMenu(); /* Left: back to the sections on the left (right-to-left languages swap it) */
+  else if (k === 39 && stack.length === 1 && m.items[m.idx] && m.items[m.idx].peek) pickMenu(); /* Right: into what the row opens */
   else return false;
   return true;
 }
@@ -6320,12 +6671,13 @@ function customizeMenu() {
     var nh = hiddenIds().length;
     return [
       { head: t('Home') },
-      { label: t('Dock'), icon: 'dock', stay: true, fn: dockMenu },
-      { label: t('Top buttons'), icon: 'buttons', stay: true, fn: topButtonsMenu },
-      { label: t('Hidden apps'), icon: 'hidden', sub: nh ? String(nh) : '', stay: true, fn: hiddenMenu },
+      { label: t('Dock'), icon: 'dock', stay: true, peek: true, fn: dockMenu },
+      { label: t('Top buttons'), icon: 'buttons', stay: true, peek: true, fn: topButtonsMenu },
+      { label: t('Hidden apps'), icon: 'hidden', sub: nh ? String(nh) : '', stay: true, peek: true, fn: hiddenMenu },
       {
         label: t('Continue watching'),
         icon: 'play',
+        peek: true,
         sub: cfg.watch && cfg.watch.on === false ? t('Off') : t('On'),
         stay: true,
         fn: watchMenu,
@@ -6352,7 +6704,13 @@ function customizeMenu() {
         },
       },
       { head: t('Look') },
-      { label: t('Theme'), icon: 'theme', stay: true, fn: themeMenu },
+      {
+        label: t('Theme'),
+        icon: 'theme',
+        stay: true,
+        desc: t('The look of Home: its colours, the clock, the dock and the apps, a picture.'),
+        fn: themeMenu,
+      },
       /* only where the theme has slots for cards */
       (TH.slots || []).length
         ? {
@@ -6376,6 +6734,7 @@ function customizeMenu() {
       {
         label: t('Wallpapers'),
         icon: 'photo',
+        peek: true,
         sub: cfg.wall && cfg.wall.on ? t('On') : t('Off'),
         stay: true,
         fn: wallMenu,
@@ -6383,6 +6742,7 @@ function customizeMenu() {
       {
         label: t('Screensaver'),
         icon: 'frame',
+        peek: true,
         sub: cfg.saver && cfg.saver.on ? t('On') : t('Off'),
         stay: true,
         fn: saverMenu,
@@ -6483,196 +6843,219 @@ function wallMenu() {
 }
 /* Screensaver (saver.js): the photo feed's photos, or the Wallpapers photos, when Home is left alone, instead of LG's screensaver. The
    photo feed is set up on a phone (the Wallpapers phone page, Photo feed), since the setup code is too long for a remote. */
+/* the screensaver's settings with the focused row's choice in place: what the menu's picture shows (SAVER.sample) */
+function saverPreview(box, cur) {
+  var s = {},
+    c = cfg.saver || {};
+  for (var k in c) s[k] = c[k];
+  if (cur && cur.pvk) s[cur.pvk] = cur.pvv;
+  SAVER.sample(box, s);
+}
 function saverMenu() {
-  openBuilt(t('Screensaver'), function () {
-    var s = cfg.saver || {},
-      after = s.after || 300,
-      secs = s.secs || 15,
-      AF = [60, 120, 300, 600, 900, 1800],
-      SE = [10, 15, 30, 60, 300, 900],
-      fam = (cfg.photoFeed && cfg.photoFeed.photos) || 0,
-      wall = +String((cfg.wallpapers && cfg.wallpapers.stamp) || '0').split(':')[0] || 0,
-      framed = s.style !== 'photos',
-      /* the frame's choices (saver.js): the first of each list is the default */
-      FR = 'walnut oak teak ash cherry greyoak blackash black white charcoal sand navy sage burgundy brass silver none'.split(' '),
-      FRN = {
-        walnut: t('Walnut'),
-        oak: t('Oak'),
-        teak: t('Teak'),
-        ash: t('Ash'),
-        cherry: t('Cherry'),
-        greyoak: t('Grey oak'),
-        blackash: t('Black ash'),
-        black: t('Black'),
-        white: t('White'),
-        charcoal: t('Charcoal'),
-        sand: t('Sand'),
-        navy: t('Navy'),
-        sage: t('Sage'),
-        burgundy: t('Burgundy'),
-        brass: t('Brass'),
-        silver: t('Silver'),
-        none: t('No frame'),
-      },
-      PR = ['modern', 'thin', 'bevel', 'classic'],
-      PRN = { modern: t('Modern'), thin: t('Thin'), bevel: t('Bevelled'), classic: t('Classic') },
-      MA = ['auto', 'white', 'cream', 'grey', 'charcoal', 'black', 'linen'],
-      MAN = {
-        auto: t('From the photo'),
-        white: t('White'),
-        cream: t('Cream'),
-        grey: t('Grey'),
-        charcoal: t('Charcoal'),
-        black: t('Black'),
-        linen: t('Linen'),
-      },
-      LA = ['two', 'three', 'one'],
-      LAN = { one: t('One (fills the frame unless portrait)'), two: t('Up to two side by side'), three: t('Up to three side by side') },
-      FI = ['none', 'canvas', 'painting'],
-      FIN = { none: t('None'), canvas: t('Canvas'), painting: t('Painting (canvas and varnish)') },
-      LB = ['under', 'plaque', 'off'],
-      LBN = { under: t('Under the photo'), plaque: t('Plaque'), off: t('Off') },
-      val = function (k, list) {
-        return list.indexOf(s[k]) >= 0 ? s[k] : list[0];
-      },
-      lb = s.label === false ? 'off' : s.label === 'plaque' ? 'plaque' : 'under',
-      set = function (k, v) {
-        var o = { on: s.on === true, after: after, secs: secs, clock: s.clock !== false };
-        if (s.style === 'photos') o.style = 'photos';
-        [
-          ['frame', FR],
-          ['profile', PR],
-          ['mat', MA],
-          ['layout', LA],
-          ['finish', FI],
-        ].forEach(function (p) {
-          var x = val(p[0], p[1]);
-          if (x !== p[1][0]) o[p[0]] = x;
-        });
-        if (lb !== 'under') o.label = lb === 'off' ? false : 'plaque';
-        if (k === 'label') {
-          delete o.label;
-          if (v !== 'under') o.label = v === 'off' ? false : 'plaque';
-        } else if (v === undefined) delete o[k];
-        else o[k] = v;
-        cfg.saver = o;
-        saveCfg();
-      },
-      /* a list to pick one from, with a tick at the chosen one; Back goes back */
-      choose = function (title, k, list, names) {
-        return {
-          label: title,
-          sub: names[val(k, list)],
-          fn: function () {
-            openBuilt(title, function () {
-              s = cfg.saver || {}; /* read again: the list is built again after each pick */
-              var now = val(k, list);
-              return list.map(function (x) {
-                return {
-                  label: names[x],
-                  sub: x === now ? '\u2713' : '',
-                  stay: true,
-                  fn: function () {
-                    set(k, x === list[0] ? undefined : x);
-                  },
-                };
-              });
-            });
-          },
-        };
-      },
-      cycle = function (title, k, list, names) {
-        var now = val(k, list);
-        return {
-          label: title,
-          sub: names[now],
-          stay: true,
-          fn: function () {
-            var nx = list[(list.indexOf(now) + 1) % list.length];
-            set(k, nx === list[0] ? undefined : nx);
-          },
-        };
-      };
-    return [
-      {
-        label: t('Use the screensaver'),
-        sub:
-          (s.on ? t('On') : t('Off')) +
-          ' \u00B7 ' +
-          (fam ? t(fam + ' photos from the feed') : wall ? t('Wallpapers photos') : t('no photos yet')),
-        stay: true,
-        fn: function () {
-          set('on', !s.on);
+  openBuilt(
+    t('Screensaver'),
+    function () {
+      var s = cfg.saver || {},
+        after = s.after || 300,
+        secs = s.secs || 15,
+        AF = [60, 120, 300, 600, 900, 1800],
+        SE = [10, 15, 30, 60, 300, 900],
+        fam = (cfg.photoFeed && cfg.photoFeed.photos) || 0,
+        wall = +String((cfg.wallpapers && cfg.wallpapers.stamp) || '0').split(':')[0] || 0,
+        framed = s.style !== 'photos',
+        /* the frame's choices (saver.js): the first of each list is the default */
+        FR = 'walnut oak teak ash cherry greyoak blackash black white charcoal sand navy sage burgundy brass silver none'.split(' '),
+        FRN = {
+          walnut: t('Walnut'),
+          oak: t('Oak'),
+          teak: t('Teak'),
+          ash: t('Ash'),
+          cherry: t('Cherry'),
+          greyoak: t('Grey oak'),
+          blackash: t('Black ash'),
+          black: t('Black'),
+          white: t('White'),
+          charcoal: t('Charcoal'),
+          sand: t('Sand'),
+          navy: t('Navy'),
+          sage: t('Sage'),
+          burgundy: t('Burgundy'),
+          brass: t('Brass'),
+          silver: t('Silver'),
+          none: t('No frame'),
         },
-      },
-      {
-        label: t('Starts after'),
-        sub: after === 60 ? t('1 minute') : t(after / 60 + ' minutes'),
-        stay: true,
-        fn: function () {
-          set('after', AF[(AF.indexOf(after) + 1) % AF.length]);
+        PR = ['modern', 'thin', 'bevel', 'classic'],
+        PRN = { modern: t('Modern'), thin: t('Thin'), bevel: t('Bevelled'), classic: t('Classic') },
+        MA = ['auto', 'white', 'cream', 'grey', 'charcoal', 'black', 'linen'],
+        MAN = {
+          auto: t('From the photo'),
+          white: t('White'),
+          cream: t('Cream'),
+          grey: t('Grey'),
+          charcoal: t('Charcoal'),
+          black: t('Black'),
+          linen: t('Linen'),
         },
-      },
-      {
-        label: t('New photo'),
-        sub: secs >= 60 ? t('Every %s min').replace('%s', secs / 60) : t('Every %s s').replace('%s', secs),
-        stay: true,
-        fn: function () {
-          set('secs', SE[(SE.indexOf(secs) + 1) % SE.length]);
+        LA = ['two', 'three', 'one'],
+        LAN = { one: t('One (fills the frame unless portrait)'), two: t('Up to two side by side'), three: t('Up to three side by side') },
+        FI = ['none', 'canvas', 'painting'],
+        FIN = { none: t('None'), canvas: t('Canvas'), painting: t('Painting (canvas and varnish)') },
+        LB = ['under', 'plaque', 'off'],
+        LBN = { under: t('Under the photo'), plaque: t('Plaque'), off: t('Off') },
+        val = function (k, list) {
+          return list.indexOf(s[k]) >= 0 ? s[k] : list[0];
         },
-      },
-      {
-        label: t('Time and date'),
-        sub: s.clock !== false ? t('On') : t('Off'),
-        stay: true,
-        fn: function () {
-          set('clock', s.clock === false);
+        lb = s.label === false ? 'off' : s.label === 'plaque' ? 'plaque' : 'under',
+        set = function (k, v) {
+          var o = { on: s.on === true, after: after, secs: secs, clock: s.clock !== false };
+          if (s.style === 'photos') o.style = 'photos';
+          [
+            ['frame', FR],
+            ['profile', PR],
+            ['mat', MA],
+            ['layout', LA],
+            ['finish', FI],
+          ].forEach(function (p) {
+            var x = val(p[0], p[1]);
+            if (x !== p[1][0]) o[p[0]] = x;
+          });
+          if (lb !== 'under') o.label = lb === 'off' ? false : 'plaque';
+          if (k === 'label') {
+            delete o.label;
+            if (v !== 'under') o.label = v === 'off' ? false : 'plaque';
+          } else if (v === undefined) delete o[k];
+          else o[k] = v;
+          cfg.saver = o;
+          saveCfg();
         },
-      },
-      /* the frame (saver.js): each photo like a print on a wall, or fitted whole on black */
-      {
-        label: t('Style'),
-        sub: framed ? t('Frame') : t('Photos'),
-        stay: true,
-        fn: function () {
-          set('style', framed ? 'photos' : 'frame');
+        /* a list to pick one from, with a tick at the chosen one; Back goes back */
+        choose = function (title, k, list, names) {
+          return {
+            label: title,
+            sub: names[val(k, list)],
+            fn: function () {
+              openBuilt(
+                title,
+                function () {
+                  s = cfg.saver || {}; /* read again: the list is built again after each pick */
+                  var now = val(k, list);
+                  return list.map(function (x) {
+                    return {
+                      label: names[x],
+                      sub: x === now ? '\u2713' : '',
+                      stay: true,
+                      /* the picture shows this choice while the row has the focus */
+                      pvk: k,
+                      pvv: x,
+                      fn: function () {
+                        set(k, x === list[0] ? undefined : x);
+                      },
+                    };
+                  });
+                },
+                list.indexOf(val(k, list)),
+                saverPreview
+              );
+            },
+          };
         },
-      },
-      framed ? choose(t('Frame'), 'frame', FR, FRN) : null,
-      framed && val('frame', FR) !== 'none' ? cycle(t('Profile'), 'profile', PR, PRN) : null,
-      framed ? choose(t('Mat'), 'mat', MA, MAN) : null,
-      framed ? cycle(t('Photos at a time'), 'layout', LA, LAN) : null,
-      framed ? cycle(t('Finish'), 'finish', FI, FIN) : null,
-      framed
-        ? {
-            label: t('Label'),
-            sub: LBN[lb],
+        cycle = function (title, k, list, names) {
+          var now = val(k, list);
+          return {
+            label: title,
+            sub: names[now],
             stay: true,
             fn: function () {
-              set('label', LB[(LB.indexOf(lb) + 1) % LB.length]);
+              var nx = list[(list.indexOf(now) + 1) % list.length];
+              set(k, nx === list[0] ? undefined : nx);
             },
-          }
-        : null,
-      { sep: true },
-      fam || wall
-        ? {
-            label: t('Show it now'),
-            fn: function () {
-              SAVER.start(true);
-            },
-          }
-        : null,
-      {
-        label: t('Photo feed...'),
-        sub: fam ? t(fam + ' photos') : t('set up on a phone or a computer'),
-        fn: function () {
-          launch('com.cleanyourtv.manager', { open: 'photofeed' }); /* straight to the QR code of the phone page's Photo feed tab */
+          };
+        };
+      return [
+        {
+          label: t('Use the screensaver'),
+          sub:
+            (s.on ? t('On') : t('Off')) +
+            ' \u00B7 ' +
+            (fam ? t(fam + ' photos from the feed') : wall ? t('Wallpapers photos') : t('no photos yet')),
+          stay: true,
+          fn: function () {
+            set('on', !s.on);
+          },
         },
-      },
-    ].filter(function (it) {
-      return it;
-    });
-  });
+        {
+          label: t('Starts after'),
+          sub: after === 60 ? t('1 minute') : t(after / 60 + ' minutes'),
+          stay: true,
+          fn: function () {
+            set('after', AF[(AF.indexOf(after) + 1) % AF.length]);
+          },
+        },
+        {
+          label: t('New photo'),
+          sub: secs >= 60 ? t('Every %s min').replace('%s', secs / 60) : t('Every %s s').replace('%s', secs),
+          stay: true,
+          fn: function () {
+            set('secs', SE[(SE.indexOf(secs) + 1) % SE.length]);
+          },
+        },
+        {
+          label: t('Time and date'),
+          sub: s.clock !== false ? t('On') : t('Off'),
+          stay: true,
+          fn: function () {
+            set('clock', s.clock === false);
+          },
+        },
+        /* the frame (saver.js): each photo like a print on a wall, or fitted whole on black */
+        {
+          label: t('Style'),
+          sub: framed ? t('Frame') : t('Photos'),
+          stay: true,
+          fn: function () {
+            set('style', framed ? 'photos' : 'frame');
+          },
+        },
+        framed ? choose(t('Frame'), 'frame', FR, FRN) : null,
+        framed && val('frame', FR) !== 'none' ? cycle(t('Profile'), 'profile', PR, PRN) : null,
+        framed ? choose(t('Mat'), 'mat', MA, MAN) : null,
+        framed ? cycle(t('Photos at a time'), 'layout', LA, LAN) : null,
+        framed ? cycle(t('Finish'), 'finish', FI, FIN) : null,
+        framed
+          ? {
+              label: t('Label'),
+              sub: LBN[lb],
+              stay: true,
+              fn: function () {
+                set('label', LB[(LB.indexOf(lb) + 1) % LB.length]);
+              },
+            }
+          : null,
+        { sep: true },
+        fam || wall
+          ? {
+              label: t('Show it now'),
+              /* the menu stays under the photos: the key that ends them comes back here */
+              stay: true,
+              fn: function () {
+                SAVER.start(true);
+              },
+            }
+          : null,
+        {
+          label: t('Photo feed...'),
+          sub: fam ? t(fam + ' photos') : t('set up on a phone or a computer'),
+          fn: function () {
+            launch('com.cleanyourtv.manager', { open: 'photofeed' }); /* straight to the QR code of the phone page's Photo feed tab */
+          },
+        },
+      ].filter(function (it) {
+        return it;
+      });
+    },
+    0,
+    saverPreview
+  );
 }
 /* hold OK on a card under an app: open it or the app, remove it (a whole show for Telemachus), or hide that app's row */
 function watchCardMenu(it) {

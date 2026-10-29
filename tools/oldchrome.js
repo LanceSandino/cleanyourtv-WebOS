@@ -263,19 +263,41 @@ const WALL_FIT =
   'var landscape=!!l&&!l.classList.contains("fit")&&after(l)==="cover";' +
   'document.body.setAttribute("data-fit",portrait&&landscape?"ok":"bad portrait="+portrait+" landscape="+landscape)})})},500)})()</script>';
 // a holiday theme's frame (Halloween): one still picture behind the clock and the apps, not catching the pointer; nothing animates
-// the menus (menus.js): Customize on its own is one panel; a section opened from it (Screensaver) shows Customize's list on the left
-// with that section lit, its own rows on the right and a hint; its Frame list ticks the chosen frame; Left goes back to one panel.
-// The outcome lands in data-two.
+// the menus (menus.js), all opened the same way: Customize is its own list on the left with the focused section's rows peeking on the
+// right; a section opened from it (Dock) keeps Customize's list on the left with that section lit, its rows on the right and a hint;
+// the Screensaver shows a large example of its frame on the left (SAVER.sample: the four mitred sides); its Frame list ticks the
+// chosen frame, the example shows it and follows the focus (Down: the next wood); Left goes back to Customize. The outcome lands in
+// data-two.
 const MENU_TWO =
   '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
   'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}function ov(){return document.getElementById("ov")}' +
   'function pick(l){var m=stack[stack.length-1];for(var i=0;i<m.items.length;i++)if(m.items[i].label===l){m.idx=i;pickMenu();return}}' +
+  'function sd(){var x=ov().querySelector("#svdemo .svside");return x?x.style.backgroundImage:""}' +
   'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);cfg.saver={on:true,frame:"oak"};customizeMenu();' +
-  'var one=!!ov()&&!/\\btwo\\b/.test(ov().className)&&!ov().querySelector(".secs");pick("Screensaver");' +
-  'var lit=ov().querySelector(".secs .sec.on"),two=/\\btwo\\b/.test(ov().className)&&!!lit&&/Screensaver/.test(lit.textContent)&&!!ov().querySelector(".hint");' +
+  'var root=/\\broot\\b/.test(ov().className)&&!!ov().querySelector(".secs.list")&&!!ov().querySelector(".panel");pick("Dock");' +
+  'var lit=ov().querySelector(".secs .sec.on"),nest=/\\bnest\\b/.test(ov().className)&&!!lit&&/Dock/.test(lit.textContent)&&!!ov().querySelector(".hint");key(37);' +
+  'pick("Screensaver");var demo=ov().querySelector(".pvbox #svdemo"),pic=/\\bpic\\b/.test(ov().className)&&!!demo&&demo.querySelectorAll(".svside").length===4;' +
   'pick("Frame");var ticked=[].filter.call(ov().querySelectorAll(".panel .row"),function(r){return !!r.querySelector(".ck")}).map(function(r){return r.textContent});' +
-  'var tick=ticked.length===1&&/Oak/.test(ticked[0]);key(37);key(37);var back=stack.length===1&&!/\\btwo\\b/.test(ov().className);' +
-  'document.body.setAttribute("data-two",one&&two&&tick&&back?"ok":"bad one="+one+" two="+two+" tick="+ticked.join("|")+" back="+back)},300)})()</script>';
+  'var tick=ticked.length===1&&/Oak/.test(ticked[0]),oak=/wood-oak/.test(sd());key(40);var teak=/wood-teak/.test(sd());' +
+  'key(37);key(37);var back=stack.length===1&&/\\broot\\b/.test(ov().className);' +
+  'document.body.setAttribute("data-two",root&&nest&&pic&&tick&&oak&&teak&&back?"ok":"bad root="+root+" nest="+nest+" pic="+pic+" tick="+ticked.join("|")+" oak="+oak+" teak="+teak+" back="+back)},300)})()</script>';
+// the Screensaver's Frame list left open (its screenshot shows the menu): the example of the frame fills the menu's picture, scaled
+// from the 1920 x 1080 screen, and the mat holds two example pictures. The outcome lands in data-pv.
+const SAVER_MENU =
+  '<script>(function(){function ov(){return document.getElementById("ov")}' +
+  'function pick(l){var m=stack[stack.length-1];for(var i=0;i<m.items.length;i++)if(m.items[i].label===l){m.idx=i;pickMenu();return}}' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);cfg.saver={on:true,frame:"walnut",profile:"classic"};customizeMenu();' +
+  'pick("Screensaver");pick("Frame");setTimeout(function(){var bx=ov().querySelector(".pvbox"),d=bx&&bx.querySelector("#svdemo"),br=bx&&bx.getBoundingClientRect(),dr=d&&d.getBoundingClientRect();' +
+  'var fit=!!dr&&Math.abs(dr.width-br.width)<=2&&Math.abs(dr.height-br.height)<=3,two=!!d&&d.querySelectorAll(".svw").length===2;' +
+  'document.body.setAttribute("data-pv",fit&&two?"ok":"bad fit="+fit+" two="+two+" box="+(br&&br.width+"x"+br.height)+" demo="+(dr&&dr.width+"x"+dr.height))},1500)},300)})()</script>';
+// Dawn with your own photos as the wallpaper (body.wpon): the scenery's cut-out goes and the clock that stood behind it is back at a
+// usual place and size, top left, out of the way of the photo. The outcome lands in data-wpclock.
+const WP_CLOCK =
+  '<script>(function(){var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);setTimeout(function(){' +
+  'var tm=document.getElementById("time"),big=tm.getBoundingClientRect().height;document.body.classList.add("wpon");setTimeout(function(){' +
+  'var r=tm.getBoundingClientRect(),fg=document.getElementById("thfg"),gone=!fg||getComputedStyle(fg).display==="none";' +
+  'var ok=gone&&r.left>=80&&r.left<=130&&r.top<=160&&r.height<big/2;' +
+  'document.body.setAttribute("data-wpclock",ok?"ok":"bad gone="+gone+" left="+r.left+" top="+r.top+" h="+r.height+" was="+big)},300)},800)},300)})()</script>';
 // a weather card in Glass's short place over the clock (30 px): one line inside the place (slim), its icon as tall as the place,
 // the place and the sky beside the temperature, and all of it above the time. The outcome lands in data-slim.
 const SLIM_WX =
@@ -364,6 +386,8 @@ const PAGES = [
   ['holiday frame', 'app/index.html', /data-fx="ok"/g, 1, 15000, FX_CHECK, 'halloween'],
   ['dawn front', 'app/index.html', /data-front="ok"/g, 1, 15000, FG_CHECK, 'dawn'],
   ['menu sections', 'app/index.html', /data-two="ok"/g, 1, 12000, MENU_TWO],
+  ['screensaver menu', 'app/index.html', /data-pv="ok"/g, 1, 12000, SAVER_MENU],
+  ['dawn clock with photos', 'app/index.html', /data-wpclock="ok"/g, 1, 15000, WP_CLOCK, 'dawn'],
   ['magic remote wheel', 'app/index.html', /data-wheel="ok"/g, 1, 12000, WHEEL],
   ['watch strip in dawn', 'app/index.html', /data-strip="ok"/g, 1, 15000, STRIP, 'dawn'],
   ['manager update check', 'manager/app/index.html', /data-check="ok"/g, 1, 12000, MANAGER_CHECK],

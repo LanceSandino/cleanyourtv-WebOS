@@ -1,7 +1,9 @@
 // Weather for the weather card (cards.js), from Open-Meteo: free, no key, no account. The service asks for a place's weather at most
 // every 30 minutes and keeps the last answer in weather.json, so Home shows it at once and while the internet is away. Only the
-// coordinates of the chosen place leave the TV; the place is searched by name on the phone page (search).
-//   create({path}) -> { get(lat, lon, unit) -> {now, days, at, place?} | {error}, search(name, lang) -> [{name, area, lat, lon}] }
+// coordinates of the chosen place leave the TV; the place is searched by name on the phone page, or by its ZIP or postal code on the
+// TV (the manager's Cards screen), in the TV's own country (search).
+//   create({path}) -> { get(lat, lon, unit) -> {now, days, at, place?} | {error},
+//                       search(name, lang, country?) -> [{name, area, lat, lon, country}] }
 const fs = require('fs');
 const fetch = require('./fetch');
 const FORECAST = process.env.CYTV_WEATHER_URL || 'https://api.open-meteo.com/v1/forecast',
@@ -89,13 +91,14 @@ function create(opts) {
       return had && Date.now() - had.at < OLD ? had : { error: String(e.message || e) };
     }
   }
-  // places by name, for the phone page
-  async function search(name, lang) {
+  // places by name (the phone page) or postal code (the TV), in one country when it is given (two letters)
+  async function search(name, lang, country) {
     const n = String(name || '')
       .trim()
       .slice(0, 80);
     if (n.length < 2) return [];
-    const j = await read(GEO + '?count=6&format=json&name=' + encodeURIComponent(n) + '&language=' + encodeURIComponent(lang || 'en'));
+    const cc = /^[a-z]{2}$/i.test(country || '') ? '&countryCode=' + country.toUpperCase() : '';
+    const j = await read(GEO + '?count=6&format=json&name=' + encodeURIComponent(n) + '&language=' + encodeURIComponent(lang || 'en') + cc);
     return (j.results || [])
       .filter(p => num(p.latitude, -90, 90) && num(p.longitude, -180, 180))
       .map(p => ({
@@ -103,6 +106,7 @@ function create(opts) {
         area: [p.admin1, p.country].filter(Boolean).join(', ').slice(0, 80),
         lat: r1(p.latitude),
         lon: r1(p.longitude),
+        country: String(p.country_code || '').slice(0, 2),
       }));
   }
   return { get, search };

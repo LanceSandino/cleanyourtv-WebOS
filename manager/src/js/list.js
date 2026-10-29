@@ -56,6 +56,13 @@ function draw() {
     $('sub').style.wordBreak = 'break-all';
     return;
   }
+  $('zipbox').style.display = view === 'zip' ? 'block' : 'none';
+  if (view === 'zip') {
+    $('sub').textContent = tr(
+      'The weather card shows the weather of this place. Type its ZIP or postal code with the remote\u2019s numbers, the keyboard (OK on ZIP code) or the phone remote\u2019s Type.'
+    );
+    return;
+  }
   if (view === 'notifyapi') {
     $('sub').textContent = tr('Network notifications');
     return;

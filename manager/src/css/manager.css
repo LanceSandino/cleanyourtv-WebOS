@@ -35,6 +35,32 @@ body {
   color: var(--ink2);
   line-height: 1.4;
 }
+#zipbox {
+  display: none;
+  margin-top: 46px;
+}
+#zipin {
+  width: 520px;
+  height: 120px;
+  padding: 0 32px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  font-size: 72px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.18em;
+  outline: none;
+}
+#zipin:focus {
+  border-color: var(--ink);
+}
+#zipmsg {
+  margin-top: 22px;
+  font-size: 30px;
+  color: var(--ink2);
+}
 #info {
   margin-top: 40px;
   font-size: 30px;

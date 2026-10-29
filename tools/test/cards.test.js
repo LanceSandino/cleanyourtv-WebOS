@@ -1,5 +1,6 @@
 // Cards (cards.js): the phone page opens with a code, lists the theme's slots and the card types with their options, saves the cards
-// (checked for shape) where the launcher reads them, and the launcher page draws the greeting and a text card.
+// (checked for shape) where the launcher reads them, and the launcher page draws the greeting and a text card. The manager sets a
+// weather card's place by a ZIP code in the TV's country, and its choices.
 const http = require('http');
 const { ok, call, sleep, serve, req, memoryConfig, run } = require('./lib');
 
@@ -28,8 +29,26 @@ function phone(method, p, body, code) {
 run(async () => {
   // Open-Meteo stand-ins: the forecast and the place search
   let asked = 0;
+  const geo = [];
   const om = await serve((rq, rs) => {
     rs.writeHead(200, { 'content-type': 'application/json' });
+    if (/\/search/.test(rq.url)) geo.push(rq.url);
+    if (/\/search.*name=90210/.test(rq.url))
+      return rs.end(
+        JSON.stringify({
+          results: [
+            {
+              name: 'Beverly Hills',
+              admin1: 'California',
+              country: 'United States',
+              country_code: 'US',
+              latitude: 34.0736,
+              longitude: -118.4004,
+            },
+          ],
+        })
+      );
+    if (/\/search.*name=00000/.test(rq.url)) return rs.end(JSON.stringify({}));
     if (/\/search/.test(rq.url))
       return rs.end(
         JSON.stringify({ results: [{ name: 'Utrecht', admin1: 'Utrecht', country: 'Nederland', latitude: 52.0908, longitude: 5.1222 }] })
@@ -61,7 +80,9 @@ run(async () => {
       ],
     }),
   };
-  const cards = C.create({ config, feature: n => (n === 'theme' ? theme : null) });
+  const luna = async (uri, p) =>
+    /getSystemSettings/.test(uri) && p.keys[0] === 'smartServiceCountryCode2' ? { settings: { smartServiceCountryCode2: 'US' } } : {};
+  const cards = C.create({ config, luna, feature: n => (n === 'theme' ? theme : null) });
   let r = await call(cards, '/api/cards/pair', 'POST', {});
   const code = r.j.code;
   ok(
@@ -130,6 +151,44 @@ run(async () => {
   );
   r = await call(cards, '/api/cards/weather', 'POST', { lat: 'x' });
   ok(r.j.error === 'no place chosen', 'no weather without a place');
+  // the manager: a weather card's place by its ZIP code, and its choices, without the phone
+  r = await call(cards, '/api/cards/place', 'POST', { slot: 'side', zip: '90210' });
+  ok(/choose the weather card/.test(r.j.error || ''), 'a ZIP code needs a weather card in that place');
+  await call(cards, '/api/cards/set', 'POST', { slot: 'side', type: 'weather' });
+  geo.length = 0;
+  r = await call(cards, '/api/cards/place', 'POST', { slot: 'side', zip: ' 90210 ' });
+  let side = config.get().cards.side;
+  ok(
+    r.j.ok &&
+      r.j.place.name === 'Beverly Hills' &&
+      side.place === 'Beverly Hills' &&
+      side.lat === 34.07 &&
+      side.lon === -118.4 &&
+      side.unit === 'f' &&
+      /countryCode=US/.test(geo[0]),
+    "a ZIP code is searched in the TV's country and sets the place; a first place in the US sets °F"
+  );
+  geo.length = 0;
+  r = await call(cards, '/api/cards/place', 'POST', { slot: 'side', zip: '00000' });
+  ok(
+    /no place/.test(r.j.error || '') &&
+      geo.length === 2 &&
+      !/countryCode/.test(geo[1]) &&
+      config.get().cards.side.place === 'Beverly Hills',
+    'a code not found in the country is tried in any country, and the place stays when nothing is found'
+  );
+  r = await call(cards, '/api/cards/place', 'POST', { slot: 'side', zip: '<x>' });
+  ok(/type a ZIP/.test(r.j.error || ''), 'only a code is searched');
+  await call(cards, '/api/cards/option', 'POST', { slot: 'side', key: 'unit', value: '' });
+  await call(cards, '/api/cards/option', 'POST', { slot: 'side', key: 'show', value: 'days' });
+  const o1 = await call(cards, '/api/cards/option', 'POST', { slot: 'side', key: 'unit', value: 'kelvin' });
+  const o2 = await call(cards, '/api/cards/option', 'POST', { slot: 'side', key: 'place', value: 'x' });
+  side = config.get().cards.side;
+  ok(
+    side.unit === undefined && side.show === 'days' && o1.j.error && o2.j.error && side.place === 'Beverly Hills',
+    "the manager sets a card's choices, only to values its type offers"
+  );
+  await phone('POST', '/api/save', { cards: {} }, code);
   // Home Assistant cards, with the address and token set for Voice
   const calls = [];
   const has = await serve((rq, rs) => {

@@ -10,13 +10,13 @@ is off until you switch it on in **Customize** > **Screensaver**.
 | New photo | Every 10, 15, 30 or 60 seconds, or every 5 or 15 minutes, cross-faded. |
 | Time and date | Shown at the bottom left (with the frame: small, in the mat's top corner), or not. |
 | Style | **Frame** (the default): the photos in a mat behind a frame, like a frame TV, below. **Photos**: each whole on black. |
-| Frame | A wood (**Walnut**, the default, Oak, Teak, Ash, Cherry, Grey oak, Black ash), a paint (Black, White, Charcoal, Sand, Navy, Sage, Burgundy), a metal (Brass, Silver), or No frame. A list: OK ticks one, Back goes back. |
+| Frame | A wood (**Walnut**, the default, Oak, Teak, Ash, Cherry, Grey oak, Black ash), a paint (Black, White, Charcoal, Sand, Navy, Sage, Burgundy), a metal (Brass, Silver), or No frame. A list: OK ticks one, Back goes back; the example on the left shows the frame your focus is on. |
 | Profile | The frame's shape: **Modern** (flat, rounded outside), Thin, Bevelled (sloping down to the picture) or Classic (a flat, a hollow and a bead). |
 | Mat | **From the photo** (a light mat with a little of the photo's own colour, a dark one for a dark photo; warm white when the feed does not say the colour), White, Cream, Grey, Charcoal, Black or Linen. A list. |
 | Photos at a time | **Up to two side by side** (the default), up to three, or **One**: then a landscape photo fills the inside of the frame (cut at the top and bottom as needed) and a portrait one hangs in the mat. |
 | Finish | None; **Canvas**: the weave of a canvas over the photo; **Painting**: the canvas with a warm varnish, a little darker towards the edges. |
 | Label | **Under the photo**: the caption and the day in pencil, as on a signed print; **Plaque**: on a brass plate on the frame; or off. |
-| Show it now | Starts it at once, to see how it looks. |
+| Show it now | Starts it at once, to see how it looks; the key that ends it brings you back to this menu. |
 
 While it shows, **Left** and **Right** step back and forward through the last 50 photos (Right past the last one brings a new photo,
 and the timer starts again); right-to-left languages mirror them. Any other key or a move of the Magic Remote ends it, and that key

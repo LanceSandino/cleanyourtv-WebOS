@@ -1,11 +1,13 @@
 document.addEventListener('keydown', function (e) {
   var k = e.keyCode;
+  if (view === 'zip' && zipKey(e)) return;
   if (k === 38) next(-1);
   else if (k === 40) next(1);
   else if (k === 13) act();
   else if (k === 461 || k === 27 || k === 8 || k === 10009) {
     if (view === 'share') closeShare();
     else if (view === 'keys') closeKeys();
+    else if (view === 'zip') closeZip();
     else if (view !== 'main') pop();
     else {
       try {

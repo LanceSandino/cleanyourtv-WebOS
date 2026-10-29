@@ -1118,3 +1118,42 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T13:51:05Z"
 ```
+
+```yaml
+id: CU-20261029-8
+type: feature
+title: "Every menu opens the same way, the Screensaver shows an example of its frame, Show it now comes back to the menu, Dawn's clock moves aside over your photos"
+description: "The owner found the menus opening differently (Theme unlike Customize), the frame names hard to picture, Show it now leaving the menu, and Dawn's large clock in the way of his photos. menus.js draws three layouts the same way: Customize (root) is its own list on the left with the focused section's rows peeking on the right (Right or OK goes in); a section (nest) keeps Customize's list on the left with that section lit; a list with pictures (pic: the themes, or a menu with a preview) shows the focused one large on the left. saver.js SAVER.sample(box, settings) draws a still example of the screen, frame (the same mitred sides, shared with the saver as buildSides), mat, made-up pictures, finish and label, scaled into the menu's picture; the Screensaver menu and its Frame and Mat lists use it with the focused row's choice in place, and a list opens on the chosen row. Show it now keeps the menu open under the photos, so the key that ends them lands back on it. frame.css: over your own photos (body.wpon) on a theme with a cut-out (Dawn), the clock goes top left at scale 1.5."
+impact: medium
+affected_modules: ["app/src/js/menus.js", "app/src/css/menus.css", "app/src/js/saver.js", "app/src/css/saver.css", "app/src/css/frame.css", "docs/launcher.md", "docs/screensaver.md", "tools/oldchrome.js"]
+related_tests: ["tools/oldchrome.js (menu sections: Customize root with peeking rows, a section nested with Customize lit, the Screensaver's example with four sides, its Frame list ticked and the example following the focus, Left back to Customize; screensaver menu: the example fills the menu's picture with two example windows; dawn clock with photos: the cut-out gone and the time top left at under half its size)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T14:30:34Z"
+```
+
+```yaml
+id: CU-20261029-9
+type: feature
+title: "The weather card's place by ZIP code on the TV, and its options without the phone"
+description: "The owner asked to type a ZIP code on the TV instead of using the phone page. cards.js: POST /api/cards/place {slot, zip} searches the code with Open-Meteo's geocoding in the TV's country (LG's smartServiceCountryCode2; any country when nothing is found there), sets the weather card's place, latitude and longitude, and °F for a first place in the US; POST /api/cards/option {slot, key, value} sets one of a card's choices, only to a value its type offers. weather.js search() takes a country and returns each place's country code. The manager: choosing Weather for a place without one opens a ZIP code screen (a text field for LG's keyboard, the remote's number keys or the phone remote's Type; Look it up), and the card type list shows Place, Temperature and Show rows for a weather card."
+impact: low
+affected_modules: ["helper/cards.js", "helper/weather.js", "manager/src/index.html", "manager/src/js/screens.js", "manager/src/js/menu.js", "manager/src/js/list.js", "manager/src/js/input.js", "manager/src/css/manager.css", "docs/launcher.md", "docs/api.md"]
+related_tests: ["tools/test/cards.test.js (a ZIP code needs a weather card there; it is searched in the TV's country and sets the place, °F in the US; a code not found there is tried in any country and the place stays when nothing is found; only a code is searched; the manager sets a card's choices only to offered values)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T14:30:34Z"
+```
+
+```yaml
+id: CU-20261029-10
+type: fix
+title: "Phone remote: the volume and Mute reach a soundbar, a tap clicks, five minutes to pair, the iPhone icon pairs on its own"
+description: "The owner's phone remote did not change the sound of his Sonos on eARC (Dawn's volume bar did not show either), the touchpad's tap did nothing, and pairing took several tries. On the TV, network input's VOLUMEUP did not reach the soundbar while com.webos.service.audio/master/volumeUp and volumeDown did (6 to 7 and back, seen); the remote now sends the volume there, and Mute reads the mute state (getVolume) and sets the opposite (mute). A tap on the touchpad is OK (sendSpecialKey ENTER), which clicks where the pointer is while it shows: the pointer socket's click message did nothing. Pairing stays open five minutes instead of two. The pairing screen and docs say that an iPhone's Home Screen icon keeps its own storage and pairs again with a new code (the owner's icon opened unpaired). Safari's HTTPS-Only setting blocks the plain http page; the owner got past it on his phone, HTTPS on a LAN name is left for later."
+impact: low
+affected_modules: ["helper/remote.js", "manager/src/js/screens.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (the volume goes to LG's audio service and Mute switches the state it reads; the pointer moves and scrolls through the socket and a tap is OK; pairing opens for five minutes)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T14:30:34Z"
+```

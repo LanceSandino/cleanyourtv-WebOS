@@ -1,13 +1,16 @@
 // Phone remote: a phone on the same Wi-Fi as a remote for the TV: the arrows, OK, Back, Home, volume, play and pause, a touchpad for
 // the pointer, typing into a search box, the apps of the dock. Off until a phone is paired. Pairing (the manager's Phone remote, or
-// Customize > Phone remote in the launcher: POST /api/remote/pair) opens a window of two minutes with a six-digit code on the TV and in
+// Customize > Phone remote in the launcher: POST /api/remote/pair) opens a window of five minutes with a six-digit code on the TV and in
 // its QR code; five wrong codes close it. A phone that gives the code gets its own key (32 random bytes): only its SHA-256 is kept
 // (config.remote.devices), the phone sends the key with every press (header x-remote-key), and a phone can be removed on the TV.
 // The phone page and its API are a server on the LAN (port 8794) that runs only while a phone is paired or pairing is open, and that
 // answers only addresses of the home network (private ranges). Keys go to LG's own network input (com.webos.service.networkinput): the
 // keys it names through sendSpecialKey ({key: 'HOME'}), the others as Linux key codes through sendKeyCodes ({keyCode1: 103}), as seen
-// working on the owner's webOS 25 TV (Home, the arrows, the quick settings, Exit); the pointer (move, click, scroll) through its pointer
-// socket (getPointerInputSocket, a local socket), not yet seen working. Text goes to LG's keyboard service (com.webos.service.ime).
+// working on the owner's webOS 25 TV (Home, the arrows, the quick settings, Exit). The volume and mute go to LG's audio service
+// (com.webos.service.audio/master), as LG's own volume does: network input's volume keys did not reach a soundbar on eARC, the audio
+// service does (it drives the soundbar over HDMI-CEC). The pointer moves and scrolls through network input's pointer socket
+// (getPointerInputSocket, a local socket); a tap is OK, which clicks where the pointer is while it shows (the socket's click did
+// nothing). Text goes to LG's keyboard service (com.webos.service.ime).
 // Nothing here presses a key by itself: every press comes from a paired phone.
 //   GET  /api/remote/status    {on, url, devices: [{id, name, added, used}], pairing: {until} | null}
 //   POST /api/remote/pair      {} opens pairing: {url, code, qr, seconds}; {stop: true} closes it
@@ -23,7 +26,7 @@ const web = require('./web'),
   page = require('./remotepage');
 
 const PORT = +process.env.CYTV_REMOTE_PORT || 8794, // after the phone pages' ports (8766-8792; Telemachus holds 8770 on the TV)
-  PAIR_MS = 2 * 60 * 1000,
+  PAIR_MS = 5 * 60 * 1000, // time to type the address by hand when the camera does not open it
   MAX_TRIES = 5,
   MAX_DEVICES = 10;
 // the remote's buttons: the ones LG's network input knows by name (sendSpecialKey; MENU is the gear key, LG's quick settings), the
@@ -50,6 +53,7 @@ const SPECIAL = {
 const CODES = { UP: 103, DOWN: 108, LEFT: 105, RIGHT: 106, PLAY: 207, INFO: 358, BLUE: 401, 0: 11 };
 for (let d = 1; d <= 9; d++) CODES[d] = d + 1; // KEY_1 is 2 ... KEY_9 is 10
 const KEYS = Object.keys(SPECIAL).concat(Object.keys(CODES));
+const AUDIO = 'luna://com.webos.service.audio/master/';
 
 // an address of the home network: 10/8, 172.16/12, 192.168/16, link-local, loopback, IPv6 unique local and link-local
 function homeAddress(a) {
@@ -214,11 +218,17 @@ function create(ctx) {
     if (u === '/press') {
       const k = String(b.key || '');
       if (KEYS.indexOf(k) < 0) return { error: 'unknown key', code: 400 };
+      if (k === 'VOLUMEUP') return luna(AUDIO + 'volumeUp', {});
+      if (k === 'VOLUMEDOWN') return luna(AUDIO + 'volumeDown', {});
+      if (k === 'MUTE') {
+        const v = await luna(AUDIO + 'getVolume', {});
+        return luna(AUDIO + 'mute', { mute: !(v && v.volumeStatus && v.volumeStatus.muteStatus) });
+      }
       if (SPECIAL[k]) return luna('luna://com.webos.service.networkinput/sendSpecialKey', { key: SPECIAL[k] });
       return luna('luna://com.webos.service.networkinput/sendKeyCodes', { keyCode1: CODES[k] });
     }
     if (u === '/move') return send({ type: 'move', dx: clamp(b.dx, -300, 300), dy: clamp(b.dy, -300, 300), down: 0 });
-    if (u === '/click') return send({ type: 'click' });
+    if (u === '/click') return luna('luna://com.webos.service.networkinput/sendSpecialKey', { key: 'ENTER' });
     if (u === '/scroll') return send({ type: 'scroll', dx: 0, dy: clamp(b.dy, -50, 50) });
     if (u === '/text') {
       const t = String(b.text || '')

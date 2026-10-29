@@ -24,6 +24,17 @@
 body.wpon #thfg {
   display: none;
 }
+/* and with it the clock that stood behind the scenery goes back to a usual place and size, top left, out of the way of the photo */
+body.wpon[data-fg] {
+  --clock-l: 96px;
+  --clock-r: auto;
+  --clock-t: 64px;
+  --clock-b: auto;
+  --clock-tx: none;
+  --clock-txr: none;
+  --clock-ai: flex-start;
+  --clock-s: 1.5;
+}
 [data-fg] #view,
 [data-fg] #cards,
 [data-fg] #shelf {

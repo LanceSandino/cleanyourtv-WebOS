@@ -1,5 +1,6 @@
 // Phone remote (remote.js): pairing with the code shown on the TV (five wrong codes close it), a key per phone kept only as its hash,
-// the presses reaching LG's network input (sendSpecialKey or a key code; the pointer on a stand-in socket), typing and the apps, the
+// the presses reaching LG's network input (sendSpecialKey or a key code; the pointer on a stand-in socket), the volume LG's audio
+// service, typing and the apps, the
 // LAN server only for the home network and only from its own page, and a phone removed on the TV losing access.
 const http = require('http'),
   net = require('net'),
@@ -61,7 +62,9 @@ run(async () => {
   };
   const R = req('remote').create({
     config,
-    luna: async (uri, p) => (calls.push([uri, p]), { returnValue: true }),
+    luna: async (uri, p) => (
+      calls.push([uri, p]), /getVolume/.test(uri) ? { returnValue: true, volumeStatus: { muteStatus: false } } : { returnValue: true }
+    ),
     feature: n => (n === 'apps' ? apps : null),
   });
   R.start();
@@ -79,8 +82,8 @@ run(async () => {
   r = await call(R, '/api/remote/pair', 'POST', {});
   const code = r.j.code;
   ok(
-    /^\d{6}$/.test(code) && r.j.qr === r.j.url + '/#p=' + code && r.j.seconds === 120,
-    'pairing opens for two minutes with a six-digit code, carried in the QR code'
+    /^\d{6}$/.test(code) && r.j.qr === r.j.url + '/#p=' + code && r.j.seconds === 300,
+    'pairing opens for five minutes with a six-digit code, carried in the QR code'
   );
   const pageR = await lan('GET', '/');
   ok(
@@ -128,13 +131,30 @@ run(async () => {
         ]),
     'keys LG names go through sendSpecialKey (the gear key is its QMENU), the others as Linux key codes: ' + JSON.stringify(calls)
   );
+  calls.length = 0;
+  await lan('POST', '/press', { key: 'VOLUMEUP' }, key);
+  await lan('POST', '/press', { key: 'VOLUMEDOWN' }, key);
+  await lan('POST', '/press', { key: 'MUTE' }, key);
+  const A = 'luna://com.webos.service.audio/master/';
+  ok(
+    JSON.stringify(calls) ===
+      JSON.stringify([
+        [A + 'volumeUp', {}],
+        [A + 'volumeDown', {}],
+        [A + 'getVolume', {}],
+        [A + 'mute', { mute: true }],
+      ]),
+    "the volume goes to LG's audio service (which drives a soundbar on eARC), and Mute switches the mute it reads: " + JSON.stringify(calls)
+  );
+  calls.length = 0;
   await lan('POST', '/move', { dx: 12.6, dy: -900 }, key);
   await lan('POST', '/click', {}, key);
   await lan('POST', '/scroll', { dy: 3 }, key);
   await sleep(100);
   ok(
-    got === 'type:move\ndx:13\ndy:-300\ndown:0\n\ntype:click\n\ntype:scroll\ndx:0\ndy:3\n\n',
-    "the pointer goes to LG's pointer socket in its own messages (a move is held to 300 px): " + JSON.stringify(got)
+    got === 'type:move\ndx:13\ndy:-300\ndown:0\n\ntype:scroll\ndx:0\ndy:3\n\n' &&
+      JSON.stringify(calls) === JSON.stringify([[N + 'sendSpecialKey', { key: 'ENTER' }]]),
+    "the pointer moves and scrolls through LG's pointer socket (a move is held to 300 px); a tap is OK: " + JSON.stringify(got)
   );
   r = await lan('POST', '/press', { key: 'rm -rf' }, key);
   const nokey = await lan('POST', '/press', { key: 'UP' });

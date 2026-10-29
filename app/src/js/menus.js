@@ -21,15 +21,16 @@ function setHtml(el, h) {
    new values, and the menu below is built again when Back returns to it. A note row is text only: the focus skips it. */
 /* the first menu over Home slides in (drawMenu); the ones after it, and redraws, do not */
 var ovEnter = false;
-function openMenu(title, items, idx, build) {
+function openMenu(title, items, idx, build, preview) {
+  if (PEEK) return void (PEEK.got = { title: title, items: build ? build() : items });
   if (!stack.length) ovEnter = true;
-  var m = { title: title, items: build ? build() : items, idx: idx || 0, build: build || null };
+  var m = { title: title, items: build ? build() : items, idx: idx || 0, build: build || null, preview: preview || null };
   m.idx = usable(m, m.idx);
   stack.push(m);
   drawMenu();
 }
-function openBuilt(title, build, idx) {
-  openMenu(title, null, idx, build);
+function openBuilt(title, build, idx, preview) {
+  openMenu(title, null, idx, build, preview);
 }
 function skip(it) {
   return !it || it.sep || it.note !== undefined || it.head !== undefined;
@@ -110,12 +111,68 @@ function hoverDir(k, start, N, len) {
   if (k === start && start > 0) return -1;
   return 0;
 }
+/* Every menu has the same two panes (after couch-tv's settings):
+   - a list with pictures (the themes) or a preview (m.preview: the screensaver's frame): the picture of the focused row, large, on the
+     left, the rows on the right;
+   - a menu opened from another: the list it came from on the left with that row lit, its own rows on the right;
+   - a first menu: its rows on the left, and on the right what the focused row opens (rows marked peek: shown, not used), or its value.
+   A hint at the foot; a solid background. */
+var PEEK = null; /* while set, openMenu keeps what it would open here instead of opening it (peekOf) */
+function peekOf(it) {
+  if (!it || !it.peek || !it.fn) return null;
+  PEEK = {};
+  try {
+    it.fn();
+  } catch (e) {}
+  var got = PEEK.got || null;
+  PEEK = null;
+  return got;
+}
+function rowHtml(it, i, m, withPv) {
+  if (it.sep) return '<div class="msep"></div>';
+  if (it.note !== undefined) return '<div class="mnote" data-n="' + i + '"></div>';
+  if (it.head !== undefined) return '<div class="mhead" data-n="' + i + '"></div>';
+  return (
+    '<div class="row' +
+    (m && i === m.idx ? ' f' : '') +
+    (it.dim ? ' dim' : '') +
+    '" data-i="' +
+    i +
+    '">' +
+    (it.icon ? svg(it.icon) : '') +
+    (withPv && it.pv ? '<span class="th"></span>' : '') +
+    '<span class="lb"></span>' +
+    (it.sub === '✓' ? '<span class="ck">' + TICK + '</span>' : it.sub ? '<span class="st"></span>' : '') +
+    '</div>'
+  );
+}
+function fillRows(box, items) {
+  [].forEach.call(box.querySelectorAll('.mnote'), function (el) {
+    el.textContent = items[+el.getAttribute('data-n')].note;
+  });
+  [].forEach.call(box.querySelectorAll('.mhead'), function (el) {
+    el.textContent = items[+el.getAttribute('data-n')].head;
+  });
+  [].forEach.call(box.querySelectorAll('.row'), function (row) {
+    var it = items[+row.getAttribute('data-i')];
+    row.querySelector('.lb').textContent = it.label;
+    if (it.sub && it.sub !== '✓') row.querySelector('.st').textContent = it.sub;
+    var th = row.querySelector('.th');
+    if (th) th.style.backgroundImage = 'url("' + API + '/api/theme/preview/' + it.pv + '")';
+  });
+}
 function drawMenu(win) {
   /* win: the first row on show, when the pointer asks for one (otherwise the selection sits on the fourth row) */
   var m = stack[stack.length - 1],
     up = stack.length > 1 ? stack[stack.length - 2] : null,
-    N = 10,
-    start = Math.max(0, Math.min(m.idx - 3, m.items.length - N)),
+    pic =
+      !!m.preview ||
+      m.items.some(function (x) {
+        return !!x.pv;
+      }),
+    mode = pic ? 'pic' : up ? 'nest' : 'root',
+    N = mode === 'root' ? 13 : 10,
+    start = Math.max(0, Math.min(m.idx - (mode === 'root' ? 6 : 3), m.items.length - N)),
     secs = [];
   if (typeof win === 'number') start = Math.max(0, Math.min(win, m.items.length - N));
   m.start = start;
@@ -124,8 +181,16 @@ function drawMenu(win) {
     ovEl.id = 'ov';
     document.body.appendChild(ovEl);
   }
-  var h = '';
-  if (up) {
+  var h = '',
+    rows = '',
+    i;
+  for (i = start; i < Math.min(m.items.length, start + N); i++) rows += rowHtml(m.items[i], i, m, mode !== 'pic');
+  var more = function (a, b) {
+    return '<div class="more">' + (a ? '▲' : '') + '</div>' + rows + '<div class="more">' + (b ? '▼' : '') + '</div>';
+  };
+  var cur = m.items[m.idx],
+    peek = mode === 'root' ? peekOf(cur) : null;
+  if (mode === 'nest') {
     for (var j = 0; j < up.items.length; j++) if (!skip(up.items[j])) secs.push(j);
     var at = secs.indexOf(up.idx),
       s0 = Math.max(0, Math.min(at - 6, secs.length - 13));
@@ -140,54 +205,63 @@ function drawMenu(win) {
         '">' +
         (up.items[secs[j]].icon ? '<span class="si">' + svg(up.items[secs[j]].icon) + '</span>' : '') +
         '<span class="lb"></span></div>';
-    h += '</div>';
-  }
-  h += '<div class="panel"><h2></h2><div class="more">' + (start > 0 ? '▲' : '') + '</div>';
-  for (var i = start; i < Math.min(m.items.length, start + N); i++) {
-    var it = m.items[i];
-    if (it.sep) {
-      h += '<div class="msep"></div>';
-      continue;
-    }
-    if (it.note !== undefined) {
-      h += '<div class="mnote" data-n="' + i + '"></div>';
-      continue;
-    }
-    if (it.head !== undefined) {
-      h += '<div class="mhead" data-n="' + i + '"></div>';
-      continue;
-    }
+    h += '</div><div class="panel"><h2></h2>' + more(start > 0, start + N < m.items.length) + '<div class="hint"></div></div>';
+  } else if (mode === 'pic') {
     h +=
-      '<div class="row' +
-      (i === m.idx ? ' f' : '') +
-      (it.dim ? ' dim' : '') +
-      '" data-i="' +
-      i +
-      '">' +
-      (it.icon ? svg(it.icon) : '') +
-      (up && it.pv ? '<span class="th"></span>' : '') +
-      '<span class="lb"></span>' +
-      (it.sub === '✓' ? '<span class="ck">' + TICK + '</span>' : it.sub ? '<span class="st"></span>' : '') +
-      '</div>';
+      '<div class="pvl"><h2 class="sh"></h2><div class="pvbox"></div><div class="pt"></div><div class="pd"></div></div>' +
+      '<div class="panel"><h2></h2>' +
+      more(start > 0, start + N < m.items.length) +
+      '<div class="hint"></div></div>';
+  } else {
+    h +=
+      '<div class="secs list"><h2 class="sh"></h2>' +
+      more(start > 0, start + N < m.items.length) +
+      '</div><div class="panel peek"><h2></h2>';
+    if (peek) for (i = 0; i < Math.min(peek.items.length, 9); i++) h += rowHtml(peek.items[i], i, null, false);
+    else if (cur && !skip(cur)) h += '<div class="pdesc"><div class="pdt"></div><div class="pds"></div></div>';
+    h += '<div class="hint"></div></div>';
   }
-  h += '<div class="more">' + (start + N < m.items.length ? '▼' : '') + '</div>';
-  if (up) h += '<div class="hint"></div>';
-  h += '</div>';
   ovEl = setHtml(ovEl, h);
-  /* a list with pictures (the themes) shows the focused one large on the left, unless the left holds the sections: then each row has
-     its picture */
-  var side =
-    !up &&
-    m.items.some(function (x) {
-      return x.desc !== undefined;
-    });
-  ovEl.className = (up ? 'two' : side ? 'ws' : '') + (ovEnter && !OLDGPU ? ' enter' : '');
+  drawSide(null);
+  ovEl.className = mode + (ovEnter && !OLDGPU ? ' enter' : '');
   ovEnter = false;
-  drawSide(side && !skip(m.items[m.idx]) ? m.items[m.idx] : null);
-  ovEl.querySelector('.panel h2').textContent = m.title;
-  if (up) {
+  var hint = ovEl.querySelector('.hint');
+  if (mode === 'root') {
+    ovEl.querySelector('.sh').textContent = m.title;
+    if (peek) {
+      ovEl.querySelector('.panel h2').textContent = peek.title;
+      fillRows(ovEl.querySelector('.panel'), peek.items);
+      hint.textContent = t('OK or Right to open, Back to close');
+    } else {
+      ovEl.querySelector('.panel h2').textContent = '';
+      if (cur && !skip(cur)) {
+        ovEl.querySelector('.pdt').textContent = cur.label;
+        ovEl.querySelector('.pds').textContent = cur.desc || cur.sub || '';
+      }
+      hint.textContent = t('OK to change, Back to close');
+    }
+  } else {
+    ovEl.querySelector('.panel h2').textContent = m.title;
+    hint.textContent = t('OK to change, Back to go back');
+  }
+  if (mode === 'pic') {
+    /* the focused row's picture: a theme's screenshot, or the menu's own preview (the screensaver's frame) */
+    ovEl.querySelector('.sh').textContent = up ? up.title : m.title;
+    var box = ovEl.querySelector('.pvbox');
+    if (m.preview) m.preview(box, cur);
+    else if (cur && cur.pv) {
+      var img = document.createElement('img');
+      img.alt = '';
+      img.src = API + '/api/theme/preview/' + cur.pv;
+      box.appendChild(img);
+    }
+    if (cur && !skip(cur)) {
+      ovEl.querySelector('.pt').textContent = cur.label;
+      ovEl.querySelector('.pd').textContent = cur.desc || '';
+    }
+  }
+  if (mode === 'nest') {
     ovEl.querySelector('.sh').textContent = up.title;
-    ovEl.querySelector('.hint').textContent = t('OK to change, Back to go back');
     [].forEach.call(ovEl.querySelectorAll('.sec'), function (el) {
       var k = +el.getAttribute('data-s');
       el.querySelector('.lb').textContent = up.items[k].label;
@@ -200,18 +274,11 @@ function drawMenu(win) {
       });
     });
   }
-  [].forEach.call(ovEl.querySelectorAll('.mnote'), function (el) {
-    el.textContent = m.items[+el.getAttribute('data-n')].note;
-  });
-  [].forEach.call(ovEl.querySelectorAll('.mhead'), function (el) {
-    el.textContent = m.items[+el.getAttribute('data-n')].head;
-  });
-  [].forEach.call(ovEl.querySelectorAll('.panel .row'), function (row) {
+  /* the menu's own rows: in the list on the left (a first menu) or on the right */
+  var own = mode === 'root' ? ovEl.querySelector('.secs') : ovEl.querySelector('.panel');
+  fillRows(own, m.items);
+  [].forEach.call(own.querySelectorAll('.row'), function (row) {
     var it = m.items[+row.getAttribute('data-i')];
-    row.querySelector('.lb').textContent = it.label;
-    if (it.sub && it.sub !== '✓') row.querySelector('.st').textContent = it.sub;
-    var th = row.querySelector('.th');
-    if (th) th.style.backgroundImage = 'url("' + API + '/api/theme/preview/' + it.pv + '")';
     var pt = 0,
       rowHeld = false;
     if (it.hold) {
@@ -240,13 +307,13 @@ function drawMenu(win) {
       if (lastMX >= 0 && Math.abs(ev.clientX - lastMX) + Math.abs(ev.clientY - lastMY) < 24) return;
       lastMX = ev.clientX;
       lastMY = ev.clientY;
-      var s0 = m.start || 0,
+      var s1 = m.start || 0,
         now = Date.now(),
-        dir = hoverDir(k, s0, N, m.items.length);
+        dir = hoverDir(k, s1, N, m.items.length);
       if (dir && now - (m.scrollAt || 0) < 350) dir = 0;
       if (dir) m.scrollAt = now;
       m.idx = k;
-      drawMenu(s0 + dir);
+      drawMenu(s1 + dir);
     });
   });
 }
@@ -278,6 +345,7 @@ function menuKey(k) {
   } else if (k === 13) pickMenu();
   else if (k === 461 || k === 27 || k === 8) backMenu();
   else if (k === 37 && stack.length > 1) backMenu(); /* Left: back to the sections on the left (right-to-left languages swap it) */
+  else if (k === 39 && stack.length === 1 && m.items[m.idx] && m.items[m.idx].peek) pickMenu(); /* Right: into what the row opens */
   else return false;
   return true;
 }
@@ -636,12 +704,13 @@ function customizeMenu() {
     var nh = hiddenIds().length;
     return [
       { head: t('Home') },
-      { label: t('Dock'), icon: 'dock', stay: true, fn: dockMenu },
-      { label: t('Top buttons'), icon: 'buttons', stay: true, fn: topButtonsMenu },
-      { label: t('Hidden apps'), icon: 'hidden', sub: nh ? String(nh) : '', stay: true, fn: hiddenMenu },
+      { label: t('Dock'), icon: 'dock', stay: true, peek: true, fn: dockMenu },
+      { label: t('Top buttons'), icon: 'buttons', stay: true, peek: true, fn: topButtonsMenu },
+      { label: t('Hidden apps'), icon: 'hidden', sub: nh ? String(nh) : '', stay: true, peek: true, fn: hiddenMenu },
       {
         label: t('Continue watching'),
         icon: 'play',
+        peek: true,
         sub: cfg.watch && cfg.watch.on === false ? t('Off') : t('On'),
         stay: true,
         fn: watchMenu,
@@ -668,7 +737,13 @@ function customizeMenu() {
         },
       },
       { head: t('Look') },
-      { label: t('Theme'), icon: 'theme', stay: true, fn: themeMenu },
+      {
+        label: t('Theme'),
+        icon: 'theme',
+        stay: true,
+        desc: t('The look of Home: its colours, the clock, the dock and the apps, a picture.'),
+        fn: themeMenu,
+      },
       /* only where the theme has slots for cards */
       (TH.slots || []).length
         ? {
@@ -692,6 +767,7 @@ function customizeMenu() {
       {
         label: t('Wallpapers'),
         icon: 'photo',
+        peek: true,
         sub: cfg.wall && cfg.wall.on ? t('On') : t('Off'),
         stay: true,
         fn: wallMenu,
@@ -699,6 +775,7 @@ function customizeMenu() {
       {
         label: t('Screensaver'),
         icon: 'frame',
+        peek: true,
         sub: cfg.saver && cfg.saver.on ? t('On') : t('Off'),
         stay: true,
         fn: saverMenu,
@@ -799,196 +876,219 @@ function wallMenu() {
 }
 /* Screensaver (saver.js): the photo feed's photos, or the Wallpapers photos, when Home is left alone, instead of LG's screensaver. The
    photo feed is set up on a phone (the Wallpapers phone page, Photo feed), since the setup code is too long for a remote. */
+/* the screensaver's settings with the focused row's choice in place: what the menu's picture shows (SAVER.sample) */
+function saverPreview(box, cur) {
+  var s = {},
+    c = cfg.saver || {};
+  for (var k in c) s[k] = c[k];
+  if (cur && cur.pvk) s[cur.pvk] = cur.pvv;
+  SAVER.sample(box, s);
+}
 function saverMenu() {
-  openBuilt(t('Screensaver'), function () {
-    var s = cfg.saver || {},
-      after = s.after || 300,
-      secs = s.secs || 15,
-      AF = [60, 120, 300, 600, 900, 1800],
-      SE = [10, 15, 30, 60, 300, 900],
-      fam = (cfg.photoFeed && cfg.photoFeed.photos) || 0,
-      wall = +String((cfg.wallpapers && cfg.wallpapers.stamp) || '0').split(':')[0] || 0,
-      framed = s.style !== 'photos',
-      /* the frame's choices (saver.js): the first of each list is the default */
-      FR = 'walnut oak teak ash cherry greyoak blackash black white charcoal sand navy sage burgundy brass silver none'.split(' '),
-      FRN = {
-        walnut: t('Walnut'),
-        oak: t('Oak'),
-        teak: t('Teak'),
-        ash: t('Ash'),
-        cherry: t('Cherry'),
-        greyoak: t('Grey oak'),
-        blackash: t('Black ash'),
-        black: t('Black'),
-        white: t('White'),
-        charcoal: t('Charcoal'),
-        sand: t('Sand'),
-        navy: t('Navy'),
-        sage: t('Sage'),
-        burgundy: t('Burgundy'),
-        brass: t('Brass'),
-        silver: t('Silver'),
-        none: t('No frame'),
-      },
-      PR = ['modern', 'thin', 'bevel', 'classic'],
-      PRN = { modern: t('Modern'), thin: t('Thin'), bevel: t('Bevelled'), classic: t('Classic') },
-      MA = ['auto', 'white', 'cream', 'grey', 'charcoal', 'black', 'linen'],
-      MAN = {
-        auto: t('From the photo'),
-        white: t('White'),
-        cream: t('Cream'),
-        grey: t('Grey'),
-        charcoal: t('Charcoal'),
-        black: t('Black'),
-        linen: t('Linen'),
-      },
-      LA = ['two', 'three', 'one'],
-      LAN = { one: t('One (fills the frame unless portrait)'), two: t('Up to two side by side'), three: t('Up to three side by side') },
-      FI = ['none', 'canvas', 'painting'],
-      FIN = { none: t('None'), canvas: t('Canvas'), painting: t('Painting (canvas and varnish)') },
-      LB = ['under', 'plaque', 'off'],
-      LBN = { under: t('Under the photo'), plaque: t('Plaque'), off: t('Off') },
-      val = function (k, list) {
-        return list.indexOf(s[k]) >= 0 ? s[k] : list[0];
-      },
-      lb = s.label === false ? 'off' : s.label === 'plaque' ? 'plaque' : 'under',
-      set = function (k, v) {
-        var o = { on: s.on === true, after: after, secs: secs, clock: s.clock !== false };
-        if (s.style === 'photos') o.style = 'photos';
-        [
-          ['frame', FR],
-          ['profile', PR],
-          ['mat', MA],
-          ['layout', LA],
-          ['finish', FI],
-        ].forEach(function (p) {
-          var x = val(p[0], p[1]);
-          if (x !== p[1][0]) o[p[0]] = x;
-        });
-        if (lb !== 'under') o.label = lb === 'off' ? false : 'plaque';
-        if (k === 'label') {
-          delete o.label;
-          if (v !== 'under') o.label = v === 'off' ? false : 'plaque';
-        } else if (v === undefined) delete o[k];
-        else o[k] = v;
-        cfg.saver = o;
-        saveCfg();
-      },
-      /* a list to pick one from, with a tick at the chosen one; Back goes back */
-      choose = function (title, k, list, names) {
-        return {
-          label: title,
-          sub: names[val(k, list)],
-          fn: function () {
-            openBuilt(title, function () {
-              s = cfg.saver || {}; /* read again: the list is built again after each pick */
-              var now = val(k, list);
-              return list.map(function (x) {
-                return {
-                  label: names[x],
-                  sub: x === now ? '\u2713' : '',
-                  stay: true,
-                  fn: function () {
-                    set(k, x === list[0] ? undefined : x);
-                  },
-                };
-              });
-            });
-          },
-        };
-      },
-      cycle = function (title, k, list, names) {
-        var now = val(k, list);
-        return {
-          label: title,
-          sub: names[now],
-          stay: true,
-          fn: function () {
-            var nx = list[(list.indexOf(now) + 1) % list.length];
-            set(k, nx === list[0] ? undefined : nx);
-          },
-        };
-      };
-    return [
-      {
-        label: t('Use the screensaver'),
-        sub:
-          (s.on ? t('On') : t('Off')) +
-          ' \u00B7 ' +
-          (fam ? t(fam + ' photos from the feed') : wall ? t('Wallpapers photos') : t('no photos yet')),
-        stay: true,
-        fn: function () {
-          set('on', !s.on);
+  openBuilt(
+    t('Screensaver'),
+    function () {
+      var s = cfg.saver || {},
+        after = s.after || 300,
+        secs = s.secs || 15,
+        AF = [60, 120, 300, 600, 900, 1800],
+        SE = [10, 15, 30, 60, 300, 900],
+        fam = (cfg.photoFeed && cfg.photoFeed.photos) || 0,
+        wall = +String((cfg.wallpapers && cfg.wallpapers.stamp) || '0').split(':')[0] || 0,
+        framed = s.style !== 'photos',
+        /* the frame's choices (saver.js): the first of each list is the default */
+        FR = 'walnut oak teak ash cherry greyoak blackash black white charcoal sand navy sage burgundy brass silver none'.split(' '),
+        FRN = {
+          walnut: t('Walnut'),
+          oak: t('Oak'),
+          teak: t('Teak'),
+          ash: t('Ash'),
+          cherry: t('Cherry'),
+          greyoak: t('Grey oak'),
+          blackash: t('Black ash'),
+          black: t('Black'),
+          white: t('White'),
+          charcoal: t('Charcoal'),
+          sand: t('Sand'),
+          navy: t('Navy'),
+          sage: t('Sage'),
+          burgundy: t('Burgundy'),
+          brass: t('Brass'),
+          silver: t('Silver'),
+          none: t('No frame'),
         },
-      },
-      {
-        label: t('Starts after'),
-        sub: after === 60 ? t('1 minute') : t(after / 60 + ' minutes'),
-        stay: true,
-        fn: function () {
-          set('after', AF[(AF.indexOf(after) + 1) % AF.length]);
+        PR = ['modern', 'thin', 'bevel', 'classic'],
+        PRN = { modern: t('Modern'), thin: t('Thin'), bevel: t('Bevelled'), classic: t('Classic') },
+        MA = ['auto', 'white', 'cream', 'grey', 'charcoal', 'black', 'linen'],
+        MAN = {
+          auto: t('From the photo'),
+          white: t('White'),
+          cream: t('Cream'),
+          grey: t('Grey'),
+          charcoal: t('Charcoal'),
+          black: t('Black'),
+          linen: t('Linen'),
         },
-      },
-      {
-        label: t('New photo'),
-        sub: secs >= 60 ? t('Every %s min').replace('%s', secs / 60) : t('Every %s s').replace('%s', secs),
-        stay: true,
-        fn: function () {
-          set('secs', SE[(SE.indexOf(secs) + 1) % SE.length]);
+        LA = ['two', 'three', 'one'],
+        LAN = { one: t('One (fills the frame unless portrait)'), two: t('Up to two side by side'), three: t('Up to three side by side') },
+        FI = ['none', 'canvas', 'painting'],
+        FIN = { none: t('None'), canvas: t('Canvas'), painting: t('Painting (canvas and varnish)') },
+        LB = ['under', 'plaque', 'off'],
+        LBN = { under: t('Under the photo'), plaque: t('Plaque'), off: t('Off') },
+        val = function (k, list) {
+          return list.indexOf(s[k]) >= 0 ? s[k] : list[0];
         },
-      },
-      {
-        label: t('Time and date'),
-        sub: s.clock !== false ? t('On') : t('Off'),
-        stay: true,
-        fn: function () {
-          set('clock', s.clock === false);
+        lb = s.label === false ? 'off' : s.label === 'plaque' ? 'plaque' : 'under',
+        set = function (k, v) {
+          var o = { on: s.on === true, after: after, secs: secs, clock: s.clock !== false };
+          if (s.style === 'photos') o.style = 'photos';
+          [
+            ['frame', FR],
+            ['profile', PR],
+            ['mat', MA],
+            ['layout', LA],
+            ['finish', FI],
+          ].forEach(function (p) {
+            var x = val(p[0], p[1]);
+            if (x !== p[1][0]) o[p[0]] = x;
+          });
+          if (lb !== 'under') o.label = lb === 'off' ? false : 'plaque';
+          if (k === 'label') {
+            delete o.label;
+            if (v !== 'under') o.label = v === 'off' ? false : 'plaque';
+          } else if (v === undefined) delete o[k];
+          else o[k] = v;
+          cfg.saver = o;
+          saveCfg();
         },
-      },
-      /* the frame (saver.js): each photo like a print on a wall, or fitted whole on black */
-      {
-        label: t('Style'),
-        sub: framed ? t('Frame') : t('Photos'),
-        stay: true,
-        fn: function () {
-          set('style', framed ? 'photos' : 'frame');
+        /* a list to pick one from, with a tick at the chosen one; Back goes back */
+        choose = function (title, k, list, names) {
+          return {
+            label: title,
+            sub: names[val(k, list)],
+            fn: function () {
+              openBuilt(
+                title,
+                function () {
+                  s = cfg.saver || {}; /* read again: the list is built again after each pick */
+                  var now = val(k, list);
+                  return list.map(function (x) {
+                    return {
+                      label: names[x],
+                      sub: x === now ? '\u2713' : '',
+                      stay: true,
+                      /* the picture shows this choice while the row has the focus */
+                      pvk: k,
+                      pvv: x,
+                      fn: function () {
+                        set(k, x === list[0] ? undefined : x);
+                      },
+                    };
+                  });
+                },
+                list.indexOf(val(k, list)),
+                saverPreview
+              );
+            },
+          };
         },
-      },
-      framed ? choose(t('Frame'), 'frame', FR, FRN) : null,
-      framed && val('frame', FR) !== 'none' ? cycle(t('Profile'), 'profile', PR, PRN) : null,
-      framed ? choose(t('Mat'), 'mat', MA, MAN) : null,
-      framed ? cycle(t('Photos at a time'), 'layout', LA, LAN) : null,
-      framed ? cycle(t('Finish'), 'finish', FI, FIN) : null,
-      framed
-        ? {
-            label: t('Label'),
-            sub: LBN[lb],
+        cycle = function (title, k, list, names) {
+          var now = val(k, list);
+          return {
+            label: title,
+            sub: names[now],
             stay: true,
             fn: function () {
-              set('label', LB[(LB.indexOf(lb) + 1) % LB.length]);
+              var nx = list[(list.indexOf(now) + 1) % list.length];
+              set(k, nx === list[0] ? undefined : nx);
             },
-          }
-        : null,
-      { sep: true },
-      fam || wall
-        ? {
-            label: t('Show it now'),
-            fn: function () {
-              SAVER.start(true);
-            },
-          }
-        : null,
-      {
-        label: t('Photo feed...'),
-        sub: fam ? t(fam + ' photos') : t('set up on a phone or a computer'),
-        fn: function () {
-          launch('com.cleanyourtv.manager', { open: 'photofeed' }); /* straight to the QR code of the phone page's Photo feed tab */
+          };
+        };
+      return [
+        {
+          label: t('Use the screensaver'),
+          sub:
+            (s.on ? t('On') : t('Off')) +
+            ' \u00B7 ' +
+            (fam ? t(fam + ' photos from the feed') : wall ? t('Wallpapers photos') : t('no photos yet')),
+          stay: true,
+          fn: function () {
+            set('on', !s.on);
+          },
         },
-      },
-    ].filter(function (it) {
-      return it;
-    });
-  });
+        {
+          label: t('Starts after'),
+          sub: after === 60 ? t('1 minute') : t(after / 60 + ' minutes'),
+          stay: true,
+          fn: function () {
+            set('after', AF[(AF.indexOf(after) + 1) % AF.length]);
+          },
+        },
+        {
+          label: t('New photo'),
+          sub: secs >= 60 ? t('Every %s min').replace('%s', secs / 60) : t('Every %s s').replace('%s', secs),
+          stay: true,
+          fn: function () {
+            set('secs', SE[(SE.indexOf(secs) + 1) % SE.length]);
+          },
+        },
+        {
+          label: t('Time and date'),
+          sub: s.clock !== false ? t('On') : t('Off'),
+          stay: true,
+          fn: function () {
+            set('clock', s.clock === false);
+          },
+        },
+        /* the frame (saver.js): each photo like a print on a wall, or fitted whole on black */
+        {
+          label: t('Style'),
+          sub: framed ? t('Frame') : t('Photos'),
+          stay: true,
+          fn: function () {
+            set('style', framed ? 'photos' : 'frame');
+          },
+        },
+        framed ? choose(t('Frame'), 'frame', FR, FRN) : null,
+        framed && val('frame', FR) !== 'none' ? cycle(t('Profile'), 'profile', PR, PRN) : null,
+        framed ? choose(t('Mat'), 'mat', MA, MAN) : null,
+        framed ? cycle(t('Photos at a time'), 'layout', LA, LAN) : null,
+        framed ? cycle(t('Finish'), 'finish', FI, FIN) : null,
+        framed
+          ? {
+              label: t('Label'),
+              sub: LBN[lb],
+              stay: true,
+              fn: function () {
+                set('label', LB[(LB.indexOf(lb) + 1) % LB.length]);
+              },
+            }
+          : null,
+        { sep: true },
+        fam || wall
+          ? {
+              label: t('Show it now'),
+              /* the menu stays under the photos: the key that ends them comes back here */
+              stay: true,
+              fn: function () {
+                SAVER.start(true);
+              },
+            }
+          : null,
+        {
+          label: t('Photo feed...'),
+          sub: fam ? t(fam + ' photos') : t('set up on a phone or a computer'),
+          fn: function () {
+            launch('com.cleanyourtv.manager', { open: 'photofeed' }); /* straight to the QR code of the phone page's Photo feed tab */
+          },
+        },
+      ].filter(function (it) {
+        return it;
+      });
+    },
+    0,
+    saverPreview
+  );
 }
 /* hold OK on a card under an app: open it or the app, remove it (a whole show for Telemachus), or hide that app's row */
 function watchCardMenu(it) {

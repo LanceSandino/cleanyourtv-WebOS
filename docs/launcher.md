@@ -53,8 +53,10 @@ Netflix, YouTube); an app is listed only if that copy of it was on the screen, s
 
 ![Customize menu](screenshots/customize.jpg)
 
-**Customize** holds how Home looks, in four groups (**Home**, **Look**, **Photos**, **More**). Menus open as a panel on the right,
-with Home still in view on the left, so a change shows at once:
+**Customize** holds how Home looks, in four groups (**Home**, **Look**, **Photos**, **More**). Every menu opens the same way:
+Customize's list on the left with the focused section's rows showing on the right (Right or OK goes into them); a section keeps
+Customize's list on the left with that section lit. Lists with pictures show the focused one large on the left: the theme list each
+theme's screenshot, and the Screensaver its frame, mat and photos as an example that follows the focus down its Frame and Mat lists:
 
 - the **dock**: each app in it can be replaced (an app already in the dock swaps places), moved or removed, and **Add an app...**
   fills a free place. Holding OK on an app gives **Add to dock**, **Move left**, **Move right**, **Remove from dock** and **Hide app**;
@@ -65,7 +67,8 @@ with Home still in view on the left, so a change shows at once:
 - the **clock**: its format (automatic, 12 or 24 hour), where it stands (**Position**: the theme's place, top left or top centre), its
   **Size** (the theme's, smaller or larger) and, on a theme whose picture has a cut-out like Dawn, whether it stands **Behind the
   picture** or in front. Position, Size and Behind the picture stay when you change theme; over a holiday theme and over your own
-  photos the clock is always in front;
+  photos the clock is always in front, and over your photos a clock that stood behind the picture moves top left at a usual size, out
+  of the photo's way;
 - the **theme** (see [Themes](themes.md)) and the **accent colour**; the theme list shows each theme's screenshot;
 - **Wallpapers**: your own photos behind Home, and how often they change (see [Wallpapers](wallpapers.md));
 - **More settings...**, which opens the [manager app](manager.md) for everything the TV and the service do.
@@ -126,11 +129,16 @@ card shows at once (the phone page stays open for more changes, at most an hour)
 | Card | What it shows |
 |---|---|
 | Greeting | Good morning, afternoon or evening, with your name if you set one, and the date or the weather on a second line where there is room. |
-| Weather | The temperature and the sky now at a place you search for on the phone page, from Open-Meteo (free, no account), with the next three days if you like; °C or °F. The TV asks at most every 30 minutes and keeps the last answer for when the internet is away. In a short place (Glass's line above the clock) it is one line: the icon, the temperature, the place and the sky. |
+| Weather | The temperature and the sky now at a place you choose by its ZIP or postal code on the TV, or search for by name on the phone page, from Open-Meteo (free, no account), with the next three days if you like; °C or °F. The TV asks at most every 30 minutes and keeps the last answer for when the internet is away. In a short place (Glass's line above the clock) it is one line: the icon, the temperature, the place and the sky. |
 | Home Assistant entity | One entity with an icon, its state (On, Off, 8.4 °C) and its name. Select it with the remote (it joins the row of top buttons) and press OK to switch a light, switch, fan or automation, or to run a scene or script. Locks, alarms and covers are never switched from the TV. |
 | Home Assistant entities | A list of entities, one per line on the phone page, with an optional title. |
 | Home Assistant camera | A camera's picture, renewed every 10, 30 or 60 seconds while Home is shown. |
 | Text | Your own text. `{{greeting}}`, `{{time}}`, `{{date}}` and `{{weekday}}` are filled in and kept up to date, and `{{weather.temp}}` and `{{weather.text}}` with a weather card on Home; `**bold**`, `*italic*` and a line starting with `#` for a heading. In three sizes. |
+
+The weather card needs no phone: choose **Weather** for a place and the TV asks for a **ZIP code** at once (later: the place's row,
+then **Place**). Type it with the remote's numbers, LG's on-screen keyboard (OK on **ZIP code**) or the phone remote's **Type**, then
+**Look it up**: the code is searched in the TV's own country (any country when nothing is found there), and a place in the US also
+switches the card to °F. **Temperature** (°C or °F) and **Show** (now, or now and the next days) are rows there too.
 
 Names, texts and the other options are typed on your phone: **Cards** > **Set up from your phone** in the manager app shows a QR
 code. The page shows a form for each place, and **Edit as JSON** shows all cards at once, for example
