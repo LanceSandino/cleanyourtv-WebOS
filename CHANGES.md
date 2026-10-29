@@ -1066,3 +1066,42 @@ commit_ref: "fix/remote-keys (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T04:57:21Z"
 ```
+
+```yaml
+id: CU-20261029-4
+type: fix
+title: "Security: icons without the token, the bare file:// origin only on webOS 4, the update source and telnet shown"
+description: "From the owner-approved review of upstream's PRs (S14, S1, S3) and own-your-glass (telnet). server.js answered GET /icon/<id> only with the API token once it was required, but the pages load icons as images (crossOrigin), which cannot carry it: a newly installed app would have lost its icon; icons (GET of /icon/<id> only) are now answered without it. The bare file:// origin (webOS 4's Chromium 53) counts as one of our apps only when tvprofile says webOS 4 or the version is not known yet (helper.js passes bareFile). security.js: the update source (D/source can name another repository; ours or not), whether the token is required, and whether the Homebrew Channel's telnet server is off (its file /var/luna/preferences/webosbrew_telnet_disabled); in the manager status (security), the manager (Update source, Telnet with a switch that writes or removes that file, API token) and the Share log (Security section). Telnet changes only when the user switches it."
+impact: medium
+affected_modules: ["helper/server.js", "helper/helper.js", "helper/security.js", "helper/manager.js", "helper/sharelog.js", "helper/paths.js", "helper/updates.js", "manager/src/js/menu.js", "docs/security.md", "docs/manager.md", "tools/test/golden/api.json"]
+related_tests: ["tools/test/server.test.js (an app's icon is answered without the token, only as a GET of /icon/<id>; a bare file:// origin is our app on webOS 4, refused on webOS 10)", "tools/test/manager.test.js (the status says where updates come from, whether the token is required, and telnet's switch works both ways)", "tools/test/api.test.js (a bare file:// origin on webOS 10 is refused)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T13:03:49Z"
+```
+
+```yaml
+id: CU-20261029-5
+type: feature
+title: "Debloat: admanager its own group, the TV's country ad servers, LG's ad and promotion settings, HbbTV opt-in, pre-loaded copies closed, a check that it works with a repair"
+description: "From own-your-glass (the owner's yes table) and upstream issues 47 and 29. debloat-stop.sh/undo.sh: admanager is the group adapps (on by default; off with ads too, so a TV that had ads off keeps it; the owner says Disney+ works, HBO Max may need it off); the hosts block adds <country>.ad/.info.lgsmartad.com from LG's smartServiceCountryCode2 and writes out-of-date marked lines again (CYTV_HOSTS for the tests). lgsettings.js: the group lgads switches LG's own home promotion, screensaver ad, ad cookie, Smart Tips, sports alert, limit ad tracking, content recommendation, Live TV promotion, LivePlus and promotion-video settings (keys own-your-glass found on webOS 25; missing keys skipped; text or true/false as the TV keeps them), saving LG's values in D/lgsettings-saved.json and putting them back when switched off; the opt-in group hbbtv (options.debloatOn) switches HbbTV off, Do Not Track on and the device ID off. lgpreload.js closes the copies LG already pre-loaded (running, never on the screen in that process; closeByAppId, then killApp) and looks again when the TV wakes (the service's clock jumps). debloatcheck.js: GET /api/debloat/check per group (stubs mounted and not running, daemons inactive, hosts lines, pre-loading, LG's settings), shown in the manager (Debloat > Check that it works); 90 s after the start and 30 s after a wake a script group not in place runs debloat-stop.sh again and logs it. A test pins that the debloat never touches sdx or ss.gateway (own-your-glass F42, F48)."
+impact: medium
+affected_modules: ["scripts/debloat-stop.sh", "scripts/debloat-undo.sh", "helper/debloat.js", "helper/lgsettings.js", "helper/lgpreload.js", "helper/debloatcheck.js", "helper/manager.js", "helper/helper.js", "helper/paths.js", "manager/src/js/menu.js", "docs/debloat.md", "docs/manager.md"]
+related_tests: ["tools/test/scripts.test.js (admanager is its own group, off with ads, undone with ads; the country's ad servers, written again, nothing twice, all undone; never sdx or ss.gateway)", "tools/test/lgsettings.test.js", "tools/test/lgpreload.test.js (the pre-loaded copies are closed, the one someone opened stays)", "tools/test/debloatcheck.test.js"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T13:03:49Z"
+```
+
+```yaml
+id: CU-20261029-6
+type: feature
+title: "Upstream PRs 59, 66, 51 taken; watchdog restart limit; LG TV button; pushed placeholder apps hidden; the manager closes when left"
+description: "Reviewed cherry-picks with their authors kept and the AI co-author lines removed (D-20261028-1): PR 59 (JohnnyTax: the Inputs picker's tile colours like the launcher's), PR 66 (Lars: scripts/watchdog.sh starts a stopped service again, also after the fallback to LG's Home, keeps the crash log; upstream issue 65), PR 51 (Reveal80: docs on LG's two power-offs and network ad blocking; our troubleshooting wording kept). Ours on top: the watchdog starts the service at most five times in ten minutes, then notes it once, and keeps the first crash log (S7). core.js offers an LG TV top button (com.webos.app.livetv, upstream issue 69). apps.js leaves out LG's stub apps and the promotions it pushes as apps (ui30, webos.day, com.miniclip.eightballpool; own-your-glass). The manager closes itself after two minutes in the background, not while a job runs or a phone page it opened is in use (own-your-glass F51). docs/debloat.md says what an on-TV block cannot do (DNS over HTTPS)."
+impact: low
+affected_modules: ["picker/app/index.html", "scripts/watchdog.sh", "scripts/10-cleanyourtv-home", "scripts/uninstall.sh", "app/src/js/core.js", "app/src/js/clock.js", "helper/apps.js", "manager/src/js/input.js", "docs/troubleshooting.md", "docs/debloat.md", "docs/launcher.md"]
+related_tests: ["tools/test/scripts.test.js (the watchdog starts a stopped service, ends when uninstalled, and stops after the limit with one note)", "tools/test/pages.test.js (the picker's tile colours, from PR 59)", "tools/test/apps.test.js (placeholder and promotion apps left out)", "tools/oldchrome.js (manager closes when left)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T13:03:49Z"
+```

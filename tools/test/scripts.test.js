@@ -197,7 +197,7 @@ run(async () => {
     const body = script.replace(/^L=.*$/m, 'L=' + d).split(/\n# --no-block|\nfor b in \$bins/)[0] + '\necho "units:$units bins:$bins"\n';
     fs.writeFileSync(path.join(d, 's.sh'), body);
     const r = cp.spawnSync('sh', [path.join(d, 's.sh')].concat(args || []), { encoding: 'utf8' });
-    fs.rmSync(d, { recursive: true, force: true });
+    cp.spawnSync('rm', ['-rf', d]);
     return r.stdout.trim().replace(/\s+/g, ' ');
   };
   const all = pick(stop),
@@ -245,7 +245,7 @@ run(async () => {
     const twice = fs.readFileSync(hosts, 'utf8');
     runIt(undo, 'undo.sh');
     const after = fs.readFileSync(hosts, 'utf8');
-    fs.rmSync(d, { recursive: true, force: true });
+    cp.spawnSync('rm', ['-rf', d]);
     ok(
       /^127\.0\.0\.1 .*nl\.ad\.lgsmartad\.com.* us\.ad\.lgsmartad\.com us\.info\.lgsmartad\.com # cleanyourtv-debloat$/m.test(once) &&
         (once.match(/cleanyourtv-debloat/g) || []).length === 2 &&

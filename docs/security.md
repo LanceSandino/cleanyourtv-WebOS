@@ -17,6 +17,18 @@ local network on request, and an optional notification endpoint and the Sonos vo
 | 8792 | Cards page | The same, for the options of the cards on Home; see [Cards](launcher.md#cards) |
 | 8794 | Phone remote | Only while a phone is paired or pairing is open: the home network only, a key per phone (the TV keeps its SHA-256), requests from other pages refused; see [Phone remote](remote.md) |
 
+**Telnet.** The Homebrew Channel starts a telnet server, an open root shell for anyone on your network, unless the file
+`/var/luna/preferences/webosbrew_telnet_disabled` exists. The manager shows which, and **Telnet (Homebrew Channel)** switches it
+(from the next start of the TV); nothing changes it without you. The Share log says too.
+
+**Where updates come from.** Updates and themes come from this project's repository and are checked against the checksums of the
+release. A file on the TV (`/media/developer/cleanyourtv/source`, root only) can name another repository for testing; the manager
+and the Share log then show that repository with a warning, since its releases are someone else's.
+
+**Pictures without the token.** App icons are loaded by the pages as images, which cannot carry the API token, so `GET /icon/<id>`
+is answered without it; everything else needs it once it is required. The bare `file://` origin of webOS 4's Chromium 53 counts as
+one of our apps only on webOS 4 (and while the TV's version is not known yet).
+
 What the setup changes on the TV is listed in [What it changes on the TV](tv-changes.md).
 
 ## Network notifications

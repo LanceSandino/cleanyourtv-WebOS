@@ -10,7 +10,10 @@ same on every supported webOS version.
 - **Dock.** Up to four apps, large, on the first row.
 - **Top shelf.** The name of the focused app and an ambient glow taken from its icon.
 - **Grid.** All other apps, sorted by how often you use each one (or A to Z).
-- **Top buttons.** Inputs, Live TV, Settings and Customize, and a clock. The buttons you see are yours to change.
+- **Top buttons.** Inputs, Live TV, Settings and Customize, and a clock. The buttons you see are yours to change; **Add a button**
+  also offers **LG TV**, LG's own TV from the antenna or cable (Live TV is the playlist player).
+- **No pushed apps.** The placeholder apps LG pushes onto Home (a "stub" that downloads the real app when opened) and the
+  promotions it pushes as apps (Rakuten TV's `ui30`, Streaming Week) are left out of the dock and the grid.
 - **Open apps.** Optionally a green dot on the tile of every app that is open, as on the active input in the Inputs list: off by
   default, **Customize** > **Mark running apps** switches it on, in the launcher and in the Inputs picker. Back on the home screen lists
   the open apps to close them (see [Running apps](#running-apps)).

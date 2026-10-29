@@ -7,7 +7,7 @@ const { ok, tmp, req, memoryConfig, run } = require('./lib');
 
 run(async () => {
   const sbin = path.join(tmp, 'sbin');
-  fs.mkdirSync(sbin, { recursive: true });
+  if (!fs.existsSync(sbin)) fs.mkdirSync(sbin);
   for (const b of ['adoverlay-service', 'admanager', 'acr2', 'sportsalarm']) fs.writeFileSync(path.join(sbin, b), '');
   process.env.CYTV_SBIN = sbin;
   process.env.CYTV_HOSTS = path.join(tmp, 'hosts-check');

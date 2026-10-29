@@ -2870,6 +2870,8 @@ var PRESETS = [
   { label: 'Inputs', icon: 'inputs', action: 'inputs' },
   { label: 'Settings', icon: 'settings', app: 'com.palm.app.settings' },
   { label: 'Live TV', icon: 'tv', action: 'live' },
+  /* LG's own TV (the antenna or cable tuner); "Live TV" above is the playlist player (upstream issue 69) */
+  { label: 'LG TV', icon: 'tv', app: 'com.webos.app.livetv' },
 ];
 var ICONS = {
   inputs: '<path d="M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/>',
@@ -2926,7 +2928,9 @@ function barLabel(o) {
         ? t('Customize')
         : o.action === 'live'
           ? t('Live TV')
-          : o.label || '';
+          : o.app === 'com.webos.app.livetv'
+            ? t('LG TV')
+            : o.label || '';
 }
 /* the parts of a formatted time (Intl formatToParts) as [the time, its day period (AM/PM, or ''), whether the day period comes first].
    Chromium 68 (webOS 5) calls that part "dayperiod", Chromium 79 "dayPeriod". */

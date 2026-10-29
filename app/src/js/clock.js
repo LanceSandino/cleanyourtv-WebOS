@@ -19,7 +19,9 @@ function barLabel(o) {
         ? t('Customize')
         : o.action === 'live'
           ? t('Live TV')
-          : o.label || '';
+          : o.app === 'com.webos.app.livetv'
+            ? t('LG TV')
+            : o.label || '';
 }
 /* the parts of a formatted time (Intl formatToParts) as [the time, its day period (AM/PM, or ''), whether the day period comes first].
    Chromium 68 (webOS 5) calls that part "dayperiod", Chromium 79 "dayPeriod". */

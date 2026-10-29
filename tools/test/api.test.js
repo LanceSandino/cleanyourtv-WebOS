@@ -296,6 +296,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       'notifyapi',
       'sonos',
       'lgpreload',
+      'lgsettings',
+      'debloatcheck',
       'manager',
       'apps',
       'running',

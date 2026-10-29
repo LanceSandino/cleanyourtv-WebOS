@@ -293,6 +293,13 @@ const MANAGER_CHECK =
   'for(var i=0;i<rows.length;i++)if(rows[i].label==="Check for updates"){idx=i;act();break}var was=$("banner").textContent;' +
   'setTimeout(function(){var b=$("banner"),gone=b.style.display==="none",day=/2026/.test(document.body.textContent);' +
   'document.body.setAttribute("data-check",gone&&/Checking/.test(was)&&day?"ok":"bad was="+was+" banner="+b.textContent+" day="+day)},1500)},800)},300)})()</script>';
+// the manager left in the background: it closes itself after two minutes (it held memory and polled); not before (checked at 100 s
+// and 130 s of the page's timers: Date.now does not follow the virtual time). The outcome lands in data-left.
+const MANAGER_LEFT =
+  '<script>(function(){var closed=0;window.close=function(){closed=Date.now()};var go=setInterval(function(){if(typeof rows==="undefined"||!rows.length)return;clearInterval(go);' +
+  'Object.defineProperty(document,"hidden",{get:function(){return true}});var t0=Date.now(),e=document.createEvent("Event");e.initEvent("visibilitychange",true,true);document.dispatchEvent(e);' +
+  'setTimeout(function(){var early=closed;setTimeout(function(){var ok=!early&&!!closed;' +
+  'document.body.setAttribute("data-left",ok?"ok":"bad early="+early+" closed="+closed)},30000)},100000)},300)})()</script>';
 // Dawn (effects.foreground): the front of its wallpaper is a layer over the clock (after #top, above it) and under the apps (#view
 // comes forward), its picture loads, and the date stands above the time (clock.dateAbove). The outcome lands in data-front.
 const FG_CHECK =
@@ -337,6 +344,7 @@ const PAGES = [
   ['dawn front', 'app/index.html', /data-front="ok"/g, 1, 15000, FG_CHECK, 'dawn'],
   ['menu sections', 'app/index.html', /data-two="ok"/g, 1, 12000, MENU_TWO],
   ['manager update check', 'manager/app/index.html', /data-check="ok"/g, 1, 12000, MANAGER_CHECK],
+  ['manager closes when left', 'manager/app/index.html', /data-left="ok"/g, 1, 150000, MANAGER_LEFT],
   ['weather in a short place', 'app/index.html', /data-slim="ok"/g, 1, 12000, SLIM_WX, 'glass'],
 ];
 let famN = 0,

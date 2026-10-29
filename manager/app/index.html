@@ -3505,6 +3505,24 @@ function wantView() {
     openRemote();
   }
 }
+/* left in the background (another app or Home in front) for two minutes: the manager closes, so its memory and its status checks
+   stop (own-your-glass saw a hidden control app hold about 37 MB on webOS 25); not while an update or another job is running, and
+   not while a phone page it opened is still in use (its screen is open). Opening it again starts it afresh. */
+var hiddenT = 0;
+document.addEventListener('visibilitychange', function () {
+  clearTimeout(hiddenT);
+  if (!document.hidden) return;
+  hiddenT = setTimeout(function closeIfIdle() {
+    if (!document.hidden) return;
+    if ((st && st.job && st.job.state === 'working') || view === 'share') {
+      hiddenT = setTimeout(closeIfIdle, 60000);
+      return;
+    }
+    try {
+      window.close();
+    } catch (x) {}
+  }, 120000);
+});
 document.addEventListener('webOSRelaunch', function () {
   view = 'main';
   idx = 0;
