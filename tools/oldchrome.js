@@ -405,7 +405,8 @@ const FX_CHECK =
   'var still=!!cs&&cs.animationName==="none"&&!document.getElementById("fx");' +
   'var ok=!!fr&&behind&&pic&&still&&cs.pointerEvents==="none";' +
   'document.body.setAttribute("data-fx",ok?"ok":"bad frame="+!!fr+" behind="+behind+" pic="+pic+" still="+still)},800)},300)})()</script>';
-// [name, file, what it draws, how many at least, milliseconds of page time to wait, a script to run in it, a theme id]
+// [name, file, what it draws, how many at least, milliseconds of page time to wait, a script to run in it, a theme id]; a name is its
+// address too (spaces as dashes), so letters, digits and spaces only: Chromium 120 sends an apostrophe as %27
 const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
   ['manager', 'manager/app/index.html', /class="row[ "]/g, 5, 8000],
@@ -424,7 +425,7 @@ const PAGES = [
   ['hold ok', 'app/index.html', /data-hold="ok"/g, 1, 20000, HOLD_OK],
   ['lg row', 'app/index.html', /data-lg="ok"/g, 1, 15000, LG_ROW],
   ['lg app off', 'app/index.html', /data-lgoff="ok"/g, 1, 20000, LG_APP_OFF],
-  ["lg's picks off", 'app/index.html', /data-picks="ok"/g, 1, 20000, LG_PICKS],
+  ['lg picks off', 'app/index.html', /data-picks="ok"/g, 1, 20000, LG_PICKS],
   ['wallpaper fit', 'app/index.html', /data-fit="ok"/g, 1, 15000, WALL_FIT],
   ['dock row in glass', 'app/index.html', /data-dock="ok"/g, 1, 15000, DOCK_ROW, 'glass'],
   ['holiday frame', 'app/index.html', /data-fx="ok"/g, 1, 15000, FX_CHECK, 'halloween'],
