@@ -1,0 +1,347 @@
+<!doctype html>
+<!-- The TV's health over time, served by the hub (server.js, history.js). Its data needs this phone's paired key: the phone page at
+     the hub's address keeps it (localStorage cytv-remote-key, the same address), so pair the remote first. Plain script, no library. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#08090b" />
+    <title>TV health</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: #08090b;
+        color: #e8e9ed;
+        font:
+          15px -apple-system,
+          BlinkMacSystemFont,
+          system-ui,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+      }
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: max(14px, env(safe-area-inset-top)) 14px 28px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 4px 0 14px;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0;
+      }
+      a {
+        color: #8fb7ff;
+      }
+      .muted {
+        color: #8a8d96;
+        font-size: 13px;
+      }
+      nav {
+        display: flex;
+        background: #16171c;
+        border-radius: 12px;
+        padding: 3px;
+      }
+      nav button {
+        flex: 1;
+        border: 0;
+        background: none;
+        color: #9a9da6;
+        font: inherit;
+        font-size: 14px;
+        padding: 8px 10px;
+        border-radius: 9px;
+      }
+      nav button.on {
+        background: #2c2e35;
+        color: #fff;
+      }
+      .now {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        grid-gap: 10px;
+        margin: 14px 0;
+      }
+      .tile {
+        background: #15161b;
+        border-radius: 14px;
+        padding: 10px 12px;
+      }
+      .tile b {
+        display: block;
+        font-size: 22px;
+        margin-top: 2px;
+      }
+      .tile span {
+        color: #8a8d96;
+        font-size: 12px;
+      }
+      .card {
+        background: #15161b;
+        border-radius: 16px;
+        padding: 12px 12px 6px;
+        margin: 12px 0;
+      }
+      .card h2 {
+        font-size: 14px;
+        margin: 0 0 6px;
+        color: #c9cbd1;
+        font-weight: 600;
+      }
+      svg {
+        display: block;
+        width: 100%;
+        height: 120px;
+      }
+      .alert {
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin: 8px 0;
+        background: #3a1717;
+      }
+      .alert.cleared {
+        background: #16201a;
+        color: #9fb8a6;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      td {
+        padding: 6px 4px;
+        border-top: 1px solid #23252b;
+        vertical-align: top;
+      }
+      .dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        margin-right: 6px;
+      }
+      .g {
+        background: #30d158;
+      }
+      .a {
+        background: #ffb340;
+      }
+      .r {
+        background: #ff453a;
+      }
+      #msg {
+        padding: 14px;
+        border-radius: 12px;
+        background: #1d2a1f;
+        margin: 12px 0;
+      }
+      #msg.e {
+        background: #3a1717;
+      }
+      .hide {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>TV health</h1>
+        <a href="/" class="muted">Remote</a>
+      </header>
+      <nav id="range">
+        <button data-h="6">6 h</button><button data-h="24" class="on">24 h</button><button data-h="168">7 days</button
+        ><button data-h="720">30 days</button>
+      </nav>
+      <div id="msg" class="hide"></div>
+      <div class="now" id="now"></div>
+      <div id="alerts"></div>
+      <div id="charts"></div>
+      <div class="card" id="portsCard">
+        <h2>Open ports, read at most every hour</h2>
+        <table id="ports"></table>
+      </div>
+      <p class="muted">Kept on the hub, not on the TV: a sample every 25 seconds while the TV is on. Gaps are when it was off.</p>
+    </main>
+    <script>
+      var key = '';
+      try {
+        key = localStorage.getItem('cytv-remote-key') || '';
+      } catch (e) {}
+      var hours = 24;
+      function $(id) {
+        return document.getElementById(id);
+      }
+      function msg(t, bad) {
+        var m = $('msg');
+        m.textContent = t || '';
+        m.className = t ? (bad ? 'e' : '') : 'hide';
+      }
+      function el(tag, cls, text) {
+        var e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text !== undefined) e.textContent = text;
+        return e;
+      }
+      /* one line chart: the samples' values over time, broken where the TV was off (a gap of more than three steps) */
+      function chart(title, samples, k, unit, step, lo, hi) {
+        var pts = samples.filter(function (s) {
+          return typeof s[k] === 'number';
+        });
+        var card = el('div', 'card');
+        card.appendChild(el('h2', null, title));
+        if (!pts.length) {
+          card.appendChild(el('p', 'muted', 'No readings yet.'));
+          return card;
+        }
+        var t0 = samples[0].t,
+          t1 = samples[samples.length - 1].t,
+          vs = pts.map(function (s) {
+            return s[k];
+          });
+        var min = lo !== undefined ? Math.min(lo, Math.min.apply(null, vs)) : Math.min.apply(null, vs),
+          max = hi !== undefined ? Math.max(hi, Math.max.apply(null, vs)) : Math.max.apply(null, vs);
+        if (max === min) {
+          max += 1;
+          min -= 1;
+        }
+        var W = 800,
+          H = 120,
+          d = '',
+          prev = null;
+        pts.forEach(function (s) {
+          var x = ((s.t - t0) / Math.max(1, t1 - t0)) * W,
+            y = H - 6 - ((s[k] - min) / (max - min)) * (H - 16);
+          d += (prev === null || s.t - prev > step * 3 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+          prev = s.t;
+        });
+        var last = vs[vs.length - 1];
+        var svg =
+          '<svg viewBox="0 0 ' +
+          W +
+          ' ' +
+          H +
+          '" preserveAspectRatio="none"><path d="' +
+          d +
+          '" fill="none" stroke="#8fb7ff" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>';
+        card.insertAdjacentHTML('beforeend', svg);
+        card.appendChild(
+          el(
+            'p',
+            'muted',
+            'now ' + last + unit + ' · low ' + Math.min.apply(null, vs) + unit + ' · high ' + Math.max.apply(null, vs) + unit
+          )
+        );
+        return card;
+      }
+      function tile(label, value) {
+        var t = el('div', 'tile');
+        t.appendChild(el('span', null, label));
+        t.appendChild(el('b', null, value));
+        return t;
+      }
+      function draw(d) {
+        var s = d.samples || [],
+          last = d.last || {};
+        var now = $('now');
+        now.textContent = '';
+        now.appendChild(tile('Temperature', last.temp != null ? last.temp + ' °C' : '—'));
+        now.appendChild(tile('CPU', last.cpu != null ? last.cpu + '%' : '—'));
+        now.appendChild(tile('Memory free', last.mem != null ? last.mem + ' MB' : '—'));
+        now.appendChild(tile('Swap used', last.swap != null ? last.swap + '%' : '—'));
+        now.appendChild(tile('Wi-Fi', last.dbm != null ? last.dbm + ' dBm' : '—'));
+        now.appendChild(tile('Our service', last.rss != null ? last.rss + ' MB' : '—'));
+        var al = $('alerts');
+        al.textContent = '';
+        (d.alerts.active || []).forEach(function (a) {
+          al.appendChild(el('div', 'alert', a.text + ' · since ' + new Date(a.at).toLocaleString()));
+        });
+        (d.alerts.recent || [])
+          .filter(function (a) {
+            return a.state === 'cleared';
+          })
+          .slice(0, 3)
+          .forEach(function (a) {
+            al.appendChild(el('div', 'alert cleared', 'Passed: ' + a.text + ' · ' + new Date(a.at).toLocaleString()));
+          });
+        var c = $('charts');
+        c.textContent = '';
+        c.appendChild(chart('Temperature', s, 'temp', ' °C', d.step));
+        c.appendChild(chart('CPU, all cores', s, 'cpu', '%', d.step, 0, 100));
+        c.appendChild(chart('Memory free', s, 'mem', ' MB', d.step, 0));
+        c.appendChild(chart('Swap used', s, 'swap', '%', d.step, 0, 100));
+        c.appendChild(chart('Our service’s memory', s, 'rss', ' MB', d.step, 0));
+        c.appendChild(chart('Wi-Fi signal', s, 'dbm', ' dBm', d.step));
+        var tb = $('ports');
+        tb.textContent = '';
+        var ports = (d.ports && d.ports.ports) || [];
+        if (!ports.length) {
+          $('portsCard').className = 'card hide';
+          return;
+        }
+        $('portsCard').className = 'card';
+        ports.forEach(function (p) {
+          var tr = el('tr'),
+            a = el('td'),
+            b = el('td'),
+            w = el('td');
+          a.appendChild(el('span', 'dot ' + (p.tone || 'a')));
+          a.appendChild(document.createTextNode(p.proto + ' ' + p.port));
+          b.textContent = (p.what || '') + (p.bind ? ' · ' + p.bind : '');
+          w.textContent = p.how || '';
+          tr.appendChild(a);
+          tr.appendChild(b);
+          tr.appendChild(w);
+          tb.appendChild(tr);
+        });
+      }
+      function load() {
+        if (!key)
+          return msg(
+            'Open the TV remote on this phone first, at this same address, and pair it: then this page can show the history.',
+            true
+          );
+        fetch('/hub/history?hours=' + hours, { headers: { 'x-remote-key': key } })
+          .then(function (r) {
+            return r.json().then(function (j) {
+              j.status = r.status;
+              return j;
+            });
+          })
+          .then(
+            function (j) {
+              if (j.status !== 200) return msg(j.error || 'The hub did not answer.', true);
+              msg('');
+              draw(j);
+            },
+            function () {
+              msg('The hub does not answer. Is the phone on the home Wi-Fi?', true);
+            }
+          );
+      }
+      [].forEach.call(document.querySelectorAll('#range button'), function (b) {
+        b.onclick = function () {
+          [].forEach.call(document.querySelectorAll('#range button'), function (x) {
+            x.className = x === b ? 'on' : '';
+          });
+          hours = +b.getAttribute('data-h');
+          load();
+        };
+      });
+      load();
+      setInterval(function () {
+        if (!document.hidden) load();
+      }, 60000);
+    </script>
+  </body>
+</html>

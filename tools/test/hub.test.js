@@ -73,6 +73,9 @@ run(async () => {
   udp.on('message', m => packets.push(m));
   await new Promise(r => udp.bind(0, '127.0.0.1', r));
   const hub = hubMod.create({
+    limits: { tempSamples: 1, samples: 1 },
+    sampleMs: 3600000,
+    exposureMs: 3600000,
     tv: '127.0.0.1',
     tvPort,
     data,
@@ -197,6 +200,77 @@ run(async () => {
       got.j.ok === true,
     "the TV's link: its key pinned as a hash, a phone's request goes down it with its key and body, and the TV's answer comes back"
   );
+  // the history: the hub's own question down the link (self), a sample kept in the day's file, the alerts it raises
+  const MB = 1048576,
+    reply = (id, status, obj) =>
+      ask(
+        port,
+        'POST',
+        '/link/reply',
+        { id, status, headers: { 'content-type': 'application/json' }, body: Buffer.from(JSON.stringify(obj)).toString('base64') },
+        { 'x-link-key': K1 }
+      );
+  const nextLine = async n => {
+    for (let i = 0; i < 40 && lines.length <= n; i++) await sleep(25);
+    return lines[n];
+  };
+  let n0 = lines.length;
+  const sampled = hub.history.sample();
+  const q = await nextLine(n0);
+  await reply(q.id, 200, {
+    metrics: {
+      at: Date.now(),
+      cpu: { total: 12 },
+      temp: { c: 80 },
+      memory: { available: 500 * MB, swap: { total: 100, used: 95 } },
+      disks: [{ path: '/var', free: 30 * MB }],
+      self: { rss: 60 * MB },
+      emmc: { eol: 'normal' },
+    },
+    settings: {},
+  });
+  await sampled;
+  const day = new Date().toISOString().slice(0, 10),
+    kept2 = fs
+      .readFileSync(path.join(data, 'history', day + '.ndjson'), 'utf8')
+      .trim()
+      .split('\n')
+      .map(x => JSON.parse(x)),
+    al = JSON.parse(fs.readFileSync(path.join(data, 'alerts.json'), 'utf8'));
+  ok(
+    q.self === true &&
+      q.url === '/status-data' &&
+      kept2.length === 1 &&
+      kept2[0].temp === 80 &&
+      kept2[0].mem === 500 &&
+      kept2[0].swap === 95 &&
+      kept2[0].var === 30 &&
+      !!al.active.hot &&
+      !!al.active.swap &&
+      !!al.active.var &&
+      !al.active.memory,
+    "a sample: the hub's own question down the link, one small line in the day's file, and the alerts it crosses (hot, swap, /var)"
+  );
+  // the history needs a phone the TV knows: asked once down the link (/ping with its key), then kept as a hash
+  const noKey = await ask(port, 'GET', '/hub/history?hours=24');
+  n0 = lines.length;
+  const h1 = ask(port, 'GET', '/hub/history?hours=24', undefined, { 'x-remote-key': 'k'.repeat(43) });
+  const pq = await nextLine(n0);
+  await reply(pq.id, 200, { ok: true });
+  const hist = await h1;
+  const dash = await ask(port, 'GET', '/hub/dashboard');
+  ok(
+    noKey.code === 401 &&
+      pq.url === '/ping' &&
+      pq.headers['x-remote-key'] === 'k'.repeat(43) &&
+      !pq.self &&
+      hist.code === 200 &&
+      hist.j.samples.length === 1 &&
+      hist.j.alerts.active.length >= 3 &&
+      dash.code === 200 &&
+      /TV health/.test(dash.text),
+    'the history opens for a phone the TV vouched for (once, over the link), not without a key; the dashboard page is served'
+  );
   const wrong = await ask(port, 'GET', '/link', undefined, { 'x-link-key': K2 });
   const wrongReply = await ask(port, 'POST', '/link/reply', { id: 'x', status: 200 }, { 'x-link-key': K2 });
   ok(wrong.code === 403 && wrongReply.code === 403, 'a link or an answer with another key is refused');
@@ -204,6 +278,9 @@ run(async () => {
   await sleep(150);
   r = await ask(port, 'GET', '/ping', undefined, { 'x-remote-key': 'k'.repeat(43) });
   ok(r.code === 503 && r.j.off === true, 'the link gone (the TV asleep): off at once');
+  r = await ask(port, 'GET', '/hub/history?hours=24', undefined, { 'x-remote-key': 'k'.repeat(43) });
+  const stranger = await ask(port, 'GET', '/hub/history?hours=24', undefined, { 'x-remote-key': 'z'.repeat(43) });
+  ok(r.code === 200 && stranger.code === 401, 'with the TV asleep the history still opens for a phone it vouched for, not for another key');
 
   hub.close();
   udp.close();

@@ -11,13 +11,17 @@
 // the hub (GET /link, only from TV_HOST, with a link key the hub pins the first time it sees one, as a SHA-256 in its data folder), and
 // the hub writes each phone's request down it as a line of JSON; the TV answers with POST /link/reply. Without that link the hub passes
 // requests to the TV's own LAN server, as before.
+// While linked it also keeps the TV's health over time (history.js: a sample every 25 s, alerts), shown at GET /hub/dashboard; its
+// data (GET /hub/history?hours=) needs a phone's paired key, which the TV vouches for once over the link, then the hub keeps only its
+// SHA-256 for a week (data/keys.json), so the history opens while the TV sleeps. ALERT_WEBHOOK: where alerts are posted (optional).
 //   GET /hub/status -> {tv: 'on' | 'off', link: bool, mac: known?, page: cached?}    POST /wake -> {sent: true} | {error}
 'use strict';
 const http = require('http'),
   crypto = require('crypto'),
   dgram = require('dgram'),
   fs = require('fs'),
-  path = require('path');
+  path = require('path'),
+  history = require('./history');
 
 // an address of the home network: 10/8, 172.16/12, 192.168/16, link-local, loopback, IPv6 unique local and link-local
 function homeAddress(a) {
@@ -59,6 +63,8 @@ function create(opts) {
       arp: process.env.ARP_FILE || '/proc/net/arp',
       timeoutMs: 4000,
       wakeEveryMs: 10000,
+      webhook: process.env.ALERT_WEBHOOK || '',
+      keepDays: +process.env.HISTORY_DAYS || 30,
     },
     opts
   );
@@ -145,12 +151,67 @@ function create(opts) {
       console.log('hub: the TV link closed');
       for (const [, p] of pending) {
         clearTimeout(p.timer);
-        off(p.req, p.res);
+        if (p.cb) p.cb(null);
+        else off(p.req, p.res);
       }
       pending.clear();
     });
   }
   const PASS = ['x-remote-key', 'origin', 'host', 'content-type', 'accept-language'];
+  // a question of the hub's own down the link: {status, body}, or an error when the TV is not linked or does not answer
+  function linkAsk(msg) {
+    return new Promise((resolve, reject) => {
+      if (!tvLink) return reject(new Error('the TV is not linked'));
+      const id = crypto.randomBytes(9).toString('base64').replace(/[+/=]/g, ''),
+        timer = setTimeout(() => {
+          pending.delete(id);
+          reject(new Error('the TV did not answer in time'));
+        }, 8000);
+      pending.set(id, { timer, cb: r => (r ? resolve(r) : reject(new Error('the TV link closed'))) });
+      tvLink.write(JSON.stringify(Object.assign({ id, method: 'GET', headers: {}, ip: '127.0.0.1', body: '' }, msg)) + '\n');
+    });
+  }
+  // ---- the TV's health over time (history.js), and who may see it: a phone the TV knows ----
+  const hist = history.create({
+    data: o.data,
+    ask: url => linkAsk({ url, self: true }),
+    linked: () => !!tvLink,
+    sampleMs: o.sampleMs,
+    exposureMs: o.exposureMs,
+    keepDays: o.keepDays,
+    limits: o.limits,
+    webhook: o.webhook,
+  });
+  const phoneFile = path.join(o.data, 'keys.json');
+  let keys = {};
+  try {
+    keys = JSON.parse(fs.readFileSync(phoneFile, 'utf8')) || {};
+  } catch (_) {}
+  async function phoneKnown(req) {
+    const k = String(req.headers['x-remote-key'] || '');
+    if (!/^[A-Za-z0-9_-]{43}$/.test(k)) return false;
+    const h = sha(k);
+    if (keys[h] > Date.now()) return true;
+    if (!tvLink) return false;
+    let r = null;
+    try {
+      r = await linkAsk({
+        method: 'POST',
+        url: '/ping',
+        headers: { host: String(req.headers.host || ''), 'x-remote-key': k },
+        ip: String(req.socket.remoteAddress || ''),
+      });
+    } catch (_) {}
+    if (!r || r.status !== 200) return false;
+    keys[h] = Date.now() + 7 * 86400000;
+    for (const x of Object.keys(keys)) if (keys[x] < Date.now()) delete keys[x];
+    try {
+      fs.writeFileSync(phoneFile + '.tmp', JSON.stringify(keys), { mode: 0o600 });
+      fs.renameSync(phoneFile + '.tmp', phoneFile);
+    } catch (_) {}
+    return true;
+  }
+  const dashboard = () => read(path.join(__dirname, 'dashboard.html'));
   function viaLink(req, res) {
     const b = [];
     let size = 0;
@@ -197,6 +258,10 @@ function create(opts) {
       if (!p) return json(res, 404, { error: 'no such request' });
       pending.delete(String(m.id));
       clearTimeout(p.timer);
+      if (p.cb) {
+        p.cb({ status: +m.status || 502, body: Buffer.from(String(m.body || ''), 'base64').toString('utf8') });
+        return json(res, 200, { ok: true });
+      }
       const body = Buffer.from(String(m.body || ''), 'base64'),
         u = p.req.url.split('?')[0],
         status = +m.status || 502;
@@ -281,6 +346,22 @@ function create(opts) {
     if (u === '/link/reply' && req.method === 'POST') return linkReply(req, res);
     if (u === '/wake' && req.method === 'POST') return wake(req, res);
     if (u === '/hub/status') return json(res, 200, { tv: tvOn ? 'on' : 'off', link: !!tvLink, mac: !!mac, page: !!page });
+    if (u === '/hub/dashboard' && req.method === 'GET') {
+      res.writeHead(200, {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+        'x-frame-options': 'DENY',
+        'content-security-policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'",
+      });
+      return res.end(dashboard());
+    }
+    if (u === '/hub/history' && req.method === 'GET') {
+      return phoneKnown(req).then(okKey => {
+        if (!okKey) return json(res, 401, { error: 'open the TV remote on this phone first (it must be paired)' });
+        const hours = +(/[?&]hours=(\d+)/.exec(req.url) || [])[1] || 24;
+        json(res, 200, hist.data(hours));
+      });
+    }
     if (tvLink) return viaLink(req, res);
     forward(req, res);
   });
@@ -292,11 +373,13 @@ function create(opts) {
     close: () => {
       clearInterval(timer);
       clearInterval(beat);
+      hist.stop();
       if (tvLink) tvLink.destroy();
       agent.destroy();
       server.close();
     },
     learn,
+    history: hist,
   };
 }
 

@@ -107,7 +107,13 @@ function tvTab(on) {
   clearTimeout(tvT);
   tvSeq++;
   if (on) tvPoll();
+  /* the history over time lives on the hub (hub/history.js): its link only when this page came through one */
+  if (on && !tvHub) {
+    tvHub = 1;
+    fetch('/hub/status').then(function (r) { if (r.ok) document.getElementById('tvhist').className = 'tvhist'; }, function () {});
+  }
 }
+var tvHub = 0;
 document.addEventListener('visibilitychange', function () { if (tvOn) { if (document.hidden) { clearTimeout(tvT); tvSeq++; } else tvPoll(); } });
 var TONE = { g: t('guarded'), a: t('open by design'), r: t('open, no check') };
 function tvPorts() {
@@ -158,6 +164,9 @@ function html(T) {
   const card = (title, id) => '<div class=tvc><h3>' + T(title) + '</h3><div id=' + id + '></div></div>';
   return (
     '<section id=tv class=hide><div class=tvh><b id=tvup></b><span id=tvtemp></span></div>' +
+    '<a id=tvhist class=hide href="/hub/dashboard">' +
+    T('History and alerts') +
+    ' \u203a</a>' +
     '<div class=tvc><h3>' +
     T('Processor') +
     '</h3><div class=tvbig id=tvcpu>…</div><div id=tvcores></div></div>' +
@@ -184,7 +193,7 @@ function html(T) {
 
 // the tab's styles; u(n) is the page's unit (remotepage.js)
 const css = u =>
-  `#tv{display:block}.tvh{display:flex;align-items:baseline;justify-content:space-between;margin:0 ${u(4)} ${u(10)};font-size:${u(13)};color:#9a9ca5}
+  `#tv{display:block}.tvhist{display:block;margin:0 0 ${u(10)};padding:${u(12)} ${u(14)};border-radius:${u(14)};background:#1c2a3f;color:#cfe0ff;text-decoration:none;font-weight:600}.tvh{display:flex;align-items:baseline;justify-content:space-between;margin:0 ${u(4)} ${u(10)};font-size:${u(13)};color:#9a9ca5}
 .tvh b{font-weight:600;color:#c9cbd1}.tvc{margin-bottom:${u(12)};padding:${u(14)} ${u(16)};border-radius:${u(20)};background:#141519;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
 .tvc h3{margin:0 0 ${u(8)};font-size:${u(12)};font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#80838c}
 .tvc h4{margin:${u(14)} 0 ${u(6)};font-size:${u(12)};color:#80838c}.tvbig{font-size:${u(30)};font-weight:700;margin-bottom:${u(6)};font-variant-numeric:tabular-nums}

@@ -246,7 +246,8 @@ function create(ctx) {
       if (k === 'VOLUMEDOWN') return luna(AUDIO + 'volumeDown', {});
       if (k === 'MUTE') {
         const v = await luna(AUDIO + 'getVolume', {});
-        return luna(AUDIO + 'mute', { mute: !(v && v.volumeStatus && v.volumeStatus.muteStatus) });
+        // master/muteVolume {mute} (there is no master/mute: that call did nothing); seen muting the soundbar over eARC too
+        return luna(AUDIO + 'muteVolume', { mute: !(v && v.volumeStatus && v.volumeStatus.muteStatus) });
       }
       if (SPECIAL[k]) return luna('luna://com.webos.service.networkinput/sendSpecialKey', { key: SPECIAL[k] });
       return luna('luna://com.webos.service.networkinput/sendKeyCodes', { keyCode1: CODES[k] });
@@ -468,6 +469,25 @@ function create(ctx) {
       r.on('error', () => {});
       r.end(data);
     });
+    // the hub's own request (its TV health history, hub/server.js): only the read-only status, without a phone's key; the link
+    // itself is the proof (the hub's key, pinned there, and the TV's own connection). A phone's request never carries this mark
+    if (m.self === true) {
+      res.setHeader('content-type', 'application/json');
+      if (req.method !== 'GET' || statusdata.PATHS.indexOf(req.url) < 0) {
+        res.writeHead(403);
+        return res.end(JSON.stringify({ error: 'the hub may only read the status' }));
+      }
+      return Promise.resolve(tvStatus.get(req.url)).then(
+        r => {
+          res.writeHead((r && r.code) || 200);
+          res.end(JSON.stringify(r));
+        },
+        e => {
+          res.writeHead(502);
+          res.end(JSON.stringify({ error: String((e && e.message) || e) }));
+        }
+      );
+    }
     lan(req, res);
   }
   function listen() {

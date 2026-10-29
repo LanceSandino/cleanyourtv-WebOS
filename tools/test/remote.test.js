@@ -152,7 +152,7 @@ run(async () => {
         [A + 'volumeUp', {}],
         [A + 'volumeDown', {}],
         [A + 'getVolume', {}],
-        [A + 'mute', { mute: true }],
+        [A + 'muteVolume', { mute: true }],
       ]),
     "the volume goes to LG's audio service (which drives a soundbar on eARC), and Mute switches the mute it reads: " + JSON.stringify(calls)
   );
@@ -248,6 +248,8 @@ run(async () => {
           body: Buffer.from('{"key":"UP"}').toString('base64'),
         }) + '\n'
       );
+      rs.write(JSON.stringify({ id: 'a3', method: 'GET', url: '/status-data', headers: {}, ip: '127.0.0.1', body: '', self: true }) + '\n');
+      rs.write(JSON.stringify({ id: 'a4', method: 'POST', url: '/press', headers: {}, ip: '127.0.0.1', body: '', self: true }) + '\n');
       return;
     }
     const b = [];
@@ -278,6 +280,12 @@ run(async () => {
       !!far &&
       far.status === 403,
     "through the hub the TV listens on nothing, links out with its own key, and answers the hub's requests with the same checks (an address off the home network refused)"
+  );
+  const hubRead = replies.filter(x => x.id === 'a3')[0],
+    hubPress = replies.filter(x => x.id === 'a4')[0];
+  ok(
+    !!hubRead && hubRead.status !== 401 && hubRead.status !== 403 && !!hubPress && hubPress.status === 403,
+    "the hub's own request (self) may read the status without a phone's key, and do nothing else"
   );
   r = await call(R, '/api/remote/via', 'POST', { via: 'tv' });
   await sleep(200);

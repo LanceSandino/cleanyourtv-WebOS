@@ -1385,3 +1385,29 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T19:40:00Z"
 ```
+
+```yaml
+id: CU-20261029-31
+type: fix
+title: "Phone remote: Mute mutes (LG's master/muteVolume)"
+description: "The owner found the phone's Mute did nothing while the remote's did. remote.js sent com.webos.service.audio/master/mute, which does not exist (the audio service's methods, read with ls-monitor -i: /master/muteVolume, /UMI/mute); the schema in audiod wants {mute: boolean}. Mute now reads muteStatus (getVolume) and sends master/muteVolume {mute: !muted}. Seen on the owner's TV: muted, the Sonos on eARC reported muted too and the notify app opened for the mute badge; unmuted, both back."
+impact: low
+affected_modules: ["helper/remote.js"]
+related_tests: ["tools/test/remote.test.js (the volume goes to LG's audio service, and Mute switches the mute it reads through master/muteVolume)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T19:51:09Z"
+```
+
+```yaml
+id: CU-20261029-32
+type: feature
+title: "The TV's health over time and alerts, on the hub"
+description: "The owner asked for history graphs and alerts on the hub rather than the TV (D-20261029-6). hub/history.js: while the TV is linked, the hub asks it (its own request down the link, marked self) for /status-data every 25 s and keeps one small line per sample in data/history/<day>.ndjson (kept 30 days, HISTORY_DAYS), and /status-exposure every hour; alerts raised once and cleared when they pass (the TV at 75 °C for 5 minutes, under 150 MB free memory, swap 90% full, /var under 50 MB, the service at 250 MB, flash wear not normal, a debloat group not in place, a port newly open to the network, a port open with no check), kept in data/alerts.json and posted to ALERT_WEBHOOK when set. hub/dashboard.html (GET /hub/dashboard): graphs over 6 h to 30 days with gaps while the TV was off, the alerts and the open ports; its data (GET /hub/history) needs a phone's paired key, which the TV vouches for once over the link (/ping), then kept as a SHA-256 for a week (data/keys.json), so it opens while the TV sleeps. remote.js: a request the hub marks self may only GET the three status paths, without a phone's key; anything else is refused. statuspage.js: History and alerts in the phone's TV tab when the page came through a hub."
+impact: medium
+affected_modules: ["hub/history.js", "hub/server.js", "hub/dashboard.html", "hub/compose.yml", "helper/remote.js", "helper/statuspage.js", "docs/remote.md"]
+related_tests: ["tools/test/hub.test.js (a sample: the hub's own question down the link, one line in the day's file, the alerts it crosses; the history opens for a phone the TV vouched for once over the link, not without a key, and still while the TV sleeps but not for another key; the dashboard is served)", "tools/test/remote.test.js (the hub's own request may read the status without a phone's key, and do nothing else)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T19:51:09Z"
+```

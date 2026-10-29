@@ -85,5 +85,17 @@ address and pins the key the first time (a SHA-256 in its data folder), and pass
 with the same handler and the same checks as before (the phone's key, the home network, the page's origin). When the TV sleeps the
 link drops, so the hub knows at once that it is off. Switch it off to go back to the TV's own server.
 
+**History and alerts** (on the hub, not on the TV): while the TV is linked the hub asks it every 25 seconds for its health (about
+3.5 ms of the TV's time) and keeps a small line per sample in a file per day (about half a megabyte a day, kept 30 days:
+`HISTORY_DAYS`). Every hour it reads the open ports too. **History and alerts** in the phone remote's TV tab opens the page
+(`/hub/dashboard`): the temperature, CPU, free memory, swap, the service's memory and the Wi-Fi signal over 6 hours to 30 days, with
+gaps while the TV was off, the alerts and the open ports. The page needs a phone the TV knows: the hub asks the TV once over the link
+whether the phone's key is paired, then keeps only its SHA-256 for a week, so the history opens while the TV sleeps. Alerts, each
+raised once and cleared when it passes: the TV at 75 °C or more for 5 minutes, less than 150 MB of memory free, swap 90% full, less
+than 50 MB on `/var`, the service using 250 MB or more, flash wear other than normal, a debloat group no longer in place, a port newly
+open to the network, and a port open to the network with no check at all. With `ALERT_WEBHOOK` set in the hub's `.env` (an ntfy
+topic, a Home Assistant webhook...) each alert is also posted there as JSON `{title, message}`. The hub's own question to the TV may
+only read the status, never press a key.
+
 **Feedback.** The gear beside the status sets what each press does on this phone: a vibration (on by default; on an iPhone the tap
 of iOS 18 and later) and a click sound (off by default). A key also lights green when the TV took the press, red when it did not.
