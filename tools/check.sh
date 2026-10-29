@@ -2,7 +2,7 @@
 # Every check before a push or a release, in one command:
 #   sh tools/check.sh
 # 1. the tests (tools/test.js) under the Node.js of this computer. The TV has Node.js 16 (webOS 25, the oldest TV this fork supports:
-#    DECISIONS.md D-20261029-2); tools/test/service.test.js catches what a newer Node has and Node 16 does not;
+#    DECISIONS.md D-20261029-3); tools/test/service.test.js catches what a newer Node has and Node 16 does not;
 # 2. the pages built from their sources are up to date (tools/build-pages.js --check), and the translations in i18n/ (tools/i18n.js:
 #    how complete each language is; it fails only on a broken file);
 #    types, lint and formatting (tools/lint.js), when the development tools are installed (npm install);

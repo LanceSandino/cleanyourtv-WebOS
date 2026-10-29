@@ -10,7 +10,7 @@ body:
     id: tv
     attributes:
       label: TV model and webOS version
-      placeholder: OLED55CX9LA, webOS 5.5
+      placeholder: OLED65G26LA, webOS 25 (10.2.2)
     validations:
       required: true
   - type: input

@@ -1,5 +1,5 @@
 // The service as a whole: every file parses and loads on this Node, and nothing in it needs a Node newer than 16 (webOS 25 has 16.20.2,
-// the oldest TV this fork supports: DECISIONS.md D-20261029-2). The tests run on the Node of this computer, so the rules below catch
+// the oldest TV this fork supports: DECISIONS.md D-20261029-3). The tests run on the Node of this computer, so the rules below catch
 // what a newer Node has and Node 16 does not; ESLint (ecmaVersion 2022) catches newer syntax. Add to them when you find another.
 const fs = require('fs'),
   path = require('path'),

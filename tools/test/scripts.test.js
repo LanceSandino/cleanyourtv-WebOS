@@ -149,7 +149,7 @@ run(async () => {
       timeout: 60000,
     });
   const D = path.join(R, 'media/developer/cleanyourtv');
-  // below the floor (webOS 25, SDK 10, Node.js 16: DECISIONS.md D-20261029-2) the setup stops before it changes anything,
+  // below the floor (webOS 25, SDK 10, Node.js 16: DECISIONS.md D-20261029-3) the setup stops before it changes anything,
   // --force or not; only a TV whose version could not be read can be set up anyway
   let b;
   for (const c of [

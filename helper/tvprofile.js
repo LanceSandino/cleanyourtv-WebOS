@@ -2,7 +2,7 @@
 // What differs between TVs, in one place. The facts about a TV (model, firmware, webOS SDK version, LG's Home app, Node.js version)
 // go in, the decisions every other part follows come out:
 //   supported      the TV is at least FLOOR, the oldest webOS this fork runs on: webOS 25 (SDK 10), with Node.js 16 and Chromium 120
-//                  (DECISIONS.md D-20261029-2). Below it bootstrap.sh stops before it changes anything; a TV whose SDK version could not
+//                  (DECISIONS.md D-20261029-3). Below it bootstrap.sh stops before it changes anything; a TV whose SDK version could not
 //                  be read is not supported either (bootstrap.sh lets "Set up anyway" through for that case only). install.sh, which runs
 //                  before the package is on the TV, and bootstrap.sh's own Node.js check have the same numbers.
 //   floor          FLOOR in words, for the messages: "webOS 25 (SDK 10)".

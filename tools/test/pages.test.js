@@ -1,5 +1,5 @@
 // The pages that run on the TV (launcher, manager, picker, notification card): nothing newer than Chromium 120 (webOS 25, the oldest
-// TV this fork supports: DECISIONS.md D-20261029-2), and fixes that must not come back. The scripts written for Chromium 68 stay ES5
+// TV this fork supports: DECISIONS.md D-20261029-3), and fixes that must not come back. The scripts written for Chromium 68 stay ES5
 // until they are touched for another reason; new code may use what Chromium 120 has.
 const fs = require('fs'),
   path = require('path');

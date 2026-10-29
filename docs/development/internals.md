@@ -78,23 +78,28 @@ Nothing is written under `/usr`: the mount disappears at reboot. `DISABLE` in `/
   with the new version. If it does not, the previous files are restored.
 - **Dev builds.** Same flows, from the pre-release `dev`; the commit in a `BUILD` file is how two builds with one version number are told apart.
 
-## Older webOS versions
+## Supported webOS versions
 
-webOS 5 and 6 ship Node.js 8, and webOS 6 has Chromium 79.
+This fork supports **webOS 25 (SDK 10) and newer** ([DECISIONS.md](https://github.com/LanceSandino/cleanyourtv-WebOS/blob/main/DECISIONS.md),
+D-20261029-3). webOS 25 ships Node.js 16.20 and Chromium 120, webOS 26 Node.js 20 and Chromium 132. The floor is `FLOOR` in
+`helper/tvprofile.js` (the `supported` and `floor` decisions); `scripts/bootstrap.sh` checks the TV's Node.js and webOS version before
+it changes anything, and `install.sh` checks the same numbers before it downloads the package. An update that reaches an older TV is
+refused the same way and noted in `last-error.txt`, so the service keeps running its version.
 
-- `helper/netcompat.js` supplies `URL`, `URLSearchParams`, `crypto.randomInt`, `mkdir -p` and the `http(s).get(url, options)` form.
-- What differs between versions is decided in `helper/tvprofile.js`: the picker is started on demand and the notification window is an
-  `overlay` before webOS 25 (SDK 10); LG's native Home (webOS 5 to 23) is taken over by the stand-in, without restarting the app
-  manager. The table is in [Tested TVs](../tested-tvs.md#what-differs-between-webos-versions).
-- The pages do not use flex `gap`, which Chromium before 84 ignores: spacing between flex children is a sibling margin
-  (`.row > * + * { margin-left: 22px; }`). Grid `gap` is fine from Chromium 66. The focus ring of a tile is a `::before` with its own
-  radius, because Chromium before 94 draws an `outline` as a rectangle.
-- The service accepts the `file://<appId>-webos` origin that webOS 6 apps send, for our own apps and the Home slot only.
-- `scripts/reload-home.sh` restarts `webapp-mgr` on webOS 6, where a relaunch alone keeps the old page.
+The code still carries what the older versions needed, until it is cleaned up:
 
-!!! note "Checked by reports, not by the maintainer"
-    The maintainer's TV runs webOS 25. webOS 5, 6 and 23 are known from reports ([Tested TVs](../tested-tvs.md)). Every change is
-    checked under Node 8.12.0 and in Chromium 68 and 79 (`sh tools/check.sh --chromium`), not on a TV of those versions.
+- `helper/netcompat.js` supplies `URL`, `URLSearchParams`, `crypto.randomInt`, `mkdir -p` and the `http(s).get(url, options)` form,
+  which Node.js 8 lacked; the modules that use it keep working, and new code may use Node 16's own.
+- `helper/tvprofile.js` still decides for SDKs below 10 (the picker started on demand, the `overlay` notification window, the stand-in
+  for LG's native Home on webOS 5 to 23). Below the floor only a TV whose version could not be read gets that far ("Set up anyway").
+- The pages' older scripts are ES5, and flex children are spaced with sibling margins (flex `gap` came in Chromium 84). The focus ring
+  of a tile is a `::before` with its own radius, because Chromium before 94 drew an `outline` as a rectangle.
+- The service accepts the `file://<appId>-webos` origin that webOS 6 apps send, for our own apps and the Home slot only, and
+  `scripts/reload-home.sh` restarts `webapp-mgr` on webOS 6, where a relaunch alone kept the old page.
+
+!!! note "Checked on webOS 25"
+    The maintainer's TV runs webOS 25. Every change is checked by the tests on the current Node (with rules for what Node 16 lacks)
+    and in Chromium 120 (`sh tools/check.sh --chromium`, Chrome for Testing's headless shell 120.0.6099.109).
 
 ## Things that were tried
 

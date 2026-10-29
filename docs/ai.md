@@ -49,8 +49,8 @@ required: **Share log** and an [issue](https://github.com/LanceSandino/cleanyour
 
 **Understand the code behind a symptom**
 
-> Using AGENTS.md ("Where things are") find the code responsible for *symptom* in this repository. Explain how it works on webOS 5/6 (Node 8.12)
-> and on webOS 25, and list what could make it fail on a TV that is not the maintainer's.
+> Using AGENTS.md ("Where things are") find the code responsible for *symptom* in this repository. Explain how it works on webOS 25
+> (Node 16, Chromium 120) and on webOS 26, and list what could make it fail on a TV that is not the maintainer's.
 
 ## Part 2: fix the bug and send the fix
 
@@ -59,10 +59,10 @@ Codex, Cursor, Copilot agent mode and similar). The project's rules are in `AGEN
 
 1. **Fork and clone**, and make a branch: `git checkout -b fix-short-description`.
 2. **Reproduce the bug.** From the report, then from the code. Many bugs can be reproduced without a TV: the service runs under
-   `sh tools/check.sh` (the tests under Node 8.12.0, as on webOS 5 and 6, and the current Node), and the launcher page runs in Chrome against a stand-in service (see
-   `tools/theme-preview.mjs` for the idea).
+   `sh tools/check.sh` (the tests on the current Node), and the pages run in Chromium 120, the engine of webOS 25, against a stand-in
+   service (`sh tools/check.sh --chromium`).
 3. **Write a test that fails**, then fix the code until it passes. A test in `tools/test/` is expected whenever the bug can be
-   tested without a TV. Keep to the compatibility rules (Node 8.12 for the service, ES5 style for the pages).
+   tested without a TV. Keep to the compatibility rules (Node 16 for the service, Chromium 120 for the pages).
 4. **Run everything:** `sh tools/check.sh`, and `python3 ipk/build.py` to check that the package builds.
 5. **Try it on a TV** if you can: once your change is merged into `dev` it is in the dev build (the pre-release `dev`); in the manager
    app **Update channel** > **Dev builds** installs it, and **Update channel** > **Stable releases** goes back. A branch of your own
@@ -71,7 +71,7 @@ Codex, Cursor, Copilot agent mode and similar). The project's rules are in `AGEN
    TV and what you did not.
 6. **Open a pull request** with the template. Describe the cause, not only the change, and say that AI tools were used.
 
-What a pull request needs: the tests pass under Node 8.12, a new test for the bug where possible, the documentation page changed when the
+What a pull request needs: `sh tools/check.sh` passes, a new test for the bug where possible, the documentation page changed when the
 behaviour changed, no private data (addresses, tokens, playlist URLs, names), an honest note on what was verified on a real TV, and a line
 saying which AI tools helped. It is reviewed like any other pull request.
 
@@ -80,13 +80,13 @@ saying which AI tools helped. It is reviewed like any other pull request.
 **Fix a bug**
 
 > Read AGENTS.md. Issue: *paste the issue text and the masked report*. Reproduce the problem (a failing test in `tools/test/` if it can
-> be tested without a TV), find the cause, and make the smallest fix that follows the rules in AGENTS.md (Node 8.12 for the service, ES5 style
+> be tested without a TV), find the cause, and make the smallest fix that follows the rules in AGENTS.md (Node 16 for the service, Chromium 120
 > for the pages, no private data). Run `sh tools/check.sh` and `python3 ipk/build.py`. Update the documentation if behaviour changes.
 > Do not commit to main, do not release. Tell me what is verified and what only a real TV can verify.
 
 **Review a change**
 
-> Review my change against AGENTS.md: Node 8.12 compatibility, ES5 style in the pages, private data, missing tests, documentation that no
+> Review my change against AGENTS.md: Node 16 compatibility for the service, Chromium 120 for the pages, private data, missing tests, documentation that no
 > longer matches, and anything that could leave a TV in a state it cannot recover from (boot scripts, mounts, the update path).
 
 **Write the pull request text**

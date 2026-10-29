@@ -1,5 +1,5 @@
 // Runs the launcher, the manager and the Inputs picker in the browser engine of the oldest TV this fork supports: Chromium 120
-// (webOS 25; DECISIONS.md D-20261029-2), headless, against a stand-in for the TV's service on 127.0.0.1:8765. It fails when a page
+// (webOS 25; DECISIONS.md D-20261029-3), headless, against a stand-in for the TV's service on 127.0.0.1:8765. It fails when a page
 // throws a script error or does not draw what it should (tiles, rows, inputs). A current Chrome hides such problems: Chromium 120
 // lacks features it has.
 //   node tools/oldchrome.js                 every engine in ENGINES

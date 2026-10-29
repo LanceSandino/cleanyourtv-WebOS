@@ -36,7 +36,7 @@ services you choose (update checks go to GitHub). See [What it changes on the TV
 | | |
 |---|---|
 | Needs | An LG webOS TV that is **rooted** with the Homebrew Channel. Install from the Homebrew Channel, or with one command over SSH as `root`. |
-| webOS | **webOS 5 and newer** (2020 models and later). webOS 4 and older have no systemd and an old Node.js; setup stops before it changes anything. |
+| webOS | **webOS 25 and newer** (SDK 10: Node.js 16, Chromium 120). On an older TV the install and the setup stop before they change anything. |
 | Tested | LG OLED65G26LA on webOS 25. Other TVs are reported in [Tested TVs](tested-tvs.md). |
 | Not needed | A computer app, a server, a cloud account. The service runs on the TV. |
 

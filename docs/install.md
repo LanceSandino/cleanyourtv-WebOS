@@ -14,8 +14,9 @@ That is all. The launcher is LG's Home from then on.
 - An LG webOS TV rooted with the [Homebrew Channel](https://webosbrew.org).
 - SSH access to the TV as `root`, which the Homebrew Channel can enable (Settings > SSH Server).
 - Internet access on the TV (the install command downloads the package from GitHub).
-- **webOS 5 or newer** (2020 models and later). webOS 4 and older are not supported: they have no systemd and an old Node.js,
-  and the setup stops before it changes anything.
+- **webOS 25 or newer** (SDK 10 or later). This fork supports nothing older: webOS 24 and earlier ship an older Node.js or browser
+  engine (webOS 5 and 6: Node.js 8), and the install command and the setup stop there before they change anything. The upstream
+  project still supports webOS 5 and newer.
 - Firmware from the [tested TVs](tested-tvs.md), or one where LG's Home app is of the flutter or web kind; see
   [What happens on unlisted firmware](#unlisted-firmware).
 

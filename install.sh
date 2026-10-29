@@ -9,7 +9,7 @@
 #   CYTV_CHANNEL=dev  install the dev build (the pre-release dev, rebuilt on every change) and keep following it; the manager app
 #   can switch back to the stable releases (Update channel). CYTV_BRANCH=<anything>, from before the dev builds, means the same.
 
-# The oldest TV this release runs on: webOS 25 (SDK 10) with Node.js 16 (DECISIONS.md D-20261029-2; the same numbers as FLOOR in
+# The oldest TV this release runs on: webOS 25 (SDK 10) with Node.js 16 (DECISIONS.md D-20261029-3; the same numbers as FLOOR in
 # helper/tvprofile.js, which is not on the TV yet). Prints why this TV is older and succeeds, or fails when it is not; a version that
 # cannot be read is left to the setup (bootstrap.sh), which asks for "Set up anyway" then.
 MIN_SDK=10

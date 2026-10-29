@@ -64,7 +64,7 @@ detect() {
   sdk=$(echo "$info" | sed -n 's/.*"sdkVersion": *"\([^"]*\)".*/\1/p')
 }
 
-# ---- the oldest TV this version runs on (tvprofile.js: supported, floor; DECISIONS.md D-20261029-2) ----
+# ---- the oldest TV this version runs on (tvprofile.js: supported, floor; DECISIONS.md D-20261029-3) ----
 # Below it nothing is changed, --force or not. A TV whose version could not be read is set up only with --force ("Set up anyway"); an
 # update there goes on, because the TV was set up before and its Node.js passed the check above. A refused update leaves the running
 # service as it is and notes it in last-error.txt, so updates.js does not apply the same package again.

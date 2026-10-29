@@ -3,6 +3,11 @@
 CleanYourTV is written for rooted LG webOS TVs. Only a few models have been tried, and reports are welcome: open an issue with
 the output of **Share log** (see [Troubleshooting](troubleshooting.md#reporting-a-problem)) and say whether it worked.
 
+!!! warning "This fork supports webOS 25 and newer"
+    This fork runs only on **webOS 25 (SDK 10) and newer**: the service is written for Node.js 16 and the pages for Chromium 120.
+    On an older TV the install command and the setup stop before they change anything. The rows for webOS 24 and older below are
+    reports on the upstream project's versions, kept as history; those TVs need the upstream project.
+
 | TV | Firmware | webOS (SDK) | Status |
 |---|---|---|---|
 | OLED65G26LA | 33.23.05 | webOS 25 (10.2.2) | **Tested.** The maintainer's TV; everything in these pages was checked on it. |
@@ -52,8 +57,8 @@ LG names its webOS versions in two ways: a marketing name and the version the TV
 | webOS 25 | 2025 | 10.x |
 | webOS 26 | 2026 | 11.x |
 
-LG also updates older TVs to newer versions, so the SDK version, not the model year, is what counts. The service avoids features the older versions lack: webOS 5 and 6 ship **Node.js 8** (and Chromium 79 on webOS 6). The
-details are in [Internals](development/internals.md#older-webos-versions).
+LG also updates older TVs to newer versions, so the SDK version, not the model year, is what counts. This fork needs **SDK 10 or
+newer**; the details are in [Internals](development/internals.md#supported-webos-versions).
 
 ## What differs between webOS versions
 
@@ -67,7 +72,8 @@ from the SDK version and the kind of LG's Home app as it came with the TV. **Sha
 | Setup on unlisted firmware | **Set up anyway** needed | **Set up anyway** needed | continues by itself |
 | Input key | Inputs list started on each press | started on each press | kept ready over the running app on webOS 25 (SDK 10); started on each press on SDK 9 and 11 |
 | Picture notifications window | `overlay` | `overlay` | `topui` from SDK 10, `overlay` on SDK 9 |
-| Node.js, browser engine | Node.js 8; Chromium 68 (webOS 5) or 79 (webOS 6) | Node.js 12 (webOS 23 report) | Node.js 16 (webOS 25) |
+| Node.js, browser engine (LG) | Node.js 8.12; Chromium 68 (webOS 5) or 79 (webOS 6) | Node.js 12; Chromium 87 (webOS 22) or 94 (webOS 23) | Node.js 16 and Chromium 108 (webOS 24), Node.js 16 and Chromium 120 (webOS 25), Node.js 20 and Chromium 132 (webOS 26) |
+| Supported by this fork | no | no | from webOS 25 (SDK 10); not webOS 24 |
 
 The Home row follows LG's Home app, not the version number: a TV with a native Home gets the stand-in whatever its version, and a
 flutter or web Home gets the mount. How both work is in [What it changes on the TV](tv-changes.md#at-boot).

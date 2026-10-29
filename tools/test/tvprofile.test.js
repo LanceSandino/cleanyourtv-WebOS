@@ -97,7 +97,7 @@ run(async () => {
     "from the shell: is the firmware in the repository's compat.json"
   );
   ok(cli(['get', 'homeSupported', '--home', 'com.webos.app.home flutter']) === '1', "from the shell: LG's Home kind");
-  // the oldest webOS this fork runs on (DECISIONS.md D-20261029-2): bootstrap.sh asks, install.sh has the same numbers
+  // the oldest webOS this fork runs on (DECISIONS.md D-20261029-3): bootstrap.sh asks, install.sh has the same numbers
   ok(
     tv.FLOOR.sdk === 10 && tv.FLOOR.node === 16 && tv.decide({}).floor === 'webOS 25 (SDK 10)',
     'the floor is webOS 25: SDK 10 with Node.js 16 (and Chromium 120)'
