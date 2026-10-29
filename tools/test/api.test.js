@@ -4,7 +4,7 @@
 //   node tools/test/contract.js                  compare with the golden file
 //   node tools/test/contract.js --record         write the golden file (only when a change of the API is intended)
 //   node tools/test/contract.js --helper <dir>   run another copy of the service, e.g. an older version to record from
-// Runs on Node 8.12 and newer. Uses port 8765, like the service on the TV: stop anything else that listens there.
+// Runs on Node 16 and newer. Uses port 8765, like the service on the TV: stop anything else that listens there.
 'use strict';
 const fs = require('fs'),
   os = require('os'),

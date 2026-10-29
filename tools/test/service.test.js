@@ -1,5 +1,6 @@
-// The service as a whole: every file parses and loads on this Node, and nothing in it needs a Node newer than 8.12 (webOS 5 and 6).
-// The rules below catch what a newer Node accepts and Node 8 does not; AGENTS.md lists them.
+// The service as a whole: every file parses and loads on this Node, and nothing in it needs a Node newer than 16 (webOS 25 has 16.20.2,
+// the oldest TV this fork supports: DECISIONS.md D-20261029-2). The tests run on the Node of this computer, so the rules below catch
+// what a newer Node has and Node 16 does not; ESLint (ecmaVersion 2022) catches newer syntax. Add to them when you find another.
 const fs = require('fs'),
   path = require('path'),
   cp = require('child_process');
@@ -24,19 +25,24 @@ run(async () => {
       ok(false, 'loads ' + path.basename(f) + ': ' + e.message);
     }
   }
-  // code that works on a newer Node but not on Node 8
+  // code that works on a newer Node but not on Node 16: [what, why, files it does not apply to]
   const rules = [
-    [/\?\?|\?\.[A-Za-z_\[(]/, 'optional chaining or ??'],
-    [/\bfs\.(rmSync|cpSync)\b|\bfs\.promises\b|\bfs\/promises\b/, 'an fs function newer than Node 8'],
-    [/mkdirSync\([^)]*recursive/, 'mkdirSync({recursive}) (use netcompat.mkdirp)'],
-    [/\b(cp|child_process)\.(execFile|exec|spawn)\([^\n]*\btimeout:/, 'the timeout option on an asynchronous child process (use exec.js)'],
-    [/\bhttps?\.(get|request)\(\s*[^,()]+,\s*\{/, 'http(s).get(url, options, cb) (use netcompat or fetch.js)'],
-    [/\bcrypto\.randomInt\b/, 'crypto.randomInt (use netcompat.randomInt)'],
     [
-      /\.(flat|flatMap|matchAll|replaceAll|findLast)\(|\bObject\.fromEntries\b|\bPromise\.(allSettled|any)\b|\bglobalThis\b|\|\|=|&&=|\bstructuredClone\b/,
-      'a function or operator newer than Node 8',
+      /\.(findLast|findLastIndex|toSorted|toReversed|toSpliced|isWellFormed|toWellFormed)\(|\b(Object|Map)\.groupBy\b|\bPromise\.withResolvers\b|\bArray\.fromAsync\b/,
+      'an array or string function newer than Node 16',
     ],
-    [/catch\s*\{/, 'catch without a variable (Node 10)'],
+    [/\.(union|intersection|symmetricDifference|isSubsetOf|isSupersetOf|isDisjointFrom)\(/, 'a Set method newer than Node 16'],
+    [/\bstructuredClone\b|\bAbortSignal\.any\b/, 'a global function newer than Node 16'],
+    // the phone page (remotepage.js) is a page for the phone's browser kept in a string: fetch and navigator are the browser's there
+    [
+      /(^|[^.\w$])fetch\(|\bnew (Blob|File|FormData|Headers|Request|Response|WebSocket|ReadableStream|WritableStream|TransformStream|CompressionStream|DecompressionStream|BroadcastChannel)\(|\bnavigator\./,
+      'a global of Node 18 or newer (fetch.js downloads)',
+      ['remotepage.js'],
+    ],
+    [
+      /\bfs\.(globSync|glob)\b|\bprocess\.loadEnvFile\b|\butil\.(styleText|parseEnv)\b|\bcrypto\.hash\(/,
+      'a module function newer than Node 16',
+    ],
   ];
   const bad = [];
   for (const f of files) {
@@ -46,12 +52,10 @@ run(async () => {
       .forEach((line, i) => {
         const code = line.replace(/^\s*\/\/.*$/, '');
         if (!code.trim()) return;
-        for (const r of rules)
-          if (r[0].test(code) && !(base === 'netcompat.js' && /randomInt|recursive/.test(code)))
-            bad.push(base + ':' + (i + 1) + ' ' + r[1]);
+        for (const r of rules) if (r[0].test(code) && (r[2] || []).indexOf(base) < 0) bad.push(base + ':' + (i + 1) + ' ' + r[1]);
       });
   }
-  ok(!bad.length, 'nothing needs a Node newer than 8.12' + (bad.length ? ':\n  ' + bad.join('\n  ') : ''));
+  ok(!bad.length, 'nothing needs a Node newer than 16 (webOS 25)' + (bad.length ? ':\n  ' + bad.join('\n  ') : ''));
   // the TV's paths are in paths.js only, so a test (or another TV) can move them
   const fixed = [];
   for (const f of files.filter(f => !/(paths|jtool)\.js$/.test(f)))

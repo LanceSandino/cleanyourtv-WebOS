@@ -1,12 +1,14 @@
-// Runs the launcher, the manager and the Inputs picker in the browser engines of older TVs: Chromium 68 (webOS 5) and Chromium 79
-// (webOS 6), headless, against a stand-in for the TV's service on 127.0.0.1:8765. It fails when a page throws a script error or does
-// not draw what it should (tiles, rows, inputs). A current Chrome hides such problems: these versions lack features it has.
-//   node tools/oldchrome.js                 both engines
+// Runs the launcher, the manager and the Inputs picker in the browser engine of the oldest TV this fork supports: Chromium 120
+// (webOS 25; DECISIONS.md D-20261029-2), headless, against a stand-in for the TV's service on 127.0.0.1:8765. It fails when a page
+// throws a script error or does not draw what it should (tiles, rows, inputs). A current Chrome hides such problems: Chromium 120
+// lacks features it has.
+//   node tools/oldchrome.js                 every engine in ENGINES
 //   node tools/oldchrome.js --shots <dir>   also saves a screenshot of each page per engine
-//   node tools/oldchrome.js --engine 68     one engine only (the one whose name has that text)
+//   node tools/oldchrome.js --engine 120    one engine only (the one whose name has that text)
 //   node tools/oldchrome.js --page strip    only the pages whose name has that text
-// The engines are Chromium snapshots from Google's storage, downloaded once (about 100 MB each), checked against pinned SHA-256 sums
-// and kept in ~/.cache/cleanyourtv. Linux x64 and macOS (x64, or Apple silicon with Rosetta). Needs curl and unzip. Runs on Node 8.
+// The engine is Chrome for Testing's headless shell (the headless Chromium of that version, without the browser around it) from
+// Google's storage, downloaded once (about 90 MB), checked against pinned SHA-256 sums and kept in ~/.cache/cleanyourtv. Linux x64 and
+// macOS (x64 and Apple silicon). Needs curl and unzip.
 'use strict';
 const fs = require('fs'),
   os = require('os'),
@@ -17,29 +19,29 @@ const fs = require('fs'),
 
 const ROOT = path.join(__dirname, '..');
 const CACHE = path.join(process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache'), 'cleanyourtv');
-// [name, snapshot revision, sha256 of the zip per platform]
+// [name, Chrome for Testing version, sha256 of chrome-headless-shell-<platform>.zip per platform]
 const ENGINES = [
   [
-    'Chromium 68 (webOS 5)',
-    '555668',
+    'Chromium 120 (webOS 25)',
+    '120.0.6099.109',
     {
-      mac: '22374cff2109946143bdabd68b93730d0d09d02fc26e9dc9255008824b8ea13b',
-      linux: '4cc31551f7c2d0e6fb37c4678448d2f62fbbf8bd2134f06128f54e21466d4b3c',
-    },
-  ],
-  [
-    'Chromium 79 (webOS 6)',
-    '706915',
-    {
-      mac: 'e6b754d211e4ad264c163b5a9e2fda9b2c07ab014402e8ee29e97de620ccefe6',
-      linux: '647c9f1a9be953a7bdbcb59ec52fece3ef192945a674443114572e98b56b7e59',
+      'mac-x64': '0fdba0a29032265e38ca080e05908b43a8d630112e686b7844ee47e0ba6a553a',
+      'mac-arm64': 'a9a0c985fd0bf2676b2cd956b2c51f37cb6b9c13edde8e732f346fb17c1a59c9',
+      linux64: '8c42700890dbb798df2cadcbe4b055f3f08568048ab07d5425f0c4aee963e5cc',
     },
   ],
 ];
-const PLAT = process.platform === 'darwin' ? 'mac' : process.platform === 'linux' && process.arch === 'x64' ? 'linux' : '';
+const PLAT =
+  process.platform === 'darwin'
+    ? process.arch === 'arm64'
+      ? 'mac-arm64'
+      : 'mac-x64'
+    : process.platform === 'linux' && process.arch === 'x64'
+      ? 'linux64'
+      : '';
 const args = process.argv.slice(2);
 const shots = args.indexOf('--shots') >= 0 ? path.resolve(args[args.indexOf('--shots') + 1]) : '';
-// --engine 68: only the engines whose name has that text (Chromium 79 crashes at startup on newer macOS; CI runs both)
+// --engine 120: only the engines whose name has that text
 const only = args.indexOf('--engine') >= 0 ? String(args[args.indexOf('--engine') + 1] || '') : '';
 // --page strip: only the pages whose name has that text (to look at one check again; check.sh and CI run them all)
 const pageOnly = args.indexOf('--page') >= 0 ? String(args[args.indexOf('--page') + 1] || '') : '';
@@ -50,24 +52,15 @@ const ok = (c, name) => {
   if (!c) failed++;
 };
 
-function engine(rev, sums) {
-  const dir = path.join(CACHE, 'chromium-' + PLAT + '-' + rev);
-  const bin =
-    PLAT === 'mac'
-      ? path.join(dir, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium')
-      : path.join(dir, 'chrome-linux', 'chrome');
+function engine(version, sums) {
+  const dir = path.join(CACHE, 'chrome-headless-shell-' + version + '-' + PLAT);
+  const bin = path.join(dir, 'chrome-headless-shell-' + PLAT, 'chrome-headless-shell');
   if (fs.existsSync(bin)) return bin;
   cp.spawnSync('mkdir', ['-p', dir]);
-  const zip = path.join(CACHE, 'chrome-' + PLAT + '-' + rev + '.zip');
+  const zip = dir + '.zip';
   if (!fs.existsSync(zip)) {
     const url =
-      'https://storage.googleapis.com/chromium-browser-snapshots/' +
-      (PLAT === 'mac' ? 'Mac' : 'Linux_x64') +
-      '/' +
-      rev +
-      '/chrome-' +
-      PLAT +
-      '.zip';
+      'https://storage.googleapis.com/chrome-for-testing-public/' + version + '/' + PLAT + '/chrome-headless-shell-' + PLAT + '.zip';
     console.log('downloading ' + url);
     const r = cp.spawnSync('curl', ['-fsSL', url, '-o', zip + '.part'], { stdio: 'inherit' });
     if (r.status !== 0) throw new Error('download failed');
@@ -79,7 +72,7 @@ function engine(rev, sums) {
     throw new Error('checksum mismatch for ' + zip);
   }
   if (cp.spawnSync('unzip', ['-qo', zip, '-d', dir], { stdio: 'inherit' }).status !== 0) throw new Error('unzip failed');
-  if (PLAT === 'mac') cp.spawnSync('xattr', ['-dr', 'com.apple.quarantine', dir]);
+  if (/^mac/.test(PLAT)) cp.spawnSync('xattr', ['-dr', 'com.apple.quarantine', dir]);
   return bin;
 }
 
@@ -115,7 +108,7 @@ const themeOf = id =>
 let pageTheme = null;
 // in front of the page's own script: report script errors on <html data-errors>, and the TV's webOSSystem with no launch parameters.
 // The page also sends its own copy of itself to the stand-in (/__dom): once its check has an outcome (data-...="ok" or "bad..."), and
-// for the pages that only draw, three seconds after the load and then every ten. The old headless Chromium builds now and then cannot hand the page over at
+// for the pages that only draw, three seconds after the load and then every ten. Headless Chromium (68 and 79 often) now and then cannot hand the page over at
 // the end ("Failed to serialize document: Uncaught"), and then this copy is used (or the reason the page could not copy itself is
 // shown). One copy at a time: a copy sent every second kept requests open when the browser handed the page over, which made it fail
 // more often.
@@ -397,8 +390,7 @@ const FX_CHECK =
   'var still=!!cs&&cs.animationName==="none"&&!document.getElementById("fx");' +
   'var ok=!!fr&&behind&&pic&&still&&cs.pointerEvents==="none";' +
   'document.body.setAttribute("data-fx",ok?"ok":"bad frame="+!!fr+" behind="+behind+" pic="+pic+" still="+still)},800)},300)})()</script>';
-// [name, file, what it draws, how many at least, milliseconds of page time to wait, a script to run in it, a theme id, engines it is left
-// out for on Linux]
+// [name, file, what it draws, how many at least, milliseconds of page time to wait, a script to run in it, a theme id]
 const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
   ['manager', 'manager/app/index.html', /class="row[ "]/g, 5, 8000],
@@ -425,8 +417,8 @@ const PAGES = [
   ['screensaver menu', 'app/index.html', /data-pv="ok"/g, 1, 12000, SAVER_MENU],
   ['dawn clock with photos', 'app/index.html', /data-wpclock="ok"/g, 1, 15000, WP_CLOCK, 'dawn'],
   ['magic remote wheel', 'app/index.html', /data-wheel="ok"/g, 1, 12000, WHEEL],
-  ['watch strip in dawn', 'app/index.html', /data-strip="ok"/g, 1, 15000, STRIP, 'dawn', /Chromium 68/],
-  ['watch strip fits in dawn', 'app/index.html', /data-sfit="ok"/g, 1, 20000, STRIP_FIT, 'dawn', /Chromium 68/],
+  ['watch strip in dawn', 'app/index.html', /data-strip="ok"/g, 1, 15000, STRIP, 'dawn'],
+  ['watch strip fits in dawn', 'app/index.html', /data-sfit="ok"/g, 1, 20000, STRIP_FIT, 'dawn'],
   ['manager update check', 'manager/app/index.html', /data-check="ok"/g, 1, 12000, MANAGER_CHECK],
   ['manager closes when left', 'manager/app/index.html', /data-left="ok"/g, 1, 150000, MANAGER_LEFT],
   ['weather in a short place', 'app/index.html', /data-slim="ok"/g, 1, 12000, SLIM_WX, 'glass'],
@@ -620,7 +612,7 @@ function run(bin, url, extra, budget) {
 
 (async () => {
   if (!PLAT) {
-    console.log('skipped: old Chromium builds are fetched for Linux x64 and macOS only');
+    console.log('skipped: the Chromium builds are fetched for Linux x64 and macOS only');
     return;
   }
   const srv = await serve().catch(e => {
@@ -633,12 +625,6 @@ function run(bin, url, extra, budget) {
       const bin = engine(e[1], e[2]);
       for (const p of PAGES.filter(x => !pageOnly || x[0].indexOf(pageOnly) >= 0)) {
         const url = 'http://127.0.0.1:8765/' + p[0].replace(/ /g, '-') + '.html';
-        // Chromium 68 for Linux hangs on Dawn's watch strip pages (every time in CI and in a container since 1.6.30, while 68 for macOS
-        // and 79 pass them): left out there, and said so, until the old engines go
-        if (p[7] && process.platform === 'linux' && p[7].test(e[0])) {
-          console.log('skip ' + e[0] + ': ' + p[0] + ' (this engine hangs on it on Linux; checked on macOS and in Chromium 79)');
-          continue;
-        }
         // headless Chromium on Linux now and then fails to hand over the page ("Failed to serialize document"), hangs or hands it over
         // before the page drew its content: try again
         let r = null;
@@ -699,7 +685,12 @@ function run(bin, url, extra, budget) {
   }
   srv.close();
   console.log(
-    failed ? failed + ' check(s) failed in old Chromium' : only ? 'the pages work in ' + only : 'the pages work in Chromium 68 and 79'
+    failed
+      ? failed + ' check(s) failed in ' + ENGINES.map(x => x[0]).join(', ')
+      : 'the pages work in ' +
+          ENGINES.filter(x => !only || x[0].indexOf(only) >= 0)
+            .map(x => x[0])
+            .join(', ')
   );
   process.exit(failed ? 1 : 0);
 })();

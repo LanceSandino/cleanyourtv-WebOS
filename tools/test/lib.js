@@ -1,5 +1,5 @@
 // Shared by the tests in tools/test: each *.test.js is a script that runs on its own (node tools/test/<name>.test.js) and is run by
-// tools/test.js under Node 8.12 (webOS 5 and 6) and the current Node. It prints one line per check ("ok   ..." or "FAIL ...") and
+// tools/test.js under the Node of this computer. It prints one line per check ("ok   ..." or "FAIL ...") and
 // exits with 1 when a check failed. Nothing leaves this machine: servers are local stand-ins.
 'use strict';
 const fs = require('fs'),

@@ -2,7 +2,7 @@
 //   node tools/test.js                 all tests with this Node
 //   node tools/test.js live theme      only these
 //   node tools/test.js --quiet         print only failures and the summary
-// tools/check.sh runs this with Node 8.12 (webOS 5 and 6) and with the current Node. Runs on Node 8.
+// tools/check.sh runs this with the Node of this computer (16 or newer; the TV has Node 16).
 'use strict';
 const fs = require('fs'),
   path = require('path'),

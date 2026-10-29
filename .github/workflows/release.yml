@@ -39,12 +39,12 @@ jobs:
         with:
           ref: refs/heads/dev
           fetch-depth: 0
-      - name: Cache Node 8 and the old Chromium builds
+      - name: Cache the Chromium 120 build (webOS 25)
         if: steps.gate.outputs.go == '1'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.cache/cleanyourtv
-          key: cytv-engines-${{ runner.os }}-node8.12.0-chromium555668-706915
+          key: cytv-engines-${{ runner.os }}-chrome-headless-shell-120.0.6099.109
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         if: steps.gate.outputs.go == '1'
         with:

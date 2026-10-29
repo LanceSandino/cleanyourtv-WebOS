@@ -1,21 +1,21 @@
-// The pages that run on the TV (launcher, manager, picker, notification card): nothing newer than Chromium 68 (webOS 5), and fixes that
-// must not come back.
+// The pages that run on the TV (launcher, manager, picker, notification card): nothing newer than Chromium 120 (webOS 25, the oldest
+// TV this fork supports: DECISIONS.md D-20261029-2), and fixes that must not come back. The scripts written for Chromium 68 stay ES5
+// until they are touched for another reason; new code may use what Chromium 120 has.
 const fs = require('fs'),
   path = require('path');
 const { root, ok, run } = require('./lib');
 
 run(async () => {
   const pages = ['app', 'manager/app', 'picker/app', 'notify/app'].map(d => path.join(root, d, 'index.html'));
+  // what Chromium 120 does not have yet: add to it when you find another
   const rules = [
-    [/\?\?|\?\.[A-Za-z_\[(]/, 'optional chaining or ??'],
-    [/\|\|=|&&=/, 'logical assignment'],
     [
-      /\.(flat|flatMap|matchAll|replaceAll|findLast)\(|\.at\(-?\d|\bObject\.fromEntries\b|\bPromise\.(allSettled|any)\b|\bglobalThis\b|\bstructuredClone\b|\bAbortSignal\.timeout\b/,
-      'a function newer than Chromium 68',
+      /\bArray\.fromAsync\b|\.(union|intersection|symmetricDifference|isSubsetOf|isSupersetOf|isDisjointFrom)\(|\bPromise\.try\b|\bURL\.parse\(|\bRegExp\.escape\b|\bError\.isError\b|\bFloat16Array\b|\.(fromBase64|toBase64|fromHex|toHex)\(|\bIntl\.DurationFormat\b/,
+      'a function newer than Chromium 120',
     ],
     [
-      /\baspect-ratio\s*:|:is\(|:where\(|:has\(|\binset\s*:|:focus-visible|\bcontainer-type|color-mix\(|\b\d+d?v?[sd]vh\b|@layer\b/,
-      'CSS newer than Chromium 68',
+      /light-dark\(|\bfield-sizing\b|\banchor-name\b|\bposition-anchor\b|\bposition-area\b|@position-try\b|@view-transition\b|:state\(|\bscrollbar-(width|color)\b|\binterpolate-size\b|\bcalc-size\(|\btext-box(-trim|-edge)?\s*:|::details-content|\bsibling-(index|count)\(|::scroll-(marker|button)|@function\b|\breading-flow\b/,
+      'CSS newer than Chromium 120',
     ],
   ];
   const bad = [];
@@ -25,8 +25,8 @@ run(async () => {
       .forEach((line, i) => {
         for (const r of rules) if (r[0].test(line)) bad.push(path.relative(root, f) + ':' + (i + 1) + ' ' + r[1]);
       });
-  ok(!bad.length, 'the pages use nothing newer than Chromium 68' + (bad.length ? ':\n  ' + bad.join('\n  ') : ''));
-  // the scripts must be ES5: Chromium 68 knows most of ES2015, but a slip there is a page that stays blank on webOS 5 only
+  ok(!bad.length, 'the pages use nothing newer than Chromium 120' + (bad.length ? ':\n  ' + bad.join('\n  ') : ''));
+  // the scripts parse as ES2023, what Chromium 120 knows: a slip there is a page that stays blank on the TV only
   const acorn = require(path.join(root, 'tools', 'vendor', 'acorn.js'));
   for (const f of pages) {
     const html = fs.readFileSync(f, 'utf8'),
@@ -35,64 +35,15 @@ run(async () => {
       err = '';
     while ((m = re.exec(html))) {
       try {
-        acorn.parse(m[1], { ecmaVersion: 5 });
+        acorn.parse(m[1], { ecmaVersion: 2023 });
       } catch (e) {
         err = e.message;
       }
     }
-    ok(!err, 'the script of ' + path.relative(root, f) + ' is ES5' + (err ? ': ' + err : ''));
+    ok(!err, 'the script of ' + path.relative(root, f) + ' parses as ES2023 (Chromium 120)' + (err ? ': ' + err : ''));
   }
-  // flex "gap" is ignored before Chromium 84, and the script that once added the spacing after each redraw made lists jump and left old
-  // text behind on webOS 5 (issues 4, 8, 13): flex children are spaced with sibling margins
-  const gapBad = [];
-  for (const f of pages) {
-    const t = fs.readFileSync(f, 'utf8'),
-      re = /([^{}]+)\{([^{}]*)\}/g;
-    let m;
-    while ((m = re.exec(t))) {
-      if (/display:\s*(inline-)?flex/.test(m[2]) && /(^|[;\s])(row-|column-)?gap\s*:/.test(m[2]))
-        gapBad.push(path.relative(root, f) + ': ' + m[1].trim().split('\n').pop());
-    }
-  }
-  ok(!gapBad.length, 'no flex container uses gap (a sibling margin instead)' + (gapBad.length ? ':\n  ' + gapBad.join('\n  ') : ''));
-  // the same, when one rule gives an element its gap and another turns it into a flex box in some state: Bloom's centred app grid
-  // ([data-galign="center"] #grid) kept the gap of #grid, so its tiles touched on webOS 5 and 6. A gap rule for that element has to leave
-  // the flex state out with :not(...).
-  const lastPart = s =>
-      s
-        .trim()
-        .split(/[\s>+~]+/)
-        .pop(),
-    states = s =>
-      s
-        .trim()
-        .split(/[\s>+~]+/)
-        .slice(0, -1)
-        .join(' ')
-        .match(/\[[^\]]+\]/g) || [];
-  const inherited = [];
-  for (const f of pages) {
-    const t = fs.readFileSync(f, 'utf8'),
-      re = /([^{}]+)\{([^{}]*)\}/g,
-      rules = [];
-    let m;
-    while ((m = re.exec(t))) rules.push({ sel: m[1].trim().split('\n').pop(), body: m[2] });
-    const flex = rules.filter(x => /display:\s*(inline-)?flex/.test(x.body)),
-      gaps = rules.filter(
-        x => /(^|[;\s])(row-|column-)?gap\s*:\s*(?!0(px)?\s*(;|$))/.test(x.body) && !/display:\s*(inline-)?flex/.test(x.body)
-      );
-    for (const fl of flex)
-      for (const fs1 of fl.sel.split(','))
-        for (const g of gaps)
-          for (const gs of g.sel.split(','))
-            if (lastPart(gs) === lastPart(fs1) && states(fs1).length && !states(fs1).some(c => gs.indexOf(':not(' + c + ')') >= 0))
-              inherited.push(path.relative(root, f) + ': ' + gs.trim() + ' still applies to ' + fs1.trim());
-  }
-  ok(
-    !inherited.length,
-    'no element keeps a gap from another rule while a state makes it a flex box' +
-      (inherited.length ? ':\n  ' + inherited.join('\n  ') : '')
-  );
+  // flex "gap" works from Chromium 84 on, so the old rule (sibling margins only) is gone; the script that once added the spacing after
+  // each redraw made lists jump and left old text behind on webOS 5 (issues 4, 8, 13) and must not come back
   ok(
     !fs.existsSync(path.join(root, 'shared', 'flexgap.js')) && !/flexgap/.test(fs.readFileSync(path.join(root, 'ipk', 'build.py'), 'utf8')),
     'no script adds the spacing after a redraw'
