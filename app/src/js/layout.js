@@ -36,21 +36,34 @@ function rebuild() {
     oi = own ? rest.indexOf(by[own]) : -1,
     at = !w.length ? -1 : di.indexOf(own) >= 0 ? 0 : oi >= 0 ? Math.floor(oi / TH.cols) + 1 : -1;
   if (at < 0) w = [];
+  /* a dock along the bottom with the apps over the screen (TH.strip): a dock app's cards stand in their own strip above the dock */
+  var strip = $('wstrip');
+  if (strip) strip.textContent = '';
+  var inStrip = TH.strip && at === 0 && w.length;
+  if (inStrip) {
+    if (!strip) {
+      strip = document.createElement('div');
+      strip.id = 'wstrip';
+      document.body.insertBefore(strip, $('view'));
+    }
+    strip.style.bottom = TH.strip + 'px';
+  }
   var put = function () {
     w.forEach(function (t, i) {
-      t.style.gridColumnStart = i === 0 ? '1' : '';
-      gd.appendChild(t);
+      t.style.gridColumnStart = inStrip || i !== 0 ? '' : '1';
+      (inStrip ? strip : gd).appendChild(t);
     });
   };
+  if (inStrip) put();
   var g = rest.map(function (a, i) {
-    if (w.length && i === at * TH.cols) put();
+    if (w.length && !inStrip && i === at * TH.cols) put();
     var t = tile(a);
-    t.style.gridColumnStart = w.length && i === at * TH.cols && w.length % TH.cols ? '1' : '';
+    t.style.gridColumnStart = w.length && !inStrip && i === at * TH.cols && w.length % TH.cols ? '1' : '';
     gd.appendChild(t);
     fit(t, TH.wide);
     return t;
   });
-  if (w.length && at * TH.cols >= rest.length) put();
+  if (w.length && !inStrip && at * TH.cols >= rest.length) put();
   var tb = shownBar()
     .concat([{ label: 'Customize', icon: 'edit', action: 'customize', fixed: true }])
     .map(function (o) {

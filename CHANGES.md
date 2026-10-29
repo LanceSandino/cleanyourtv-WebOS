@@ -1105,3 +1105,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T13:03:49Z"
 ```
+
+```yaml
+id: CU-20261029-7
+type: feature
+title: "Magic Remote wheel and hover (upstream PR 68), and Continue watching in a strip above a bottom dock (Dawn)"
+description: "The owner asked for PR 68 and, on Dawn, found the Continue watching row small, far from the dock, with Spotify and YouTube tiles beside it. PR 68 (JohnnyTax) taken: its Live TV pointer commit and its test as cherry-picks (authors kept, AI lines removed); its menu and Home part rewritten for our two-pane menus: hovering a row selects it (real movement only), the first or last row on show scrolls one row at most about three times a second, the wheel moves a menu one row and Home one tile in reading order; not while Live TV, the screensaver or the photo chooser is open, and the wheel that ends the photos does nothing else (saver.js stops it). Dawn: with the dock along the bottom and the apps over the screen, a dock app's row opened the overlay grid near the top, its cards at the grid's small tile size, and the grid's first apps (Spotify, YouTube) showed beside them. Now (theme.js TH.strip, layout.js) the cards stand in a strip (#wstrip) just above the dock as 264 x 148 pictures centred over it, the grid stays shut, Up from the dock goes into them, Down back, Down from the dock into the apps, Up from the cards to the top buttons."
+impact: medium
+affected_modules: ["app/src/js/menus.js", "app/src/js/saver.js", "app/src/js/live.js", "app/src/css/live.css", "app/src/js/theme.js", "app/src/js/layout.js", "app/src/js/input.js", "app/src/css/watch.css", "docs/launcher.md", "docs/live-tv.md", "tools/oldchrome.js"]
+related_tests: ["tools/test/pointer.test.js (hoverDir, homeStep)", "tools/oldchrome.js (magic remote wheel: a menu row and a Home tile per notch; watch strip in dawn: Plex's cards above the dock, wide, not in the grid, the grid shut, Up into them, Down back, Down again into the apps)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T13:51:05Z"
+```

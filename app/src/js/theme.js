@@ -111,6 +111,12 @@ function applyTheme(t) {
     /* room kept under the lowest row for the name under the focused tile */
     capH: at.label === 'focus' ? 44 : 0,
     shelfDock: t.shelf || null,
+    /* a dock along the bottom with the apps over the screen (Dawn): a dock app's Continue watching cards stand in a strip just above
+       the dock (layout.js), Up goes into them, and the grid stays shut for them */
+    strip:
+      !!t.overlay && !!t.vars['--dock-b'] && t.vars['--dock-b'] !== 'auto'
+        ? parseFloat(t.vars['--dock-b']) + (parseFloat(t.vars['--dock-h']) || 120) + 2 * (parseFloat(t.vars['--dock-pad']) || 0) + 34
+        : 0,
   };
   decoTheme();
   /* the name follows the dock (shelf.dockAlign) only while that is on; otherwise it keeps the theme's own margin (--name-x) */
@@ -138,6 +144,13 @@ function placeShelf(n) {
   else sh.style.paddingLeft = left + 'px';
 }
 
+/* the row of Continue watching cards that stands in the strip above the dock (TH.strip), or -1 */
+function stripAt() {
+  return TH.strip && rows[2] && rows[2][0] && rows[2][0]._a && rows[2][0]._a.watch ? 2 : -1;
+}
+function stripRow(i) {
+  return i >= 0 && i === stripAt();
+}
 function setFocus(nr, nc, first) {
   var old = rows[r] && rows[r][c];
   if (old) old.classList.remove('f');
@@ -152,8 +165,8 @@ function setFocus(nr, nc, first) {
   decorate(e, first);
   /* a dock app's Continue watching row (watch.js) is the grid's first row: while it is open the view goes as far as it would for
      that row, so it shows (in a theme that keeps the grid under the dock, it would stay out of sight) */
-  var peek = r === 1 && rows[2] && rows[2][0] && rows[2][0]._a && rows[2][0]._a.watch,
-    rr = peek ? 2 : r;
+  var peek = !TH.strip && r === 1 && rows[2] && rows[2][0] && rows[2][0]._a && rows[2][0]._a.watch,
+    rr = peek ? 2 : TH.strip && stripRow(r) ? 1 : r;
   if (TH.hdr) document.body.classList.toggle('ing', rr >= 2);
   if (first) glowNow(e);
   else glowSoon(e);

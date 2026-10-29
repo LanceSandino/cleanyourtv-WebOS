@@ -115,6 +115,10 @@ document.addEventListener('keydown', function (e) {
   }
   if (k === 37 && c > 0) setFocus(r, c - 1);
   else if (k === 39 && c < len - 1) setFocus(r, c + 1);
+  else if (TH.strip && stripAt() > 0 && (k === 38 || k === 40) && (r === 1 || stripRow(r)))
+    /* the cards above a bottom dock (TH.strip): Up from the dock goes into them, Down back to the dock; Down from the dock goes on
+       into the apps, Up from the cards to the top buttons */
+    vMove(r === 1 ? (k === 38 ? stripAt() : stripAt() + 1 < rows.length ? stripAt() + 1 : 1) : k === 38 ? 0 : 1);
   else if (k === 38 && r > 0) vMove(r - 1);
   else if (k === 40 && r < rows.length - 1) vMove(r + 1);
   else if (k === 13) {

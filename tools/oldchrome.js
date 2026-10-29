@@ -300,6 +300,27 @@ const MANAGER_LEFT =
   'Object.defineProperty(document,"hidden",{get:function(){return true}});var t0=Date.now(),e=document.createEvent("Event");e.initEvent("visibilitychange",true,true);document.dispatchEvent(e);' +
   'setTimeout(function(){var early=closed;setTimeout(function(){var ok=!early&&!!closed;' +
   'document.body.setAttribute("data-left",ok?"ok":"bad early="+early+" closed="+closed)},30000)},100000)},300)})()</script>';
+// the Magic Remote's wheel (after upstream PR 68): one notch down moves an open menu one row and, with the menus closed, the focus on
+// Home one tile along (lastWheel reset between the two: Date.now does not follow the virtual time here). The outcome lands in data-wheel.
+const WHEEL =
+  '<script>(function(){function wheel(d){document.dispatchEvent(new WheelEvent("wheel",{deltaY:d,bubbles:true,cancelable:true}))}' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);setTimeout(function(){customizeMenu();var i0=stack[0].idx;' +
+  'wheel(100);var menuMoved=stack[0].idx>i0;closeMenus();setTimeout(function(){var f0=[r,c].join();lastWheel=0;wheel(100);var homeMoved=[r,c].join()!==f0;' +
+  'document.body.setAttribute("data-wheel",menuMoved&&homeMoved?"ok":"bad menu="+menuMoved+" home="+homeMoved)},300)},800)},300)})()</script>';
+// Dawn (a dock along the bottom, the apps over the screen): Plex's Continue watching cards stand in a strip just above the dock, as wide
+// pictures, not in the grid, which stays shut; Up from Plex goes into them, Down back to Plex, Down again into the apps. The outcome
+// lands in data-strip.
+const STRIP =
+  '<script>(function(){function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}function f(){return document.querySelector(".f")}' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile")||!WATCH.refresh)return;clearInterval(go);setTimeout(function(){key(39);key(39);setTimeout(function(){' +
+  'var st=document.getElementById("wstrip"),cards=st?st.querySelectorAll(".wcard").length:0,inGrid=document.querySelectorAll("#grid .wcard").length,' +
+  'dock=document.getElementById("dock").getBoundingClientRect(),sr=st&&st.getBoundingClientRect(),above=!!sr&&sr.bottom<=dock.top+2,' +
+  'wide=!!st&&st.querySelector(".wcard").getBoundingClientRect().width>=250,shut=!document.body.classList.contains("grid-open");' +
+  'key(38);var up=!!f()&&f().classList.contains("wcard")&&!document.body.classList.contains("grid-open");key(40);var back=!!f()&&!!f()._a&&f()._a.id==="cdp-30";' +
+  'key(40);var apps=document.body.classList.contains("grid-open")&&!!f()&&!f().classList.contains("wcard");' +
+  'var ok=cards>=1&&!inGrid&&above&&wide&&shut&&up&&back&&apps;' +
+  'document.body.setAttribute("data-strip",ok?"ok":"bad cards="+cards+" inGrid="+inGrid+" above="+above+" wide="+wide+" shut="+shut+" up="+up+" back="+back+" apps="+apps)},1500)},2500)},300)})()</script>';
 // Dawn (effects.foreground): the front of its wallpaper is a layer over the clock (after #top, above it) and under the apps (#view
 // comes forward), its picture loads, and the date stands above the time (clock.dateAbove). The outcome lands in data-front.
 const FG_CHECK =
@@ -343,6 +364,8 @@ const PAGES = [
   ['holiday frame', 'app/index.html', /data-fx="ok"/g, 1, 15000, FX_CHECK, 'halloween'],
   ['dawn front', 'app/index.html', /data-front="ok"/g, 1, 15000, FG_CHECK, 'dawn'],
   ['menu sections', 'app/index.html', /data-two="ok"/g, 1, 12000, MENU_TWO],
+  ['magic remote wheel', 'app/index.html', /data-wheel="ok"/g, 1, 12000, WHEEL],
+  ['watch strip in dawn', 'app/index.html', /data-strip="ok"/g, 1, 15000, STRIP, 'dawn'],
   ['manager update check', 'manager/app/index.html', /data-check="ok"/g, 1, 12000, MANAGER_CHECK],
   ['manager closes when left', 'manager/app/index.html', /data-left="ok"/g, 1, 150000, MANAGER_LEFT],
   ['weather in a short place', 'app/index.html', /data-slim="ok"/g, 1, 12000, SLIM_WX, 'glass'],
