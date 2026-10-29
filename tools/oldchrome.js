@@ -153,34 +153,25 @@ const WALLPICK_KEYS =
   'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);WALLPICK.start();' +
   'var w=setInterval(function(){if(!WALLPICK.open())return;clearInterval(w);key(39);setTimeout(function(){key(13);var n=0,shown=setInterval(function(){' +
   'if(++n<40&&!(document.body.classList.contains("wpon")&&bg().indexOf("u/0000000000000002")>=0))return;clearInterval(shown);setTimeout(done,1500)},200)},800)},300)},500)})()</script>';
-// LG's screensaver while another app is in front (photos everywhere): a stand-in for the TV's service bus, Home hidden behind
-// com.telemachus.screen; LG asks, the launcher declines, brings Home forward, shows the photos, and a key goes back to that app.
+// LG's screensaver question is answered by the service (helper/lgscreensaver.js); when the photos are ours it opens Home with
+// {saver: 'start', from: the app that was in front}: the photos show, a key ends them and goes back to that app. The outcome lands in
+// data-over.
 const SAVER_OVER =
-  '<script>(function(){var H=false,reg=null,calls=[],launched=[];' +
-  'Object.defineProperty(document,"hidden",{configurable:true,get:function(){return H}});' +
-  'window.PalmServiceBridge=function(){this.call=function(u,p){calls.push(u+" "+p);if(/registerScreenSaverRequest/.test(u))reg=this}};' +
+  '<script>(function(){var launched=[];' +
   'var L=window.launch;window.launch=function(id,pr){launched.push(id);return L(id,pr)};' +
-  'function vis(h){H=h;var e=document.createEvent("Event");e.initEvent("visibilitychange",true,true);document.dispatchEvent(e)}' +
   'function key(c){["keydown","keyup"].forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}' +
-  'var go=setInterval(function(){if(!reg||!document.querySelector(".tile"))return;clearInterval(go);vis(true);' +
-  // Home comes forward only once the launcher asked which app is in front: wait for that launch, then for the photos (a slow runner)
-  'reg.onservicecallback(JSON.stringify({timestamp:42}));var n=0,fw=setInterval(function(){if(++n<60&&!launched.length)return;clearInterval(fw);vis(false);' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);setTimeout(function(){' +
+  'webOSSystem.launchParams=JSON.stringify({saver:"start",from:"com.telemachus.screen"});var e=document.createEvent("Event");e.initEvent("webOSRelaunch",true,true);document.dispatchEvent(e);' +
   'var m=0,sv=setInterval(function(){if(++m<40&&!SAVER.active())return;clearInterval(sv);var up=SAVER.active();key(40);' +
-  'var declined=calls.some(function(c){return /responseScreenSaverRequest/.test(c)&&/"ack":false/.test(c)&&/"timestamp":42/.test(c)});' +
-  'var ok=declined&&up&&!SAVER.active()&&launched.join()==="com.webos.app.home,com.telemachus.screen";' +
-  'document.body.setAttribute("data-over",ok?"ok":"bad declined="+declined+" up="+up+" launched="+launched.join())},100)},100)},500)})()</script>';
-// LG's screensaver while an HDMI input is in front (a console): left to LG (ack true), Home is not brought forward, no photos
+  'var ok=up&&!SAVER.active()&&launched.join()==="com.telemachus.screen";' +
+  'document.body.setAttribute("data-over",ok?"ok":"bad up="+up+" launched="+launched.join())},100)},500)},300)})()</script>';
+// and the page itself never registers for LG's question any more (a page can answer late, and LG counts that as a fault). The outcome
+// lands in data-hdmi.
 const SAVER_HDMI =
-  '<script>(function(){var H=false,reg=null,calls=[],launched=[];' +
-  'Object.defineProperty(document,"hidden",{configurable:true,get:function(){return H}});' +
-  'window.PalmServiceBridge=function(){this.call=function(u,p){calls.push(u+" "+p);if(/registerScreenSaverRequest/.test(u))reg=this}};' +
-  'var L=window.launch;window.launch=function(id,pr){launched.push(id);return L(id,pr)};' +
-  'var A=window.api;window.api=function(p,b){return p==="/api/foreground"?Promise.resolve({returnValue:true,appId:"com.webos.app.hdmi4"}):A(p,b)};' +
-  'var go=setInterval(function(){if(!reg||!document.querySelector(".tile"))return;clearInterval(go);H=true;' +
-  'reg.onservicecallback(JSON.stringify({timestamp:43}));setTimeout(function(){' +
-  'var allowed=calls.some(function(c){return /responseScreenSaverRequest/.test(c)&&/"ack":true/.test(c)&&/"timestamp":43/.test(c)});' +
-  'var ok=allowed&&!launched.length&&!SAVER.active();' +
-  'document.body.setAttribute("data-hdmi",ok?"ok":"bad allowed="+allowed+" launched="+launched.join()+" active="+SAVER.active())},1500)},500)})()</script>';
+  '<script>(function(){var calls=[];window.PalmServiceBridge=function(){this.call=function(u,p){calls.push(u)}};' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);setTimeout(function(){' +
+  'var reg=calls.filter(function(c){return /registerScreenSaverRequest|responseScreenSaverRequest/.test(c)});' +
+  'document.body.setAttribute("data-hdmi",!reg.length?"ok":"bad "+reg.join())},6000)},300)})()</script>';
 // the frame (Style: Frame, the default): an oak frame of the bevelled profile, four mitred sides 70 px wide around the mat; two
 // portrait photos hang side by side in their windows, with the caption and the day pencilled under them; the board (WebP) decodes
 const SAVER_FRAME =
@@ -461,7 +452,7 @@ const PAGES = [
   ['wallpaper chooser', 'app/index.html', /data-pick="ok"/g, 1, 20000, WALLPICK_KEYS],
   ['saver over an app', 'app/index.html', /data-over="ok"/g, 1, 30000, SAVER_OVER],
   ['home key', 'app/index.html', /data-home="ok"/g, 1, 15000, HOME_KEY],
-  ['saver over hdmi', 'app/index.html', /data-hdmi="ok"/g, 1, 20000, SAVER_HDMI],
+  ['saver question in the service', 'app/index.html', /data-hdmi="ok"/g, 1, 20000, SAVER_HDMI],
   ['saver frame', 'app/index.html', /data-frame="ok"/g, 1, 20000, SAVER_FRAME],
   ['continue watching', 'app/index.html', /data-watch="ok"/g, 1, 15000, WATCH_KEYS],
   ['linking plex', 'app/index.html', /data-link="ok"/g, 1, 20000, WATCH_LINK],

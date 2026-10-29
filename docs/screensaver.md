@@ -35,7 +35,9 @@ canvas and the linen drawn by `tools/saver-art.mjs`. With **Style** set to **Pho
 photos too).
 
 **LG's screensaver.** Before the TV starts its own screensaver it asks the apps that registered for it. While the screensaver is on
-and there are photos, the launcher answers no and shows the photos instead; otherwise LG's screensaver starts as before. When
+and there are photos, the service answers no at once and opens Home with the photos instead (the service, not the page: LG counts a
+late answer as a fault and then reboots the TV fully at its next standby, so a page in the background or reloading must not be the
+one to answer); otherwise LG's screensaver starts as before. When
 another app is on the screen (and idle), Home comes forward with the photos, and a key or the pointer goes straight back to that
 app; the Home key ends them and stays on Home. Never over an HDMI input: a game console or a set-top box is in use even when the
 remote is not (LG does not count a game controller), so there the launcher answers yes and LG decides, as it did before. Whether a

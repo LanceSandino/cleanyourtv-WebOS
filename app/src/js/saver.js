@@ -14,7 +14,6 @@ var SAVER = (function () {
     clockT = 0,
     els = null,
     swallow = false,
-    bridge = null,
     mx = -1,
     my = -1,
     cur = '',
@@ -726,93 +725,28 @@ var SAVER = (function () {
       stop();
     }
   });
-  /* every five seconds: LG's question followed or not as the setting is now (also right after the launcher loaded it), and the idle
-     time, counted in these ticks rather than from the clock, which can jump when the TV sets its time */
+  /* every five seconds: the idle time, counted in these ticks rather than from the clock, which can jump when the TV sets its time */
   setInterval(function () {
-    if (opts().on !== !!bridge) listenOrNot();
     idle += 5;
     if (!on && can() && idle >= opts().after) start();
   }, 5000);
 
-  /* LG's screensaver: asked through the TV's service bus while ours is switched on */
-  function call(uri, p) {
+  /* LG's screensaver question is answered by the service (helper/lgscreensaver.js), at once: a page can answer late (in the
+     background, reloading), and LG counts a late answer as a fault and reboots the TV at its next standby. When the photos are ours
+     the service opens Home with {saver: 'start', from: the app that was in front}; the photos then show here, and a key goes back to
+     that app (wake). Not over Live TV. */
+  document.addEventListener('webOSRelaunch', function () {
+    var p = {};
     try {
-      new PalmServiceBridge().call(uri, JSON.stringify(p));
+      p = JSON.parse(webOSSystem.launchParams || '{}');
     } catch (e) {}
-  }
-  function listen() {
-    if (bridge || typeof PalmServiceBridge === 'undefined') return;
-    try {
-      bridge = new PalmServiceBridge();
-      bridge.onservicecallback = function (m) {
-        var j = null;
-        try {
-          j = JSON.parse(m);
-        } catch (e) {}
-        if (!j || j.timestamp === undefined) return;
-        /* ours whenever it is on and has photos: on Home at once, over another app by bringing Home forward (and back on a key).
-           Never over an HDMI input: a game console or a set-top box is in use even when the remote is not (a controller does not
-           count for LG), so there LG decides, as it did before this launcher. */
-        var mine = opts().on && photos() && !LIVE.on,
-          answer = function (ack) {
-            call('luna://com.webos.service.tvpower/power/responseScreenSaverRequest', {
-              clientName: 'cleanyourtv',
-              ack: ack,
-              timestamp: j.timestamp,
-            });
-          };
-        if (!mine) {
-          answer(true);
-          return logLine('screensaver: LG asked, LG allowed');
-        }
-        if (!document.hidden) {
-          answer(false);
-          start();
-          return logLine('screensaver: LG asked, ours shown on Home');
-        }
-        if (on || pending) return answer(false);
-        api('/api/foreground').then(
-          function (f) {
-            var id = (f && f.appId) || '';
-            if (/^com\.webos\.app\.hdmi\d+$/.test(id)) {
-              answer(true);
-              return logLine('screensaver: LG asked over ' + id + ', left to LG (an HDMI input)');
-            }
-            answer(false);
-            if (!id || id === 'com.webos.app.home') return;
-            from = id;
-            pending = setTimeout(function () {
-              pending = 0; /* Home did not come forward: nothing more to do */
-              from = '';
-            }, 8000);
-            launch('com.webos.app.home');
-            logLine('screensaver: LG asked over ' + id + ', ours shown on Home');
-          },
-          function () {
-            answer(true); /* the service did not answer: LG decides */
-          }
-        );
-      };
-      bridge.call(
-        'luna://com.webos.service.tvpower/power/registerScreenSaverRequest',
-        JSON.stringify({ subscribe: true, clientName: 'cleanyourtv' })
-      );
-    } catch (e) {
-      bridge = null;
-    }
-  }
-  function listenOrNot() {
-    if (opts().on) listen();
-    else if (bridge) {
-      try {
-        bridge.cancel();
-      } catch (e) {}
-      bridge = null;
-    }
-  }
+    if (!p || p.saver !== 'start' || on || LIVE.on) return;
+    from = /^[\w.-]{1,128}$/.test(p.from || '') ? p.from : '';
+    start(true);
+    logLine('screensaver: LG asked' + (from ? ' over ' + from : '') + ', ours shown on Home');
+  });
   /* a changed setting takes effect at once */
   function sync() {
-    listenOrNot();
     if (on && !opts().on) stop();
     else if (on) {
       clearInterval(timer);

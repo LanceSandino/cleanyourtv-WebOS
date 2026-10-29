@@ -1452,3 +1452,16 @@ commit_ref: "feature/search (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T19:31:47Z"
 ```
+
+```yaml
+id: CU-20261029-35
+type: fix
+title: "LG's screensaver question answered by the service at once, not by the page (a late answer made LG reboot the TV)"
+description: "The owner's TV again came up with LG's Home first; its boot reason was rebootByFault, and LG's fault manager had a general fault record at 15:28 whose timeout.log named the condition 'Request Screen Saver' and the client 'cleanyourtv': the launcher page had registered for LG's screensaver question (tvpower registerScreenSaverRequest) and answered too late (a page can be in the background or reloading), and LG answers a late client with a full reboot at the next standby. helper/lgscreensaver.js now holds the subscription in the service (one waiting luna-send -i, asked again with a growing wait when it ends) and answers at once: no when the screensaver is on with photos and the TV is not on an HDMI input, then Home is opened with {saver: 'start', from: the app in front}; yes otherwise. saver.js no longer registers; it shows the photos on that note (not over Live TV) and a key goes back to the app; input.js leaves such a relaunch alone (it used to end Live TV on any relaunch). D-20261029-9."
+impact: high
+affected_modules: ["helper/lgscreensaver.js", "helper/helper.js", "app/src/js/saver.js", "app/src/js/input.js", "docs/screensaver.md", "DECISIONS.md", "tools/oldchrome.js"]
+related_tests: ["tools/test/lgscreensaver.test.js (ours: no at once and Home opened with the photos and the app in front; off or without photos: yes; over HDMI: yes; an ended subscription asked again)", "tools/oldchrome.js (saver over an app: the note shows the photos and a key goes back to the app; saver question in the service: the page never registers)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T20:33:41Z"
+```

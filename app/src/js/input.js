@@ -202,6 +202,8 @@ document.addEventListener('webOSRelaunch', function () {
     p = JSON.parse(webOSSystem.launchParams || '{}');
   } catch (e) {}
   logLine('launcher relaunch ' + JSON.stringify(p).slice(0, 120) + (LIVE.on ? ' (live on)' : ''));
+  /* the service's note to show the photos (saver.js): nothing else on Home changes, Live TV least of all */
+  if (p && p.saver === 'start') return;
   /* the Home key: Home itself, whatever was left open over it (Customize, the Inputs list, the photo chooser); it used to reload the
      apps under an open menu, so Home looked like it did nothing. Coming back from an app with Back keeps the menu, as before. */
   if (homeKey(p) && !(guarded() && liveBlip)) {

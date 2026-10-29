@@ -76,6 +76,7 @@ if (notify) load('notifyapi', () => require('./notifyapi').create(ctx));
 if (notify) load('sonos', () => require('./sonos').create(ctx));
 load('lgpreload', () => require('./lgpreload').create(ctx));
 load('lgsettings', () => require('./lgsettings').create(ctx));
+load('lgscreensaver', () => require('./lgscreensaver').create(ctx)); // answers LG's screensaver question at once (a late answer is a fault)
 load('debloatcheck', () => require('./debloatcheck').create(ctx));
 const manager = load('manager', () => require('./manager').create(ctx));
 load('apps', () => require('./apps').create(ctx));

@@ -67,11 +67,11 @@ run(async () => {
       });
   ok(!fixed.length, 'the service folder and /proc are named only in paths.js' + (fixed.length ? ': ' + fixed.join(', ') : ''));
   const direct = files.filter(
-    f => !/(exec|diag|selfupdate)\.js$/.test(f) && /\bcp\.(execFile|exec|spawn)\(|execSync\(/.test(fs.readFileSync(f, 'utf8'))
+    f => !/(exec|diag|selfupdate|lgscreensaver)\.js$/.test(f) && /\bcp\.(execFile|exec|spawn)\(|execSync\(/.test(fs.readFileSync(f, 'utf8'))
   );
   ok(
     direct.length <= 1,
-    'programs are started through exec.js (voice.js keeps its long-running recogniser and stream): ' +
+    'programs are started through exec.js (voice.js keeps its long-running recogniser and stream, lgscreensaver.js its one waiting luna-send -i): ' +
       direct.map(f => path.basename(f)).join(', ')
   );
 });
