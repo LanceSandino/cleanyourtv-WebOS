@@ -4,9 +4,11 @@
 // its QR code; five wrong codes close it. A phone that gives the code gets its own key (32 random bytes): only its SHA-256 is kept
 // (config.remote.devices), the phone sends the key with every press (header x-remote-key), and a phone can be removed on the TV.
 // The phone page and its API are a server on the LAN (port 8794) that runs only while a phone is paired or pairing is open, and that
-// answers only addresses of the home network (private ranges). Keys go to LG's own network input, as LG's phone app sends them: the
-// pointer socket of com.webos.service.networkinput (luna getPointerInputSocket, a local socket; button, move, click, scroll); text goes to
-// LG's keyboard service (com.webos.service.ime). Nothing here presses a key by itself: every press comes from a paired phone.
+// answers only addresses of the home network (private ranges). Keys go to LG's own network input (com.webos.service.networkinput): the
+// keys it names through sendSpecialKey ({key: 'HOME'}), the others as Linux key codes through sendKeyCodes ({keyCode1: 103}), as seen
+// working on the owner's webOS 25 TV (Home, the arrows, the quick settings, Exit); the pointer (move, click, scroll) through its pointer
+// socket (getPointerInputSocket, a local socket), not yet seen working. Text goes to LG's keyboard service (com.webos.service.ime).
+// Nothing here presses a key by itself: every press comes from a paired phone.
 //   GET  /api/remote/status    {on, url, devices: [{id, name, added, used}], pairing: {until} | null}
 //   POST /api/remote/pair      {} opens pairing: {url, code, qr, seconds}; {stop: true} closes it
 //   POST /api/remote/forget {id}    POST /api/remote/on {on}
@@ -24,11 +26,30 @@ const PORT = +process.env.CYTV_REMOTE_PORT || 8794, // after the phone pages' po
   PAIR_MS = 2 * 60 * 1000,
   MAX_TRIES = 5,
   MAX_DEVICES = 10;
-// the remote's buttons, as LG's network input names them
-const KEYS = (
-  'UP DOWN LEFT RIGHT ENTER BACK HOME EXIT MENU INFO VOLUMEUP VOLUMEDOWN MUTE CHANNELUP CHANNELDOWN PLAY PAUSE STOP FASTFORWARD ' +
-  'REWIND RED GREEN YELLOW BLUE 0 1 2 3 4 5 6 7 8 9 DASH'
-).split(' ');
+// the remote's buttons: the ones LG's network input knows by name (sendSpecialKey; MENU is the gear key, LG's quick settings), the
+// others by their Linux key code (sendKeyCodes: the arrows, play, info, blue, the digits)
+const SPECIAL = {
+  ENTER: 'ENTER',
+  BACK: 'BACK',
+  HOME: 'HOME',
+  EXIT: 'EXIT',
+  MENU: 'QMENU',
+  VOLUMEUP: 'VOLUMEUP',
+  VOLUMEDOWN: 'VOLUMEDOWN',
+  MUTE: 'MUTE',
+  CHANNELUP: 'CHANNELUP',
+  CHANNELDOWN: 'CHANNELDOWN',
+  PAUSE: 'PAUSE',
+  FASTFORWARD: 'FASTFORWARD',
+  REWIND: 'REWIND',
+  RED: 'RED',
+  GREEN: 'GREEN',
+  YELLOW: 'YELLOW',
+  DASH: 'DASH',
+};
+const CODES = { UP: 103, DOWN: 108, LEFT: 105, RIGHT: 106, PLAY: 207, INFO: 358, BLUE: 401, 0: 11 };
+for (let d = 1; d <= 9; d++) CODES[d] = d + 1; // KEY_1 is 2 ... KEY_9 is 10
+const KEYS = Object.keys(SPECIAL).concat(Object.keys(CODES));
 
 // an address of the home network: 10/8, 172.16/12, 192.168/16, link-local, loopback, IPv6 unique local and link-local
 function homeAddress(a) {
@@ -193,7 +214,8 @@ function create(ctx) {
     if (u === '/press') {
       const k = String(b.key || '');
       if (KEYS.indexOf(k) < 0) return { error: 'unknown key', code: 400 };
-      return send({ type: 'button', name: k });
+      if (SPECIAL[k]) return luna('luna://com.webos.service.networkinput/sendSpecialKey', { key: SPECIAL[k] });
+      return luna('luna://com.webos.service.networkinput/sendKeyCodes', { keyCode1: CODES[k] });
     }
     if (u === '/move') return send({ type: 'move', dx: clamp(b.dx, -300, 300), dy: clamp(b.dy, -300, 300), down: 0 });
     if (u === '/click') return send({ type: 'click' });

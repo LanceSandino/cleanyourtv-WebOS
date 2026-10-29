@@ -28,8 +28,10 @@ forgetting them.
   router, and nothing goes through the internet.
 - Every command carries the phone's key. Another web site open on the phone cannot send commands (the TV refuses requests from other
   pages), and the page cannot be shown inside another site.
-- The keys go to LG's own network input, the way LG's phone app sends them; text goes to LG's on-screen keyboard. The remote presses
-  only what you tap: nothing here changes the TV or its volume by itself.
+- The keys go to LG's own network input: the keys LG names (Home, Back, OK, Exit, the volume, the gear key's quick settings) by name,
+  the arrows and the rest by their key code; text goes to LG's on-screen keyboard. The remote presses only what you tap: nothing here
+  changes the TV or its volume by itself.
+- The touchpad sends to LG's pointer input; it has not been seen moving the pointer on a TV yet.
 
 Turning the TV **on** from the phone needs something that stays on at home, because the TV's service sleeps with the TV: the TV wakes
 on a Wake-on-LAN packet (on this TV **Turn on via Wi-Fi** is on), and a phone's browser cannot send one. A small helper for an

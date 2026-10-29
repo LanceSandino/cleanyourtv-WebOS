@@ -1,5 +1,5 @@
 // Phone remote (remote.js): pairing with the code shown on the TV (five wrong codes close it), a key per phone kept only as its hash,
-// the presses reaching LG's network input (a stand-in socket here) in its own message form, typing and the apps through luna, the
+// the presses reaching LG's network input (sendSpecialKey or a key code; the pointer on a stand-in socket), typing and the apps, the
 // LAN server only for the home network and only from its own page, and a phone removed on the TV losing access.
 const http = require('http'),
   net = require('net'),
@@ -111,17 +111,30 @@ run(async () => {
     'the right code gives the phone its own key; only its hash is kept, with the name cleaned'
   );
   const key = { 'x-remote-key': p1.j.key };
+  calls.length = 0;
   r = await lan('POST', '/press', { key: 'UP' }, key);
   await lan('POST', '/press', { key: 'ENTER' }, key);
+  await lan('POST', '/press', { key: 'MENU' }, key);
+  await lan('POST', '/press', { key: '7' }, key);
+  const N = 'luna://com.webos.service.networkinput/';
+  ok(
+    r.code === 200 &&
+      JSON.stringify(calls) ===
+        JSON.stringify([
+          [N + 'sendKeyCodes', { keyCode1: 103 }],
+          [N + 'sendSpecialKey', { key: 'ENTER' }],
+          [N + 'sendSpecialKey', { key: 'QMENU' }],
+          [N + 'sendKeyCodes', { keyCode1: 8 }],
+        ]),
+    'keys LG names go through sendSpecialKey (the gear key is its QMENU), the others as Linux key codes: ' + JSON.stringify(calls)
+  );
   await lan('POST', '/move', { dx: 12.6, dy: -900 }, key);
   await lan('POST', '/click', {}, key);
   await lan('POST', '/scroll', { dy: 3 }, key);
   await sleep(100);
   ok(
-    r.code === 200 &&
-      got ===
-        'type:button\nname:UP\n\ntype:button\nname:ENTER\n\ntype:move\ndx:13\ndy:-300\ndown:0\n\ntype:click\n\ntype:scroll\ndx:0\ndy:3\n\n',
-    "presses reach LG's network input as its own messages (a move is held to 300 px): " + JSON.stringify(got)
+    got === 'type:move\ndx:13\ndy:-300\ndown:0\n\ntype:click\n\ntype:scroll\ndx:0\ndy:3\n\n',
+    "the pointer goes to LG's pointer socket in its own messages (a move is held to 300 px): " + JSON.stringify(got)
   );
   r = await lan('POST', '/press', { key: 'rm -rf' }, key);
   const nokey = await lan('POST', '/press', { key: 'UP' });

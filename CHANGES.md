@@ -1046,3 +1046,23 @@ commit_ref: "feature/phone-remote (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T04:04:02Z"
 ```
+
+```yaml
+id: CU-20261029-3
+type: fix
+title: "Phone remote keys go through LG's sendSpecialKey and sendKeyCodes (the pointer socket ignored button messages)"
+description: "First test on the owner's TV with 1.6.27 (his OK; the TV woken with a Wake-on-LAN packet from the Mac, whose ARP cache
+  held the TV's MAC in standby): a paired test client's presses were accepted by the pointer socket but did nothing (Home and the
+  gear key, foreground and screen captures unchanged). Read-only, the network input binary names its special keys (HOME, BACK, ENTER,
+  EXIT, MUTE, VOLUMEUP/DOWN, CHANNELUP/DOWN, PAUSE, REWIND, FASTFORWARD, RED, GREEN, YELLOW, DASH, QMENU, no arrows and no MENU);
+  sendSpecialKey {key: 'HOME'} took the TV from HDMI 4 to Home, sendKeyCodes {keyCode1: 106/105} moved the focus right and left,
+  {key: 'QMENU'} opened the quick settings and EXIT closed them (screen captures compared by checksum only: the owner's photos were
+  on Home). remote.js now presses the named keys with sendSpecialKey (the gear key MENU as QMENU) and the others as Linux key codes
+  with sendKeyCodes (arrows 103/108/105/106, play 207, info 358, blue 401, digits 2-11); the pointer stays on the socket, unconfirmed."
+impact: medium
+affected_modules: ["helper/remote.js", "docs/remote.md", "tools/test/remote.test.js"]
+related_tests: ["tools/test/remote.test.js (keys LG names go through sendSpecialKey, the gear key as QMENU, the others as Linux key codes; the pointer on its socket)"]
+commit_ref: "fix/remote-keys (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T04:57:21Z"
+```
