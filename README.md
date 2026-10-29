@@ -74,8 +74,8 @@ and troubleshooting.
 ## What it's for
 
 1. **[A launcher that is quick and yours](https://lancesandino.github.io/cleanyourtv-WebOS/launcher/).** A dock of four apps, an app
-   grid sorted by how often you use each app, top buttons you choose, a Search that finds a title in your apps without asking any
-   server, an Inputs list and a clock; menus in English, Dutch, German,
+   grid sorted by how often you use each app, top buttons you choose, a Search that says where a title can be watched (your apps
+   first, then the services Plex knows of; that part can be switched off), an Inputs list and a clock; menus in English, Dutch, German,
    French, Spanish, Russian, Turkish and Arabic ([more languages welcome](https://lancesandino.github.io/cleanyourtv-WebOS/languages/)); [themes](https://lancesandino.github.io/cleanyourtv-WebOS/themes/) for colours, layout and wallpaper, and
    [Wallpapers](https://lancesandino.github.io/cleanyourtv-WebOS/wallpapers/): your own photos behind Home, uploaded from a phone or synced
    from Immich albums.

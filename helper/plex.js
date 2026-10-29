@@ -5,10 +5,17 @@
 //             server's first address that answers as that server (its addresses on the network first)
 //   status()  {linked, server, state: 'idle'|'waiting'|'linked'|'expired'|'error', code, url, error}
 //   items()   cards for watch.js; pictures go through watch.js's image ids, never by address
+// Where to watch (where.js), with the same link (the words typed, the account's key and this install's Plex client id; no other id):
+//   discover(q)           Plex's catalogue of films and shows (Plex Discover): [{id, kind: 'movie'|'series', title, year}]
+//   availability(id, cc)  where that title is in that country: [{platform, name, offer, price, currency, link}]; link is the
+//                         service's own link taken out of Plex's affiliate link (deeplinks.unwrap), which is never asked
+//   library(q)            the titles on the linked Plex server itself: [{kind, title, year}] (/hubs/search)
 const crypto = require('crypto');
-const fetch = require('./fetch');
+const fetch = require('./fetch'),
+  deeplinks = require('./deeplinks');
 
 const PLEXTV = process.env.CYTV_PLEXTV || 'https://plex.tv', // another address only for the tests
+  DISCOVER = process.env.CYTV_PLEX_DISCOVER || 'https://discover.provider.plex.tv',
   APP = 'cdp-30', // the Plex app for LG TVs
   POLL_MS = 3000,
   LINK_MS = 10 * 60 * 1000;
@@ -204,7 +211,72 @@ function create(ctx) {
       };
     });
   }
-  return { link, unlink, status, items };
+
+  // ---- Where to watch ----
+  const RATING_KEY = /^[0-9a-f]{24}$/,
+    OFFERS = ['subscription', 'free', 'rent', 'buy'];
+  const year = y => (Number.isInteger(Number(y)) && Number(y) >= 1870 && Number(y) <= 2100 ? Number(y) : null);
+  const kindOf = t => (t === 'show' ? 'series' : t === 'movie' ? 'movie' : '');
+  const asked = { totalMs: 8000, idleMs: 6000, redirects: 0 };
+  async function discover(query) {
+    const a = acct();
+    if (!a.token) return [];
+    const j = await json(
+      DISCOVER +
+        '/library/search?query=' +
+        encodeURIComponent(String(query).slice(0, 100)) +
+        '&limit=6&searchTypes=movies,tv&searchProviders=discover&includeMetadata=1',
+      Object.assign({ headers: head(a.token) }, asked)
+    );
+    const out = [];
+    for (const g of (j && j.MediaContainer && Array.isArray(j.MediaContainer.SearchResults) && j.MediaContainer.SearchResults) || [])
+      for (const x of (g && Array.isArray(g.SearchResult) && g.SearchResult) || []) {
+        const m = (x && x.Metadata) || {};
+        if (!kindOf(m.type) || !RATING_KEY.test(String(m.ratingKey)) || typeof m.title !== 'string' || !m.title.trim()) continue;
+        out.push({ id: String(m.ratingKey), kind: kindOf(m.type), title: m.title.trim().slice(0, 200), year: year(m.year) });
+      }
+    return out;
+  }
+  async function availability(id, country) {
+    const a = acct();
+    if (!a.token || !RATING_KEY.test(String(id))) return [];
+    const j = await json(
+      DISCOVER + '/library/metadata/' + id + '/availabilities' + (/^[A-Z]{2}$/.test(country || '') ? '?country=' + country : ''),
+      Object.assign({ headers: head(a.token) }, asked)
+    );
+    const list = (j && j.MediaContainer && Array.isArray(j.MediaContainer.Availability) && j.MediaContainer.Availability) || [];
+    return list
+      .filter(v => v && typeof v.platform === 'string' && /^[a-z0-9-]{1,60}$/.test(v.platform))
+      .map(v => {
+        const info = v.platformInfo && typeof v.platformInfo === 'object' ? v.platformInfo : {};
+        const links = [v.platformUrl].concat(Object.keys(info).map(k => info[k] && info[k].url));
+        const price = Number(v.price);
+        return {
+          platform: v.platform,
+          name: String(v.title || v.platform).slice(0, 60),
+          offer: OFFERS.indexOf(v.offerType) >= 0 ? v.offerType : 'other',
+          price: v.price !== undefined && v.price !== null && v.price !== '' && price >= 0 && price < 10000 ? price : null,
+          currency: /^[A-Z]{3}$/.test(String(v.currency || '')) ? String(v.currency) : '',
+          link: links.map(deeplinks.unwrap).filter(Boolean)[0] || '',
+        };
+      });
+  }
+  async function library(query) {
+    const a = acct();
+    if (!a.token || !a.server) return [];
+    const s = a.server;
+    const j = await json(
+      s.uri + '/hubs/search?query=' + encodeURIComponent(String(query).slice(0, 100)) + '&limit=10',
+      Object.assign({ headers: head(s.token), allowHttp: true }, asked)
+    );
+    const out = [];
+    for (const h of (j && j.MediaContainer && Array.isArray(j.MediaContainer.Hub) && j.MediaContainer.Hub) || [])
+      for (const m of (h && Array.isArray(h.Metadata) && h.Metadata) || [])
+        if (m && kindOf(m.type) && typeof m.title === 'string' && m.title.trim())
+          out.push({ kind: kindOf(m.type), title: m.title.trim().slice(0, 200), year: year(m.year) });
+    return out;
+  }
+  return { link, unlink, status, items, discover, availability, library };
 }
 
 module.exports = { create };

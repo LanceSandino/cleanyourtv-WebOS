@@ -100,3 +100,74 @@
   font-size: 24px;
   color: var(--ink2);
 }
+/* a note among the results (Asking where it is...): text only, the focus skips it */
+#sr .srn {
+  padding: 8px 34px 4px;
+  font-size: calc(24px * var(--fs));
+  color: var(--ink2);
+}
+/* Where to watch: a row per title, two lines: the title with its year and kind, the apps on this TV as chips; under them the other
+   services with their offer. A row without an app on this TV is dimmed and skipped by the focus */
+#sr .wrow {
+  height: auto;
+  min-height: 122px;
+  padding: 14px 34px;
+  flex-wrap: wrap;
+  align-content: center;
+}
+#sr .wrow > * {
+  margin-left: 0;
+  margin-right: 0;
+}
+#sr .wt {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+}
+#sr .wt .lb {
+  flex: 0 1 auto;
+}
+#sr .wc {
+  display: flex;
+  gap: 12px;
+  flex: none;
+  margin-inline-start: 22px;
+}
+#sr .wchip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 18px 0 8px;
+  border-radius: 26px;
+  font-size: calc(22px * var(--fs));
+  background: rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+#sr .wchip img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+#sr .row.f .wchip {
+  background: rgba(0, 0, 0, 0.1);
+}
+#sr .row.f .wchip.on {
+  background: var(--acc-ink);
+  color: var(--acc);
+}
+#sr .wo {
+  flex-basis: 100%;
+  margin-top: 6px;
+  font-size: calc(21px * var(--fs));
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#sr .wo:empty {
+  display: none;
+}

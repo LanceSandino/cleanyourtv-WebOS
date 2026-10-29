@@ -716,6 +716,14 @@ function customizeMenu() {
         fn: watchMenu,
       },
       {
+        label: t('Search'),
+        icon: 'search',
+        peek: true,
+        sub: cfg.search && cfg.search.where === false ? t('Only this TV') : t('Asks services'),
+        stay: true,
+        fn: searchMenu,
+      },
+      {
         label: t('App order'),
         icon: 'sort',
         sub: cfg.sort === 'alpha' ? t('A to Z') : t('Most used first'),
@@ -1142,6 +1150,29 @@ function watchCardMenu(it) {
 /* Continue watching (watch.js): shown on Home or not, and Plex, Stremio and Disney+ linked with their own TV sign-in: a code entered on
    a phone (plex.tv/link, disneyplus.com/begin) or a link opened there (Stremio), never a password on the TV. The service keeps the keys; this menu sees only whether
    a service is linked, and asks again every 3 s while a code waits. */
+/* Search (search.js): whether it asks the services where a title is (helper/where.js), on unless switched off (cfg.search.where false) */
+function searchMenu() {
+  openBuilt(t('Search'), function () {
+    var on = !(cfg.search && cfg.search.where === false);
+    return [
+      {
+        label: t('Ask services where a title is'),
+        sub: on ? t('On') : t('Off'),
+        stay: true,
+        fn: function () {
+          if (on) cfg.search = { where: false };
+          else delete cfg.search;
+          saveCfg();
+        },
+      },
+      {
+        note: t(
+          "On: what you type is sent to Plex's catalogue (with your linked Plex account), to Disney+ when it is linked, to Stremio's public catalogue and to your Plex server, to say where a title is. Off: Search looks only at the apps on this TV."
+        ),
+      },
+    ];
+  });
+}
 function watchMenu() {
   var acc = {},
     timer = 0,

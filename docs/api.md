@@ -13,6 +13,7 @@ you can call it from a shell on the TV (for example over SSH).
 | `POST /api/launch` `{id, params}` | Launch an app |
 | `GET /api/inputs` | HDMI inputs and their state |
 | `GET /api/search?q=<words>` | Search on Home: `{q, groups: [{id: "have" \| "search" \| "try", items: [{app, appTitle, title?, sub?, launch: {id, params}}]}]}`: the titles in Home's rows, the apps that search themselves with the words, and Telemachus, Plex and Stremio when no app has it; nothing is asked of any server ([Search](launcher.md#search)) |
+| `GET /api/search/where?q=<words>` | Where to watch: `{q, on, groups: [{id: "where", items: [{title, year, kind, offers: [{provider, name, offer, price, currency, app?, appTitle?, launch?: {id, params}, exact?}]}]}]}`, asked of Plex's catalogue, Disney+, your Plex server, Stremio's catalogue and Telemachus; `on: false` and nothing asked when Customize > Search switched it off ([Search](launcher.md#search), [Security](security.md#search)) |
 | `GET /api/running`, `POST /api/running/close` `{id}` or `{all: true}` | The running apps the launcher can close, and closing them (only listed apps; never Home or CleanYourTV's own apps) |
 | `POST /api/notify` | Picture notification (on the network: `POST :8767/notify` with the token) |
 | `GET /api/sonos/status`, `POST /api/sonos/find`, `/set` `{enabled, speaker, position, hideLg}` | The Sonos soundbar's volume on screen (read only); see [Sonos volume on screen](sonos.md) |

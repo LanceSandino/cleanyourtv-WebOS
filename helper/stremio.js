@@ -4,10 +4,13 @@
 //   link()    {code, url} and the service asks Stremio every 3 s (10 minutes at most) until the link was used
 //   status()  {linked, state: 'idle'|'waiting'|'linked'|'expired'|'error', code, url, error}
 //   items()   cards for watch.js; pictures from Stremio's image host go through watch.js's image ids
+//   catalog(q) Where to watch (where.js): Stremio's public film and series catalogue (Cinemeta), searched for the words, without an
+//             account or any key: [{id: 'tt...', kind: 'movie'|'series', title, year}]
 const fetch = require('./fetch');
 
 const LINK = process.env.CYTV_STREMIO_LINK || 'https://link.stremio.com', // other addresses only for the tests
   API = process.env.CYTV_STREMIO_API || 'https://api.strem.io',
+  CINEMETA = process.env.CYTV_CINEMETA || 'https://v3-cinemeta.strem.io',
   APP = 'io.strem.tv',
   POLL_MS = 3000,
   LINK_MS = 10 * 60 * 1000;
@@ -27,7 +30,11 @@ function create(ctx) {
       .read(
         url,
         Object.assign(
-          { totalMs: 20000, maxBytes: 8 * 1024 * 1024, allowHttp: !!(process.env.CYTV_STREMIO_LINK || process.env.CYTV_STREMIO_API) },
+          {
+            totalMs: 20000,
+            maxBytes: 8 * 1024 * 1024,
+            allowHttp: !!(process.env.CYTV_STREMIO_LINK || process.env.CYTV_STREMIO_API || process.env.CYTV_CINEMETA),
+          },
           o
         )
       )
@@ -119,7 +126,24 @@ function create(ctx) {
         };
       });
   }
-  return { link, unlink, status, items };
+  async function catalog(query) {
+    const q = encodeURIComponent(String(query).slice(0, 100));
+    const one = kind =>
+      json(CINEMETA + '/catalog/' + kind + '/top/search=' + q + '.json', { totalMs: 8000, idleMs: 6000, redirects: 0 }).then(
+        r =>
+          ((r && Array.isArray(r.metas) && r.metas) || [])
+            .filter(m => m && /^tt\d{1,10}$/.test(String(m.id)) && typeof m.name === 'string' && m.name.trim())
+            .slice(0, 8)
+            .map(m => {
+              const y = Number((/^(\d{4})/.exec(String(m.releaseInfo || m.year || '')) || [])[1] || 0);
+              return { id: String(m.id), kind, title: m.name.trim().slice(0, 200), year: y >= 1870 && y <= 2100 ? y : null };
+            }),
+        () => []
+      );
+    const [films, series] = await Promise.all([one('movie'), one('series')]);
+    return films.concat(series);
+  }
+  return { link, unlink, status, items, catalog };
 }
 
 module.exports = { create };

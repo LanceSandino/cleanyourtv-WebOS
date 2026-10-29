@@ -166,7 +166,10 @@ run(async () => {
   features.apps = req('apps').create(ctx);
   features.watch = req('watch').create(ctx);
   const search = S.create(ctx);
-  ok(search.name === 'search' && search.paths.join() === '/api/search', 'a part of the service with one route, /api/search');
+  ok(
+    search.name === 'search' && search.paths.join() === '/api/search,/api/search/where',
+    'a part of the service: /api/search (this TV only) and /api/search/where (where.js)'
+  );
   const ask = async q => (await call(search, '/api/search?q=' + encodeURIComponent(q))).j;
   const groupsOf = r => r.groups.map(g => g.id + ':' + g.items.map(i => i.app + (i.title ? '/' + i.title : '')).join('|')).join(' ');
 

@@ -10,6 +10,7 @@
 //             watching first when it was not running); who: the name of the Disney+ profile whose Continue Watching it is (the
 //             account's active profile, asked of Disney with the same key; none when Disney does not say);
 //             pictures from Disney's image host go through watch.js's image ids
+//   search(q) Disney's own search for the words (where.js, Where to watch), with the same key: [{title, id, year}]
 const crypto = require('crypto');
 const fetch = require('./fetch'),
   wsclient = require('./wsclient');
@@ -59,6 +60,14 @@ const uuid = () => {
 function target(i) {
   const t = i.type === 'movie' ? 'movie' : 'episode';
   return 'distributionPartner=lg&programType=' + t + '&contentId=' + i.id + '&page=play&id=' + i.id + '&type=' + t + '&contentType=Full';
+}
+// a title's page in the Disney+ app, by Disney's id for it (entity-<id>, as Disney's search and its links name it), in LG's format for
+// Disney+'s pages; not yet opened on a TV (unverified)
+function browseTarget(id, kind) {
+  const t = kind === 'movie' ? 'movie' : 'series';
+  return (
+    'distributionPartner=lg&programType=' + t + '&contentId=' + id + '&page=browse&id=entity-' + id + '&type=' + t + '&contentType=Full'
+  );
 }
 
 function create(ctx) {
@@ -399,7 +408,36 @@ function create(ctx) {
         };
       });
   }
-  return { link, unlink, status, items };
+  // Where to watch (where.js): Disney's own search for the words, with the account's key: [{title, id, year}] (id: Disney's entity id
+  // for the title, which its page opens with); nothing without a link
+  async function search(query) {
+    const tok = await token().catch(() => '');
+    if (!tok) return [];
+    let j = null;
+    try {
+      j = await api('/explore/v1.21/search?query=' + encodeURIComponent(String(query).slice(0, 100)), tok);
+    } catch (e) {
+      if (e.status === 401) {
+        const a = acct();
+        if (a.refreshToken) setAcct(Object.assign({}, a, { until: 0 }));
+      }
+      return [];
+    }
+    const out = [],
+      seen = {};
+    for (const ct of (j && j.data && j.data.page && Array.isArray(j.data.page.containers) && j.data.page.containers) || [])
+      for (const it of (ct && Array.isArray(ct.items) && ct.items) || []) {
+        const v = (it && it.visuals) || {},
+          b = ((it && Array.isArray(it.actions) && it.actions) || []).filter(x => x && x.type === 'browse')[0] || {},
+          id = (/^entity-(.+)$/.exec(String(b.deeplinkId || '')) || [])[1] || '',
+          yr = Number(((v.metastringParts || {}).releaseYearRange || {}).startYear || 0);
+        if (!ID.test(id) || typeof v.title !== 'string' || !v.title.trim() || seen[id]) continue;
+        seen[id] = 1;
+        out.push({ title: v.title.trim().slice(0, 200), id, year: yr >= 1870 && yr <= 2100 ? yr : null });
+      }
+    return out.slice(0, 20);
+  }
+  return { link, unlink, status, items, search };
 }
 
-module.exports = { create, APP };
+module.exports = { create, APP, browseTarget };

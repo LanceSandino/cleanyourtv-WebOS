@@ -415,6 +415,33 @@ const FX_CHECK =
   'var still=!!cs&&cs.animationName==="none"&&!document.getElementById("fx");' +
   'var ok=!!fr&&behind&&pic&&still&&cs.pointerEvents==="none";' +
   'document.body.setAttribute("data-fx",ok?"ok":"bad frame="+!!fr+" behind="+behind+" pic="+pic+" still="+still)},800)},300)})()</script>';
+// Where to watch (search.js, where.js), after the typing stops: a row per title under its heading, before Search in. The title with its
+// year and kind, its apps on this TV as chips, the other services named with their offer; a title with no app here is dimmed and
+// skipped. Down goes to the first title with its first app chosen, Right and Left choose another (no further than the last), the hint
+// says whether the app opens the title itself; OK opens the chosen one where the service said. Customize > Search > "Ask services where
+// a title is" switched off (cfg.search.where false): the same words bring no Where to watch. The outcome lands in data-where.
+const WHERE_KEYS =
+  '<script>(function(){function key(c,only){(only?[only]:["keydown","keyup"]).forEach(function(t){var e=document.createEvent("Event");e.initEvent(t,true,true);' +
+  'Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)})}var launched=[],L=window.launch;window.launch=function(id,p){launched.push([id,p]);return L(id,p)};' +
+  'function out(v){document.body.setAttribute("data-where",v)}function on(){var s=document.getElementById("sr");return !!s&&s.className==="on"}' +
+  'function txt(sel){return [].map.call(document.querySelectorAll(sel),function(x){return x.textContent})}' +
+  'function chip(){var c=document.querySelector("#sr .wrow.f .wchip.on");return c?c.textContent:""}function hint(){return document.getElementById("sr-hint").textContent}' +
+  'function wait(test,then,what){var n=0,w=setInterval(function(){if(test()){clearInterval(w);then()}else if(++n>40){clearInterval(w);out("bad waiting for "+what)}},150)}' +
+  'function type(w){var q=document.getElementById("sr-q");q.value=w;q.dispatchEvent(new Event("input"))}' +
+  'wait(function(){return document.querySelector(".tile")},function(){SEARCH.show();type("bluey");' +
+  'wait(function(){return document.querySelectorAll("#sr .wrow").length===2&&document.querySelectorAll("#sr .srow:not(.wrow)").length===1},function(){' +
+  'var heads=txt("#sr .srh").join("|"),w=document.querySelectorAll("#sr .wrow"),t0=w[0].querySelector(".wt").textContent,n0=w[0].querySelectorAll(".wchip").length;' +
+  'var also=w[0].querySelector(".wo").textContent,dim=w[1].classList.contains("dim")&&!w[1].querySelector(".wchip");' +
+  'var rows=/Bluey/.test(t0)&&/2018/.test(t0)&&/Series/.test(t0)&&n0===2&&/^Also: Hulu \\(subscription\\) . Apple iTunes \\(buy .*1\\.99\\)$/.test(also);' +
+  'key(40);var c0=chip()==="Disney+"&&/OK opens it in Disney\\+/.test(hint());key(39);var c1=chip()==="Telemachus"&&/OK opens Telemachus: find the title there/.test(hint());' +
+  'key(39);var c2=chip()==="Telemachus";key(37);var c3=chip()==="Disney+";key(40);var f=document.querySelector("#sr .row.f"),skip=!!f&&!f.classList.contains("wrow")&&/Video/.test(f.textContent);' +
+  'key(38);var up=chip()==="Disney+";key(39);key(37);key(13,"keydown");var held=on()&&!launched.length;key(13,"keyup");setTimeout(function(){var l=launched[0]||[];' +
+  'var opens=l[0]==="app.0"&&!!l[1]&&/page=browse&id=entity-x/.test(l[1].contentTarget||"")&&!on();searchMenu();var ov=document.getElementById("ov");key(13);' +
+  'var off=!!cfg.search&&cfg.search.where===false&&/Off/.test(ov?document.getElementById("ov").textContent:"");closeMenus();SEARCH.show();type("bluey");' +
+  'setTimeout(function(){var none=!document.querySelector("#sr .wrow")&&txt("#sr .srh").join("|")==="Search in";' +
+  'var ok=heads==="Where to watch|Search in"&&rows&&dim&&c0&&c1&&c2&&c3&&skip&&up&&held&&opens&&off&&none;' +
+  'out(ok?"ok":"bad heads="+heads+" t0="+t0+" chips="+n0+" also="+also+" dim="+dim+" c0="+c0+" c1="+c1+" c2="+c2+" c3="+c3+" skip="+skip+" up="+up+' +
+  '" held="+held+" opens="+opens+" off="+off+" none="+none+" hint="+hint()+" launched="+JSON.stringify(launched))},2000)},500)},"Where to watch")},"the tiles")})()</script>';
 // Search (search.js): the Search button in the default top bar opens it with the field focused (the TV's keyboard); Left there stays
 // in the text; the words typed bring the stand-in's results in two groups; Down goes into them, Up from the first back to the field;
 // OK opens a result when it is let go (Telemachus at that episode) and closes the search; opened again it keeps the words, and Back
@@ -427,7 +454,7 @@ const SEARCH_KEYS =
   'function fi(){var f=document.querySelector("#sr .srow.f");return f?[].indexOf.call(document.querySelectorAll("#sr .srow"),f):-1}' +
   'function wait(test,then,what){var n=0,w=setInterval(function(){if(test()){clearInterval(w);then()}else if(++n>40){clearInterval(w);out("bad waiting for "+what)}},150)}' +
   'wait(function(){return document.querySelector(".tile")},function(){var pill=[].filter.call(document.querySelectorAll(".pill"),function(p){return p._o&&p._o.action==="search"})[0];' +
-  'if(!pill)return out("bad no Search button");var label=pill.textContent,p=posOf(pill);setFocus(p[0],p[1]);var home=[r,c];key(13);var opened=on()&&inField();' +
+  'if(!pill)return out("bad no Search button");cfg.search={where:false};var label=pill.textContent,p=posOf(pill);setFocus(p[0],p[1]);var home=[r,c];key(13);var opened=on()&&inField();' +
   'key(37);var stay=on()&&inField()&&r===home[0]&&c===home[1];var q=document.getElementById("sr-q");q.value="show a";q.dispatchEvent(new Event("input"));' +
   'wait(function(){return document.querySelectorAll("#sr .srow").length===2},function(){' +
   'var heads=[].map.call(document.querySelectorAll("#sr .srh"),function(h){return h.textContent}).join("|");' +
@@ -476,6 +503,7 @@ const PAGES = [
   ['tv health', 'manager/app/index.html', /data-health="ok"/g, 1, 30000, TV_HEALTH],
   ['weather in a short place', 'app/index.html', /data-slim="ok"/g, 1, 12000, SLIM_WX, 'glass'],
   ['search', 'app/index.html', /data-search="ok"/g, 1, 15000, SEARCH_KEYS],
+  ['where to watch', 'app/index.html', /data-where="ok"/g, 1, 20000, WHERE_KEYS],
 ];
 let famN = 0,
   plexState = 'idle',
@@ -522,7 +550,7 @@ function serve() {
     if (u === '/cytv-token.js')
       return r.writeHead(200, { 'content-type': 'text/javascript' }), r.end("var CYTV_TOKEN = '" + TOKEN + "';\n");
     if (
-      /^\/api\/(apps|inputs|manager\/status|photofeed\/next|watch\/(rows|accounts|link)|search|log)$/.test(u) &&
+      /^\/api\/(apps|inputs|manager\/status|photofeed\/next|watch\/(rows|accounts|link)|search|search\/where|log)$/.test(u) &&
       q.headers['x-cytv-token'] !== TOKEN
     ) {
       noToken.push(u);
@@ -622,9 +650,97 @@ function serve() {
           },
         ],
       });
-    // Search: Telemachus has "Show A", and one app searches itself (the words in its launch parameters); nothing for other words
+    // Where to watch: for "bluey" two titles, the first in two apps of this TV (Disney+ at its page, Telemachus as it is) and on two
+    // services that are not here, the second only on a service that is not here
+    if (u === '/api/search/where') {
+      const words = new URL(q.url, 'http://127.0.0.1').searchParams.get('q') || '';
+      if (!/^bluey$/i.test(words)) return json({ q: words, on: true, groups: [] });
+      const target = 'distributionPartner=lg&programType=series&contentId=x&page=browse&id=entity-x&type=series&contentType=Full';
+      return json({
+        q: words,
+        on: true,
+        groups: [
+          {
+            id: 'where',
+            items: [
+              {
+                key: 'where-0-bluey',
+                title: 'Bluey',
+                year: 2018,
+                kind: 'series',
+                offers: [
+                  {
+                    key: 'where-disney-plus-subscription',
+                    provider: 'disney-plus',
+                    name: 'Disney+',
+                    offer: 'subscription',
+                    price: null,
+                    currency: '',
+                    app: 'app.0',
+                    appTitle: 'Disney+',
+                    launch: { id: 'app.0', params: { contentTarget: target } },
+                    exact: true,
+                  },
+                  {
+                    key: 'where-telemachus-catalogue',
+                    provider: 'telemachus',
+                    name: 'Telemachus',
+                    offer: 'catalogue',
+                    price: null,
+                    currency: '',
+                    app: 'com.telemachus.screen',
+                    appTitle: 'Telemachus',
+                    launch: { id: 'com.telemachus.screen', params: {} },
+                    exact: false,
+                  },
+                  { key: 'where-hulu-subscription', provider: 'hulu', name: 'Hulu', offer: 'subscription', price: null, currency: '' },
+                  {
+                    key: 'where-apple-itunes-buy',
+                    provider: 'apple-itunes',
+                    name: 'Apple iTunes',
+                    offer: 'buy',
+                    price: 1.99,
+                    currency: 'USD',
+                  },
+                ],
+              },
+              {
+                key: 'where-1-bluey',
+                title: 'Bluey',
+                year: 1976,
+                kind: 'series',
+                offers: [
+                  {
+                    key: 'where-fubotv-subscription',
+                    provider: 'fubotv',
+                    name: 'fuboTV',
+                    offer: 'subscription',
+                    price: null,
+                    currency: '',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    }
+    // Search: Telemachus has "Show A", and one app searches itself (the words in its launch parameters); for "bluey" only that app's
+    // search; nothing for other words
     if (u === '/api/search') {
       const words = new URL(q.url, 'http://127.0.0.1').searchParams.get('q') || '';
+      if (/^bluey$/i.test(words))
+        return json({
+          q: words,
+          groups: [
+            {
+              id: 'search',
+              items: [
+                { key: 'search-app.1', app: 'app.1', appTitle: 'Video', launch: { id: 'app.1', params: { contentTarget: 'q=' + words } } },
+              ],
+            },
+          ],
+        });
       if (!/^show a$/i.test(words)) return json({ q: words, groups: [] });
       return json({
         q: words,

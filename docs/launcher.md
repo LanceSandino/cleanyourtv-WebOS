@@ -12,7 +12,7 @@ same on every supported webOS version.
 - **Grid.** All other apps, sorted by how often you use each one (or A to Z).
 - **Top buttons.** Search, Inputs, Live TV, Settings and Customize, and a clock. The buttons you see are yours to change; **Add a
   button** also offers **LG TV**, LG's own TV from the antenna or cable (Live TV is the playlist player).
-- **Search.** Finds a film, show or video in the apps on this TV and opens it there (see [Search](#search)); nothing is sent anywhere.
+- **Search.** Says where a film, show or video can be watched and opens it there (see [Search](#search)).
 - **No pushed apps.** The placeholder apps LG pushes onto Home (a "stub" that downloads the real app when opened) and the
   promotions it pushes as apps (Rakuten TV's `ui30`, Streaming Week) are left out of the dock and the grid.
 - **Open apps.** Optionally a green dot on the tile of every app that is open, as on the active input in the Inputs list: off by
@@ -63,6 +63,7 @@ theme's screenshot, and the Screensaver its frame, mat and photos as an example 
 - the **dock**: each app in it can be replaced (an app already in the dock swaps places), moved or removed, and **Add an app...**
   fills a free place. Holding OK on an app gives **Add to dock**, **Move left**, **Move right**, **Remove from dock** and **Hide app**;
 - the **top buttons**: move one left or right, remove it, or add Search, Inputs, Settings, Live TV or any app;
+- **Search**: whether it asks services where a title is (see [Search](#search));
 - **hidden apps** (show them again);
 - the **app order** (most used first, or A to Z);
 - **mark running apps** (a green dot on their tiles, or none);
@@ -131,23 +132,39 @@ contacts no other site. Nothing is shown from Telemachus when it is not installe
 
 ## Search
 
-**Search** in the top bar finds a film, a show or a video in the apps on this TV ("where to watch"). Type the title with the TV's
-keyboard, or with the [phone remote](remote.md)'s **Type**; the results follow what you type, in up to three groups:
+**Search** in the top bar says where a film, a show or a video can be watched, and opens it there. Type the title with the TV's
+keyboard, or with the [phone remote](remote.md)'s **Type**; the results follow what you type, in up to four groups:
 
 - **In your apps:** the titles in the rows Home already has (see [Continue watching](#continue-watching)): what Telemachus, Plex,
   Stremio and Disney+ have started, the rows Netflix and Prime Video write themselves, and LG's picks while they are on. OK opens the
   title where its card opens: Telemachus at that episode or film, Netflix or Prime Video at that title, Disney+ playing it, Plex (or
   PLX) and Stremio at their Home. Upper or lower case, punctuation, a leading "The", accents and a year in brackets make no
   difference, and one typo is forgiven.
+- **Where to watch:** any title, also one you never started, a moment after you stop typing. One row per title, with its year and
+  whether it is a series or a film. The apps on this TV that have it are on the row; Left and Right choose one, OK opens it. The
+  services that are not on this TV are named under it with their offer (subscription, free, rent or buy, with the price). The apps
+  on this TV come first, then a subscription or free before renting or buying. Where it comes from:
+  - **Plex's catalogue** (with your linked Plex account, see [Continue watching](#continue-watching)): which streaming services have
+    the title in this TV's country (LG's service country in the TV's settings), and how;
+  - **Disney+** (when linked): its own search, for the exact page of the title;
+  - **your Plex server** (when linked) and **Telemachus** on this TV: what they have;
+  - **Stremio's catalogue** (when Stremio is installed): whether Stremio knows the title.
+
+  OK opens Disney+ at the title's page; Netflix, Prime Video and Apple TV at the title (the format their own rows on the TV use);
+  a film in Telemachus starts as a Continue watching card does. The other apps (Hulu, Peacock, Stremio, Plex and the like) open at
+  their Home, to find the title there: the hint at the foot says which. Nothing is asked of a service that is not linked or not
+  installed.
 - **Search in:** the installed apps that can open their own search with words (YouTube and YouTube TV do). OK opens that app's
   search for what you typed.
 - **Look in:** when none of your apps has the title, Telemachus, Plex (or PLX) and Stremio, opened at their Home to look there.
 
 OK or Down goes from the field to the results, Up from the first result back to the field, OK opens a result, Back closes. The
-titles are the ones Home has already read for Continue watching, with the same switches: with **Show on Home** off, a row switched
-off or a card removed, those titles are not found either. Not yet: Netflix's and Prime Video's own search (they take only LG's voice
-commands, not words), and Telemachus's, Plex's and Stremio's own libraries. For a search nothing is sent anywhere, and the service
-reads nothing new: see [Security](security.md#search).
+titles in **In your apps** are the ones Home has already read for Continue watching, with the same switches: with **Show on Home**
+off, a row switched off or a card removed, those titles are not found there either.
+
+**Customize** > **Search** > **Ask services where a title is** (on): **Where to watch** sends what you type to the services above.
+Off, Search looks only at the apps on this TV and sends nothing anywhere. What is sent where is in [Security](security.md#search).
+Not yet: Netflix's and Prime Video's own search (they take only LG's voice commands, not words).
 
 The Search button is in the top bar of a new installation. If you changed your top buttons before, add it with **Customize** >
 **Top buttons** > **Add a button...** > **Search**.

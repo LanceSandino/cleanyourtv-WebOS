@@ -1564,3 +1564,34 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T22:10:00Z"
 ```
+
+```yaml
+id: CU-20261029-43
+type: feature
+title: "Search: Where to watch, for any title, from Plex's catalogue, Disney+, your Plex server, Stremio's catalogue and Telemachus"
+description: "Lance asked for Search to say where any title is, not only titles already on Home (D-20261029-13, superseding
+  D-20261029-8). GET /api/search/where?q= (helper/where.js, in the search part) asks, each on its own with a time limit: Plex
+  Discover with the linked Plex account (search, then the availabilities of up to four matching titles in LG's service country,
+  smartServiceCountryCode2), Disney+'s explore search when linked (disney.js search), the linked Plex server's /hubs/search,
+  Cinemeta when Stremio is installed (stremio.js catalog) and Telemachus's /api/search on the TV (X-Telemachus: cli). Titles from
+  every source are merged by their normalized title, year and kind (helper/titles.js, moved out of search.js); Plex's and Disney+'s
+  titles come first, the best match first, at most six. Each offer is mapped to an installed app (helper/deeplinks.js: Plex's
+  platform names, else an app of exactly the service's name) and opened at the title where the format is known: Disney+ by the
+  entity id in LG's page format (browse; not yet opened on a TV), Netflix m=<id>&source_type=27, Prime Video detail?gti=..., Apple TV
+  its tv.apple.com link (the formats their own rows on the TV use; unverified from a catalogue), YouTube v=<id>; a Telemachus film
+  with its play parameters; everything else opens as it is. Plex's affiliate links are never opened: only the service's own link in
+  their u= parameter is read. Installed apps first, then subscription and free, library and catalogue, rent and buy, the cheapest
+  of each, by name (Plex's sponsored flag and order ignored). Answers are kept 10 minutes per words, country and sources. The page:
+  a Where to watch group after In your apps, asked 900 ms after the typing stops, a row per title with its apps as chips (Left and
+  Right choose, OK opens, the hint says whether the app opens the title itself) and the other services named with their offer; a
+  title with no app here is dimmed and skipped. Customize > Search > Ask services where a title is (search.where false when off,
+  kept by apps.js; on by default): off asks no one. Read on the TV (read only, keys kept on the TV, nothing written there): Plex's
+  availabilities give price as a number without a currency, links that are trackers (Disney+) or the services' own (Hulu, Fubo,
+  Apple TV); the Plex server's /hubs/search answers Hub[] with Metadata of type show and movie."
+impact: medium
+affected_modules: ["helper/where.js", "helper/deeplinks.js", "helper/titles.js", "helper/search.js", "helper/plex.js", "helper/disney.js", "helper/stremio.js", "helper/watch.js", "helper/apps.js", "helper/config.js", "app/src/js/search.js", "app/src/js/menus.js", "app/src/css/search.css", "app/index.html", "i18n/en.json", "docs/launcher.md", "docs/security.md", "docs/api.md", "README.md", "AGENTS.md", "DECISIONS.md"]
+related_tests: ["tools/test/where.test.js (deeplinks: the link inside an affiliate link, nothing from anywhere else, each app's format, Plex's names as apps; the route with stand-ins for Plex's catalogue, Disney+, Cinemeta, the Plex server and Telemachus: titles merged and ranked, offers ordered and the cheapest kept, deep links, a Telemachus film, Disney+-only titles; the tracker never asked, only the expected headers (no device id, cookie or user agent), the TV's country; the same words from memory; services not linked or not installed not asked; the switch off and fewer than two letters ask no one; a failing service leaves the others; the setting kept; nothing asked off this machine)", "tools/test/search.test.js (the search part answers both routes)", "tools/test/api.test.js (/api/search/where with nothing linked asks no one; a web page refused)", "tools/oldchrome.js (where to watch: the group before Search in, chips, Left and Right, a dimmed title skipped, the hint, OK opens the chosen app's link, Customize > Search off brings no Where to watch; search: checked with Where to watch off; Chromium 120)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T21:01:39Z"
+```

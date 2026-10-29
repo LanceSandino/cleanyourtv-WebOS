@@ -438,6 +438,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const okWeb = srWeb.status === 403 && srWeb.body.indexOf('groups') < 0;
     console.log((okWeb ? 'ok   ' : 'FAIL ') + 'api: /api/search refuses a web page');
     if (!okWeb) failed++;
+    // Where to watch: nothing linked and neither Telemachus nor Stremio installed here, so no service is asked and nothing is found
+    const wh = await request('GET', '/api/search/where?q=cats', undefined, 'null');
+    const okWhere = wh.status === 200 && wh.body.toString() === '{"q":"cats","on":true,"groups":[]}';
+    console.log((okWhere ? 'ok   ' : 'FAIL ') + 'api: /api/search/where with nothing linked asks no one: ' + wh.status + ' ' + wh.body);
+    if (!okWhere) failed++;
+    const whWeb = await request('GET', '/api/search/where?q=cats', undefined, 'http://evil.example');
+    console.log((whWeb.status === 403 ? 'ok   ' : 'FAIL ') + 'api: /api/search/where refuses a web page');
+    if (whWeb.status !== 403) failed++;
     const okHidden = appsBody.indexOf('SEARCH_KEYWORD') < 0 && appsBody.indexOf('inAppSearch') < 0;
     console.log((okHidden ? 'ok   ' : 'FAIL ') + "api: /api/apps does not carry the apps' search parameters");
     if (!okHidden) failed++;

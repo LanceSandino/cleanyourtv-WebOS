@@ -287,6 +287,8 @@ function create(ctx) {
       );
       if (hide.length) out.watch.hide = hide.slice(-100);
     }
+    // Search on Home (search.js): asking the services where a title is, on unless switched off (Customize > Search)
+    if (b.search && typeof b.search === 'object' && b.search.where === false) out.search = { where: false };
     // the cards in the theme's slots (Customize > Cards), checked for shape only (cards.js)
     const cards = cardsShape.sanitize(b.cards);
     if (cards) out.cards = cards;

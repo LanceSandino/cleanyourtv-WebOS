@@ -267,7 +267,8 @@ function create(ctx) {
   }
   // the cards of the last read (Home reads them when it is shown and every minute), without reading anything
   const known = () => last.slice();
-  return { name: 'watch', prefix: '/api/watch/', handle, rows, known };
+  // services: the linked accounts themselves, for where.js (Where to watch asks them with the same keys, one copy of each)
+  return { name: 'watch', prefix: '/api/watch/', handle, rows, known, services };
 }
 
-module.exports = { create, TMDB };
+module.exports = { create, TMDB, filmPlay };

@@ -198,13 +198,29 @@ Plex, Stremio and Disney+ are read only once you link them there, with their own
   until you remove it there (Disney+: Account > Log out of all devices).
 ## Search
 
-**Search** on Home ([Search](launcher.md#search)) sends the words nowhere. The service looks them up in what it already has in
-memory: the titles of the rows it last read for Continue watching (above), with Home's switches and removed cards, and the app
-manager's list of apps on the TV (`com.webos.applicationManager/listApps`, a read), whose `inAppSearchParams` say which apps open
-their own search with words (YouTube's `{"contentTarget": "q=$SEARCH_KEYWORD"}`). A search reads nothing anew: no row, no
-picture, no account, no address; the words reach only the app you open, as its own launch parameters, like a search typed in that
-app. LG's search and voice services, search aggregators (JustWatch, Reelgood), the streaming services' web APIs and Google's are
-never asked. `GET /api/search` has the same origin, Host and API-token checks as every other route.
+**Search** on Home ([Search](launcher.md#search)) first looks in what the service already has in memory: the titles of the rows it
+last read for Continue watching (above), with Home's switches and removed cards, and the app manager's list of apps on the TV
+(`com.webos.applicationManager/listApps`, a read), whose `inAppSearchParams` say which apps open their own search with words
+(YouTube's `{"contentTarget": "q=$SEARCH_KEYWORD"}`). That part reads nothing anew and sends nothing.
+
+**Where to watch** sends the words typed, once the typing stops, to these and nowhere else (unless **Customize** > **Search** >
+**Ask services where a title is** is off, which sends nothing):
+
+| To | When | What is sent |
+|---|---|---|
+| `discover.provider.plex.tv` (HTTPS), Plex's catalogue | Plex is linked | The words; then, for up to four of its titles, Plex's id of the title and this TV's country (LG's service country, two letters). With the account's key and this installation's own Plex client id (made by CleanYourTV when you linked Plex), as for Continue watching |
+| `disney.api.edge.bamgrid.com` (HTTPS), Disney+'s search | Disney+ is linked | The words, with the account's key, as Continue watching sends it |
+| Your Plex server (`/hubs/search`) | Plex is linked and the Plex app (or PLX) is installed | The words, with the server's key, at the address Continue watching uses |
+| `v3-cinemeta.strem.io` (HTTPS), Stremio's public catalogue | Stremio is installed | The words only: no account, no key |
+| Telemachus on the TV (`127.0.0.1:8770`) | Telemachus is installed | The words; nothing leaves the TV |
+
+No device id, no cookie, no user agent and no name of the TV are sent. The links Plex gives for each service are affiliate links
+(a tracker that forwards to the service): they are never opened or asked; only the service's own link written inside them is read,
+for the title's id that the app on the TV opens with. Plex's "sponsored" mark and its order are not used. The answers are kept 10
+minutes in memory, so the same words are not sent twice in that time. The words reach the app you open only as its own launch
+parameters, as before. LG's search and voice services, search aggregators (JustWatch, Reelgood), the streaming services' web APIs
+and Google's are never asked. `GET /api/search` and `GET /api/search/where` have the same origin, Host and API-token checks as every
+other route.
 
 ## Weather card
 
