@@ -1157,3 +1157,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T14:30:34Z"
 ```
+
+```yaml
+id: CU-20261029-11
+type: feature
+title: "The screensaver frame's woods are photographed wood"
+description: "The owner found the frames drawn-looking ('make them realistic, like Samsung or Hisense') and approved downloading CC0 textures. tools/saver-wood.mjs cuts each wood board (2048 x 96, the grain along it, WebP) from Poly Haven's 2K colour maps (CC0, not kept in the repository): Walnut and Cherry from Dark Wood (toned brown, and calmer red), Oak, Teak (warmer, darker), Ash (paler) and Black ash (near black, the grain kept) from Oak Veneer 01, Grey oak from Kitchen Wood; a texture whose grain runs up and down is turned. saver.js MATERIAL takes each board's average colour as the colour under it. tools/saver-art.mjs no longer draws woods (it would have overwritten the photographed boards); it keeps the metals, mat board, canvas and linen. docs/screensaver.md credits Poly Haven."
+impact: low
+affected_modules: ["tools/saver-wood.mjs", "tools/saver-art.mjs", "app/saver-wood-walnut.webp", "app/saver-wood-cherry.webp", "app/saver-wood-oak.webp", "app/saver-wood-teak.webp", "app/saver-wood-ash.webp", "app/saver-wood-grey.webp", "app/saver-wood-black.webp", "app/src/js/saver.js", "docs/screensaver.md"]
+related_tests: ["tools/oldchrome.js (saver frame: the four sides with their wood; screensaver menu: the example frame in the menu's picture; menu sections: the Frame list's example follows the focus from oak to teak)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T15:05:00Z"
+```

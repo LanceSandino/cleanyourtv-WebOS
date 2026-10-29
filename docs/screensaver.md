@@ -22,15 +22,17 @@ While it shows, **Left** and **Right** step back and forward through the last 50
 and the timer starts again); right-to-left languages mirror them. Any other key or a move of the Magic Remote ends it, and that key
 does nothing else. It does not start over Live TV, and it is darker from ten at night to seven in the morning.
 
-**The frame.** Like a frame TV: the frame goes round the screen, four mitred sides of real-looking wood (the grain along each side,
+**The frame.** Like a frame TV: the frame goes round the screen, four mitred sides of photographed wood (the grain along each side,
 each side its own length of board), paint or brushed metal, lit from above by its profile, and it throws a soft shadow on the mat.
 The photos hang behind the mat, each in its own window with a bevelled edge, whole: one landscape photo large, a portrait one tall,
 and the photos that follow it of the same orientation beside it (up to two, or three portraits with **Photos at a time**: up to
 three); the first that does not fit is shown next. A photo near the screen's shape, and with **One** any landscape photo, fills the
 inside of the frame instead. The label shows what the photo feed says: the caption and the day it was taken (or else added).
 Nothing moves but the cross-fade from one photo to the next; the frame is drawn once, from a few small pictures that come with the
-launcher (`app/saver-*.webp`, made by `tools/saver-art.mjs`). With **Style** set to **Photos**, photos are shown whole on black
-(portrait photos too).
+launcher (`app/saver-*.webp`): the woods cut by `tools/saver-wood.mjs` from photographed wood textures of
+[Poly Haven](https://polyhaven.com) (Dark Wood, Oak Veneer 01 and Kitchen Wood; CC0, public domain), the metals, the mat board, the
+canvas and the linen drawn by `tools/saver-art.mjs`. With **Style** set to **Photos**, photos are shown whole on black (portrait
+photos too).
 
 **LG's screensaver.** Before the TV starts its own screensaver it asks the apps that registered for it. While the screensaver is on
 and there are photos, the launcher answers no and shows the photos instead; otherwise LG's screensaver starts as before. When
