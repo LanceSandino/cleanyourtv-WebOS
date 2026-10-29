@@ -608,21 +608,51 @@ function serve() {
 }
 
 // asynchronous on purpose: the stand-in service runs in this process and must keep answering while the browser loads the page
+// one page in the browser. It gets real time in proportion to its page time (a long screensaver page on a slow runner went past a fixed
+// 45 s), and when that runs out the browser's whole process group is killed: helpers left behind by a killed browser made every later
+// page fail to start in CI. --disable-dev-shm-usage keeps it off the container's small /dev/shm.
 function run(bin, url, extra, budget) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cytv-chromium-'));
   const argv = [
     '--headless',
     '--disable-gpu',
     '--no-sandbox',
+    '--disable-dev-shm-usage',
     '--hide-scrollbars',
     '--user-data-dir=' + dir,
     '--window-size=1920,1080',
     '--virtual-time-budget=' + (budget || 8000),
   ];
   return new Promise(resolve => {
-    cp.execFile(bin, argv.concat(extra, [url]), { encoding: 'utf8', timeout: 45000, maxBuffer: 32 << 20 }, (e, stdout, stderr) => {
+    const child = cp.spawn(bin, argv.concat(extra, [url]), { detached: true }),
+      out = [],
+      err = [];
+    let killed = false;
+    child.stdout.on('data', d => out.push(d));
+    child.stderr.on('data', d => err.push(d));
+    const timer = setTimeout(
+      () => {
+        killed = true;
+        try {
+          process.kill(-child.pid, 'SIGKILL');
+        } catch (_) {}
+      },
+      Math.max(45000, (budget || 8000) + 45000)
+    );
+    child.on('error', () => {});
+    child.on('close', code => {
+      clearTimeout(timer);
       cp.spawnSync('rm', ['-rf', dir]);
-      resolve({ status: e ? e.code || 1 : 0, error: e && e.killed ? 'timed out' : '', stdout: stdout || '', stderr: stderr || '' });
+      // any helper still running from this browser goes too
+      try {
+        process.kill(-child.pid, 'SIGKILL');
+      } catch (_) {}
+      resolve({
+        status: killed ? 1 : code || 0,
+        error: killed ? 'timed out' : '',
+        stdout: Buffer.concat(out).toString('utf8'),
+        stderr: Buffer.concat(err).toString('utf8'),
+      });
     });
   });
 }
