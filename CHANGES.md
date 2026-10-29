@@ -1411,3 +1411,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T19:51:09Z"
 ```
+
+```yaml
+id: CU-20261029-33
+type: fix
+title: "TV health: SSH judged by root's locked password too (the owner's SSH is key-only)"
+description: "The health check showed the owner's SSH amber because dropbear runs without -s. But root's password is locked on his TV (! in /etc/shadow), so no password can log in and only his keys work, as he said. exposure.js reads root's password as a state only, never its hash (paths.js SHADOW): locked is green whatever dropbear's flags, empty is red (anyone could log in), set without -s stays amber."
+impact: low
+affected_modules: ["helper/exposure.js", "helper/paths.js"]
+related_tests: ["tools/test/metrics.test.js (SSH by root's password state, never its hash: locked green, empty red, set without -s amber)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-29T20:10:00Z"
+```

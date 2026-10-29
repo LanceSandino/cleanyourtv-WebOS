@@ -41,6 +41,7 @@ module.exports = {
   // the writable places whose free space TV health shows (metrics.js); a list separated by ':' in the tests
   DISKS: (env.CYTV_DISKS || '/var:/tmp:/media/developer').split(':'),
   SSHD_CONFIG: env.CYTV_SSHD_CONFIG || '/etc/ssh/sshd_config', // OpenSSH's settings, where a TV runs it (exposure.js)
+  SHADOW: env.CYTV_SHADOW || '/etc/shadow', // only whether root's password is locked or empty is read from it (exposure.js)
   SYSTEMCTL: env.CYTV_SYSTEMCTL || 'systemctl', // LG's running services, on request (exposure.js)
   SBIN: env.CYTV_SBIN || '/usr/sbin', // LG's programs the debloat stubs (debloatcheck.js)
   HOME_APP: '/usr/palm/applications/com.webos.app.home',

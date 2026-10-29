@@ -12,6 +12,7 @@ const PROC = process.env.CYTV_PROC,
   INITD = path.join(tmp, 'initd'),
   BIN = path.join(tmp, 'bin');
 process.env.CYTV_SYS = SYS;
+process.env.CYTV_SHADOW = path.join(tmp, 'no-shadow'); // never this computer's own
 process.env.CYTV_INITD = INITD;
 process.env.CYTV_DISKS = [tmp, path.join(tmp, 'missing')].join(':');
 process.env.CYTV_SYSTEMCTL = path.join(BIN, 'systemctl');
@@ -418,6 +419,17 @@ run(async () => {
   ok(
     E.sshGuard('dropbear', 'dropbear\0-R\0-s\0').tone === 'g' && E.sshGuard('dropbear', 'dropbear\0-Rg\0').tone === 'g',
     'dropbear with -s or -g: green'
+  );
+  ok(
+    E.rootPassword('root:!:19000:0:99999:7:::\nbin:*:1') === 'locked' &&
+      E.rootPassword('root::19000::::::') === 'empty' &&
+      E.rootPassword('root:$6$salt$hash:1') === 'set' &&
+      E.rootPassword('') === '' &&
+      E.sshGuard('dropbear', 'dropbear\0-R\0', '', 'locked').tone === 'g' &&
+      E.sshGuard('dropbear', 'dropbear\0-R\0-s\0', '', 'empty').tone === 'r' &&
+      E.sshGuard('dropbear', 'dropbear\0-R\0', '', 'set').tone === 'a' &&
+      !/\$6\$|salt|hash/.test(JSON.stringify(E.sshGuard('dropbear', 'dropbear\0-R\0', '', E.rootPassword('root:$6$salt$hash:1')))),
+    "SSH by root's password state (never its hash): locked is green whatever dropbear's flags, empty is red, set without -s amber"
   );
   ok(
     E.sshGuard('sshd', '', 'Port 22\nPasswordAuthentication no\n').tone === 'g' &&

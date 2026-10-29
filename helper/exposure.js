@@ -177,8 +177,20 @@ function parseSockets(text, proto) {
   }
   return out;
 }
-// dropbear's flags (-s: no password logins, -g: none for root) or OpenSSH's PasswordAuthentication
-function sshGuard(program, cmdline, sshdConfig) {
+// root's password as a state only, never its hash: 'locked' (! or * : no password can log in), 'empty' (a login with no password),
+// 'set', or '' when it cannot be read
+function rootPassword(shadow) {
+  const line = String(shadow || '')
+    .split('\n')
+    .filter(l => /^root:/.test(l))[0];
+  if (!line) return '';
+  const h = line.split(':')[1];
+  return h === '' ? 'empty' : /^[!*]/.test(h) ? 'locked' : 'set';
+}
+// dropbear's flags (-s: no password logins, -g: none for root) or OpenSSH's PasswordAuthentication; with root's password locked, no
+// password can log in whatever the flags say (the owner's TV: dropbear -R from the Homebrew Channel, root locked, keys only)
+function sshGuard(program, cmdline, sshdConfig, rootPw) {
+  if (rootPw === 'empty') return { how: 'root has an empty password: anyone on the network can log in', tone: 'r' };
   if (/^sshd/.test(program)) {
     const off = /^\s*PasswordAuthentication\s+no\b/im.test(sshdConfig || '');
     return off
@@ -192,6 +204,7 @@ function sshGuard(program, cmdline, sshdConfig) {
     .join('');
   if (/[sg]/.test(flags))
     return { how: 'dropbear; password login is off (' + (/s/.test(flags) ? '-s' : '-g') + '): a key is needed', tone: 'g' };
+  if (rootPw === 'locked') return { how: "dropbear; root's password is locked, so only a key logs in", tone: 'g' };
   return {
     how: 'dropbear does not refuse passwords (no -s): root logs in with a key, and with a password only if one was ever set',
     tone: 'a',
@@ -224,7 +237,7 @@ function classify(s, info) {
   }
   if (s.bind === 'loopback')
     return Object.assign(out, { what: e.what, how: e.local || 'loopback only: nothing on the network reaches it', tone: 'g' });
-  if (e.ssh) return Object.assign(out, { what: e.what }, sshGuard(s.program, s.cmdline, info.sshdConfig));
+  if (e.ssh) return Object.assign(out, { what: e.what }, sshGuard(s.program, s.cmdline, info.sshdConfig, info.rootPw));
   return Object.assign(out, { what: e.what, how: e.how, tone: e.tone });
 }
 // one row per protocol, port and program (IPv4 and IPv6 together, the wider binding kept); UDP reply ports counted apart
@@ -369,6 +382,7 @@ function create(ctx) {
     const info = {
       sonosPort: sonos && sonos.eventPort ? sonos.eventPort() : 0,
       sshdConfig: read(P.SSHD_CONFIG),
+      rootPw: rootPassword(read(P.SHADOW)),
     };
     const rows = socks.map(s => {
       const pid = owners.get(s.inode),
@@ -425,4 +439,4 @@ function parseUnits(text) {
     .map(m => ({ unit: m[1], description: m[2].trim().slice(0, 80) }));
 }
 
-module.exports = { create, PORTS, bindOf, parseSockets, sshGuard, classify, merge, parseUnits };
+module.exports = { create, PORTS, bindOf, parseSockets, sshGuard, rootPassword, classify, merge, parseUnits };
