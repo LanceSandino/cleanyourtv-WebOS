@@ -46,9 +46,11 @@ uninstall. Optional features contact other services only when you switch them on
    our extra apps), the services that talk to it (`eim`, `webapp-mgr`, `preload-manager`, `memorymanager`, those the TV has) are
    restarted after it (`after-sam.sh`). Without that, apps stopped opening, an HDMI input lost its picture and HDMI-CEC control
    stopped (issues 14, 23 and 24). Each step is written to `/tmp/cleanyourtv-boot.log`, which **Share log** includes.
-   On webOS 26 (SDK 11) with the flutter or web Home, the same hook restarts `arccontroller` after the app manager, if it runs: on
-   an OLED65C35LA HDMI ARC to the soundbar stayed silent although the right output was chosen and the controller was running, and
-   restarting that controller brought the sound back (issue 21, found by karim7878). webOS 25 is left alone; eARC keeps working there.
+   On webOS 26 (SDK 11) with the flutter or web Home, the same hook restarts `arccontroller` and `umediaserver` after the app manager,
+   if they run. On an OLED65C35LA HDMI ARC to the soundbar stayed silent although the right output was chosen and the controller was
+   running, and restarting that controller brought the sound back (issue 21, found by karim7878). On a 50NU850BPSA `umediaserver` lost
+   its subscription to the app manager's foreground apps, so every video app showed a black screen (pull request 73). webOS 25 is left
+   alone; eARC keeps working there.
 3. The debloat, if it is on, runs as soon as the boot scripts start (about 45 seconds after the TV starts, on a webOS 25 TV), before
    LG's activity manager starts its ad and tracking services, and once more when LG's boot is done (LG's `/tmp/boot-done`, about
    85 seconds). See [Debloat](debloat.md).

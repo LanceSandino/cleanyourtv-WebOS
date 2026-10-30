@@ -21,7 +21,8 @@
 //                  and video apps no longer opened, an HDMI input had no picture, HDMI-CEC control stopped and no apps were preloaded
 //                  (issues 14, 23 and 24). TVs with the flutter or web Home (webOS 24 and newer) restart what depends on SAM themselves.
 //                  On webOS 26 (SDK 11) with the flutter or web Home, HDMI ARC to a soundbar stayed silent after the restart until
-//                  arccontroller was restarted (issue 21, OLED65C35LA): that one is restarted there. webOS 25 (SDK 10) keeps eARC.
+//                  arccontroller was restarted (issue 21, OLED65C35LA), and on a 50NU850BPSA video apps stayed black because umediaserver
+//                  lost its subscription to SAM (pull request 73): both are restarted there. webOS 25 (SDK 10) keeps eARC.
 //                  scripts/after-sam.sh restarts only services that exist and are active.
 //   lgVolumeBar    how LG's own volume bar can be hidden while the Sonos volume shows (helper/lgvolume.js): 'configd' (LG's surface manager
 //                  follows the configd setting com.webos.surfacemanager.volumeOSD) on webOS 25 (SDK 10), where that was read in LG's files;
@@ -108,7 +109,7 @@ function decide(facts, compat) {
       (major > 0 && major < 7) || /\snative$/.test(homeKind)
         ? 'eim webapp-mgr preload-manager memorymanager'
         : major === 11 && /\s(?:flutter|web)$/.test(homeKind)
-          ? 'arccontroller'
+          ? 'arccontroller umediaserver'
           : '',
     homeTakeover: /^com\.webos\.app\.home native$/.test(homeKind) ? 'standin' : 'mount',
     homeKeyWatch: major >= 10,

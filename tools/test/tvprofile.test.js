@@ -114,8 +114,14 @@ run(async () => {
   );
   // Issue 21: ARC remained silent after SAM restarted, although the controller was active.
   const arc = { model: 'OLED65C35LA.AEU', sdk: '11.2.0', home: 'com.webos.app.home flutter' };
-  ok(tv.decide(arc).afterSam === 'arccontroller', 'webOS 26 restarts the ARC controller after SAM (issue 21), whatever the model name');
-  ok(tv.decide(Object.assign({}, arc, { home: 'com.webos.app.home web' })).afterSam === 'arccontroller', 'also with the web Home');
+  ok(
+    tv.decide(arc).afterSam === 'arccontroller umediaserver',
+    'webOS 26 restarts the ARC controller and umediaserver after SAM (issue 21), whatever the model name'
+  );
+  ok(
+    tv.decide(Object.assign({}, arc, { home: 'com.webos.app.home web' })).afterSam === 'arccontroller umediaserver',
+    'also with the web Home'
+  );
   for (const change of [{ sdk: '10.2.2' }, { sdk: '' }, { home: '' }]) {
     ok(tv.decide(Object.assign({}, arc, change)).afterSam === '', 'not on webOS 25 or an unknown TV ' + JSON.stringify(change));
   }
@@ -182,7 +188,7 @@ run(async () => {
     'from the shell: no WebAppMgr restart on webOS 22, admanager hidden there and stubbed on webOS 25 (devtools-close.sh and debloat-stop.sh ask)'
   );
   ok(
-    cli(['get', 'afterSam', '--sdk', arc.sdk, '--home', arc.home]) === 'arccontroller',
+    cli(['get', 'afterSam', '--sdk', arc.sdk, '--home', arc.home]) === 'arccontroller umediaserver',
     'from the shell: webOS 26 restarts the ARC controller'
   );
   // the service saves the profile and reads it again after a restart
