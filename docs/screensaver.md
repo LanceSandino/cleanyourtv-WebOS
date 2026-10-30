@@ -44,7 +44,10 @@ another app is on the screen (and idle), Home comes forward with the photos, and
 app; the Home key ends them and stays on Home. Never over an HDMI input: a game console or a set-top box is in use even when the
 remote is not (LG does not count a game controller), so there the launcher answers yes and LG decides, as it did before. Whether a
 TV asks Home at all depends on the firmware: if LG's screensaver still appears, set **Starts after** shorter than LG's.
-Each answer is kept on the TV in `/media/developer/cleanyourtv/screensaver-answers.log` (the last 40: the time, the app in front, how
+The service answers on its own connection to LG's bus (LG's `palmbus` module, the one LG's JavaScript services use): LG takes an
+answer only from the connection that asked to be told, so an answer sent any other way is refused even though LG replies "ok". On a
+TV without that module nothing is registered and LG's screensaver runs as before. Each answer is kept on the TV in
+`/media/developer/cleanyourtv/screensaver-answers.log` (the last 40: the time, the app in front, how
 many milliseconds the answer took and LG's reply, `ok` or LG's reason, such as "The response is too late"), because the service's own
 log is gone after the reboot such a fault causes.
 

@@ -1712,3 +1712,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-30T01:20:00Z"
 ```
+
+```yaml
+id: CU-20261029-53
+type: fix
+title: "LG's screensaver question answered on the connection that registered (the full reboot to LG's screen at power-on)"
+description: "The owner's TV started fully twice on 2026-10-30, with LG's screen first. LG's fault log (general_fault_logs.tar.gz, written at the start): Request Screen Saver timed out for cleanyourtv at 1340 s. Its own dbg-log of those seconds: the question at 1337.016 with a 3000 ms timer; our answer at 1337.17 from a second luna-send; tvpowerd '[setNack] clientID: OWUzakvf / clientName: cleanyourtv is not exist' (the answer came from another connection; luna-send still printed returnValue true, so screensaver-answers.log said ok); at 1340.018 'cleanyourtv is no response', the timeout saved, LG's screensaver launched, and the fault reboot at the next standby. tvpowerd keys a client by its connection (clientID), so the answer must use the connection that registered; luna-send cannot (one call per process). helper/lgscreensaver.js: one palmbus Handle (LG's module for its JavaScript services, /usr/lib/nodejs/palmbus.js, loads in the service's Node on webOS 25; an anonymous handle registered on the owner's TV) holds the subscription and sends every answer (2.5 s at most, under LG's 3 s); a subscription that ends is asked again on the same handle; stop cancels it; without the module nothing is registered and LG decides. The luna-send subscription is gone; ones left by earlier versions are still ended at start. Not seen yet: an answer taken by tvpowerd (the next question over an app will show setAck in LG's log)."
+impact: high
+affected_modules: ["helper/lgscreensaver.js", "tools/test/service.test.js", "docs/screensaver.md"]
+related_tests: ["tools/test/lgscreensaver.test.js (one connection registers; the answer goes out on the connection that registered, never through another luna-send; without the bus module nothing is registered; an ended subscription is asked again on the same connection)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-30T14:15:00Z"
+```

@@ -2,16 +2,19 @@
 // (com.webos.service.tvpower registerScreenSaverRequest) and waits for responseScreenSaverRequest; a client that answers late is a
 // fault for LG: its fault manager records "Request Screen Saver" timed out for the client, and the TV then reboots fully at its next
 // standby instead of sleeping (rebootByFault: LG's Home first, ours a minute later; seen on the owner's TV on 2026-10-29). The launcher
-// page used to answer, and a page can be late (in the background, reloading after an update). The service answers now, at once: one
-// subscription held by one waiting luna-send -i, an answer within tens of milliseconds.
+// page used to answer, and a page can be late (in the background, reloading after an update). The service answers now, at once, on
+// its own connection to LG's bus: tvpowerd takes an answer only from the connection that registered (its log: "[setNack] clientID: ...
+// / clientName: cleanyourtv is not exist" when the answer came from another luna-send, read on 2026-10-30 after such a fault; it
+// still replied returnValue true), so the subscription and every answer go through one palmbus handle (LG's own module for its
+// JavaScript services, /usr/lib/nodejs/palmbus.js). Where that module is not there nothing is registered: LG decides, as before this
+// launcher, rather than a question no one can answer.
 // Ours (the photos, saver.js) when the screensaver is on and has photos and the TV is not on an HDMI input (a console or a set-top box
 // is in use even when the remote is not): LG is told no, and Home is opened with {saver: 'start', from: the app that was in front}, so
 // the launcher shows the photos and a key goes back to that app. Otherwise LG decides, as before this launcher.
 // Every answer is kept in a short record on the TV's storage (screensaver-answers.log, the last 40), with how long it took and what LG
 // replied ("The response is too late", an invalid parameter): the service's own log is in /tmp and gone after the reboot such a fault
 // causes, so this is what says why LG counted an answer as missing.
-const cp = require('child_process'),
-  fs = require('fs'),
+const fs = require('fs'),
   os = require('os'),
   path = require('path');
 const P = require('./paths');
@@ -21,7 +24,15 @@ const URI = 'luna://com.webos.service.tvpower/power/';
 function create(ctx, opts) {
   const o = Object.assign(
     {
-      bin: process.env.CYTV_LUNA_SEND || 'luna-send',
+      // LG's bus module, or null where it is not
+      bus: () => {
+        try {
+          return require(process.env.CYTV_PALMBUS || '/usr/lib/nodejs/palmbus.js');
+        } catch (_) {
+          return null;
+        }
+      },
+      answerMs: 2500, // LG waits 3000 ms (tvpowerd: "Timer setted with 3000 ms")
       minWaitMs: 1000,
       maxWaitMs: 30000,
       proc: P.PROC,
@@ -32,7 +43,8 @@ function create(ctx, opts) {
     opts
   );
   const config = ctx.config;
-  let child = null,
+  let handle = null,
+    sub = null,
     timer = null,
     stopped = true,
     wait = o.minWaitMs,
@@ -70,8 +82,28 @@ function create(ctx, opts) {
     } catch (_) {}
   }
   let t0 = 0;
+  // the answer on the connection that registered; LG's reply to it, or null
+  function respond(payload) {
+    return new Promise(resolve => {
+      if (!handle) return resolve(null);
+      const t = setTimeout(() => resolve(null), o.answerMs);
+      try {
+        handle.call(URI + 'responseScreenSaverRequest', JSON.stringify(payload)).addListener('response', m => {
+          clearTimeout(t);
+          try {
+            resolve(JSON.parse(m.payload()));
+          } catch (_) {
+            resolve(null);
+          }
+        });
+      } catch (_) {
+        clearTimeout(t);
+        resolve(null);
+      }
+    });
+  }
   async function answer(ts, ack, fg) {
-    const r = await ctx.luna(URI + 'responseScreenSaverRequest', { clientName: 'cleanyourtv', ack, timestamp: ts }).catch(() => null);
+    const r = await respond({ clientName: 'cleanyourtv', ack, timestamp: ts });
     const lg = r && r.returnValue === true ? 'ok' : (r && r.errorText) || 'no reply';
     const entry = { at: new Date().toISOString(), up: Math.round(os.uptime()), ack, over: fg || '', ms: Date.now() - t0, lg };
     if (typeof ts !== 'string') entry.ts = typeof ts;
@@ -103,41 +135,59 @@ function create(ctx, opts) {
       .catch(() => null);
     log('LG asked' + (fg && fg !== 'com.webos.app.home' ? ' over ' + fg : '') + ', ours shown on Home');
   }
+  function again() {
+    if (stopped) return;
+    // the subscription ended (the power service restarted): again, waiting longer each time
+    timer = setTimeout(listen, wait);
+    wait = Math.min(o.maxWaitMs, wait * 2);
+  }
   function listen() {
-    if (child || stopped) return;
-    const c = cp.spawn(o.bin, ['-i', URI + 'registerScreenSaverRequest', JSON.stringify({ subscribe: true, clientName: 'cleanyourtv' })], {
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-    child = c;
-    let buf = '';
-    c.stdout.setEncoding('utf8');
-    c.stdout.on('data', d => {
-      buf += d;
-      let i;
-      while ((i = buf.indexOf('\n')) >= 0) {
-        const line = buf.slice(0, i);
-        buf = buf.slice(i + 1);
-        let j = null;
-        try {
-          j = JSON.parse(line);
-        } catch (_) {}
-        if (!j) continue;
-        if (j.returnValue === true && j.timestamp === undefined) wait = o.minWaitMs; // subscribed
-        if (j.timestamp !== undefined) asked(j.timestamp).catch(() => {});
+    if (sub || stopped) return;
+    if (!handle) {
+      const bus = o.bus();
+      if (!bus) return log("LG's bus module is not on this TV: not registered, LG decides");
+      try {
+        handle = new bus.Handle('', false);
+      } catch (e) {
+        return log("no connection to LG's bus (" + ((e && e.message) || e) + '): not registered, LG decides');
       }
+    }
+    let s;
+    try {
+      s = handle.subscribe(URI + 'registerScreenSaverRequest', JSON.stringify({ subscribe: true, clientName: 'cleanyourtv' }));
+    } catch (_) {
+      return again();
+    }
+    sub = s;
+    s.addListener('response', m => {
+      let j = null;
+      try {
+        j = JSON.parse(m.payload());
+      } catch (_) {}
+      if (!j) return;
+      if (j.returnValue === false || j.subscribed === false) {
+        if (sub === s) {
+          sub = null;
+          try {
+            s.cancel();
+          } catch (_) {}
+          again();
+        }
+        return;
+      }
+      if (j.timestamp === undefined)
+        wait = o.minWaitMs; // subscribed
+      else asked(j.timestamp).catch(() => {});
     });
-    c.on('error', () => {});
-    c.on('exit', () => {
-      if (child !== c) return;
-      child = null;
-      if (stopped) return;
-      // the subscription ended (the power service restarted): again, waiting longer each time
-      timer = setTimeout(listen, wait);
-      wait = Math.min(o.maxWaitMs, wait * 2);
+    s.addListener('cancel', () => {
+      if (sub !== s) return;
+      sub = null;
+      again();
     });
   }
-  // a subscription of ours left by an earlier run of the service (a restarted service does not take its children with it): it can no
-  // longer answer, and an unanswered question is the fault this part exists to prevent, so it goes before ours starts
+  // a luna-send subscription of ours left by an earlier version (1.6.36 to 1.6.45 held it in a luna-send -i, and a restarted service
+  // does not take its children with it): it can never be answered, and an unanswered question is the fault this part exists to
+  // prevent, so it goes before ours starts
   function sweep() {
     let gone = 0;
     let pids = [];
@@ -145,7 +195,6 @@ function create(ctx, opts) {
       pids = fs.readdirSync(o.proc).filter(x => /^\d+$/.test(x));
     } catch (_) {}
     for (const pid of pids) {
-      if (child && +pid === child.pid) continue;
       let cmd = '';
       try {
         cmd = fs.readFileSync(path.join(o.proc, pid, 'cmdline'), 'utf8');
@@ -167,11 +216,11 @@ function create(ctx, opts) {
   function stop() {
     stopped = true;
     clearTimeout(timer);
-    if (child) {
-      const c = child;
-      child = null;
+    if (sub) {
+      const s = sub;
+      sub = null;
       try {
-        c.kill();
+        s.cancel();
       } catch (_) {}
     }
   }
@@ -187,7 +236,7 @@ function create(ctx, opts) {
       return [];
     }
   }
-  return { name: 'lgscreensaver', start, stop, status: () => ({ listening: !!child, last, answers: answers() }) };
+  return { name: 'lgscreensaver', start, stop, status: () => ({ listening: !!sub, last, answers: answers() }) };
 }
 
 module.exports = { create };
