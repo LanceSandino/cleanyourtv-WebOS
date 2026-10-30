@@ -91,7 +91,9 @@ phone keeps its key per address).
 closes). It keeps one connection out to the hub instead, with a link key of its own; the hub accepts that link only from the TV's
 address and pins the key the first time (a SHA-256 in its data folder), and passes each phone's request down it. The TV answers them
 with the same handler and the same checks as before (the phone's key, the home network, the page's origin). When the TV sleeps the
-link drops, so the hub knows at once that it is off. Switch it off to go back to the TV's own server.
+link drops, so the hub knows that it is off. The hub writes an empty line down the link every 20 seconds; the TV makes the link
+again when nothing has come for 50 seconds, and at once when it wakes from standby (a connection kept through standby is one the hub
+closed meanwhile, and the phone page would say the TV is off). Switch it off to go back to the TV's own server.
 
 **History and alerts** (on the hub, not on the TV): while the TV is linked the hub asks it every 25 seconds for its health (about
 3.5 ms of the TV's time) and keeps a small line per sample in a file per day (about half a megabyte a day, kept 30 days:

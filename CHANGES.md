@@ -1725,3 +1725,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-30T14:15:00Z"
 ```
+
+```yaml
+id: CU-20261029-54
+type: fix
+title: "Phone remote through the hub: the link is made again after standby, and when it goes quiet"
+description: "The owner turned the TV on from the phone remote (the hub's Wake-on-LAN worked) but the phone page kept saying the TV was off, also after reopening it. Read on the TV and the hub: the TV said link 'linked' while the hub had no link (tv off, link false) and served its kept page. While the TV slept the hub closed the link; the TV only reads from it, so nothing told it, and its connection looked open after waking. helper/remote.js: the hub's empty line every 20 s is watched (any data counts); a link quiet for 50 s is dropped and made again, and one is made again at once when the service's clock jumps by more than 60 s (the TV slept); linkDrop now drops only the link in use, so the end and error events of a link already destroyed no longer drop the next one or double the wait before it (they did: a dropped link came back after 4 s instead of 1). create(ctx, opts) takes linkQuietMs, watchMs and wakeGapMs. Fixed on the TV at once before the release by switching the route to the TV and back to the hub (it linked again). docs/remote.md says so."
+impact: medium
+affected_modules: ["helper/remote.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (a quiet link is made again; one with a heartbeat is kept)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-30T19:55:00Z"
+```

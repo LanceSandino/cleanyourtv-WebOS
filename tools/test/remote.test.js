@@ -322,4 +322,43 @@ run(async () => {
   ok(gone.code === 0 && config.get().remote.devices.length === 0, 'a phone removed on the TV: no key works and the server stops');
   R.stop();
   input.close();
+  // a link that goes quiet is made again (a TV that slept keeps a connection the hub closed long ago); one the hub keeps writing to
+  // (its heartbeat every 20 s) is kept
+  {
+    let connects = 0,
+      beat = null;
+    const quiet = await serve((rq, rs) => {
+      if (rq.url !== '/link') return rs.end('{}');
+      connects++;
+      rs.writeHead(200, { 'content-type': 'application/x-ndjson' });
+      rs.write('\n');
+      if (rq.headers['x-beat'] === undefined && quiet.beating) beat = setInterval(() => rs.write('\n'), 40);
+    });
+    const conf2 = memoryConfig({
+      remote: {
+        on: true,
+        via: 'hub',
+        helper: quiet.url,
+        devices: [{ id: 'aaaaaaaaaaaa', name: 'Phone', hash: 'x'.repeat(64), added: 1, used: 1 }],
+      },
+    });
+    const R2 = req('remote').create({ config: conf2, luna: async () => ({ returnValue: true }) }, { linkQuietMs: 250, watchMs: 50 });
+    R2.start();
+    await sleep(1600);
+    const quietConnects = connects;
+    R2.stop();
+    connects = 0;
+    quiet.beating = true;
+    const R3 = req('remote').create({ config: conf2, luna: async () => ({ returnValue: true }) }, { linkQuietMs: 250, watchMs: 50 });
+    R3.start();
+    await sleep(700);
+    R3.stop();
+    clearInterval(beat);
+    quiet.server.closeAllConnections && quiet.server.closeAllConnections();
+    quiet.server.close();
+    ok(
+      quietConnects >= 2 && connects === 1,
+      'a quiet link is made again (' + quietConnects + ' links in 1.6 s); one with a heartbeat is kept (' + connects + ')'
+    );
+  }
 });

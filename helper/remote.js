@@ -86,7 +86,10 @@ function sameHex(a, b) {
 }
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, Math.round(+n || 0)));
 
-function create(ctx) {
+function create(ctx, opts) {
+  // linkQuietMs: the hub writes a line every 20 s, so a link quiet for longer is dead (a TV that slept keeps a connection the hub
+  // closed long ago); watchMs: how often that is looked at; wakeGapMs: a clock jump this long means the TV slept
+  const lo = Object.assign({ linkQuietMs: 50000, watchMs: 10000, wakeGapMs: 60000 }, opts);
   const config = ctx.config,
     luna = ctx.luna;
   const conf = () => config.get().remote || {};
@@ -337,7 +340,10 @@ function create(ctx) {
   let link = null,
     linkState = 'off',
     linkTimer = null,
-    linkWait = 1000;
+    linkWait = 1000,
+    linkSeen = 0,
+    linkWatch = null,
+    tick = Date.now();
   const replyAgent = new http.Agent({ keepAlive: true, maxSockets: 4 });
   function linkKey() {
     let k = String(conf().linkKey || '');
@@ -365,14 +371,32 @@ function create(ctx) {
     r.on('response', res => {
       if (res.statusCode !== 200) {
         res.resume();
-        return linkDrop('the hub refused the link (' + res.statusCode + ')');
+        return linkDrop('the hub refused the link (' + res.statusCode + ')', r);
       }
       linkState = 'linked';
       linkWait = 1000;
+      linkSeen = Date.now();
       console.log('remote: linked to the hub');
+      // a link that goes quiet is dead: the hub writes a line every 20 s, and a TV that slept in standby keeps a connection the hub
+      // closed meanwhile (nothing tells the TV, as it only reads); seen on the owner's TV on 2026-10-30, the phone page then said the
+      // TV was off. Also after the TV wakes (its clock jumps while it sleeps), the link is made again at once.
+      clearInterval(linkWatch);
+      tick = Date.now();
+      linkWatch = setInterval(() => {
+        const now = Date.now(),
+          slept = now - tick > lo.wakeGapMs;
+        tick = now;
+        if (link !== r) return clearInterval(linkWatch);
+        if (slept) {
+          linkWait = 0;
+          return linkDrop('the TV woke up', r);
+        }
+        if (now - linkSeen > lo.linkQuietMs) linkDrop('the hub went quiet', r);
+      }, lo.watchMs);
       let buf = '';
       res.setEncoding('utf8');
       res.on('data', d => {
+        linkSeen = Date.now();
         buf += d;
         let i;
         while ((i = buf.indexOf('\n')) >= 0) {
@@ -381,14 +405,18 @@ function create(ctx) {
           if (line.trim()) linked(line);
         }
       });
-      res.on('end', () => linkDrop('the hub closed it'));
-      res.on('error', () => linkDrop('error'));
+      res.on('end', () => linkDrop('the hub closed it', r));
+      res.on('error', () => linkDrop('error', r));
     });
-    r.on('error', () => linkDrop('no answer'));
+    r.on('error', () => linkDrop('no answer', r));
     r.end();
   }
-  function linkDrop(why) {
+  // only the link in use is dropped: a link already dropped and destroyed still fires its own end and error events, which must not
+  // drop the next one or stretch the wait before it
+  function linkDrop(why, which) {
+    if (which && link !== which) return;
     const was = linkState;
+    clearInterval(linkWatch);
     if (link) {
       try {
         link.destroy();
@@ -400,11 +428,12 @@ function create(ctx) {
     clearTimeout(linkTimer);
     if (via() === 'hub' && (isOn() || pairing)) {
       linkTimer = setTimeout(linkUp, linkWait);
-      linkWait = Math.min(15000, linkWait * 2);
+      linkWait = Math.min(15000, Math.max(1000, linkWait * 2));
     }
   }
   function linkStop() {
     clearTimeout(linkTimer);
+    clearInterval(linkWatch);
     const l = link;
     link = null;
     linkState = 'off';
