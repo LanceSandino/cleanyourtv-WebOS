@@ -319,8 +319,8 @@ run(async () => {
     of('telemachus').exact === false &&
       JSON.stringify(of('telemachus').launch) === '{"id":"com.telemachus.screen","params":{}}' &&
       of('stremio').exact === false &&
-      JSON.stringify(of('stremio').launch) === '{"id":"io.strem.tv","params":{"contentTarget":"stremio:///detail/series/tt7678620"}}',
-    "Telemachus (a series) opens as it is; Stremio gets the series' page link (stremio:///detail)"
+      JSON.stringify(of('stremio').launch) === '{"id":"io.strem.tv","params":{}}',
+    'Telemachus (a series) and Stremio open as they are'
   );
   ok(
     !of('hulu').app && !of('hulu').launch && of('fubotv').name === 'fuboTV' && of('apple-itunes').currency === '',

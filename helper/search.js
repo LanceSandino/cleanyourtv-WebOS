@@ -27,13 +27,6 @@ const SOURCE_APPS = {
     disney: ['com.disney.disneyplus-prod'],
   },
   TRY = ['telemachus', 'plex', 'stremio'];
-// apps that take the words though they declare no in-app search: Telemachus opens its own search page ({play: {search}}, its
-// tvlaunch.ts; an older Telemachus opens as it is), Stremio's app takes a link in contentTarget (its appinfo says contentTarget
-// "stremio"; the link is Stremio's documented stremio:///search?search=<words>, stremio-addon-sdk docs/deep-links.md)
-const OWN_SEARCH = {
-  'com.telemachus.screen': words => ({ play: { search: words } }),
-  'io.strem.tv': words => ({ contentTarget: 'stremio:///search?search=' + encodeURIComponent(words) }),
-};
 
 // the words as the app's search gets them: spaces kept, as LG's own search passes them (the app manager's replaceParams), and the
 // characters that would end or split the query string (%, &, #, +) written as %XX
@@ -149,9 +142,6 @@ function create(ctx) {
       const params = fill(a.params, words);
       if (params) inApp.push({ key: 'search-' + a.id, app: a.id, appTitle: a.title, launch: { id: a.id, params } });
     }
-    for (const id of Object.keys(OWN_SEARCH))
-      if (byId[id] && gone.indexOf('app:' + id) < 0 && !inApp.some(x => x.app === id))
-        inApp.push({ key: 'search-' + id, app: id, appTitle: byId[id].title, launch: { id, params: OWN_SEARCH[id](words) } });
     const tryIn = [];
     if (!have.length)
       for (const src of TRY) {

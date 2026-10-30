@@ -176,18 +176,15 @@ run(async () => {
   // before Home read its rows: nothing to find in them; the apps' own search; the libraries to look in
   const cold = await ask('the far orbit');
   ok(
-    groupsOf(cold) === 'search:youtube.leanback.v4|youtube.leanback.ytv.v1|com.telemachus.screen|io.strem.tv try:com.beb.plxnative',
+    groupsOf(cold) === 'search:youtube.leanback.v4|youtube.leanback.ytv.v1 try:com.telemachus.screen|com.beb.plxnative|io.strem.tv',
     'before Home read its rows: no hit; YouTube and YouTube TV search (not the hidden app nor an invisible one); then Telemachus, PLX (for Plex) and Stremio (' +
       groupsOf(cold) +
       ')'
   );
   ok(
     JSON.stringify(cold.groups[0].items[0].launch) === '{"id":"youtube.leanback.v4","params":{"contentTarget":"q=the far orbit"}}' &&
-      JSON.stringify(cold.groups[1].items[0].launch) === '{"id":"com.beb.plxnative","params":{}}' &&
-      JSON.stringify(cold.groups[0].items[2].launch) === '{"id":"com.telemachus.screen","params":{"play":{"search":"the far orbit"}}}' &&
-      JSON.stringify(cold.groups[0].items[3].launch) ===
-        '{"id":"io.strem.tv","params":{"contentTarget":"stremio:///search?search=the%20far%20orbit"}}',
-    'YouTube opens its search with the words, Telemachus its search page, Stremio its search link; a library opens as it is'
+      JSON.stringify(cold.groups[1].items[1].launch) === '{"id":"com.beb.plxnative","params":{}}',
+    'YouTube opens its search with the words; a library opens as it is'
   );
   ok(
     JSON.stringify(await features.apps.apps()).indexOf('SEARCH_KEYWORD') < 0,
@@ -225,8 +222,7 @@ run(async () => {
   const ex = await ask('the far orbit');
   ok(
     ex.q === 'the far orbit' &&
-      groupsOf(ex) ===
-        'have:com.telemachus.screen/The Far Orbit search:youtube.leanback.v4|youtube.leanback.ytv.v1|com.telemachus.screen|io.strem.tv',
+      groupsOf(ex) === 'have:com.telemachus.screen/The Far Orbit search:youtube.leanback.v4|youtube.leanback.ytv.v1',
     'a title in the rows: "In your apps" first, then the apps\' own search; the libraries only when no app has it (' + groupsOf(ex) + ')'
   );
   const hit = ex.groups[0].items[0];
@@ -270,7 +266,7 @@ run(async () => {
   );
   ok(
     groupsOf(await ask('nothing like this')) ===
-      'search:youtube.leanback.v4|youtube.leanback.ytv.v1|com.telemachus.screen|io.strem.tv try:com.beb.plxnative',
+      'search:youtube.leanback.v4|youtube.leanback.ytv.v1 try:com.telemachus.screen|com.beb.plxnative|io.strem.tv',
     "no app has it: the apps' own search and the libraries"
   );
   ok(
@@ -315,7 +311,7 @@ run(async () => {
     c.hidden = ['hidden.app', 'youtube.leanback.ytv.v1', 'io.strem.tv'];
   });
   ok(
-    groupsOf(await ask('nothing like this')) === 'search:youtube.leanback.v4|com.telemachus.screen try:com.beb.plxnative',
+    groupsOf(await ask('nothing like this')) === 'search:youtube.leanback.v4 try:com.telemachus.screen|com.beb.plxnative',
     'an app hidden on Home is not offered'
   );
 

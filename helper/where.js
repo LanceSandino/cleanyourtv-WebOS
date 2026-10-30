@@ -122,7 +122,7 @@ function create(ctx) {
     }
     for (const t of lib) join(t, 2, { provider: 'plex-library', name: 'Plex', offer: 'library' });
     for (const t of tm) join(t, 3, { provider: 'telemachus', name: 'Telemachus', offer: t.has ? 'library' : 'catalogue', tmdb: t.tmdb });
-    for (const t of cm) join(t, 4, { provider: 'stremio', name: 'Stremio', offer: 'catalogue', imdb: t.id });
+    for (const t of cm) join(t, 4, { provider: 'stremio', name: 'Stremio', offer: 'catalogue' });
     return titles
       .filter(t => t.offers.length)
       .sort((a, b) => a.rank - b.rank || b.score - a.score || a.order - b.order)
@@ -156,16 +156,6 @@ function create(ctx) {
         let l = { params: {}, exact: false };
         if (o.provider === 'telemachus') {
           if (t.kind === 'movie') l = { params: { play: filmPlay(t.title, t.year, o.tmdb) }, exact: true };
-        } else if (o.provider === 'stremio') {
-          // the title's page in Stremio (its documented stremio:///detail/<type>/<imdb id>, a film with its video id), through the
-          // contentTarget its app takes; not yet seen opening the page on a TV, so the hint still says to find it there
-          if (/^tt\d{1,10}$/.test(String(o.imdb || '')))
-            l = {
-              params: {
-                contentTarget: 'stremio:///detail/' + (t.kind === 'series' ? 'series/' + o.imdb : 'movie/' + o.imdb + '/' + o.imdb),
-              },
-              exact: false,
-            };
         } else if (o.provider !== 'stremio' && o.provider !== 'plex-library') l = deeplinks.launch(app, o.link, t.kind);
         out.app = app;
         out.appTitle = byId[app].title;

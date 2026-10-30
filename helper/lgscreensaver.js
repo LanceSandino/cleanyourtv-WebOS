@@ -41,13 +41,21 @@ function create(ctx, opts) {
     last = m;
     console.log('screensaver: ' + m);
   };
-  // ours to show: switched on, and photos from the feed or the wallpapers
+  // ours to show: switched on, and photos to show: the wallpapers' list (uploads, Immich and the photo feed) or the feed's own count,
+  // read from those parts, as the page's own check did. (1.6.36 to 1.6.43 read config keys that do not exist, photoFeed.photos and
+  // wallpapers.stamp, so LG was always told yes and showed its own screensaver.)
   function ours() {
-    const c = config.get(),
-      s = c.saver || {},
-      feed = (c.photoFeed && c.photoFeed.photos) || 0,
-      wall = +String((c.wallpapers && c.wallpapers.stamp) || '0').split(':')[0] || 0;
-    return s.on === true && (feed > 0 || wall > 0);
+    const s = config.get().saver || {};
+    if (s.on !== true) return false;
+    const part = n => (ctx.feature ? ctx.feature(n) : null);
+    let n = 0;
+    try {
+      const w = part('wallpapers');
+      n = w && w.list ? w.list().length : 0;
+      const f = part('photofeed');
+      if (!n && f && f.count) n = f.count();
+    } catch (_) {}
+    return n > 0;
   }
   // one line per answer, the last o.keep kept (renamed into place, so a reader never sees half a file)
   function remember(entry) {

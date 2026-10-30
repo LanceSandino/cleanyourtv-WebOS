@@ -31,7 +31,15 @@ run(async () => {
     };
     if (env) process.env.SS_END = '1';
     else delete process.env.SS_END;
-    const part = S.create({ config: memoryConfig(conf), luna }, { bin, minWaitMs: 100, maxWaitMs: 200, record, keep: 3 });
+    // the photos come from the wallpapers part (its list: uploads, Immich, the feed) and the photo feed (its count), as on the TV
+    const photos = conf._photos === undefined ? 3 : conf._photos;
+    const feature = n =>
+      n === 'wallpapers'
+        ? { list: () => Array.from({ length: photos }, (_, i) => 'u/' + i) }
+        : n === 'photofeed'
+          ? { count: () => 0 }
+          : null;
+    const part = S.create({ config: memoryConfig(conf), luna, feature }, { bin, minWaitMs: 100, maxWaitMs: 200, record, keep: 3 });
     part.start();
     // the answer (or, for the restart, a few starts): waited for, not timed, so a busy machine does not miss it
     for (let i = 0; i < 60 && !calls.some(x => /responseScreenSaverRequest/.test(x[0]) || /launch/.test(x[0])); i++) await sleep(50);
@@ -39,7 +47,7 @@ run(async () => {
     part.stop();
     return calls;
   }
-  const on = { saver: { on: true }, photoFeed: { photos: 3 } };
+  const on = { saver: { on: true } };
   let c = await once(on, 'netflix');
   const resp = c.filter(x => /responseScreenSaverRequest/.test(x[0]))[0],
     launch = c.filter(x => /applicationManager\/launch/.test(x[0]))[0];
@@ -79,14 +87,14 @@ run(async () => {
     .split('\n')
     .map(l => JSON.parse(l));
   ok(rec.length === 2 && rec[1].lg === 'The response is too late', "LG's refusal is kept in the record: " + JSON.stringify(rec[1]));
-  c = await once({ saver: { on: false }, photoFeed: { photos: 3 } }, 'netflix');
+  c = await once({ saver: { on: false } }, 'netflix');
   ok(
     c.some(x => /responseScreenSaverRequest/.test(x[0]) && x[1].ack === true) &&
       !c.some(x => /launch/.test(x[0])) &&
       !c.some(x => /getForeground/.test(x[0])),
     'switched off: LG decides (yes), nothing opens'
   );
-  c = await once({ saver: { on: true } }, 'netflix');
+  c = await once({ saver: { on: true }, _photos: 0 }, 'netflix');
   ok(
     c.some(x => /responseScreenSaverRequest/.test(x[0]) && x[1].ack === true) && !c.some(x => /launch/.test(x[0])),
     'no photos: LG decides'

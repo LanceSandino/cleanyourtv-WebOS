@@ -1686,3 +1686,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-29T23:58:00Z"
 ```
+
+```yaml
+id: CU-20261029-51
+type: fix
+title: "The photo screensaver again instead of LG's: the service reads the photos from the wallpapers and the feed"
+description: "Since 1.6.36 the service answers LG's screensaver question, and its check for photos read config keys that do not exist (photoFeed.photos, wallpapers.stamp), so it always told LG yes and LG's own screensaver showed (the owner saw it; the answer record on the TV: ack true at 00:23:55 with 290 photos in the feed). helper/lgscreensaver.js ours(): the screensaver switched on and photos in the wallpapers part's list (uploads, Immich, the feed) or the photo feed's count, as the page's own check (photos()) did. Also: CU-20261029-50's launch parameters for Telemachus ({play: {search}}) and Stremio (stremio:///search, stremio:///detail in contentTarget) are taken out. Telemachus does not take a search and is not changed for it; Stremio's LG app, tried on the TV cold and while open, opened its own Home every time. Both are under Look in again (opened as they are, only while Where to watch is off), and Where to watch's Stremio opens the app as it is."
+impact: high
+affected_modules: ["helper/lgscreensaver.js", "helper/search.js", "helper/where.js", "docs/launcher.md"]
+related_tests: ["tools/test/lgscreensaver.test.js (ours: LG is told no and Home opens with the photos, with the photos from the wallpapers part; no photos: LG decides)", "tools/test/search.test.js (groups: Telemachus, PLX and Stremio under Look in)", "tools/test/where.test.js (Telemachus and Stremio open as they are)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-30T00:30:00Z"
+```
