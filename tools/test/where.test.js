@@ -235,6 +235,23 @@ run(async () => {
     'YouTube by its video id'
   );
   ok(
+    dl('youtube.leanback.v4', 'https://youtu.be/abcdef123', 'movie') === '{"params":{"contentTarget":"v=abcdef123"},"exact":true}' &&
+      dl('youtube.leanback.v4', 'https://www.youtube.com/watch?v=abcdef123&list=PLabcdefghij1234', 'movie') ===
+        '{"params":{"contentTarget":"v=abcdef123&list=PLabcdefghij1234"},"exact":true}' &&
+      dl('youtube.leanback.v4', 'https://www.youtube.com/playlist?list=PLabcdefghij1234', 'movie') ===
+        '{"params":{"contentTarget":"list=PLabcdefghij1234"},"exact":true}' &&
+      dl('youtube.leanback.v4', 'https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv', 'series') ===
+        '{"params":{"contentTarget":"c=UCabcdefghijklmnopqrstuv"},"exact":true}',
+    "YouTube's other links: youtu.be, a playlist (with its video), a channel"
+  );
+  ok(
+    dl('hulu', 'https://www.hulu.com/series/a-show-0a1b2c3d-0000-1111-2222-333344445555', 'series') ===
+      '{"params":{"george_dl_url":"https%3A%2F%2Fwww.hulu.com%2Fseries%2Fa-show-0a1b2c3d-0000-1111-2222-333344445555"},"exact":false}' &&
+      dl('com.movenetworks.app.sling-tv-sling-production', 'https://watch.sling.com/1/program/abc123/watch', 'movie') ===
+        '{"params":{"contentTarget":"https://watch.sling.com/1/program/abc123/watch"},"exact":false}',
+    "Hulu gets its link as george_dl_url, Sling its own link (the apps' own code; the hint still says to find it there)"
+  );
+  ok(
     dl('hulu', 'https://www.hulu.com/series/x', 'series') === '{"params":{},"exact":false}' &&
       dl('netflix', 'https://www.netflix.com/browse', 'series') === '{"params":{},"exact":false}' &&
       dl('com.disney.disneyplus-prod', 'https://www.disneyplus.com/browse/entity-nope', 'series') === '{"params":{},"exact":false}',
@@ -321,6 +338,12 @@ run(async () => {
       of('stremio').exact === false &&
       JSON.stringify(of('stremio').launch) === '{"id":"io.strem.tv","params":{}}',
     'Telemachus (a series) and Stremio open as they are'
+  );
+  ok(
+    JSON.stringify(of('plex-library').launch) === '{"id":"cdp-30","params":{"contentTarget":"plex://show/' + KEY + '"}}' &&
+      of('plex-library').exact === false &&
+      JSON.stringify(r).indexOf('plexId') < 0,
+    "Plex opens the show's page by Plex's own id (plex://show/<id>); the id is not in the answer"
   );
   ok(
     !of('hulu').app && !of('hulu').launch && of('fubotv').name === 'fuboTV' && of('apple-itunes').currency === '',

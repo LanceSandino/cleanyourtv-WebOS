@@ -97,6 +97,7 @@ function create(ctx) {
     const av = await Promise.all(top.map(t => svc.plex.availability(t.id, cc).catch(none)));
     top.forEach((t, i) => {
       const x = add(t, 0);
+      if (x && /^[0-9a-f]{24}$/.test(String(t.id))) x.plexId = String(t.id); // Plex's own id: plex://<show|movie>/<id> opens it there
       if (x)
         for (const v of av[i])
           x.offers.push({ provider: v.platform, name: v.name, offer: v.offer, price: v.price, currency: v.currency, link: v.link });
@@ -156,6 +157,10 @@ function create(ctx) {
         let l = { params: {}, exact: false };
         if (o.provider === 'telemachus') {
           if (t.kind === 'movie') l = { params: { play: filmPlay(t.title, t.year, o.tmdb) }, exact: true };
+        } else if (PLEX_APPS.indexOf(app) >= 0 && t.plexId) {
+          // the title's page in Plex (plex://show/<id>, plex://movie/<id>: what Plex's own code reads); Plex may ask whose profile
+          // first, so the hint still says to find it there
+          l = { params: { contentTarget: 'plex://' + (t.kind === 'series' ? 'show' : 'movie') + '/' + t.plexId }, exact: false };
         } else if (o.provider !== 'stremio' && o.provider !== 'plex-library') l = deeplinks.launch(app, o.link, t.kind);
         out.app = app;
         out.appTitle = byId[app].title;

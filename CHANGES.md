@@ -1699,3 +1699,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-30T00:30:00Z"
 ```
+
+```yaml
+id: CU-20261029-52
+type: feature
+title: "Search in Disney+ and Sling with the words; Plex, Hulu, Sling and more YouTube links open the title"
+description: "From a read-only study of the apps on the owner's TV (docs/development/app-deeplinks.md: their appinfo.json, LG's logs, the scripts their web apps load, public sources) and launches tried on the TV on 2026-10-30. helper/search.js KNOWN_SEARCH: Disney+ {contentTarget: page=search&searchText=<words, & = # % ? as spaces>} and Sling {contentTarget: https://watch.sling.com/1/category/search?q=<words>}, both seen opening the app's search with the words; under Search in like YouTube, never for a hidden app. helper/deeplinks.js: YouTube also from youtu.be, a playlist (list=, with v=) and a channel (c=UC...); Hulu by george_dl_url=<its hulu.com link> (no contentTarget, as its code reads); Sling by its watch.sling.com link; these two exact false. helper/where.js: a title from Plex's catalogue keeps Plex's id (not in the answer), and an offer in Plex opens plex://show/<id> or plex://movie/<id> (exact false: on the owner's TV Plex first asks for a profile with a PIN). Stremio takes nothing (its TV app's code, read from relvhgchz5.strem.io/hello-world/1.14.1, never reads launch parameters). D-20261029-14."
+impact: medium
+affected_modules: ["helper/search.js", "helper/deeplinks.js", "helper/where.js", "docs/launcher.md", "docs/development/app-deeplinks.md", "zensical.toml", "DECISIONS.md"]
+related_tests: ["tools/test/search.test.js (Disney+ opens its own search; groups with Disney+ under Search in)", "tools/test/where.test.js (YouTube's other links; Hulu george_dl_url and Sling's link; Plex opens the show's page by Plex's own id, not in the answer)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-30T01:20:00Z"
+```

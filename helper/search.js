@@ -27,6 +27,16 @@ const SOURCE_APPS = {
     disney: ['com.disney.disneyplus-prod'],
   },
   TRY = ['telemachus', 'plex', 'stremio'];
+// searches the apps take in their own code without declaring them in appinfo.json (inAppSearchParams), each seen opening the app's own
+// search with the words on the owner's TV (2026-10-30; docs/development/app-deeplinks.md, DECISIONS.md D-20261029-14). The apps are
+// never changed: only what they already read is sent.
+const KNOWN_SEARCH = {
+  // Disney+ reads page and searchText; its values are not decoded while it is open, so the characters that would split them go
+  'com.disney.disneyplus-prod': words => ({ contentTarget: 'page=search&searchText=' + words.replace(/[&=#%?]/g, ' ').trim() }),
+  'com.movenetworks.app.sling-tv-sling-production': words => ({
+    contentTarget: 'https://watch.sling.com/1/category/search?q=' + encodeURIComponent(words),
+  }),
+};
 
 // the words as the app's search gets them: spaces kept, as LG's own search passes them (the app manager's replaceParams), and the
 // characters that would end or split the query string (%, &, #, +) written as %XX
@@ -142,6 +152,9 @@ function create(ctx) {
       const params = fill(a.params, words);
       if (params) inApp.push({ key: 'search-' + a.id, app: a.id, appTitle: a.title, launch: { id: a.id, params } });
     }
+    for (const id of Object.keys(KNOWN_SEARCH))
+      if (byId[id] && gone.indexOf('app:' + id) < 0 && !inApp.some(x => x.app === id))
+        inApp.push({ key: 'search-' + id, app: id, appTitle: byId[id].title, launch: { id, params: KNOWN_SEARCH[id](words) } });
     const tryIn = [];
     if (!have.length)
       for (const src of TRY) {

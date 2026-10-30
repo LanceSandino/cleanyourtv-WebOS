@@ -7,12 +7,16 @@
 //   launch(app, link, kind) launch parameters that open that title in the app, {params, exact}; exact false: the app opens as it is
 // Formats, and what is known of them:
 //   Disney+      contentTarget distributionPartner=lg&programType=<series|movie>&contentId=<id>&page=browse&id=entity-<id>&...
-//                (LG's format for Disney+'s pages; not yet opened on a TV: unverified)
+//                (LG's format for Disney+'s pages; opens the title on the owner's TV)
 //   Netflix      contentTarget m=<title id>&source_type=27, as Netflix's own row on the TV writes it (unverified from a catalogue)
 //   Prime Video  contentTarget detail?gti=<amzn1.dv.gti...>, as Prime Video's own row writes it (unverified from a catalogue)
 //   Apple TV     contentTarget https://tv.apple.com/<country>/<show|movie>/<name>/umc.cmc.<id>, as its own row writes it (unverified)
-//   YouTube      contentTarget v=<video id>, as its own row writes it
-//   the others (Hulu, Peacock, Max, ...) open as they are
+//   YouTube      contentTarget v=<video id> (youtube.com/watch, youtu.be), list=<playlist> (with v= when there is one), c=<UC channel>:
+//                the keys YouTube's TV code reads (docs/development/app-deeplinks.md)
+//   Hulu         george_dl_url=<the hulu.com series, movie or watch link>, no contentTarget: what Hulu's own code reads (not yet seen
+//                opening a title on a TV: the hint says to find it there)
+//   Sling        contentTarget https://watch.sling.com/1/<kind>/<id>[/watch], passed on as it is (Sling's code; not yet seen on a TV)
+//   the others (Peacock, Max, ...) open as they are
 const disney = require('./disney');
 
 // Plex's platform names (Plex Discover's availabilities) and the apps they are on an LG TV. Seen on the owner's TV: disney-plus, hulu,
@@ -80,8 +84,23 @@ function launch(app, link, kind) {
     (m = /^(https:\/\/tv\.apple\.com\/[a-z]{2}\/(show|movie)\/[\w%-]{1,200}\/umc\.cmc\.[a-z0-9]{10,40})(\?|$)/.exec(l))
   )
     return { params: { contentTarget: m[1] }, exact: true };
-  if (/^youtube\.leanback\./.test(app) && (m = /^https:\/\/(www\.)?youtube\.com\/watch\?(.*&)?v=([\w-]{6,20})(&|$)/.exec(l)))
-    return { params: { contentTarget: 'v=' + m[3] }, exact: true };
+  if (/^youtube\.leanback\./.test(app)) {
+    const v =
+        (/^https:\/\/(www\.)?youtube\.com\/watch\?(.*&)?v=([\w-]{6,20})(&|$)/.exec(l) || [])[3] ||
+        (/^https:\/\/youtu\.be\/([\w-]{6,20})(\?|$)/.exec(l) || [])[1],
+      list = (/^https:\/\/(www\.)?youtube\.com\/(watch|playlist)\?(.*&)?list=([\w-]{10,64})(&|$)/.exec(l) || [])[4],
+      chan = (/^https:\/\/(www\.)?youtube\.com\/channel\/(UC[\w-]{22})(\/|\?|$)/.exec(l) || [])[2];
+    if (v || list)
+      return { params: { contentTarget: [v ? 'v=' + v : '', list ? 'list=' + list : ''].filter(Boolean).join('&') }, exact: true };
+    if (chan) return { params: { contentTarget: 'c=' + chan }, exact: true };
+  }
+  if (app === 'hulu' && /^https:\/\/(www\.)?hulu\.com\/(series|movie|watch)\/[\w-]{1,200}$/.test(l) && /[0-9a-f]{8}-[0-9a-f]{4}-/.test(l))
+    return { params: { george_dl_url: encodeURIComponent(l) }, exact: false };
+  if (
+    app === 'com.movenetworks.app.sling-tv-sling-production' &&
+    /^https:\/\/watch\.sling\.com\/1\/[\w-]{1,40}\/[\w-]{1,80}(\/watch)?$/.test(l)
+  )
+    return { params: { contentTarget: l }, exact: false };
   return { params: {}, exact: false };
 }
 

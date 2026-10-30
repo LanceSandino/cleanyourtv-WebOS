@@ -44,6 +44,7 @@ nav = [
     { "Contributing" = "development/index.md" },
     { "Testing and CI" = "development/testing.md" },
     { "Internals" = "development/internals.md" },
+    { "App deep links" = "development/app-deeplinks.md" },
   ] },
   { "Credits and licences" = "credits.md" },
 ]

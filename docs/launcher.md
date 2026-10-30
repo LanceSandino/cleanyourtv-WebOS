@@ -154,7 +154,8 @@ keyboard, or with the [phone remote](remote.md)'s **Type**; the results follow w
   a film in Telemachus starts as a Continue watching card does. The other apps (Hulu, Peacock, Stremio, Plex and the like) open at
   their Home, to find the title there: the hint at the foot says which. Nothing is asked of a service that is not linked or not
   installed.
-- **Search in:** the installed apps that can open their own search with words (YouTube and YouTube TV do). OK opens that app's
+- **Search in:** the installed apps that can open their own search with words: YouTube and YouTube TV (they say so), Disney+ and
+  Sling (their own code reads a search; each was seen opening it on a TV, [App deep links](development/app-deeplinks.md)). OK opens that app's
   search for what you typed.
 - **Look in:** only while Where to watch is switched off: Telemachus, Plex (or PLX) and Stremio, opened at their Home to look there
   (none of them takes the words from another app; with Where to watch on, those three are asked for the title instead).
