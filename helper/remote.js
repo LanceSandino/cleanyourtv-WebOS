@@ -244,7 +244,7 @@ function create(ctx, opts) {
       .map(x => ({ id: x.id, title: String(x.title || x.id) }));
   }
   async function act(u, b, res) {
-    if (u === '/ping') return { ok: true, now: await nowOn() };
+    if (u === '/ping') return { ok: true, now: await nowOn(), sound: await soundNow() };
     if (statusdata.PATHS.indexOf(u) >= 0) return tvStatus.get(u);
     if (u === '/press') {
       const k = String(b.key || '');
@@ -381,6 +381,28 @@ function create(ctx, opts) {
     const it = ((w && w.known ? w.known() : []) || []).filter(x => x && x.launch && x.launch.id === app && typeof x.title === 'string')[0];
     if (!it) return null;
     return { show: it.title.trim().slice(0, 120), sub: typeof it.sub === 'string' ? it.sub.trim().slice(0, 80) : '', last: true };
+  }
+  // the sound, with every /ping: the Sonos soundbar's own volume and mute while the Sonos part follows one (its events, in memory),
+  // else LG's own (master getVolume); a number only where it means something (LG's volume is 0 for a soundbar on ARC that it does not
+  // know). Not kept: the phone asks again right after Volume or Mute.
+  async function soundNow() {
+    const so = ctx.feature && ctx.feature('sonos'),
+      st = so && so.status ? so.status() : null;
+    if (st && st.enabled && st.using && typeof st.volume === 'number')
+      return { volume: st.volume, muted: !!st.muted, out: 'sonos', name: String(st.using.name || 'Sonos').slice(0, 60) };
+    try {
+      const v = await luna(AUDIO + 'getVolume', {}),
+        vs = v && v.volumeStatus;
+      if (!vs) return null;
+      const ext = /^external/.test(String(vs.soundOutput || ''));
+      return {
+        volume: typeof vs.volume === 'number' && !(ext && vs.volume === 0) ? vs.volume : null,
+        muted: !!vs.muteStatus,
+        out: String(vs.soundOutput || '').slice(0, 40),
+      };
+    } catch (_) {
+      return null;
+    }
   }
   async function nowOn() {
     if (Date.now() - nowAt < 2000) return nowCache;

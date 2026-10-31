@@ -117,6 +117,10 @@ was watched there last, usually what is on. LG's webOS 25 has no media-session s
 app or input is named. It comes with the remote's regular check (every 15 seconds, and a few seconds after a
 key or an app opened from the phone).
 
+**Volume and mute.** The volume rocker shows the volume in place of VOL, and the Mute key is lit red while the sound is muted. With
+the Sonos soundbar followed (Sonos volume on screen), they are the soundbar's own volume and mute; otherwise the TV's own (no number
+for a soundbar the TV does not know). They come with the remote's regular check, and again a moment after Volume or Mute.
+
 **Feedback.** The gear beside the status sets what each press does on this phone: a vibration (on by default; on an iPhone the tap
 of iOS 18 and later) and a click sound (off by default). A key also lights green when the TV took the press, red when it did not.
 Safari has no vibration call, and an iPhone taps only for a switch that the finger itself flips (the owner's iPhone: the switch

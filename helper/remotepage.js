@@ -150,6 +150,28 @@ function showNow(n) {
   nowText = s;
   if (up) $('tv').textContent = s || t('Connected to the TV');
 }
+/* the sound (with every /ping): the volume in the rocker in place of VOL, and the Mute key lit while the sound is muted */
+var soundT = 0;
+function showSound(snd) {
+  var up = document.querySelector('[data-k=VOLUMEUP]'),
+    lb = up && up.parentNode.querySelector('b'),
+    mute = document.querySelector('[data-k=MUTE]');
+  var has = !!snd && typeof snd.volume === 'number';
+  if (lb) {
+    lb.textContent = has ? String(snd.volume) : 'VOL';
+    lb.className = has ? 'n' : '';
+    lb.setAttribute('aria-label', has ? t('Volume %d').replace('%d', snd.volume) : '');
+  }
+  if (mute) {
+    mute.classList.toggle('muted', !!(snd && snd.muted));
+    mute.setAttribute('aria-pressed', snd && snd.muted ? 'true' : 'false');
+  }
+}
+/* after Volume or Mute the sound is asked again at once (the soundbar follows the TV within a moment) */
+function soundSoon() {
+  clearTimeout(soundT);
+  soundT = setTimeout(ping, 700);
+}
 /* a press may change what is on (an app opened, Home, an input): asked again once the TV has had time (its poll is every 4 s) */
 function soon() {
   clearTimeout(soonT);
@@ -170,7 +192,8 @@ function send(path, body) {
 /* a press, and the key it came from lit briefly: green when the TV took it, red when it did not */
 function press(k, b) {
   buzz();
-  soon();
+  if (k === 'VOLUMEUP' || k === 'VOLUMEDOWN' || k === 'MUTE') soundSoon();
+  else soon();
   send('/press', { key: k }).then(function (r) { if (b) ack(b, !!r && r.status === 200 && !r.error); });
 }
 function ack(b, good) {
@@ -203,7 +226,7 @@ function ping() {
   call('/ping').then(function (r) {
     if (r.status === 401) login(t('This phone is not paired any more. Pair it again from the TV.'));
     else if (r.off) sleeping(true);
-    else { sleeping(false); state(r.status === 200); if (r.status === 200) showNow(r.now); }
+    else { sleeping(false); state(r.status === 200); if (r.status === 200) { showNow(r.now); showSound(r.sound); } }
   }, function () { state(false); });
 }
 function start() {
@@ -556,6 +579,8 @@ section{flex:1 0 auto;display:flex;flex-direction:column}
 #sheet h2{margin:0 0 ${u(4)};font-size:${u(18)}}#sheet p{margin:0 0 ${u(12)};font-size:${u(12.5)};color:#8a8d96}
 #sheetlist{overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:${u(12)}}
 .opt{width:100%;height:${u(46)};margin-bottom:${u(8)};border-radius:${u(14)};justify-content:flex-start;padding:0 ${u(16)};font-size:${u(15)}}.opt.on{box-shadow:inset 0 0 0 2px #4d8ef7}
+.rock b.n{letter-spacing:0;text-indent:0;font-size:${u(14)};color:#d5d8de}
+.rd.muted{color:#ff8a80;box-shadow:inset 0 0 0 ${u(2)} rgba(255,107,95,.7),0 ${u(2)} 0 #0c0d10,0 0 ${u(14)} rgba(255,90,80,.35)}
 .hz{position:absolute;left:0;top:0;right:0;bottom:0;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:inherit;opacity:.011;z-index:3;background:none;box-shadow:none;-webkit-appearance:auto;appearance:auto;cursor:pointer}
 .sheetnote{margin:${u(10)} ${u(2)} ${u(10)};font-size:${u(13)};line-height:1.35;color:#9aa3b2}.sw{display:flex;align-items:center}
 #sheetno{width:100%;height:${u(46)};border-radius:${u(14)}}

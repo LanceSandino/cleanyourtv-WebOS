@@ -70,6 +70,8 @@ run(async () => {
       rs.end('png');
     },
   };
+  // the Sonos part, for the sound: its own volume and mute while it follows a soundbar
+  const sonosStub = { status: () => ({ enabled: false }) };
   // the watch part, for what is on: an app's Continue watching, and Plex's own now playing
   const watchStub = {
     known: () => [
@@ -83,7 +85,7 @@ run(async () => {
     luna: async (uri, p) => (
       calls.push([uri, p]), /getVolume/.test(uri) ? { returnValue: true, volumeStatus: { muteStatus: false } } : { returnValue: true }
     ),
-    feature: n => (n === 'apps' ? apps : n === 'watch' ? watchStub : null),
+    feature: n => (n === 'apps' ? apps : n === 'watch' ? watchStub : n === 'sonos' ? sonosStub : null),
   });
   R.start();
   ok(
@@ -117,6 +119,8 @@ run(async () => {
       /function switches\(\)/.test(pageR.text) &&
       /querySelectorAll\('button\.key, button\[data-k\]'\)/.test(pageR.text) &&
       /i\.setAttribute\('switch', ''\)/.test(pageR.text) &&
+      /function showSound\(snd\)/.test(pageR.text) &&
+      /mute\.classList\.toggle\('muted'/.test(pageR.text) &&
       /if \(\$\('sheet'\)\.className !== 'hide'\) feedbackSheet\(\)/.test(pageR.text) &&
       /\(way \|\| fb\.way\) === 2/.test(pageR.text) &&
       /document\.body\.appendChild\(l\)/.test(pageR.text) &&
@@ -359,6 +363,15 @@ run(async () => {
         n4.playing.show === 'A Film' &&
         n4.playing.state === 'playing',
       "any app: its newest Continue watching (said to be the last watched); Plex: its server's own now playing: " + JSON.stringify([n3, n4])
+    );
+    // the sound with every ping: the soundbar's own while the Sonos part follows one, else LG's own (no number LG does not know)
+    sonosStub.status = () => ({ enabled: true, using: { name: 'Living Room' }, volume: 24, muted: true });
+    const s1 = JSON.parse((await lan('POST', '/ping', {}, key)).text).sound;
+    sonosStub.status = () => ({ enabled: false });
+    const s2 = JSON.parse((await lan('POST', '/ping', {}, key)).text).sound;
+    ok(
+      s1.volume === 24 && s1.muted === true && s1.out === 'sonos' && s1.name === 'Living Room' && s2.volume === null && s2.muted === false,
+      "the ping says the sound: the soundbar's volume and mute, else LG's own: " + JSON.stringify([s1, s2])
     );
     tm.server.close();
     delete process.env.CYTV_TELEMACHUS;

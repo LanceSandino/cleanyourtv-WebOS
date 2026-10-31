@@ -1777,3 +1777,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-31T15:30:00Z"
 ```
+
+```yaml
+id: CU-20261029-58
+type: feature
+title: "Phone remote: the volume in the rocker and the Mute key lit while muted"
+description: "The owner: show the volume and whether the sound is muted, the Mute key showing it, the number where it is not in the way. helper/remote.js soundNow(), with every /ping (not kept): the Sonos part's own volume and mute while it follows a soundbar (its events, in memory: no call), else LG's master getVolume (volume, muteStatus; no number for an external output at 0, as LG reports for a soundbar on ARC it does not know). helper/remotepage.js showSound(): the number in the volume rocker in place of VOL (aria-label 'Volume N'), the Mute key's class muted (a red ring and glow) and aria-pressed; after Volume or Mute the page asks again 700 ms later (the soundbar follows the TV within a moment), other keys 4.5 s later as before. Checked in Chromium at phone size: 24 in the rocker, the Mute key red while muted and plain when not."
+impact: low
+affected_modules: ["helper/remote.js", "helper/remotepage.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (the ping says the sound: the soundbar's volume and mute, else LG's own; the page shows it)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-31T16:00:00Z"
+```
