@@ -113,13 +113,17 @@ run(async () => {
   );
   // an iPhone's tap: two ways to flip a hidden switch, the one chosen in the vibration test kept on the phone, and the iPhone's own switch
   ok(
-    /fbs\.way === 2 \? 2 : 1/.test(pageR.text) &&
+    /way: 3 \}/.test(pageR.text) &&
+      /function switches\(\)/.test(pageR.text) &&
+      /querySelectorAll\('button\.key, button\[data-k\]'\)/.test(pageR.text) &&
+      /i\.setAttribute\('switch', ''\)/.test(pageR.text) &&
+      /if \(\$\('sheet'\)\.className !== 'hide'\) feedbackSheet\(\)/.test(pageR.text) &&
       /\(way \|\| fb\.way\) === 2/.test(pageR.text) &&
       /document\.body\.appendChild\(l\)/.test(pageR.text) &&
       /document\.head\.appendChild\(l\)/.test(pageR.text) &&
       /Vibration test/.test(pageR.text) &&
       /The iPhone's own switch/.test(pageR.text),
-    'the vibration test offers both ways and the iPhone switch, and the chosen way is kept'
+    'way 3 by default: every key carries a switch the finger flips (an iPhone taps only then); the test offers ways 3, 1 and 2 and the iPhone switch, the choice is kept, and Cancel right after choosing keeps the sheet closed'
   );
   // wrong codes: five of them close pairing
   for (let i = 0; i < 4; i++) await lan('POST', '/pair', { code: '000000' });

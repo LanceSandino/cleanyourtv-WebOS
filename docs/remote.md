@@ -119,10 +119,11 @@ key or an app opened from the phone).
 
 **Feedback.** The gear beside the status sets what each press does on this phone: a vibration (on by default; on an iPhone the tap
 of iOS 18 and later) and a click sound (off by default). A key also lights green when the TV took the press, red when it did not.
-Safari has no vibration call, so on an iPhone the page flips a hidden switch, which iOS answers with its tap. Under **Vibration test**,
-**Way 1** and **Way 2** each try one way to do that (Way 2 draws the switch out of sight for a moment, for an iPhone that taps only for
-a switch on the screen); tap each and the one you choose is used from then on, on this phone. If even **The iPhone's own switch** does
-not vibrate, the iPhone itself is set not to: Settings > Sounds & Haptics > System Haptics (iOS 18 or later).
+Safari has no vibration call, and an iPhone taps only for a switch that the finger itself flips (the owner's iPhone: the switch
+in the test vibrates, the page flipping one does not). So by default (**Way 3**) every key carries an invisible switch over all of
+it: the tap lands on the switch, iOS taps, and the key works as before. **Way 1** and **Way 2** flip a hidden switch from the page
+instead, for a phone that taps for that. If even **The iPhone's own switch** does not vibrate, the iPhone itself is set not to:
+Settings > Sounds & Haptics > System Haptics (iOS 18 or later).
 
 | | |
 |---|---|

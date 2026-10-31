@@ -29,8 +29,8 @@ function note(s, bad) {
 $('msg').onclick = function () { note(''); };
 /* feedback on each press, as this phone's owner chose it (the gear by the status): a vibration (on by default) and a click sound
    (off by default, a few milliseconds made here, no file) */
-var FB = 'cytv-remote-feedback', fb = { vibrate: true, sound: false, way: 1 };
-try { var fbs = JSON.parse(localStorage.getItem(FB) || 'null'); if (fbs) fb = { vibrate: fbs.vibrate !== false, sound: !!fbs.sound, way: fbs.way === 2 ? 2 : 1 }; } catch (e) {}
+var FB = 'cytv-remote-feedback', fb = { vibrate: true, sound: false, way: 3 };
+try { var fbs = JSON.parse(localStorage.getItem(FB) || 'null'); if (fbs) fb = { vibrate: fbs.vibrate !== false, sound: !!fbs.sound, way: fbs.way === 1 || fbs.way === 2 ? fbs.way : 3 }; } catch (e) {}
 var actx = null;
 function tick() {
   try {
@@ -50,14 +50,15 @@ function tick() {
 }
 /* a short buzz: vibrate where there is one. Safari on the iPhone has no vibrate, but toggling a switch through its label taps
    (iOS 18 and later): a fresh one each time, so it never keeps the focus (a switch left focused made every later buzz look like typing
-   and skip). Two ways, chosen on the phone in Feedback (Vibration test): 1, hidden and removed at once; 2, drawn (out of sight) and
-   removed a moment later, for an iPhone that taps only for a switch on the screen. Not while typing into a text box (the click would
+   and skip). Two ways, chosen on the phone in Feedback (Vibration test): 1, hidden and removed at once; 2 (the default: the one the
+   owner's iPhone taps for), drawn (out of sight) and removed a moment later, for an iPhone that taps only for a switch on the screen. Not while typing into a text box (the click would
    close the keyboard). */
 function buzz(way) {
   if (fb.sound && !way) tick();
   if (!fb.vibrate && !way) return;
   try {
     if (navigator.vibrate) { navigator.vibrate(8); return; }
+    if ((way || fb.way) === 3) return; /* way 3: the finger's own tap on the key's switch (switches(), below) */
     var a = document.activeElement;
     if (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && /^(text|search|number|tel|email|url|password)$/.test(a.type)))) return;
     var l = document.createElement('label'), i = document.createElement('input');
@@ -78,6 +79,28 @@ function buzz(way) {
       document.head.removeChild(l);
     }
   } catch (e) {}
+}
+/* way 3 (the default): an iPhone taps only for a switch the finger itself flips (the owner's iPhone: the switch row in the test
+   vibrates, the page flipping one does not), so every key carries an invisible switch over all of it; the tap lands on the switch, iOS
+   taps, and the click goes on to the key as before. Off: the switches go. */
+function hz(b) {
+  if (b.querySelector(':scope > .hz')) return;
+  var i = document.createElement('input');
+  i.type = 'checkbox';
+  i.className = 'hz';
+  i.tabIndex = -1;
+  i.setAttribute('switch', '');
+  i.setAttribute('aria-hidden', 'true');
+  if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
+  b.appendChild(i);
+}
+function switches() {
+  var on = fb.vibrate && fb.way === 3 && !navigator.vibrate;
+  [].forEach.call(document.querySelectorAll('button.key, button[data-k]'), function (b) {
+    var i = b.querySelector(':scope > .hz');
+    if (on) hz(b);
+    else if (i) b.removeChild(i);
+  });
 }
 var up = null;
 /* the TV asleep: only a hub (hub/server.js) answers {off: true}, with the page it kept; the power key then wakes the TV */
@@ -227,7 +250,8 @@ function lift(e) {
       }, 550);
     }
     if (!b.hasAttribute('data-hold')) return;
-    e.preventDefault();
+    /* way 3: the touch must reach the key's switch (iOS taps when it flips); the page's touch-action keeps it from zooming */
+    if (!(e.type === 'touchstart' && b.querySelector(':scope > .hz'))) e.preventDefault();
     var k = b.getAttribute('data-k'), n = 0;
     press(k, b);
     rep = setInterval(function () { if (++n > 3) press(k, b); }, 120);
@@ -411,6 +435,7 @@ function feedbackSheet() {
       fb[x[0]] = !fb[x[0]];
       try { localStorage.setItem(FB, JSON.stringify(fb)); } catch (e) {}
       buzz();
+      switches();
       feedbackSheet();
     };
     list.appendChild(b);
@@ -420,15 +445,18 @@ function feedbackSheet() {
   h.className = 'sheetnote';
   h.textContent = t('Vibration test: tap each and keep the one you feel. If even the switch does not vibrate, turn on Settings > Sounds & Haptics > System Haptics (iOS 18 or later).');
   list.appendChild(h);
-  [1, 2].forEach(function (w) {
+  [3, 1, 2].forEach(function (w) {
     var b = document.createElement('button');
     b.className = 'key opt' + (fb.way === w ? ' on' : '');
     b.textContent = t('Way %d').replace('%d', w) + (fb.way === w ? ': ' + t('In use') : '');
+    if (w === 3) hz(b); /* its own switch: the tap on it is the test */
     b.onclick = function () {
       buzz(w);
       fb.way = w;
       try { localStorage.setItem(FB, JSON.stringify(fb)); } catch (e) {}
-      setTimeout(feedbackSheet, 450);
+      switches();
+      /* the choice shown once the switch is gone; only while the sheet is still open (Cancel right after must keep it closed) */
+      setTimeout(function () { if ($('sheet').className !== 'hide') feedbackSheet(); }, 450);
     };
     list.appendChild(b);
   });
@@ -443,6 +471,7 @@ function feedbackSheet() {
 }
 $('fbset').onclick = feedbackSheet;
 colourLabels();
+switches();
 $('off').onclick = function () { if (asleep) return wake(); buzz(); if (confirm(t('Turn the TV off?'))) send('/power'); };
 $('wakeb').onclick = wake;
 /* pairing with the six digits from the TV */
@@ -527,6 +556,7 @@ section{flex:1 0 auto;display:flex;flex-direction:column}
 #sheet h2{margin:0 0 ${u(4)};font-size:${u(18)}}#sheet p{margin:0 0 ${u(12)};font-size:${u(12.5)};color:#8a8d96}
 #sheetlist{overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:${u(12)}}
 .opt{width:100%;height:${u(46)};margin-bottom:${u(8)};border-radius:${u(14)};justify-content:flex-start;padding:0 ${u(16)};font-size:${u(15)}}.opt.on{box-shadow:inset 0 0 0 2px #4d8ef7}
+.hz{position:absolute;left:0;top:0;right:0;bottom:0;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:inherit;opacity:.011;z-index:3;background:none;box-shadow:none;-webkit-appearance:auto;appearance:auto;cursor:pointer}
 .sheetnote{margin:${u(10)} ${u(2)} ${u(10)};font-size:${u(13)};line-height:1.35;color:#9aa3b2}.sw{display:flex;align-items:center}
 #sheetno{width:100%;height:${u(46)};border-radius:${u(14)}}
 #num{position:absolute;z-index:2;left:0;top:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,1fr);grid-gap:${u(16)} ${u(18)};align-content:center;padding:${u(12)} ${u(16)};border-radius:${u(26)};background:#18191d;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);opacity:0;visibility:hidden;transform:translateY(${u(10)});transition:opacity .16s,transform .16s,visibility 0s .16s}

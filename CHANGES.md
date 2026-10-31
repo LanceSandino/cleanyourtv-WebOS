@@ -1764,3 +1764,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-31T14:30:00Z"
 ```
+
+```yaml
+id: CU-20261029-57
+type: fix
+title: "Phone remote: the iPhone vibrates on every key (a switch under the finger), and Feedback closes"
+description: "The owner's iPhone: the real switch in the vibration test vibrates, ways 1 and 2 (the page flipping a hidden switch, in head or drawn out of sight) do nothing, and Feedback did not close after choosing a way. helper/remotepage.js: way 3, the default: every key (button.key and every button[data-k]: the rockers, the arrows, the colour keys) carries an invisible checkbox switch over all of it (opacity .011, z-index 3); the tap lands on it, iOS taps as for its own switch, and the click goes on to the key (exactly one press, checked in Chromium on OK, Home, Up, Volume up, Channel up and Red); the held keys no longer cancel the touch when they carry a switch (body touch-action: manipulation keeps zoom away), so it reaches the switch. Off (vibration off, way 1 or 2, a phone with navigator.vibrate) the switches go. The Way 3 button in the test carries its own switch, so the tap on it is the test. The sheet's redraw after choosing a way runs only while the sheet is still open, so Cancel right after keeps it closed (it opened again 450 ms later). Not checked on an iPhone: the tap itself."
+impact: low
+affected_modules: ["helper/remotepage.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (way 3 by default: every key carries a switch the finger flips; the test offers ways 3, 1 and 2; Cancel right after choosing keeps the sheet closed)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-31T15:30:00Z"
+```
