@@ -316,6 +316,38 @@ run(async () => {
   await call(R, '/api/remote/on', 'POST', { on: true });
   r = await lan('POST', '/ping', {}, key);
   ok(r.code === 200, 'switched on again, the paired phone works');
+  // what is on the TV comes with every /ping: the app or input in front (apps.js), and with Telemachus in front the show it plays
+  {
+    const tm = await serve((rq, rs) => {
+      rs.writeHead(200, { 'content-type': 'application/json' });
+      rs.end(
+        JSON.stringify({
+          state: { now_playing: { known: true, show: 'The Far Orbit', season: 2, episode: 3, title: 'Lights', player_state: 'paused' } },
+        })
+      );
+    });
+    process.env.CYTV_TELEMACHUS = tm.url;
+    apps.current = () => ({ id: 'com.telemachus.screen', title: 'Telemachus', input: null });
+    await sleep(2100); // past the two seconds the answer is kept
+    r = await lan('POST', '/ping', {}, key);
+    const n = JSON.parse(r.text).now;
+    apps.current = () => ({ id: 'com.webos.app.hdmi2', title: 'HDMI 2', input: { port: 2, label: 'Game console' } });
+    await sleep(2100);
+    const n2 = JSON.parse((await lan('POST', '/ping', {}, key)).text).now;
+    tm.server.close();
+    delete process.env.CYTV_TELEMACHUS;
+    ok(
+      n.app === 'com.telemachus.screen' &&
+        n.playing.show === 'The Far Orbit' &&
+        n.playing.season === 2 &&
+        n.playing.episode === 3 &&
+        n.playing.state === 'paused' &&
+        n2.title === 'HDMI 2' &&
+        n2.input.label === 'Game console' &&
+        !n2.playing,
+      'the ping says what is on: Telemachus with its show, an input with what is on it: ' + JSON.stringify([n, n2])
+    );
+  }
   await call(R, '/api/remote/forget', 'POST', { id: dev.id });
   await sleep(300);
   const gone = await lan('POST', '/ping', {}, key).catch(() => ({ code: 0 }));

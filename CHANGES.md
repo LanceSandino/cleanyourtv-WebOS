@@ -1738,3 +1738,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-30T19:55:00Z"
 ```
+
+```yaml
+id: CU-20261029-55
+type: feature
+title: "Phone remote: what is on the TV beside the green light (the app, the input and its device, Telemachus's show)"
+description: "The owner asked for what is playing and which input is on. helper/apps.js current(): the app in front from its own 4 s foreground poll (no extra call), its name from the app list (Home, Live TV and the screensaver by name), and for com.webos.app.hdmiN the port and the label the TV gives the device on it (eim getAllInputStatus, cached as for the Inputs list). helper/remote.js: /ping answers {ok, now: {app, title, input, playing}}, kept 2 s; with Telemachus in front, playing is read from Telemachus's own /api/brief (state.now_playing: show, season, episode, title, paused or playing; 1.5 s at most, X-Telemachus: cli, as where.js asks it), and Telemachus is not changed. helper/remotepage.js: the status line beside the light shows it ('Telemachus · The Far Orbit S2 E3 · Paused', 'HDMI 2 · Game console', 'Netflix'), from every ping (15 s, on showing the page) and 4.5 s after a key, a colour key's app or an app opened from the phone. Not yet: what a streaming app plays (LG's media session services were not read: the TV was off), and Live TV's channel (only the Home page knows it). docs/remote.md says so."
+impact: low
+affected_modules: ["helper/apps.js", "helper/remote.js", "helper/remotepage.js", "docs/remote.md"]
+related_tests: ["tools/test/running.test.js (what is on the screen: an app by its name, an input with its port and device, Home)", "tools/test/remote.test.js (the ping says what is on: Telemachus with its show, an input with what is on it)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-31T12:30:00Z"
+```

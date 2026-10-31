@@ -107,7 +107,30 @@ function state(ok) {
   if (ok === up) return;
   up = ok;
   $('dot').className = ok ? 'on' : 'off';
-  $('tv').textContent = ok ? t('Connected to the TV') : t('The TV does not answer. Is it on, and the phone on the same Wi-Fi?');
+  $('tv').textContent = ok ? nowText || t('Connected to the TV') : t('The TV does not answer. Is it on, and the phone on the same Wi-Fi?');
+}
+/* what is on the TV (with every /ping): the app, an input with what is plugged into it, Telemachus with the show it plays */
+var nowText = '', soonT = 0;
+function showNow(n) {
+  var s = '';
+  if (n && n.title) {
+    var parts = [n.title];
+    if (n.input && n.input.label) parts.push(n.input.label);
+    var p = n.playing;
+    if (p && p.show) {
+      var se = p.season !== null && p.season !== undefined && p.episode !== null && p.episode !== undefined;
+      parts.push(p.show + (se ? ' S' + p.season + ' E' + p.episode : ''));
+      if (p.state === 'paused') parts.push(t('Paused'));
+    }
+    s = parts.join(' \u00b7 ');
+  }
+  nowText = s;
+  if (up) $('tv').textContent = s || t('Connected to the TV');
+}
+/* a press may change what is on (an app opened, Home, an input): asked again once the TV has had time (its poll is every 4 s) */
+function soon() {
+  clearTimeout(soonT);
+  soonT = setTimeout(ping, 4500);
 }
 /* every call after pairing: a phone no longer paired goes back to pairing, an error is shown, the dot follows the answers */
 function send(path, body) {
@@ -124,6 +147,7 @@ function send(path, body) {
 /* a press, and the key it came from lit briefly: green when the TV took it, red when it did not */
 function press(k, b) {
   buzz();
+  soon();
   send('/press', { key: k }).then(function (r) { if (b) ack(b, !!r && r.status === 200 && !r.error); });
 }
 function ack(b, good) {
@@ -156,7 +180,7 @@ function ping() {
   call('/ping').then(function (r) {
     if (r.status === 401) login(t('This phone is not paired any more. Pair it again from the TV.'));
     else if (r.off) sleeping(true);
-    else { sleeping(false); state(r.status === 200); }
+    else { sleeping(false); state(r.status === 200); if (r.status === 200) showNow(r.now); }
   }, function () { state(false); });
 }
 function start() {
@@ -173,7 +197,7 @@ document.addEventListener('click', function (e) {
   if (!b || b.hasAttribute('data-hold')) return;
   if (b._long) { b._long = false; return; }
   var k = b.getAttribute('data-k');
-  if (COLOURS[k] && ck[k]) { buzz(); send('/launch', { id: ck[k].id }); }
+  if (COLOURS[k] && ck[k]) { buzz(); soon(); send('/launch', { id: ck[k].id }); }
   else press(k, b);
 });
 var rep = 0, held = null, longT = 0;
@@ -339,7 +363,7 @@ function apps() {
       s.textContent = a.title;
       b.appendChild(i);
       b.appendChild(s);
-      b.onclick = function () { buzz(); send('/launch', { id: a.id }); };
+      b.onclick = function () { buzz(); soon(); send('/launch', { id: a.id }); };
       g.appendChild(b);
       fetch('/icon/' + encodeURIComponent(a.id), { headers: { 'x-remote-key': key } }).then(function (x) { return x.ok ? x.blob() : null; }).then(function (bl) { if (bl) i.src = URL.createObjectURL(bl); });
     });

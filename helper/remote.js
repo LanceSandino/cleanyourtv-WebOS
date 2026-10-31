@@ -34,8 +34,11 @@ const web = require('./web'),
   i18n = require('./i18n'),
   nc = require('./netcompat'),
   page = require('./remotepage'),
-  statusdata = require('./statusdata');
+  statusdata = require('./statusdata'),
+  fetch = require('./fetch');
 
+const TELEMACHUS = () => process.env.CYTV_TELEMACHUS || 'http://127.0.0.1:8770', // another address only for the tests
+  TELEMACHUS_APP = 'com.telemachus.screen';
 const PORT = +process.env.CYTV_REMOTE_PORT || 8794, // after the phone pages' ports (8766-8792; Telemachus holds 8770 on the TV)
   PAIR_MS = 5 * 60 * 1000, // time to type the address by hand when the camera does not open it
   MAX_TRIES = 5,
@@ -240,7 +243,7 @@ function create(ctx, opts) {
       .map(x => ({ id: x.id, title: String(x.title || x.id) }));
   }
   async function act(u, b, res) {
-    if (u === '/ping') return { ok: true };
+    if (u === '/ping') return { ok: true, now: await nowOn() };
     if (statusdata.PATHS.indexOf(u) >= 0) return tvStatus.get(u);
     if (u === '/press') {
       const k = String(b.key || '');
@@ -335,6 +338,48 @@ function create(ctx, opts) {
       () => json({ error: 'bad request' }, 400)
     );
   }
+  // ---- what is on the screen, for the phone page (with every /ping): the app or the input in front (apps.js's poll, no extra call),
+  // and with Telemachus in front what it plays (its own /api/brief, as its TV page reads it). Kept two seconds. ----
+  let nowCache = null,
+    nowAt = 0;
+  async function telemachusNow() {
+    try {
+      const r = await fetch.read(TELEMACHUS() + '/api/brief', {
+        headers: { accept: 'application/json', 'X-Telemachus': 'cli' },
+        totalMs: 1500,
+        idleMs: 1500,
+        maxBytes: 512 * 1024,
+        redirects: 0,
+      });
+      const j = JSON.parse(r.body.toString('utf8')),
+        n = j && j.state && j.state.now_playing;
+      if (!n || n.known === false || typeof n.show !== 'string' || !n.show.trim()) return null;
+      const num = v => (Number.isInteger(v) && v >= 0 && v < 10000 ? v : null);
+      return {
+        show: n.show.trim().slice(0, 120),
+        season: num(n.season),
+        episode: num(n.episode),
+        title: typeof n.title === 'string' ? n.title.trim().slice(0, 160) : '',
+        state: n.player_state === 'playing' || n.player_state === 'paused' ? n.player_state : '',
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+  async function nowOn() {
+    if (Date.now() - nowAt < 2000) return nowCache;
+    const a = ctx.feature && ctx.feature('apps'),
+      c = a && a.current ? a.current() : null;
+    let out = null;
+    if (c) {
+      out = /** @type {any} */ ({ app: c.id, title: c.title, input: c.input || null });
+      if (c.id === TELEMACHUS_APP) out.playing = await telemachusNow();
+    }
+    nowCache = out;
+    nowAt = Date.now();
+    return out;
+  }
+
   // ---- through the hub (via 'hub'): no server on the LAN; one connection out to the hub, the phones' requests coming down it ----
   const via = () => (conf().via === 'hub' && helper() ? 'hub' : 'tv');
   let link = null,

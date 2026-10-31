@@ -199,10 +199,25 @@ function create(ctx) {
     } catch (_) {}
   }
   // an app counts as used once it stayed in the foreground for two polls in a row; going back to Home arms it again
+  // what is on the screen now (the phone remote shows it): the app in front from this poll, its name, and for an input its port and
+  // the name the TV gives what is plugged in
+  let fg = '';
+  const SYSTEM = { 'com.webos.app.livetv': 'Live TV', 'com.webos.app.screensaver': 'Screensaver', [HOME]: 'Home' };
+  function current() {
+    if (!fg) return null;
+    const m = /^com\.webos\.app\.hdmi(\d)$/.exec(fg);
+    if (m) {
+      const d = knownInputs().filter(x => x && x.appId === fg)[0];
+      return { id: fg, title: 'HDMI ' + m[1], input: { port: +m[1], label: (d && typeof d.label === 'string' && d.label.trim()) || '' } };
+    }
+    const a = (appCache || []).filter(x => x.id === fg)[0];
+    return { id: fg, title: (a && a.title) || SYSTEM[fg] || fg, input: null };
+  }
   let cand = null,
     streak = 0,
     counted = null;
   async function onForeground(id) {
+    fg = id;
     seenOnScreen(id).catch(() => {});
     if (id === HOME) {
       counted = null;
@@ -363,6 +378,7 @@ function create(ctx) {
     installed, // the apps without the pinned inputs (search.js)
     inAppSearch,
     onScreen: () => onScreen,
+    current, // what is on the screen now (remote.js)
     foreground: onForeground, // the poll's handler, for the tests
   };
 }

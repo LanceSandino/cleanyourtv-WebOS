@@ -101,4 +101,37 @@ run(async () => {
   ok(x.j.returnValue === false && /nothing is running/.test(x.j.errorText), 'nothing to close');
   x = await call(r, '/api/running/close', 'POST', { all: 'yes' });
   ok(x.j.returnValue === false, 'only all: true closes everything');
+  // what is on the screen, for the phone remote: the app with its name, an input with its port and what the TV calls the device on it
+  {
+    const cur = req('apps').create({
+      config: req('config').memory({}),
+      luna: async uri => {
+        if (/listApps$/.test(uri)) return { returnValue: true, apps: [{ id: 'netflix', title: 'Netflix' }] };
+        if (/getAllInputStatus$/.test(uri))
+          return { returnValue: true, devices: [{ appId: 'com.webos.app.hdmi2', port: 2, label: 'Game console', hdmiPlugIn: true }] };
+        return { returnValue: true };
+      },
+      version: '1.0.0',
+      feature: () => null,
+    });
+    ok(cur.current() === null, 'nothing in front read yet: nothing said');
+    await cur.installed();
+    await cur.foreground('netflix');
+    const a = cur.current();
+    await cur.foreground('com.webos.app.hdmi2');
+    cur.current(); // asks the inputs in the background, as the poll does
+    await new Promise(res => setTimeout(res, 20));
+    const b = cur.current();
+    await cur.foreground('com.webos.app.home');
+    const c = cur.current();
+    ok(
+      a.title === 'Netflix' &&
+        a.input === null &&
+        b.title === 'HDMI 2' &&
+        b.input.port === 2 &&
+        b.input.label === 'Game console' &&
+        c.title === 'Home',
+      'what is on the screen: an app by its name, an input with its port and device, Home: ' + JSON.stringify([a, b, c])
+    );
+  }
 });

@@ -109,6 +109,11 @@ only read the status, never press a key.
 
 ![The hub's History and alerts page: the readings now, an alert, 24 hours of graphs with gaps while the TV was off, the open ports](screenshots/hub-dashboard.jpg)
 
+**What is on.** Beside the green light the remote says what is on the TV: the app in front ("Netflix"), an input with what the TV
+calls the device on it ("HDMI 2 · Game console"), or Home; with Telemachus in front, the show and episode it plays and whether it is
+paused (from Telemachus's own `/api/brief`). It comes with the remote's regular check (every 15 seconds, and a few seconds after a
+key or an app opened from the phone).
+
 **Feedback.** The gear beside the status sets what each press does on this phone: a vibration (on by default; on an iPhone the tap
 of iOS 18 and later) and a click sound (off by default). A key also lights green when the TV took the press, red when it did not.
 Safari has no vibration call, so on an iPhone the page flips a hidden switch, which iOS answers with its tap. Under **Vibration test**,
