@@ -70,12 +70,20 @@ run(async () => {
       rs.end('png');
     },
   };
+  // the watch part, for what is on: an app's Continue watching, and Plex's own now playing
+  const watchStub = {
+    known: () => [
+      { title: 'Bluey', sub: 'S2 E3', launch: { id: 'com.disney.disneyplus-prod', params: {} } },
+      { title: 'Older', sub: '', launch: { id: 'com.disney.disneyplus-prod', params: {} } },
+    ],
+    services: { plex: { now: async () => ({ show: 'A Film', season: null, episode: null, title: '', state: 'playing' }) } },
+  };
   const R = req('remote').create({
     config,
     luna: async (uri, p) => (
       calls.push([uri, p]), /getVolume/.test(uri) ? { returnValue: true, volumeStatus: { muteStatus: false } } : { returnValue: true }
     ),
-    feature: n => (n === 'apps' ? apps : null),
+    feature: n => (n === 'apps' ? apps : n === 'watch' ? watchStub : null),
   });
   R.start();
   ok(
@@ -334,6 +342,20 @@ run(async () => {
     apps.current = () => ({ id: 'com.webos.app.hdmi2', title: 'HDMI 2', input: { port: 2, label: 'Game console' } });
     await sleep(2100);
     const n2 = JSON.parse((await lan('POST', '/ping', {}, key)).text).now;
+    apps.current = () => ({ id: 'com.disney.disneyplus-prod', title: 'Disney+', input: null });
+    await sleep(2100);
+    const n3 = JSON.parse((await lan('POST', '/ping', {}, key)).text).now;
+    apps.current = () => ({ id: 'cdp-30', title: 'Plex', input: null });
+    await sleep(2100);
+    const n4 = JSON.parse((await lan('POST', '/ping', {}, key)).text).now;
+    ok(
+      n3.playing.show === 'Bluey' &&
+        n3.playing.sub === 'S2 E3' &&
+        n3.playing.last === true &&
+        n4.playing.show === 'A Film' &&
+        n4.playing.state === 'playing',
+      "any app: its newest Continue watching (said to be the last watched); Plex: its server's own now playing: " + JSON.stringify([n3, n4])
+    );
     tm.server.close();
     delete process.env.CYTV_TELEMACHUS;
     ok(

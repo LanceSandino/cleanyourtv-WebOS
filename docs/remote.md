@@ -110,8 +110,11 @@ only read the status, never press a key.
 ![The hub's History and alerts page: the readings now, an alert, 24 hours of graphs with gaps while the TV was off, the open ports](screenshots/hub-dashboard.jpg)
 
 **What is on.** Beside the green light the remote says what is on the TV: the app in front ("Netflix"), an input with what the TV
-calls the device on it ("HDMI 2 · Game console"), or Home; with Telemachus in front, the show and episode it plays and whether it is
-paused (from Telemachus's own `/api/brief`). It comes with the remote's regular check (every 15 seconds, and a few seconds after a
+calls the device on it ("HDMI 2 · Game console"), or Home, and what plays where that can be known: with Telemachus in front the show
+and episode (Telemachus's own `/api/brief`), with Plex the linked server's own now playing (its `/status/sessions`, paused or
+playing), and with any other app the newest title of that app's own Continue watching (Disney+, Netflix, Prime Video, Stremio): what
+was watched there last, usually what is on. LG's webOS 25 has no media-session service to ask the rest (YouTube, a game): there the
+app or input is named. It comes with the remote's regular check (every 15 seconds, and a few seconds after a
 key or an app opened from the phone).
 
 **Feedback.** The gear beside the status sets what each press does on this phone: a vibration (on by default; on an iPhone the tap

@@ -38,7 +38,8 @@ const web = require('./web'),
   fetch = require('./fetch');
 
 const TELEMACHUS = () => process.env.CYTV_TELEMACHUS || 'http://127.0.0.1:8770', // another address only for the tests
-  TELEMACHUS_APP = 'com.telemachus.screen';
+  TELEMACHUS_APP = 'com.telemachus.screen',
+  PLEX_APPS = ['cdp-30', 'com.beb.plxnative'];
 const PORT = +process.env.CYTV_REMOTE_PORT || 8794, // after the phone pages' ports (8766-8792; Telemachus holds 8770 on the TV)
   PAIR_MS = 5 * 60 * 1000, // time to type the address by hand when the camera does not open it
   MAX_TRIES = 5,
@@ -366,6 +367,21 @@ function create(ctx, opts) {
       return null;
     }
   }
+  async function plexNow() {
+    const w = ctx.feature && ctx.feature('watch'),
+      p = w && w.services && w.services.plex;
+    try {
+      return p && p.now ? await p.now() : null;
+    } catch (_) {
+      return null;
+    }
+  }
+  function lastIn(app) {
+    const w = ctx.feature && ctx.feature('watch');
+    const it = ((w && w.known ? w.known() : []) || []).filter(x => x && x.launch && x.launch.id === app && typeof x.title === 'string')[0];
+    if (!it) return null;
+    return { show: it.title.trim().slice(0, 120), sub: typeof it.sub === 'string' ? it.sub.trim().slice(0, 80) : '', last: true };
+  }
   async function nowOn() {
     if (Date.now() - nowAt < 2000) return nowCache;
     const a = ctx.feature && ctx.feature('apps'),
@@ -373,7 +389,10 @@ function create(ctx, opts) {
     let out = null;
     if (c) {
       out = /** @type {any} */ ({ app: c.id, title: c.title, input: c.input || null });
-      if (c.id === TELEMACHUS_APP) out.playing = await telemachusNow();
+      out.playing = c.id === TELEMACHUS_APP ? await telemachusNow() : PLEX_APPS.indexOf(c.id) >= 0 ? await plexNow() : null;
+      // otherwise the newest of that app's own Continue watching (Disney+, Netflix, Prime Video, Stremio, Plex without a session):
+      // what was watched there last, usually what is on; said so (last: true)
+      if (!out.playing && !c.input) out.playing = lastIn(c.id);
     }
     nowCache = out;
     nowAt = Date.now();

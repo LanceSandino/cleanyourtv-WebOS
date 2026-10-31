@@ -119,7 +119,7 @@ function showNow(n) {
     var p = n.playing;
     if (p && p.show) {
       var se = p.season !== null && p.season !== undefined && p.episode !== null && p.episode !== undefined;
-      parts.push(p.show + (se ? ' S' + p.season + ' E' + p.episode : ''));
+      parts.push(p.show + (se ? ' S' + p.season + ' E' + p.episode : p.sub ? ' ' + p.sub : ''));
       if (p.state === 'paused') parts.push(t('Paused'));
     }
     s = parts.join(' \u00b7 ');

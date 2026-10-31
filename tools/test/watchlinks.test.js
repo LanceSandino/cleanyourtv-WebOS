@@ -28,6 +28,22 @@ run(async () => {
       return r.end(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]));
     }
     if (q.headers['x-plex-token'] !== 'SRVTOK') return r.writeHead(401), r.end();
+    if (q.url === '/status/sessions')
+      return json({
+        MediaContainer: {
+          Metadata: [
+            { type: 'movie', title: 'Elsewhere', Player: { platform: 'Chrome', state: 'playing' } },
+            {
+              type: 'episode',
+              grandparentTitle: 'Show',
+              parentIndex: 1,
+              index: 2,
+              title: 'Two',
+              Player: { platform: 'webOS', state: 'paused' },
+            },
+          ],
+        },
+      });
     if (q.url === '/hubs/continueWatching/items')
       return json({
         MediaContainer: {
@@ -141,6 +157,11 @@ run(async () => {
     "Plex: the server's first address that answers as that server (here plain http when its secure name fails), asked without a key"
   );
   ok(JSON.stringify(acc).indexOf('TOK') < 0, 'Plex: the account status never carries a key');
+  const pnow = await w.services.plex.now();
+  ok(
+    !!pnow && pnow.show === 'Show' && pnow.season === 1 && pnow.episode === 2 && pnow.title === 'Two' && pnow.state === 'paused',
+    "Plex: what plays now, the session on an LG TV first (the server's /status/sessions): " + JSON.stringify(pnow)
+  );
 
   // ---- Stremio ----
   const sl = (await call(w, '/api/watch/link', 'POST', { service: 'stremio' })).j;

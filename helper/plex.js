@@ -276,7 +276,34 @@ function create(ctx) {
           out.push({ kind: kindOf(m.type), title: m.title.trim().slice(0, 200), year: year(m.year) });
     return out;
   }
-  return { link, unlink, status, items, discover, availability, library };
+  // what plays now on the linked server (its /status/sessions): the one on an LG TV first, else the first; for the phone remote.
+  // {title, season, episode, year, state: 'playing'|'paused'|''} or null; a short wait, as the phone page asks every 15 s
+  async function now() {
+    const a = acct();
+    if (!a.token || !a.server) return null;
+    const s = a.server;
+    let md;
+    try {
+      md = await json(s.uri + '/status/sessions', { headers: head(s.token), totalMs: 1500, idleMs: 1500, allowHttp: true });
+    } catch (_) {
+      return null;
+    }
+    const list = ((md && md.MediaContainer && md.MediaContainer.Metadata) || []).filter(m => m && typeof m.title === 'string');
+    const onTv = m => /webos|lg/i.test(String((m.Player && (m.Player.platform || m.Player.product || m.Player.device)) || ''));
+    const m = list.filter(onTv)[0] || list[0];
+    if (!m) return null;
+    const ep = m.type === 'episode',
+      int = v => (Number.isInteger(v) && v >= 0 && v < 10000 ? v : null),
+      st = m.Player && m.Player.state;
+    return {
+      show: String(ep ? m.grandparentTitle || m.title : m.title).slice(0, 120),
+      season: ep ? int(m.parentIndex) : null,
+      episode: ep ? int(m.index) : null,
+      title: ep ? String(m.title).slice(0, 160) : '',
+      state: st === 'playing' || st === 'paused' ? st : '',
+    };
+  }
+  return { link, unlink, status, items, discover, availability, library, now };
 }
 
 module.exports = { create };

@@ -1751,3 +1751,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-31T12:30:00Z"
 ```
+
+```yaml
+id: CU-20261029-56
+type: feature
+title: "Phone remote: what plays for every app that can say (Plex's now playing, the newest Continue watching of the others)"
+description: "The owner: it should show what plays in any app and any input, at least the app. The app or input was already named for all (CU-20261029-55); now also the title where it can be known. helper/plex.js now(): the linked server's /status/sessions (1.5 s at most), the session whose player is an LG TV (platform, product or device webOS/LG) first, else the first; {show, season, episode, title, state}. helper/remote.js: Telemachus as before, Plex (cdp-30, PLX) from now(), any other app (not an input) the newest item of its own Continue watching (watch.known(), the rows Home last read: Disney+, Netflix, Prime Video, Stremio), marked last: true. helper/remotepage.js shows a title's sub (S2 E3, minutes left) when there is no season and episode. Read on the owner's TV: webOS 25 has no com.webos.service.mediacontroller or mediasession, so YouTube and a game show only the app or input; LG's ACR (what is on any input) stays stubbed, it is tracking."
+impact: low
+affected_modules: ["helper/plex.js", "helper/remote.js", "helper/remotepage.js", "docs/remote.md"]
+related_tests: ["tools/test/watchlinks.test.js (Plex: what plays now, the session on an LG TV first)", "tools/test/remote.test.js (any app: its newest Continue watching; Plex: its server's own now playing)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-31T14:30:00Z"
+```
