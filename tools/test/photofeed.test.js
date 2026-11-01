@@ -324,4 +324,16 @@ run(async () => {
     'the chosen wallpaper stays on the storage, and the offline set keeps to ' + fam.DISK_FILES + ' photos (' + kept.length + ')'
   );
   srv.close();
+  // a day the photos were added that many share is the day they were brought in together (a server that sends only createdAt, a
+  // Frameo import: 290 photos said the same day on the owner's TV): not shown; a day taken always is, and an added day few share
+  {
+    const list = Array.from({ length: 30 }, (_, i) => ({ id: 'imp' + i, createdAt: '2026-10-03T10:00:00Z' }));
+    list.push({ id: 'taken', createdAt: '2026-10-03T10:00:00Z', takenAt: '2019-07-04T12:00:00Z' });
+    list.push({ id: 'new', createdAt: '2026-10-31T09:00:00Z' });
+    const m = fam.metaOf(list);
+    ok(
+      !m.imp0 && m.taken.d === '2019-07-04' && m.new.d === '2026-10-31',
+      'the day a whole batch was added is left out; a day taken, or added alone, is shown: ' + JSON.stringify([m.imp0, m.taken, m.new])
+    );
+  }
 });

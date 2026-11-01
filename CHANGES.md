@@ -1790,3 +1790,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-31T16:00:00Z"
 ```
+
+```yaml
+id: CU-20261029-59
+type: fix
+title: "Screensaver: the day of an import is not shown as the photos' day (every Frameo photo said October 3)"
+description: "The owner: the photos from Frameo all say October 3. On the TV 290 of the feed's 291 photos had the day 2026-10-03: the owner's server (family-calendar's photo feed) sends only {id, createdAt} (photoStore.feed), createdAt is when it took the photos in (its Frameo import, D-20261003-25), and its display copies carry no EXIF (checked: no Exif block in 20 cached photos), so no real day can be had on the TV. helper/photofeed.js metaOf(list): a takenAt day is always kept; a createdAt day only when fewer than max(10, a fifth of the photos) share it; the rest show no day. A list saved before (no metaV 2) is thinned the same way when read and its ETag dropped, so the next look reads the list whole; fresh lists are marked metaV 2 so this runs once. Gap: the real days need the server to send takenAt (from Frameo's own list or the originals' EXIF)."
+impact: low
+affected_modules: ["helper/photofeed.js", "docs/screensaver.md"]
+related_tests: ["tools/test/photofeed.test.js (the day a whole batch was added is left out; a day taken, or added alone, is shown)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-10-31T16:40:00Z"
+```

@@ -27,7 +27,8 @@ const diag = require('./diag');
 
 const DIR = P.D + '/photofeed',
   CACHE = DIR + '/cache',
-  STATE = DIR + '/list.json';
+  STATE = DIR + '/list.json',
+  META_V = 2; // 2: a day the photos were added that many share is left out (metaOf)
 const MEM_FILES = 8,
   DISK_FILES = 20,
   DISK_BYTES = 24 * 1024 * 1024,
@@ -95,6 +96,36 @@ function shuffled(ids) {
   return a;
 }
 
+// what the screensaver's frame shows and lays out by, per photo of the feed's list (see the comment inside)
+function metaOf(list) {
+  // what the screensaver's frame shows and lays out by: the day it was taken (else added), a caption, the size; all optional.
+  // A day it was added that many photos share is the day they were brought in together (the owner's server sends only createdAt,
+  // and its Frameo photos all said 2026-10-03, the day of the import): not a day to show, so only a takenAt, or an added day
+  // shared by few, is kept
+  const meta = {};
+  const dayOf = v => (/^\d{4}-\d{2}-\d{2}/.exec(String(v || '')) || [])[0] || '';
+  const added = {};
+  for (const p of list) if (!dayOf(p.takenAt) && dayOf(p.createdAt)) added[dayOf(p.createdAt)] = (added[dayOf(p.createdAt)] || 0) + 1;
+  const bulk = Math.max(10, Math.ceil(list.length * 0.2));
+  for (const p of list) {
+    const m = {},
+      day = dayOf(p.takenAt) || (dayOf(p.createdAt) && added[dayOf(p.createdAt)] < bulk ? dayOf(p.createdAt) : '');
+    if (day) m.d = day;
+    if (typeof p.caption === 'string' && p.caption.trim())
+      m.c = p.caption
+        .replace(/[\u0000-\u001f\s]+/g, ' ')
+        .trim()
+        .slice(0, 80);
+    if (p.width > 0 && p.height > 0 && p.width < 100000 && p.height < 100000) {
+      m.w = Math.round(p.width);
+      m.h = Math.round(p.height);
+    }
+    if (typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color)) m.k = p.color.toLowerCase();
+    if (Object.keys(m).length) meta[String(p.id)] = m;
+  }
+  return meta;
+}
+
 function create(ctx) {
   const config = ctx.config;
   const feedCfg = () => {
@@ -112,6 +143,17 @@ function create(ctx) {
     }
     st.ids = Array.isArray(st.ids) ? st.ids.filter(id => ID.test(id)) : [];
     st.meta = st.meta && typeof st.meta === 'object' ? st.meta : {};
+    // a list saved before import days were left out (META_V): its days are thinned the same way now (a day many share goes), and
+    // the list is read whole at the next look (no ETag), which gives back the days the photos were taken
+    if (st.metaV !== META_V) {
+      const ms = Object.keys(st.meta).map(k => st.meta[k]),
+        count = {};
+      for (const m of ms) if (m && m.d) count[m.d] = (count[m.d] || 0) + 1;
+      const bulk = Math.max(10, Math.ceil(ms.length * 0.2));
+      for (const m of ms) if (m && m.d && count[m.d] >= bulk) delete m.d;
+      st.etag = '';
+      st.metaV = META_V;
+    }
     return st;
   }
   // the round so far is saved with the ids: at once when a new round starts or the list changes, otherwise at most every SAVE_MS,
@@ -188,24 +230,7 @@ function create(ctx) {
     if (r.status !== 200) throw fetch.fail('HTTP ' + r.status, 'status', r.status);
     const j = JSON.parse(r.body.toString('utf8'));
     const list = (Array.isArray(j && j.photos) ? j.photos : []).filter(p => p && ID.test(String(p.id || ''))).slice(0, 20000);
-    // what the screensaver's frame shows and lays out by: the day it was taken (else added), a caption, the size; all optional
-    const meta = {};
-    for (const p of list) {
-      const m = {},
-        day = /^\d{4}-\d{2}-\d{2}/.exec(String(p.takenAt || p.createdAt || ''));
-      if (day) m.d = day[0];
-      if (typeof p.caption === 'string' && p.caption.trim())
-        m.c = p.caption
-          .replace(/[\u0000-\u001f\s]+/g, ' ')
-          .trim()
-          .slice(0, 80);
-      if (p.width > 0 && p.height > 0 && p.width < 100000 && p.height < 100000) {
-        m.w = Math.round(p.width);
-        m.h = Math.round(p.height);
-      }
-      if (typeof p.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.color)) m.k = p.color.toLowerCase();
-      if (Object.keys(m).length) meta[String(p.id)] = m;
-    }
+    const meta = metaOf(list);
     return { ids: list.map(p => String(p.id)), meta, etag: String(r.headers.etag || '') };
   }
   // read the ids again (every hour, and when the screensaver asks after an hour); a 304 keeps what is there
@@ -229,6 +254,7 @@ function create(ctx) {
             queue = queue.length ? queue.filter(id => now[id]).concat(shuffled(got.ids.filter(id => !was[id]))) : [];
             s.ids = got.ids;
             s.meta = got.meta;
+            s.metaV = META_V;
             s.etag = got.etag;
             purge();
           }
@@ -468,7 +494,7 @@ function create(ctx) {
     });
     for (const x of cached()) unlink(fileOf(x.id));
     mem = [];
-    st = { ids: got.ids, meta: got.meta, etag: got.etag, ok: Date.now(), tried: Date.now(), error: '' };
+    st = { ids: got.ids, meta: got.meta, metaV: META_V, etag: got.etag, ok: Date.now(), tried: Date.now(), error: '' };
     queue = [];
     last = '';
     restored = true;
@@ -526,4 +552,4 @@ function create(ctx) {
   return { name: 'photofeed', prefix: '/api/photofeed/', handle, start, status, count, setup, disconnect, refresh, next, ids, send };
 }
 
-module.exports = { create, parseCode, MEM_FILES, DISK_FILES, DISK_BYTES, DISK_WARM, MIN_FREE_KB };
+module.exports = { metaOf, create, parseCode, MEM_FILES, DISK_FILES, DISK_BYTES, DISK_WARM, MIN_FREE_KB };

@@ -27,7 +27,9 @@ each side its own length of board), paint or brushed metal, lit from above by it
 The photos hang behind the mat, each in its own window with a bevelled edge, whole: one landscape photo large, a portrait one tall,
 and the photos that follow it of the same orientation beside it (up to two, or three portraits with **Photos at a time**: up to
 three); the first that does not fit is shown next. A photo near the screen's shape, and with **One** any landscape photo, fills the
-inside of the frame instead. The label shows what the photo feed says: the caption and the day it was taken (or else added).
+inside of the frame instead. The label shows what the photo feed says: the caption and the day it was taken (or else added). A day
+added that many of the photos share is the day they were brought in together (an import, such as photos taken over from Frameo), not
+a day to show: it is left out (at least 10 photos and a fifth of them on one day added, with no day taken).
 Nothing moves but the cross-fade from one photo to the next; the frame is drawn once, from a few small pictures that come with the
 launcher (`app/saver-*.webp`): the woods cut by `tools/saver-wood.mjs` from photographed wood textures of
 [Poly Haven](https://polyhaven.com) (Dark Wood, Oak Veneer 01 and Kitchen Wood; CC0, public domain), the metals, the mat board, the
@@ -97,7 +99,7 @@ Any server can offer a photo feed; the TV needs only these two calls and a setup
 
 | Call | Answer |
 |---|---|
-| `GET /api/feed/photos` | `200` `{"stamp": "...", "photos": [{"id": "...", "createdAt": "...", "takenAt": "...", "caption": "...", "width": 4032, "height": 3024, "color": "#8a7b70"}]}`: the photos to show, newest first, with `ETag`; `304` for a matching `If-None-Match`. Ids are 1-64 characters of `A-Z a-z 0-9 _ -`. Only `id` is required; the others are used by the screensaver's frame when they are there: `takenAt` (or else `createdAt`) for the label's day, `caption` (at most 80 characters are shown), `width` and `height` of the photo as stored (upright), and `color`, its average colour, for the mat. |
+| `GET /api/feed/photos` | `200` `{"stamp": "...", "photos": [{"id": "...", "createdAt": "...", "takenAt": "...", "caption": "...", "width": 4032, "height": 3024, "color": "#8a7b70"}]}`: the photos to show, newest first, with `ETag`; `304` for a matching `If-None-Match`. Ids are 1-64 characters of `A-Z a-z 0-9 _ -`. Only `id` is required; the others are used by the screensaver's frame when they are there: `takenAt` (or else `createdAt`, unless many photos share that day) for the label's day, `caption` (at most 80 characters are shown), `width` and `height` of the photo as stored (upright), and `color`, its average colour, for the mat. |
 | `GET /api/feed/photos/<id>?w=1920` | `200` `image/jpeg`: the photo upright, fitted inside w x w without enlarging, metadata removed (`w` is 1280, 1920 or 2560). `404` for a photo that is gone or hidden, `422` for one the server cannot convert: the TV skips both. |
 
 A refused token is `401`; the TV then keeps showing what it has and says so on the phone page. The **setup code** is `cyfp1.` and
