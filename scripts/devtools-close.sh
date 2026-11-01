@@ -7,7 +7,9 @@
 # --remote-debugging-address.
 #   sh devtools-close.sh           the copy mounted, once per start; WebAppMgr keeps the port until it starts again
 #   sh devtools-close.sh restart   and WebAppMgr started again once, when the one running has the port (10-cleanyourtv-home at
-#                                  boot, before Home is taken over and sam restarted, so that it costs nothing later)
+#                                  boot, before Home is taken over and sam restarted, so that it costs nothing later). Only where
+#                                  tvprofile.js says devtoolsRestart (webOS 25 and newer, where it was tried); on an older webOS the
+#                                  copy is only mounted and the port closes when WebAppMgr starts again by itself
 # Off while D/devtools-open exists (the manager's Security switch, helper/security.js); devtools-undo.sh removes the mount.
 # Each step is written to /tmp/cleanyourtv-boot.log, which Share log includes.
 # The paths can be pointed elsewhere for the tests (tools/test/scripts.test.js); on the TV none of these variables is set.
@@ -18,6 +20,7 @@ C=${CYTV_WAM_COPY:-/tmp/cleanyourtv-webapp-mgr.sh}
 MOUNTS=${CYTV_MOUNTS:-/proc/mounts}
 PROC=${CYTV_PROC:-/proc}
 LOG=${CYTV_BOOT_LOG:-/tmp/cleanyourtv-boot.log}
+TVP=${CYTV_TVPROFILE:-$L/tvprofile.js}
 UNIT=webapp-mgr.service
 up() { cut -d' ' -f1 /proc/uptime 2>/dev/null; }
 say() { echo "$(up) devtools: $*" >> "$LOG"; }
@@ -44,6 +47,12 @@ if ! mounted; then
 fi
 [ "$1" = restart ] || exit 0
 withPort || exit 0
+# the restart only on a webOS where it was tried (tvprofile.js devtoolsRestart); an unreadable version counts as not tried
+sdk=$(luna-send -n 1 -w 5000 -f luna://com.webos.service.tv.systemproperty/getSystemInfo '{"keys":["sdkVersion"]}' </dev/null 2>/dev/null | sed -n 's/.*"sdkVersion": *"\([^"]*\)".*/\1/p' | head -1)
+if [ "$(node "$TVP" get devtoolsRestart --sdk "$sdk" 2>/dev/null)" != 1 ]; then
+  say "WebAppMgr is not restarted on webOS SDK ${sdk:-unknown} (tried from webOS 25 on): port 9998 closes when WebAppMgr starts again by itself"
+  exit 0
+fi
 say "restarting WebAppMgr once, without port 9998"
 systemctl --no-block restart $UNIT
 i=0

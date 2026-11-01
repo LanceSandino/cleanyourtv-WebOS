@@ -2,7 +2,7 @@
 // CPU from /proc/stat deltas, the temperature, each core's clock, memory and swap, the eMMC's wear, the Wi-Fi signal and traffic,
 // free space, the uptime, and this service's own CPU and memory. Everything is read in this process from /proc and /sys, never with
 // a program per reading; free space comes from fs.statfs where Node has it (webOS 26) and from one df at most once a minute where it
-// does not (Node 16 on webOS 25). Where the temperature and the clock are is decided in tvprofile.js (sensors).
+// does not (Node 12 on webOS 22 and 23, Node 16 on webOS 24 and 25). Where the temperature and the clock are is decided in tvprofile.js (sensors).
 // Speed and cost: nothing runs while nobody asks (no timer, no history kept on the TV: hours of history belong on a computer that
 // stays on, docs/remote.md). One reading is shared by every caller for 2 s, and callers that come together wait for the same one.
 // CPU shares are the change since the previous reading, which must be at least 2 s and at most 30 s old; the first reading after a
@@ -21,7 +21,7 @@ const P = require('./paths'),
 
 const MIN_MS = 2000, // the shortest window for a CPU share and the life of a cached reading
   MAX_MS = 30000, // a previous reading older than this is not used for shares (they would be a long average, not "now")
-  DF_MS = 60000, // df at most once a minute (Node 16 has no statfs)
+  DF_MS = 60000, // df at most once a minute (Node 12 and 16 have no statfs)
   EMMC_MS = 10 * 60000, // the eMMC's wear changes over months
   HZ = 100, // USER_HZ: /proc/<pid>/stat counts in hundredths of a second on Linux
   CHUNK = 64; // processes read between two turns of the event loop, so a sweep never holds the service for long

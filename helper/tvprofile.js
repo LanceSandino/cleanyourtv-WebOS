@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // What differs between TVs, in one place. The facts about a TV (model, firmware, webOS SDK version, LG's Home app, Node.js version)
 // go in, the decisions every other part follows come out:
-//   supported      the TV is at least FLOOR, the oldest webOS this fork runs on: webOS 25 (SDK 10), with Node.js 16 and Chromium 120
-//                  (DECISIONS.md D-20261029-3). Below it bootstrap.sh stops before it changes anything; a TV whose SDK version could not
-//                  be read is not supported either (bootstrap.sh lets "Set up anyway" through for that case only). install.sh, which runs
-//                  before the package is on the TV, and bootstrap.sh's own Node.js check have the same numbers.
-//   floor          FLOOR in words, for the messages: "webOS 25 (SDK 10)".
+//   supported      the TV is at least FLOOR, the oldest webOS this fork runs on: webOS 22 (SDK 7), with Node.js 12 and Chromium 87
+//                  (DECISIONS.md D-20261101-1; webOS 23 has Node.js 12 and Chromium 94, webOS 24 Node.js 16 and Chromium 108). Below it
+//                  bootstrap.sh stops before it changes anything; a TV whose SDK version could not be read is not supported either
+//                  (bootstrap.sh lets "Set up anyway" through for that case only). install.sh, which runs before the package is on the
+//                  TV, and bootstrap.sh's own Node.js check have the same numbers.
+//   floor          FLOOR in words, for the messages: "webOS 22 (SDK 7)".
 //   pickerMode     how the Input key shows the Inputs by default: 'overlay' (the picker over the running app, kept ready) on webOS 25
 //                  (SDK 10), the only version where that was tried; 'ondemand' (started on the key, closed after use) everywhere else: on
 //                  webOS 6.5 a hidden overlay app kept the remote and showed a loading circle (issues 5 and 6), and SDK 11 (webOS 26) has
@@ -27,6 +28,15 @@
 //                  '' elsewhere (the option says it is not available). The service also checks that the runtime layer folder exists.
 //   lgPreload      how LG's app pre-loading can be stopped (helper/lgpreload.js): 'api' (the preload manager's own setPreloadPolicy
 //                  switches one app's pre-loading off until it restarts) on webOS 25 (SDK 10), where that was tried; '' elsewhere.
+//   lgScreensaver  how LG's screensaver question is answered (helper/lgscreensaver.js): 'bus' (the service registers on its own
+//                  connection to LG's bus, through LG's /usr/lib/nodejs/palmbus.js, and answers at once) from webOS 25 (SDK 10) on, where
+//                  that was tried; '' before and when the SDK is unknown: nothing registers and LG shows its own screensaver, as before
+//                  this launcher. A registered client that answers wrong or late is a fault for LG, which then reboots the TV fully at
+//                  its next standby (D-20261029-9), so an untried webOS is left out rather than risked.
+//   devtoolsRestart  whether the boot starts WebAppMgr again once without LG's web inspector (scripts/devtools-close.sh restart): from
+//                  webOS 25 (SDK 10) on, where it was tried. Before that the copy of LG's start script is only mounted, and the port
+//                  (9998) closes when WebAppMgr starts again by itself: the restart closes every web app at boot, and it was not
+//                  tried with LG's native Home and the stand-in (webOS 22 and 23), whose launcher WebAppMgr opens right after it.
 //   homeTakeover   how the launcher becomes Home. 'mount': its folder is mounted over LG's Home app and the app manager is restarted
 //                  to read it (flutter and web Home). 'standin' where LG's Home is the native program: a small script is mounted over
 //                  that program and asks webapp-mgr to open the launcher as com.webos.app.home, so LG's Home manifest stays and the
@@ -39,9 +49,10 @@
 //   node tvprofile.js show [same options]      prints the whole profile as JSON
 const fs = require('fs');
 
-// the oldest TV this fork runs on: webOS 25 = SDK 10, which ships Node.js 16.20 and Chromium 120 (webOS 24 has Node.js 16.19 and
-// Chromium 108, webOS 22 and 23 Node.js 12)
-const FLOOR = { name: 'webOS 25', sdk: 10, node: 16 };
+// the oldest TV this fork runs on: webOS 22 = SDK 7, which ships Node.js 12.21 and Chromium 87 (DECISIONS.md D-20261101-1; webOS 23
+// has Node.js 12 and Chromium 94, webOS 24 Node.js 16.19 and Chromium 108, webOS 25 Node.js 16.20 and Chromium 120). webOS 5 and 6
+// (Node.js 8.12, Chromium 68 and 79) stay out.
+const FLOOR = { name: 'webOS 22', sdk: 7, node: 12 };
 
 function sdkMajor(sdk) {
   const n = parseInt(String(sdk || '').split('.')[0], 10);
@@ -87,6 +98,8 @@ function decide(facts, compat) {
     homeTakeover: /^com\.webos\.app\.home native$/.test(homeKind) ? 'standin' : 'mount',
     lgVolumeBar: major === 10 ? 'configd' : '',
     lgPreload: major === 10 ? 'api' : '',
+    lgScreensaver: major >= 10 ? 'bus' : '',
+    devtoolsRestart: major >= 10,
     supported: major >= FLOOR.sdk && nodeMajor >= FLOOR.node,
     floor: FLOOR.name + ' (SDK ' + FLOOR.sdk + ')',
   };

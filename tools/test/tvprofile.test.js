@@ -16,7 +16,16 @@ run(async () => {
     [
       'webOS 25 (G2, the tested TV)',
       { sdk: '10.2.2', firmware: '33.23.05', home: 'com.webos.app.home flutter', node: 'v16.20.2' },
-      { pickerMode: 'overlay', notifyWindow: 'topui', homeSupported: true, tested: true, legacyNode: false, supported: true },
+      {
+        pickerMode: 'overlay',
+        notifyWindow: 'topui',
+        homeSupported: true,
+        tested: true,
+        legacyNode: false,
+        lgScreensaver: 'bus',
+        devtoolsRestart: true,
+        supported: true,
+      },
     ],
     [
       'webOS 26 (SDK 11): the hidden picker was not tried there (issue 6)',
@@ -24,14 +33,36 @@ run(async () => {
       { pickerMode: 'ondemand', notifyWindow: 'topui', homeSupported: true, tested: false, supported: true },
     ],
     [
-      'webOS 24 (SDK 9, Node.js 16, Chromium 108): below the floor',
+      'webOS 24 (SDK 9, Node.js 16, Chromium 108)',
       { sdk: '9.2.4', firmware: '23.23.30', home: 'com.webos.app.home flutter', node: 'v16.19.1' },
-      { notifyWindow: 'overlay', homeSupported: true, supported: false },
+      { pickerMode: 'ondemand', notifyWindow: 'overlay', homeSupported: true, homeTakeover: 'mount', supported: true },
     ],
     [
-      'an SDK 10 report with an older Node.js: below the floor',
-      { sdk: '10.2.2', firmware: '33.23.05', home: 'com.webos.app.home flutter', node: 'v12.22.2' },
-      { tested: true, supported: false },
+      'webOS 23 (SDK 8, Node.js 12, Chromium 94; issue 17): the native Home gets the stand-in',
+      { sdk: '8.4.0', firmware: '13.40.90', home: 'com.webos.app.home native', node: 'v12.22.2' },
+      { pickerMode: 'ondemand', notifyWindow: 'overlay', homeSupported: false, homeTakeover: 'standin', supported: true },
+    ],
+    [
+      "webOS 22 (SDK 7, Node.js 12.21, Chromium 87): the owner's second TV, the oldest supported (D-20261101-1)",
+      { model: '86UQ8000AUB', sdk: '7.6.0', firmware: '04.60.91', home: 'com.webos.app.home native', node: 'v12.21.0' },
+      {
+        pickerMode: 'ondemand',
+        notifyWindow: 'overlay',
+        homeSupported: false,
+        homeTakeover: 'standin',
+        afterSam: 'eim webapp-mgr preload-manager memorymanager',
+        lgVolumeBar: '',
+        lgPreload: '',
+        lgScreensaver: '',
+        devtoolsRestart: false,
+        legacyNode: false,
+        supported: true,
+      },
+    ],
+    [
+      'an SDK 7 report with a Node.js older than 12: below the floor',
+      { sdk: '7.6.0', firmware: '04.60.91', home: 'com.webos.app.home native', node: 'v11.15.0' },
+      { supported: false },
     ],
     [
       'webOS 6.5 (issue 5)',
@@ -46,7 +77,16 @@ run(async () => {
     [
       'SDK unknown',
       { sdk: '', firmware: '', home: '' },
-      { pickerMode: 'ondemand', notifyWindow: 'overlay', homeSupported: false, tested: false, sdkMajor: 0, supported: false },
+      {
+        pickerMode: 'ondemand',
+        notifyWindow: 'overlay',
+        homeSupported: false,
+        tested: false,
+        sdkMajor: 0,
+        lgScreensaver: '',
+        devtoolsRestart: false,
+        supported: false,
+      },
     ],
   ];
   for (const c of cases) {
@@ -82,8 +122,17 @@ run(async () => {
     "hiding LG's volume bar: webOS 25 only"
   );
   ok(
-    tv.decide({ sdk: '10.2.2' }).lgPreload === 'api' && ['6.5.0', '11.2.0', ''].every(v => tv.decide({ sdk: v }).lgPreload === ''),
+    tv.decide({ sdk: '10.2.2' }).lgPreload === 'api' && ['6.5.0', '7.6.0', '11.2.0', ''].every(v => tv.decide({ sdk: v }).lgPreload === ''),
     "stopping LG's pre-loading: webOS 25 only"
+  );
+  // LG's screensaver question and WebAppMgr's restart without its inspector: from webOS 25 on, where they were tried; a registered
+  // client that answers wrong reboots the TV at standby (D-20261029-9), so webOS 22 to 24 and an unknown TV are left out
+  ok(
+    ['10.2.2', '11.2.0'].every(v => tv.decide({ sdk: v }).lgScreensaver === 'bus' && tv.decide({ sdk: v }).devtoolsRestart === true) &&
+      ['7.6.0', '8.4.0', '9.2.4', ''].every(
+        v => tv.decide({ sdk: v }).lgScreensaver === '' && tv.decide({ sdk: v }).devtoolsRestart === false
+      ),
+    "LG's screensaver question and the WebAppMgr restart: webOS 25 and newer only"
   );
   // the setup script asks the same rules from the shell
   const cli = args => cp.spawnSync(process.execPath, [path.join(helper, 'tvprofile.js')].concat(args), { encoding: 'utf8' }).stdout.trim();
@@ -97,17 +146,22 @@ run(async () => {
     "from the shell: is the firmware in the repository's compat.json"
   );
   ok(cli(['get', 'homeSupported', '--home', 'com.webos.app.home flutter']) === '1', "from the shell: LG's Home kind");
-  // the oldest webOS this fork runs on (DECISIONS.md D-20261029-3): bootstrap.sh asks, install.sh has the same numbers
+  // the oldest webOS this fork runs on (DECISIONS.md D-20261101-1): bootstrap.sh asks, install.sh has the same numbers
   ok(
-    tv.FLOOR.sdk === 10 && tv.FLOOR.node === 16 && tv.decide({}).floor === 'webOS 25 (SDK 10)',
-    'the floor is webOS 25: SDK 10 with Node.js 16 (and Chromium 120)'
+    tv.FLOOR.sdk === 7 && tv.FLOOR.node === 12 && tv.decide({}).floor === 'webOS 22 (SDK 7)',
+    'the floor is webOS 22: SDK 7 with Node.js 12 (and Chromium 87)'
   );
   ok(
-    cli(['get', 'supported', '--sdk', '10.3.2']) === '1' &&
-      cli(['get', 'supported', '--sdk', '11.2.0']) === '1' &&
-      ['9.2.4', '6.5.3', '5.4.3', ''].every(v => cli(['get', 'supported', '--sdk', v]) === '0') &&
-      cli(['get', 'floor']) === 'webOS 25 (SDK 10)',
+    ['7.6.0', '8.4.0', '9.2.4', '10.3.2', '11.2.0'].every(v => cli(['get', 'supported', '--sdk', v]) === '1') &&
+      ['6.5.3', '5.4.3', ''].every(v => cli(['get', 'supported', '--sdk', v]) === '0') &&
+      cli(['get', 'floor']) === 'webOS 22 (SDK 7)',
     'from the shell: is the TV at least the floor (the Node.js running it counts too), and what the floor is'
+  );
+  ok(
+    cli(['get', 'lgScreensaver', '--sdk', '7.6.0']) === '' &&
+      cli(['get', 'devtoolsRestart', '--sdk', '7.6.0']) === '0' &&
+      cli(['get', 'devtoolsRestart', '--sdk', '10.2.2']) === '1',
+    'from the shell: no WebAppMgr restart on webOS 22 (devtools-close.sh asks)'
   );
   ok(
     cli(['get', 'afterSam', '--sdk', arc.sdk, '--home', arc.home]) === 'arccontroller',

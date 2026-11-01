@@ -5,12 +5,15 @@
 // opened with the photos and the app that was in front) when the screensaver is ours, yes when it is off or has no photos, yes over an
 // HDMI input. Each answer is kept in a short record with LG's reply. LG's responseScreenSaverRequest takes the timestamp only as a
 // string, and the answer carries it unchanged. Without the bus module nothing is registered. A subscription that ends is asked again.
+// Only from webOS 25 on (tvprofile.js lgScreensaver: 'bus', where this was tried): on webOS 22 to 24 nothing is registered, and while
+// the TV's version is not known yet it waits for it.
 const fs = require('fs'),
   path = require('path'),
   EventEmitter = require('events');
 const { ok, tmp, sleep, req, memoryConfig, run } = require('./lib');
 
 run(async () => {
+  process.setMaxListeners(30); // every part made here ends with the process (process.once('exit')), as the one in the service does
   const S = req('lgscreensaver');
   const record = path.join(tmp, 'ss-answers.log');
   // the stand-in bus: every Handle is one connection; calls and subscriptions are noted with the connection they came from
@@ -51,12 +54,17 @@ run(async () => {
   // the photos come from the wallpapers part (its list: uploads, Immich, the feed) and the photo feed (its count), as on the TV
   const featureOf = photos => n =>
     n === 'wallpapers' ? { list: () => Array.from({ length: photos }, (_, i) => 'u/' + i) } : n === 'photofeed' ? { count: () => 0 } : null;
+  // the TV's profile as tvprofile.js makes it: webOS 25 unless a test says otherwise
+  const tv = req('tvprofile');
+  const profileOf = sdk => ({ get: () => tv.decide({ sdk, home: 'com.webos.app.home flutter' }) });
+  const webOS25 = profileOf('10.2.2');
   async function once(conf, fg, opts) {
     const o = opts || {};
     const bus = fakeBus(o.bus);
     const luna = [];
     const ctx = {
       config: memoryConfig(conf),
+      profile: webOS25,
       feature: featureOf(conf._photos === undefined ? 3 : conf._photos),
       luna: async (uri, p) => {
         luna.push([uri.replace(/^luna:\/\//, ''), p]);
@@ -147,7 +155,7 @@ run(async () => {
   {
     const calls = [];
     const part = S.create(
-      { config: memoryConfig(on), feature: featureOf(3), luna: async u => (calls.push(u), { returnValue: true }) },
+      { config: memoryConfig(on), profile: webOS25, feature: featureOf(3), luna: async u => (calls.push(u), { returnValue: true }) },
       { bus: () => null, proc: path.join(tmp, 'no-proc') }
     );
     part.start();
@@ -156,6 +164,44 @@ run(async () => {
     ok(
       !calls.length && part.status().listening === false && /not registered/.test(part.status().last),
       'without the bus module nothing is registered: ' + part.status().last
+    );
+  }
+  // webOS 22 to 24 (tvprofile.js lgScreensaver ''): not tried there, and a registered client that answers wrong is a fault that
+  // reboots the TV at standby, so nothing registers and LG shows its own screensaver
+  for (const sdk of ['7.6.0', '8.4.0', '9.2.4']) {
+    const bus = fakeBus();
+    const part = S.create(
+      { config: memoryConfig(on), profile: profileOf(sdk), feature: featureOf(3), luna: async () => ({ returnValue: true }) },
+      { bus: () => bus, minWaitMs: 30, maxWaitMs: 60, proc: path.join(tmp, 'no-proc') }
+    );
+    part.start();
+    await sleep(40);
+    part.stop();
+    ok(
+      !bus.handles.length &&
+        !bus.subs.length &&
+        part.status().listening === false &&
+        /not registered on webOS SDK/.test(part.status().last),
+      'webOS SDK ' + sdk + ': no connection to LG bus and nothing registered, LG decides: ' + part.status().last
+    );
+  }
+  // the TV's version not known yet (the first start): it waits, and registers once the profile says webOS 25
+  {
+    const bus = fakeBus();
+    let p = tv.decide({}, []);
+    const part = S.create(
+      { config: memoryConfig(on), profile: { get: () => p }, feature: featureOf(3), luna: async () => ({ returnValue: true }) },
+      { bus: () => bus, profileWaitMs: 20, minWaitMs: 30, maxWaitMs: 60, proc: path.join(tmp, 'no-proc') }
+    );
+    part.start();
+    await sleep(50);
+    const before = bus.subs.length;
+    p = webOS25.get();
+    for (let i = 0; i < 40 && !bus.subs.length; i++) await sleep(10);
+    part.stop();
+    ok(
+      before === 0 && bus.subs.length === 1,
+      'an unknown version waits; it registers once the profile is read (' + before + ', ' + bus.subs.length + ')'
     );
   }
   // a luna-send subscription left by an earlier version is ended at start; other programs are left alone
@@ -173,7 +219,7 @@ run(async () => {
     fs.writeFileSync(path.join(proc, pid, 'cmdline'), cmd);
   });
   const sw = S.create(
-    { config: memoryConfig(on), feature: featureOf(3), luna: async () => ({ returnValue: true }) },
+    { config: memoryConfig(on), profile: webOS25, feature: featureOf(3), luna: async () => ({ returnValue: true }) },
     { bus: () => fakeBus(), proc, kill: pid => killed.push(pid), minWaitMs: 100 }
   );
   sw.start();
@@ -183,7 +229,7 @@ run(async () => {
   {
     const bus = fakeBus();
     const part = S.create(
-      { config: memoryConfig(on), feature: featureOf(3), luna: async () => ({ returnValue: true }) },
+      { config: memoryConfig(on), profile: webOS25, feature: featureOf(3), luna: async () => ({ returnValue: true }) },
       { bus: () => bus, minWaitMs: 30, maxWaitMs: 60, proc: path.join(tmp, 'no-proc') }
     );
     part.start();

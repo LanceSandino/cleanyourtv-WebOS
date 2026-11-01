@@ -2,7 +2,7 @@
 const fs = require('fs'),
   path = require('path'),
   cp = require('child_process');
-const { root, tmp, ok, run, sleep } = require('./lib');
+const { root, helper, tmp, ok, run, sleep } = require('./lib');
 
 run(async () => {
   const scripts = fs
@@ -122,46 +122,54 @@ run(async () => {
   cp.spawnSync('mkdir', ['-p', path.join(R, 'var/lib/webosbrew/init.d')]);
   // what the TV's luna answers (getSystemInfo); each case below writes its own
   const reply = path.join(tmp, 'luna-reply.json'),
-    tvInfo = sdk =>
+    tvInfo = (sdk, firmware, model) =>
       fs.writeFileSync(
         reply,
         JSON.stringify(
-          Object.assign({ returnValue: true, modelName: 'OLED65G26LA', firmwareVersion: '33.99.10' }, sdk ? { sdkVersion: sdk } : {})
+          Object.assign(
+            { returnValue: true, modelName: model || 'OLED65G26LA', firmwareVersion: firmware || '33.99.10' },
+            sdk ? { sdkVersion: sdk } : {}
+          )
         )
       );
   write(path.join(BIN, 'luna-send'), '#!/bin/sh\ncat "' + reply + '"\n', 0o755);
   write(path.join(BIN, 'systemctl'), '#!/bin/sh\nexit 0\n', 0o755);
   // a Node.js that says it is 8.12 (webOS 5 and 6), ahead of the real one on PATH; bootstrap.sh puts /usr/bin and /bin first
-  const NODE8 = path.join(tmp, 'node8');
-  write(
-    path.join(NODE8, 'node'),
-    '#!/bin/sh\ncase "$1" in -v|--version) echo v8.12.0; exit 0 ;; esac\nexec "' + process.execPath + '" "$@"\n',
-    0o755
-  );
+  const fakeNode = v => {
+    const dir = path.join(tmp, 'node-' + v);
+    write(
+      path.join(dir, 'node'),
+      '#!/bin/sh\ncase "$1" in -v|--version) echo ' + v + '; exit 0 ;; esac\nexec "' + process.execPath + '" "$@"\n',
+      0o755
+    );
+    return dir;
+  };
+  // and one that says it is 12.21.0, as webOS 22 has
+  const NODE8 = fakeNode('v8.12.0'),
+    NODE12 = fakeNode('v12.21.0');
   const systemNode = ['/usr/bin/node', '/usr/sbin/node', '/bin/node', '/sbin/node'].some(f => fs.existsSync(f));
-  const boot = (args, node8) =>
+  const boot = (args, nodeDir) =>
     cp.spawnSync('sh', [path.join(S, 'bootstrap.sh')].concat(args), {
       encoding: 'utf8',
       env: Object.assign({}, process.env, {
-        PATH: (node8 ? NODE8 + ':' : '') + process.env.PATH + ':' + BIN,
+        PATH: (nodeDir ? nodeDir + ':' : '') + process.env.PATH + ':' + BIN,
         CYTV_TEST_ROOT: R,
       }),
       timeout: 60000,
     });
   const D = path.join(R, 'media/developer/cleanyourtv');
-  // below the floor (webOS 25, SDK 10, Node.js 16: DECISIONS.md D-20261029-3) the setup stops before it changes anything,
+  // below the floor (webOS 22, SDK 7, Node.js 12: DECISIONS.md D-20261101-1) the setup stops before it changes anything,
   // --force or not; only a TV whose version could not be read can be set up anyway
   let b;
   for (const c of [
     ['webOS 5 (SDK 5.4.3)', '5.4.3', []],
-    ['webOS 6 (SDK 6.5.3)', '6.5.3', ['--force']],
-    ['webOS 24 (SDK 9.2.4), also with --force', '9.2.4', ['--force']],
+    ['webOS 6 (SDK 6.5.3), also with --force', '6.5.3', ['--force']],
   ]) {
     tvInfo(c[1]);
     b = boot(['install', '--no-start'].concat(c[2]));
     const refused =
       b.status !== 0 &&
-      new RegExp('webOS SDK ' + c[1].replace(/\./g, '\\.') + '.*needs webOS 25 \\(SDK 10\\) or newer').test(b.stderr) &&
+      new RegExp('webOS SDK ' + c[1].replace(/\./g, '\\.') + '.*needs webOS 22 \\(SDK 7\\) or newer').test(b.stderr) &&
       /Nothing was changed/.test(b.stderr) &&
       !fs.existsSync(D);
     ok(refused, c[0] + ': the setup refuses the TV and changes nothing' + (refused ? '' : ': ' + (b.stdout + b.stderr).trim().slice(-300)));
@@ -169,7 +177,7 @@ run(async () => {
   tvInfo('10.3.2');
   if (systemNode) console.log('     skipped: a Node.js in /usr/bin or /bin comes before the stand-in Node.js 8.12');
   else {
-    b = boot(['install', '--no-start', '--force'], true);
+    b = boot(['install', '--no-start', '--force'], NODE8);
     const refused =
       b.status !== 0 && /Node\.js \(v8\.12\.0\) is too old/.test(b.stderr) && /Nothing was changed/.test(b.stderr) && !fs.existsSync(D);
     ok(refused, 'Node.js 8.12 is refused before anything else, also with --force' + (refused ? '' : ': ' + b.stderr.trim().slice(-300)));
@@ -221,7 +229,7 @@ run(async () => {
   b = boot(['update', '1.6.1', '--no-start']);
   const kept =
     b.status !== 0 &&
-    /needs webOS 25 \(SDK 10\) or newer/.test(b.stderr) &&
+    /needs webOS 22 \(SDK 7\) or newer/.test(b.stderr) &&
     fs.statSync(svcFile).mtime.getTime() === then.getTime() &&
     fs.existsSync(path.join(D, 'last-error.txt')) &&
     /update to 1\.6\.1 failed/.test(fs.readFileSync(path.join(D, 'last-error.txt'), 'utf8'));
@@ -284,6 +292,29 @@ run(async () => {
       JSON.parse(fs.readFileSync(NA, 'utf8')).defaultWindowType === 'overlay',
     'with --force a TV of unknown version is set up, and its notification app gets the overlay window (tvprofile.js)'
   );
+  // webOS 22, the oldest supported (DECISIONS.md D-20261101-1): the owner's second TV, an 86UQ8000AUB with firmware 04.60.91 and
+  // Node.js 12.21, a firmware the compatibility list has (43NANO786QA, issue 31). With LG's native Home it is set up without --force,
+  // and the notification app gets the overlay window (an app of the topui type does not start before SDK 10)
+  if (systemNode) console.log('     skipped: a Node.js in /usr/bin or /bin comes before the stand-in Node.js 12.21');
+  else {
+    fs.unlinkSync(path.join(D, 'backup', 'home-appinfo.orig.json'));
+    fs.writeFileSync(NA, JSON.stringify({ id: 'com.cleanyourtv.notify', defaultWindowType: 'topui' }));
+    tvInfo('7.6.0', '04.60.91', '86UQ8000AUB');
+    b = boot(['install', '--no-start', '--no-input-key'], NODE12);
+    const out22 = b.stdout + b.stderr;
+    ok(
+      b.status === 0 &&
+        /webOS SDK 7\.6\.0/.test(out22) &&
+        /this firmware is in the compatibility list \(43NANO786QA, webOS 22/.test(out22) &&
+        /LG's Home app is 'native'/.test(out22) &&
+        !/--force/.test(out22) &&
+        JSON.parse(fs.readFileSync(NA, 'utf8')).defaultWindowType === 'overlay' &&
+        /picture notifications use the overlay window/.test(out22),
+      'webOS 22 with Node.js 12.21 and the native Home (firmware 04.60.91, in the list) is set up without --force, with the overlay ' +
+        'notification window' +
+        (b.status === 0 ? '' : ': ' + out22.slice(-400))
+    );
+  }
   tvInfo('10.3.2');
 
   // bootstrap.sh asks tvprofile.js for the per-TV decisions instead of deciding itself
@@ -507,8 +538,9 @@ run(async () => {
     );
   }
   // devtools-close.sh and devtools-undo.sh run for real against a stand-in for LG's start script, /proc/mounts, /proc/<pid>/cmdline and
-  // mount, umount and systemctl: the copy has no --remote-debugging-port, it is mounted once, WebAppMgr is restarted once (only when it
-  // runs with the port), and the undo removes the mount and the copy
+  // mount, umount, systemctl and luna-send (the webOS version): the copy has no --remote-debugging-port, it is mounted once, WebAppMgr is
+  // restarted once (only when it runs with the port, and only on webOS 25 and newer: tvprofile.js devtoolsRestart), and the undo
+  // removes the mount and the copy
   {
     const W = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cytv-devtools-')),
       wb = path.join(W, 'bin'),
@@ -519,7 +551,8 @@ run(async () => {
       C = path.join(W, 'tmp-copy.sh'),
       M = path.join(W, 'mounts'),
       SLOG = path.join(W, 'systemctl.log'),
-      PIDF = path.join(W, 'mainpid');
+      PIDF = path.join(W, 'mainpid'),
+      SDKF = path.join(W, 'sdk');
     // the shape of LG's script on webOS 25: the switches in one quoted variable, a backslash at the end of each line
     const LG = [
       '#!/bin/sh',
@@ -539,6 +572,8 @@ run(async () => {
     // mount --bind <copy> <script> adds a line; umount <script> takes it out; a restart starts WebAppMgr as the script then at
     // <script> would: from the copy while it is mounted, else from LG's own
     stand('mount', 'echo "tmpfs $3 tmpfs rw 0 0" >> "' + M + '"');
+    // LG's system properties: the webOS version in SDKF
+    stand('luna-send', 'printf \'{"returnValue": true, "sdkVersion": "%s"}\\n\' "$(cat "' + SDKF + '")"');
     stand('umount', 'grep -v " $1 " "' + M + '" > "' + M + '.new"; mv "' + M + '.new" "' + M + '"');
     stand(
       'systemctl',
@@ -564,9 +599,11 @@ run(async () => {
       CYTV_PROC: wp,
       CYTV_BOOT_LOG: path.join(W, 'boot.log'),
       CYTV_WAM_WAIT: '5',
+      CYTV_TVPROFILE: path.join(helper, 'tvprofile.js'),
     };
-    const reset = (lg, withPort) => {
-      for (const f of [C, SLOG, path.join(W, 'devtools-open')]) cp.spawnSync('rm', ['-f', f]);
+    const reset = (lg, withPort, sdk) => {
+      for (const f of [C, SLOG, path.join(W, 'devtools-open'), path.join(W, 'boot.log')]) cp.spawnSync('rm', ['-f', f]);
+      fs.writeFileSync(SDKF, sdk === undefined ? '10.2.2' : sdk);
       fs.writeFileSync(S, lg);
       fs.writeFileSync(M, 'overlay /etc overlay ro 0 0\n');
       fs.writeFileSync(path.join(wp, '100', 'cmdline'), '/usr/bin/WebAppMgr\0' + (withPort ? '--remote-debugging-port=9998\0' : ''));
@@ -624,7 +661,20 @@ run(async () => {
     reset(LG, false);
     sh('devtools-close.sh', ['restart']);
     const alreadyClosed = { mounts: mounts(), restarts: restarts() };
+    // webOS 22 (and a version that cannot be read): the restart was not tried there, so the copy is mounted and WebAppMgr left running
+    const older = ['7.6.0', ''].map(sdk => {
+      reset(LG, true, sdk);
+      const st = sh('devtools-close.sh', ['restart']);
+      const r = { sdk, status: st, mounts: mounts(), restarts: restarts(), log: fs.readFileSync(path.join(W, 'boot.log'), 'utf8') };
+      sh('devtools-undo.sh');
+      return r;
+    });
     cp.spawnSync('rm', ['-rf', W]);
+    ok(
+      older.every(r => r.status === 0 && r.mounts === 1 && r.restarts === 0 && /WebAppMgr is not restarted on webOS SDK/.test(r.log)),
+      'devtools-close.sh on webOS 22 or an unknown version: the copy is mounted, WebAppMgr is not restarted, and the boot log says so: ' +
+        JSON.stringify(older.map(r => [r.sdk, r.status, r.mounts, r.restarts]))
+    );
     ok(
       noRestart.mounts === 1 &&
         noRestart.restarts === 0 &&
@@ -823,18 +873,23 @@ run(async () => {
       tooOld('10.3.2', 'v16.20.2'),
       tooOld('11.2.0', 'v20.12.2'),
       tooOld('', 'v16.20.2'),
+      tooOld('7.6.0', 'v12.21.0'),
       tooOld('9.2.4', 'v16.19.1'),
       tooOld('6.5.3', 'v8.12.0'),
-      tooOld('10.3.2', 'v12.22.2'),
+      tooOld('6.5.3', 'v12.21.0'),
+      tooOld('7.6.0', 'v11.15.0'),
     ];
     ok(
       res[0] === 'fine' &&
         res[1] === 'fine' &&
         res[2] === 'fine' &&
-        /^old: .*webOS SDK 9\.2\.4/.test(res[3]) &&
-        /^old: .*Node\.js \(v8\.12\.0\)/.test(res[4]) &&
-        /^old: .*Node\.js \(v12\.22\.2\)/.test(res[5]),
-      'install.sh installs nothing on a TV below webOS 25 or with a Node.js older than 16; an unread version is left to the setup: ' +
+        res[3] === 'fine' &&
+        res[4] === 'fine' &&
+        /^old: .*Node\.js \(v8\.12\.0\)/.test(res[5]) &&
+        /^old: .*webOS SDK 6\.5\.3/.test(res[6]) &&
+        /^old: .*Node\.js \(v11\.15\.0\)/.test(res[7]),
+      'install.sh installs on webOS 22 (SDK 7, Node.js 12.21) and newer, nothing on webOS 6 or with a Node.js older than 12; an unread ' +
+        'version is left to the setup: ' +
         res.join(' | ')
     );
   }
