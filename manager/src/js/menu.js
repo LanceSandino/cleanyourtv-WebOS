@@ -596,6 +596,64 @@ function build() {
     rows.push({ label: 'Back', fn: pop });
     return;
   }
+  /* App updates: LG's store apps with an update (helper/appupdates.js); each one, or all, updated the way LG's store does it */
+  if (view === 'appupdates') {
+    var au = aup || { ok: false, apps: [], queued: [], last: [] },
+      can = au.apps.filter(function (a) {
+        return !a.firmware && !a.blocked;
+      });
+    if (!au.ok) rows.push({ label: "LG's update list could not be read", sub: au.error || '', tone: 'r', fn: null });
+    else if (!au.apps.length)
+      rows.push({ label: 'Every app is up to date', sub: 'LG looks for updates at every start and once a day', fn: null });
+    if (can.length > 1)
+      rows.push({
+        label: 'Update all',
+        sub: can.length + ' apps, one at a time',
+        dim: !!au.updating,
+        fn: function () {
+          appUpdate({ all: true });
+        },
+      });
+    au.apps.forEach(function (a) {
+      var now = !!au.updating && au.updating.id === a.id,
+        waiting = au.queued.indexOf(a.id) >= 0,
+        off = now || waiting || a.firmware || a.blocked;
+      rows.push({
+        label: a.title,
+        sub:
+          (a.version ? a.version + ' · ' : '') +
+          (now
+            ? 'Updating… ' + (au.updating.step || '')
+            : waiting
+              ? 'Waiting for the one before'
+              : a.firmware
+                ? 'Needs newer TV software first (TV updates are blocked to keep root)'
+                : a.blocked
+                  ? 'LG does not allow this update'
+                  : a.required
+                    ? 'Update needed before it opens'
+                    : 'Update available'),
+        dim: off,
+        fn: off
+          ? null
+          : function () {
+              appUpdate({ id: a.id });
+            },
+      });
+    });
+    if (au.last.length) {
+      rows.push({ sep: true });
+      au.last
+        .slice(-3)
+        .reverse()
+        .forEach(function (x) {
+          rows.push({ label: x.title, sub: x.ok ? 'Updated: ' + x.why : 'Not updated: ' + x.why, tone: x.ok ? 'g' : 'r', fn: null });
+        });
+    }
+    rows.push({ sep: true });
+    rows.push({ label: 'Back', fn: pop });
+    return;
+  }
   if (view === 'debloat') {
     DEBLOAT.forEach(function (g) {
       rows.push({
@@ -1149,6 +1207,7 @@ function build() {
       push('debloat');
     },
   });
+  rows.push({ label: 'App updates', sub: "LG's store apps, updated here", fn: openAppUpdates });
   rows.push({ label: 'TV health', sub: 'processor, temperature, memory, open ports', fn: openHealth });
   rows.push({
     label: 'More',
@@ -1322,6 +1381,68 @@ function releasedOn(d) {
     txt = x.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   } catch (e) {}
   return t('Released %s').replace('%s', txt);
+}
+/* App updates: LG's list read when the screen opens; while updates run, only their progress is read again (it does not ask LG) */
+var aup = null,
+  aupT = null;
+function openAppUpdates() {
+  banner('Reading LG\u2019s update list\u2026', 'work');
+  api('/api/appupdates').then(
+    function (r) {
+      banner('');
+      aup = r;
+      push('appupdates');
+      appRefresh();
+    },
+    function () {
+      banner('The service did not answer', 'err');
+    }
+  );
+}
+function appShow() {
+  if (view !== 'appupdates') return;
+  build();
+  if (idx >= rows.length) idx = 0;
+  draw();
+}
+function appRefresh() {
+  clearTimeout(aupT);
+  if (!aup || !(aup.updating || (aup.queued && aup.queued.length))) return;
+  aupT = setTimeout(function () {
+    if (view !== 'appupdates') return;
+    api('/api/appupdates/state').then(
+      function (s) {
+        aup.updating = s.updating;
+        aup.queued = s.queued;
+        aup.last = s.last;
+        appShow();
+        if (s.updating || s.queued.length) return appRefresh();
+        /* all done: LG's list once more, so an updated app leaves it */
+        api('/api/appupdates').then(function (r) {
+          aup = r;
+          appShow();
+        });
+      },
+      function () {
+        appRefresh();
+      }
+    );
+  }, 3000);
+}
+function appUpdate(b) {
+  api('/api/appupdates/update', b).then(
+    function (r) {
+      if (r.error) return banner(r.error, 'err');
+      aup.updating = r.updating;
+      aup.queued = r.queued;
+      aup.last = r.last;
+      appShow();
+      appRefresh();
+    },
+    function () {
+      banner('The service did not answer', 'err');
+    }
+  );
 }
 /* Debloat > Check that it works */
 var dcheck = null;

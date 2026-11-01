@@ -78,6 +78,7 @@ load('lgpreload', () => require('./lgpreload').create(ctx));
 load('lgsettings', () => require('./lgsettings').create(ctx));
 load('lgscreensaver', () => require('./lgscreensaver').create(ctx)); // answers LG's screensaver question at once (a late answer is a fault)
 load('debloatcheck', () => require('./debloatcheck').create(ctx));
+load('appupdates', () => require('./appupdates').create(ctx)); // LG's app updates, started as LG's store starts them
 const manager = load('manager', () => require('./manager').create(ctx));
 load('apps', () => require('./apps').create(ctx));
 load('running', () => require('./running').create(ctx));

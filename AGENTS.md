@@ -35,6 +35,7 @@ disk, and a reboot without the boot scripts brings LG's Home back.
 | TV health (CPU per core, temperature, memory, ports and how each is guarded, services) | `helper/metrics.js` (`/api/metrics`, on demand, cached 2 s, never `/proc/loadavg`), `helper/exposure.js` (ports, the table of guards, services), `helper/statusdata.js` and `helper/statuspage.js` (the phone remote's TV tab, paired key only), `manager/src/js/health.js`, `docs/security.md` |
 | Screensaver, photo feed | `app/src/js/saver.js` (idle, LG's screensaver request, Left/Right), `helper/photofeed.js` (a server's read-only photo feed, small cache, saved round), `docs/screensaver.md` (with the feed contract) |
 | LG's settings changed in RAM (configd layer `/var/run/tvconfig/rmm`), LG's app pre-loading stopped | `helper/lgconfig.js`, `helper/lgpreload.js` (a debloat group; the preload manager's own setPreloadPolicy, in its memory), `docs/debloat.md` |
+| LG's app updates (Manager > App updates) | `helper/appupdates.js` (LG's update list joined with the installed apps; pkgInstall install, one at a time, never the app on screen), `docs/manager.md` |
 | The report people attach to issues | `helper/sharelog.js` (`node sharelog.js --print` prints it) |
 | Node 8 compatibility helpers (from the webOS 5 days, still used), diagnostics | `helper/netcompat.js`, `helper/diag.js` |
 | Build and checks | `ipk/build.py`, `tools/build-pages.js`, `tools/check.sh`, the tests in `tools/test/` |

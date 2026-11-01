@@ -36,9 +36,14 @@ function create(ctx, opts) {
     const p = ctx.profile && ctx.profile.get ? ctx.profile.get() : null;
     return !!p && p.adManagerStub === false;
   };
+  // LG's online servers cannot be blocked by name below webOS 25 (tvprofile.js lgServerHosts): not looked for there either
+  const noServerHosts = () => {
+    const p = ctx.profile && ctx.profile.get ? ctx.profile.get() : null;
+    return !!p && p.lgServerHosts === false;
+  };
   const groupOn = g =>
     OPT_IN.indexOf(g) >= 0
-      ? (options().debloatOn || []).indexOf(g) >= 0
+      ? (options().debloatOn || []).indexOf(g) >= 0 && !(g === 'lgservers' && noServerHosts())
       : (options().debloatOff || []).indexOf(g) < 0 &&
         !(g === 'adapps' && ((options().debloatOff || []).indexOf('ads') >= 0 || lgAdManager()));
   const read = f => {

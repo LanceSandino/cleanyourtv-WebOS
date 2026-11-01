@@ -385,6 +385,18 @@ const TV_HEALTH =
   'var ok=scaled&&cores===4&&cpu&&mem&&devtools&&back&&stopped;' +
   'out(ok?"ok":"bad scaled="+scaled+" cores="+cores+" cpu="+cpu+" mem="+mem+" devtools="+devtools+" back="+back+" stopped="+stopped)},6000)},' +
   '"a reading after Back")},"the red port")},"a second reading")},"the health screen")},"the main list")})()</script>';
+// the manager's App updates: LG's list (an update, one LG needs before the app opens, one needing newer TV software, shown but not
+// offered), Update all for the two it can install, OK on Disney+ starts it, its row says Updating while the progress is read again
+// (the state only, not LG's list), and once done the result is green and Disney+ leaves the list. The outcome lands in data-apps.
+const APP_UPDATES =
+  '<script>(function(){function out(v){document.body.setAttribute("data-apps",v)}function row(l){for(var i=0;i<rows.length;i++)if(rows[i].label===l)return i;return -1}' +
+  'function until(c,then,what){var n=0,t=setInterval(function(){var ok=false;try{ok=c()}catch(e){}if(ok){clearInterval(t);then()}else if(++n>150){clearInterval(t);out("bad waiting for "+what)}},100)}' +
+  'until(function(){return rows.length&&row("App updates")>=0},function(){idx=row("App updates");act();' +
+  'until(function(){return view==="appupdates"&&row("Disney+")>=0},function(){var all=row("Update all")>=0&&/2 apps/.test(rows[row("Update all")].sub),' +
+  'old=rows[row("Old")],fw=!!old.dim&&!old.fn&&/newer TV software/.test(old.sub),req=/before it opens/.test(rows[row("Prime Video")].sub);' +
+  'idx=row("Disney+");act();until(function(){var d=rows[row("Disney+")];return d&&/Updating/.test(d.sub)},function(){' +
+  'until(function(){return rows.some(function(r){return r.label==="Disney+"&&r.tone==="g"})&&!rows.some(function(r){return r.label==="Disney+"&&!r.tone})},function(){' +
+  'var ok=all&&fw&&req;out(ok?"ok":"bad all="+all+" fw="+fw+" req="+req)},"the result")},"Updating")},"the list")},"the main list")})()</script>';
 // the Magic Remote's wheel (after upstream PR 68): one notch down moves an open menu one row and, with the menus closed, the focus on
 // Home one tile along (lastWheel reset between the two: Date.now does not follow the virtual time here). The outcome lands in data-wheel.
 const WHEEL =
@@ -550,11 +562,13 @@ const PAGES = [
   ['manager update check', 'manager/app/index.html', /data-check="ok"/g, 1, 12000, MANAGER_CHECK],
   ['manager closes when left', 'manager/app/index.html', /data-left="ok"/g, 1, 150000, MANAGER_LEFT],
   ['tv health', 'manager/app/index.html', /data-health="ok"/g, 1, 30000, TV_HEALTH],
+  ['app updates', 'manager/app/index.html', /data-apps="ok"/g, 1, 30000, APP_UPDATES],
   ['weather in a short place', 'app/index.html', /data-slim="ok"/g, 1, 12000, SLIM_WX, 'glass'],
   ['search', 'app/index.html', /data-search="ok"/g, 1, 15000, SEARCH_KEYS],
   ['where to watch', 'app/index.html', /data-where="ok"/g, 1, 20000, WHERE_KEYS],
   ['where to watch fits', 'app/index.html', /data-fit="ok"/g, 1, 20000, FIT_KEYS],
 ];
+let aupStep = 0; // the stand-in app update: 0 none, 1 started, then counts the progress reads
 let famN = 0,
   plexState = 'idle',
   plexAsks = 0;
@@ -610,6 +624,7 @@ function serve() {
       return (
         (famN = 0),
         (plexState = 'idle'),
+        (aupStep = 0),
         (pageTheme = p[6] ? themeOf(p[6]) : null),
         r.writeHead(200, { 'content-type': 'text/html' }),
         r.end(page(p[1], p[5]))
@@ -627,6 +642,37 @@ function serve() {
         r.end(fs.readFileSync(path.join(ROOT, 'themes', tp[1], tp[2])))
       );
     if (u.indexOf('/api/theme/') === 0) return theme.handle(q, r, u, async () => ({}));
+    // App updates: LG's list as appupdates.js gives it; Disney+ updates over two progress reads, then leaves the list
+    if (u.indexOf('/api/appupdates') === 0) {
+      const done = aupStep >= 3,
+        disney = {
+          id: 'com.disney.disneyplus-prod',
+          title: 'Disney+',
+          version: '24.5.8',
+          required: false,
+          firmware: false,
+          blocked: false,
+        };
+      const st = () => ({
+        updating: aupStep && !done ? { id: disney.id, title: 'Disney+', step: 'downloading 50%' } : null,
+        queued: [],
+        last: done ? [{ id: disney.id, title: 'Disney+', ok: true, why: 'updated to 25.1.0', at: '2026-11-01T18:00:00Z' }] : [],
+      });
+      if (u === '/api/appupdates/update') return (aupStep = 1), json(Object.assign({ ok: true }, st()));
+      if (u === '/api/appupdates/state') return aupStep && aupStep < 3 && aupStep++, json(st());
+      return json(
+        Object.assign(
+          {
+            ok: true,
+            apps: (done ? [] : [disney]).concat([
+              { id: 'old.app', title: 'Old', version: '1.0', required: false, firmware: true, blocked: false },
+              { id: 'amazon', title: 'Prime Video', version: '7.5.11', required: true, firmware: false, blocked: false },
+            ]),
+          },
+          st()
+        )
+      );
+    }
     if (u === '/api/apps')
       return json({
         apps: apps.map(a => ({ id: a.id, title: a.title })),

@@ -24,6 +24,9 @@ you can call it from a shell on the TV (for example over SSH).
 | `GET /api/live/status`, `/api/live/channels`, `/api/live/epg` | Live TV data |
 | `POST /api/live/settings`, `/api/live/refresh`, `/api/live/reset` | Live TV setup |
 | `GET /api/manager/status` | Versions, updates, options, hook state |
+| `GET /api/appupdates` | LG's store apps with an update: `apps` (`id`, `title`, `version`, `required`: LG wants it before the app opens, `firmware`: needs newer TV software, `blocked`), `updating`, `queued`, `last` (the results). Read from LG's own list (pkgUpdate statusAll) when asked |
+| `POST /api/appupdates/update` | `{"id": "..."}` or `{"all": true}`: queued and installed one at a time as LG's store installs them (pkgInstall install); never the app on screen; cancelled after ten minutes |
+| `GET /api/appupdates/state` | `updating`, `queued`, `last`, without asking LG (read while updates run) |
 | `GET /api/metrics` | TV health: CPU per core (`busy` %, `null` on the first reading: measuring), clock, temperature, memory and swap, free space, eMMC wear, Wi-Fi (dBm, bytes/s), uptime and the service's own use (`self`). One reading per 2 s, shared; read in the service from `/proc` and `/sys`, never the load average |
 | `GET /api/metrics/processes?n=8` | The top processes by CPU (two looks 2 s apart) and by memory |
 | `GET /api/metrics/exposure` | The ports that listen (`loopback` or `LAN`, the program, `what`, `how` and `tone`: `g`, `a` or `r`), our parts, boot scripts, watchdog and LG's programs the debloat stops; kept 30 s. See [What is open on the TV](security.md#what-is-open-on-the-tv) |

@@ -52,11 +52,18 @@ run(async () => {
       profile: { get: () => req('tvprofile').decide({ sdk: '7.6.0' }) },
       feature: n => (n === 'lgsettings' ? lgs : null),
     });
+    conf.update('test', c => {
+      c.options = Object.assign({}, c.options, { debloatOn: ['lgservers'] });
+    });
     const r22 = await C22.check();
+    conf.update('test', c => {
+      c.options = Object.assign({}, c.options, { debloatOn: [] });
+    });
     fs.writeFileSync(path.join(process.env.CYTV_PROC, 'mounts'), mountsOf(['adoverlay-service', 'admanager', 'acr2', 'sportsalarm']));
     ok(
-      !r22.groups.some(g => g.id === 'adapps') && r22.groups.length === 6 && r22.groups.every(g => g.ok),
-      'webOS 22: admanager is left to LG and not looked for: ' + r22.groups.map(g => g.id + (g.ok ? '' : '!')).join()
+      !r22.groups.some(g => g.id === 'adapps' || g.id === 'lgservers') && r22.groups.length === 6 && r22.groups.every(g => g.ok),
+      "webOS 22: admanager is left to LG and LG's online servers (one host there, the store's) are not looked for: " +
+        r22.groups.map(g => g.id + (g.ok ? '' : '!')).join()
     );
   }
   // LG brought acr2 back (no stub, running) and the hosts file lost the ad servers

@@ -38,6 +38,10 @@
 //                  webOS 25 (SDK 10) on, where apps were tried with it. On webOS 22 Disney+ stayed on its logo with the stub (the owner's
 //                  86UQ8000: LG's own admanager back, it opened at once; with the stub again, the logo for good), so below webOS 25 and
 //                  when the SDK is unknown LG's admanager is left running; the ad servers are still blocked (group ads).
+//   lgServerHosts  whether LG's online services can be blocked by name (debloat group lgservers, scripts/debloat-hosts.sh): from webOS
+//                  25 (SDK 10) on, where LG's sdx names a host per service (the region's tv.wiselg.com, ibsstat, rdx2, lgtviot). On
+//                  webOS 22 it names only US.lgtvsdp.com for every one of them, the host LG's app store and its updates use too, so
+//                  nothing can be blocked there; the group is shown as not available rather than as not in place.
 //   devtoolsRestart  whether the boot starts WebAppMgr again once without LG's web inspector (scripts/devtools-close.sh restart): from
 //                  webOS 25 (SDK 10) on, where it was tried. Before that the copy of LG's start script is only mounted, and the port
 //                  (9998) closes when WebAppMgr starts again by itself: the restart closes every web app at boot, and it was not
@@ -105,6 +109,7 @@ function decide(facts, compat) {
     lgPreload: major === 10 ? 'api' : '',
     lgScreensaver: major === 7 || major >= 10 ? 'bus' : '',
     adManagerStub: major >= 10,
+    lgServerHosts: major >= 10,
     devtoolsRestart: major >= 10,
     supported: major >= FLOOR.sdk && nodeMajor >= FLOOR.node,
     floor: FLOOR.name + ' (SDK ' + FLOOR.sdk + ')',
@@ -143,10 +148,19 @@ function sensors(proc, sys, exists) {
   };
 }
 
-// the service's view: facts from luna once after start, kept in tv.json
+// the service's view: facts from luna once after start, kept in tv.json. The saved facts are decided again by this version's rules at
+// start: a decision saved by an older version is not used until the refresh (1.6.55 read webOS 22's saved lgScreensaver '' at start, so
+// its screensaver part did not register until the service started again)
 function create(ctx) {
   const P = require('./paths');
-  let profile = readJson(P.TV, null) || decide({}, []);
+  const saved = readJson(P.TV, null);
+  let profile =
+    saved && saved.sdk
+      ? decide(
+          { model: saved.model, firmware: saved.firmware, sdk: saved.sdk, home: saved.home, node: process.version },
+          compatEntries(P.COMPAT)
+        )
+      : saved || decide({}, []);
   async function refresh() {
     const r = await ctx.luna('luna://com.webos.service.tv.systemproperty/getSystemInfo', {
       keys: ['modelName', 'firmwareVersion', 'sdkVersion'],

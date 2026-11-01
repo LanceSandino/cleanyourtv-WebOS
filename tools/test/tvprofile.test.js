@@ -1,6 +1,7 @@
 // The TV profile (tvprofile.js): the facts of a TV go in, every per-TV decision comes out. When a new kind of TV needs another
 // decision, add its case here.
-const path = require('path'),
+const fs = require('fs'),
+  path = require('path'),
   cp = require('child_process');
 const { root, helper, ok, req, run } = require('./lib');
 const tv = req('tvprofile');
@@ -172,7 +173,9 @@ run(async () => {
       cli(['get', 'devtoolsRestart', '--sdk', '10.2.2']) === '1' &&
       cli(['get', 'adManagerStub', '--sdk', '7.6.0']) === '0' &&
       cli(['get', 'adManagerStub', '--sdk', '10.3.2']) === '1' &&
-      cli(['get', 'adManagerStub']) === '0',
+      cli(['get', 'adManagerStub']) === '0' &&
+      cli(['get', 'lgServerHosts', '--sdk', '7.6.0']) === '0' &&
+      cli(['get', 'lgServerHosts', '--sdk', '10.3.2']) === '1',
     'from the shell: no WebAppMgr restart and no admanager stub on webOS 22 (devtools-close.sh and debloat-stop.sh ask)'
   );
   ok(
@@ -188,4 +191,23 @@ run(async () => {
   );
   const failed = tv.create({ luna: async () => ({ returnValue: false }) });
   ok((await failed.refresh()).sdk === '6.5.0', 'when luna does not answer, the saved profile stays');
+  // a profile saved by an older version, with a decision since changed (webOS 22's screensaver question): this version's rules at start
+  const P = req('paths');
+  fs.writeFileSync(
+    P.TV,
+    JSON.stringify({
+      model: '86UQ8000AUB',
+      firmware: '04.60.91',
+      sdk: '7.6.0',
+      sdkMajor: 7,
+      home: 'com.webos.app.home native',
+      lgScreensaver: '',
+    })
+  );
+  const old = tv.create({ luna: async () => ({ returnValue: false }) }).get();
+  ok(
+    old.lgScreensaver === 'bus' && old.adManagerStub === false && old.model === '86UQ8000AUB' && old.homeTakeover === 'standin',
+    'a profile saved by an older version is decided again at start: ' +
+      JSON.stringify([old.lgScreensaver, old.adManagerStub, old.homeTakeover])
+  );
 });

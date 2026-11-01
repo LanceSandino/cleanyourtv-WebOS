@@ -1920,3 +1920,42 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-01T18:40:00Z"
 ```
+
+```yaml
+id: CU-20261101-10
+type: feature
+title: "Manager > App updates: LG's store apps updated from the manager, as LG's store does it"
+description: "The owner: show an option to update the apps (Disney+ and others) so LG's app update screen is not needed. Read from LG's store code (its discovery_2024 bundle in WebAppMgr's cache), its services' API permissions and both TVs' install history (a read-only research pass): LG keeps its update list itself (com.webos.service.pkgUpdate/statusAll, else com.webos.appUpdateService/statusAll: status Y an update, F one LG wants before the app opens, nsu Y needs newer TV software), and its store installs with com.webos.service.pkgInstall/install {id, subscribe: false, silence: false, target: {deviceId: INTERNAL_STORAGE}}. helper/appupdates.js: GET /api/appupdates joins LG's list with the installed apps (an app removed since LG's check and LG's own system apps left out); POST /api/appupdates/update {id} or {all: true} queues them and installs one at a time with LG's store's call, never the app on screen, not while LG installs another, watched in LG's install list until the version changes, cancelled (pkgInstall/cancel) after ten minutes; GET /api/appupdates/state is the progress without asking LG. Manager: App updates (after Debloat) lists them with their versions, OK updates one, Update all, an app needing newer TV software shown but not offered (the TV's software updates are blocked to keep root), progress read every 3 s while updates run, the last results in green or red. The list read on both TVs with this code: the playroom TV Prime Video (F), the living-room TV Apple Music and Apple TV (F); Peacock (removed) and LG's Life on Screen left out. Not tried on a TV: an install itself (no update was started)."
+impact: medium
+affected_modules: ["helper/appupdates.js", "helper/helper.js", "manager/src/js/menu.js", "manager/app/index.html", "tools/oldchrome.js", "docs/manager.md", "docs/api.md", "AGENTS.md"]
+related_tests: ["tools/test/appupdates.test.js (the list joined and filtered; LG's store's install call; one at a time; not the app on screen nor while LG installs another; done by the new version; LG's refusal, an end without a new version, cancelled when too long; bad requests refused; the progress without asking LG)", "tools/oldchrome.js 'app updates' (Chromium 87 and 120: the list, Update all, the one needing TV software not offered, OK starts one, Updating, the green result and the app gone from the list)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-01T19:20:00Z"
+```
+
+```yaml
+id: CU-20261101-11
+type: fix
+title: "The TV profile saved by an older version is decided again at start (webOS 22's screensaver part waited for a restart)"
+description: "After the update to 1.6.55 the playroom TV logged 'screensaver: not registered on webOS SDK 7.6.0' although /api/tv said lgScreensaver 'bus': helper/tvprofile.js create() used the profile saved in tv.json by 1.6.54 until its refresh, and lgscreensaver.js decides once at start. create() now decides the saved facts (model, firmware, SDK, LG's Home) again with this version's rules, so a changed rule applies from the first start after an update."
+impact: low
+affected_modules: ["helper/tvprofile.js"]
+related_tests: ["tools/test/tvprofile.test.js (a profile saved by an older version, with webOS 22's old screensaver decision, is decided again at start)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-01T19:20:00Z"
+```
+
+```yaml
+id: CU-20261101-12
+type: fix
+title: "webOS 22: LG's online services group is not available there, and the debloat check says nothing about it"
+description: "After the playroom TV's debloat was switched back on, Check that it works said LG's online servers were not in the hosts file. On webOS 22 LG's sdx names US.lgtvsdp.com for every service the group blocks (homeprv_secure, ibis_stat_secure, rdx_secure, iot: read on the TV), the host LG's app store and app updates use too, so scripts/debloat-hosts.sh rightly blocks nothing there. helper/tvprofile.js lgServerHosts: from webOS 25 (SDK 10) on; helper/debloatcheck.js does not look for the group's lines where the profile says no. Gap: the manager still shows the switch there."
+impact: low
+affected_modules: ["helper/tvprofile.js", "helper/debloatcheck.js", "docs/debloat.md"]
+related_tests: ["tools/test/tvprofile.test.js (lgServerHosts from webOS 25 on, from the shell)", "tools/test/debloatcheck.test.js (webOS 22: LG's online servers not looked for)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-01T19:40:00Z"
+```
