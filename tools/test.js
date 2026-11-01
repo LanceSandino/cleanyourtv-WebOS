@@ -2,7 +2,9 @@
 //   node tools/test.js                 all tests with this Node
 //   node tools/test.js live theme      only these
 //   node tools/test.js --quiet         print only failures and the summary
-// tools/check.sh runs this with the Node of this computer (16 or newer; the TV has Node 16).
+// tools/check.sh runs this with Node.js 12.21.0, the Node of webOS 22 (the oldest TV this fork supports), and with the Node of this
+// computer. A test file for something that does not run on the TV (the hub) says "// needs Node <major>" in its first lines; under an
+// older Node it is skipped, and the summary says so. Runs on Node 12 and newer.
 'use strict';
 const fs = require('fs'),
   path = require('path'),
@@ -17,9 +19,18 @@ const files = fs
   .filter(f => !only.length || only.indexOf(f.replace(/\.test\.js$/, '')) >= 0)
   .sort();
 let failedFiles = [],
+  skipped = [],
   checks = 0;
 const t0 = Date.now();
+const major = parseInt(process.versions.node, 10);
+const needs = f =>
+  parseInt((/^\/\/ needs Node (\d+)/m.exec(fs.readFileSync(path.join(dir, f), 'utf8').slice(0, 4000)) || [])[1] || '0', 10);
 for (const f of files) {
+  if (needs(f) > major) {
+    skipped.push(f);
+    console.log('skip ' + f + ' (needs Node ' + needs(f) + ', this is ' + process.version + ')');
+    continue;
+  }
   const r = cp.spawnSync(process.execPath, [path.join(dir, f)], { encoding: 'utf8', timeout: 180000 });
   const out = (r.stdout || '') + (r.status !== 0 && r.stderr ? r.stderr : '');
   const lines = out.split('\n').filter(Boolean);
@@ -44,7 +55,8 @@ console.log(
   '\n' +
     (failedFiles.length
       ? failedFiles.length + ' test file(s) failed: ' + failedFiles.join(', ')
-      : 'all ' + checks + ' checks in ' + files.length + ' files passed') +
+      : 'all ' + checks + ' checks in ' + (files.length - skipped.length) + ' files passed') +
+    (skipped.length ? ' (' + skipped.join(', ') + ' skipped: newer Node)' : '') +
     ' on Node ' +
     process.version +
     ' (' +

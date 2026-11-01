@@ -1,14 +1,16 @@
-// Runs the launcher, the manager and the Inputs picker in the browser engine of the oldest TV this fork supports: Chromium 120
-// (webOS 25; DECISIONS.md D-20261029-3), headless, against a stand-in for the TV's service on 127.0.0.1:8765. It fails when a page
-// throws a script error or does not draw what it should (tiles, rows, inputs). A current Chrome hides such problems: Chromium 120
-// lacks features it has.
+// Runs the launcher, the manager and the Inputs picker in the browser engines of the TVs this fork supports: Chromium 87 (webOS 22,
+// the oldest: DECISIONS.md D-20261101-1) and Chromium 120 (webOS 25), headless, against a stand-in for the TV's service on
+// 127.0.0.1:8765. It fails when a page throws a script error or does not draw what it should (tiles, rows, inputs). A current Chrome
+// hides such problems: these versions lack features it has.
 //   node tools/oldchrome.js                 every engine in ENGINES
 //   node tools/oldchrome.js --shots <dir>   also saves a screenshot of each page per engine
-//   node tools/oldchrome.js --engine 120    one engine only (the one whose name has that text)
+//   node tools/oldchrome.js --engine 87     one engine only (the one whose name has that text)
 //   node tools/oldchrome.js --page strip    only the pages whose name has that text
-// The engine is Chrome for Testing's headless shell (the headless Chromium of that version, without the browser around it) from
-// Google's storage, downloaded once (about 90 MB), checked against pinned SHA-256 sums and kept in ~/.cache/cleanyourtv. Linux x64 and
-// macOS (x64 and Apple silicon). Needs curl and unzip.
+// The engines come from Google's storage, downloaded once (about 140 and 90 MB), checked against pinned SHA-256 sums and kept in
+// ~/.cache/cleanyourtv. Chromium 120 is Chrome for Testing's headless shell (the headless Chromium of that version, without the
+// browser around it). Chrome for Testing starts at 113, so Chromium 87 is a Chromium snapshot build, as the checks for webOS 5 and 6
+// used (Chromium 68 and 79): the one just before 87 branched (87.0.4280). Linux x64 and macOS (x64, and Apple silicon: the snapshot
+// through Rosetta). Needs curl and unzip.
 'use strict';
 const fs = require('fs'),
   os = require('os'),
@@ -19,8 +21,19 @@ const fs = require('fs'),
 
 const ROOT = path.join(__dirname, '..');
 const CACHE = path.join(process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache'), 'cleanyourtv');
-// [name, Chrome for Testing version, sha256 of chrome-headless-shell-<platform>.zip per platform]
+// [name, build, sha256 of its zip per platform]. The build is a Chrome for Testing version (chrome-headless-shell-<platform>.zip), or
+// for an engine older than Chrome for Testing a Chromium snapshot revision per platform (chrome-mac.zip or chrome-linux.zip from
+// chromium-browser-snapshots; these are x64 builds, so "mac" stands for both Macs). Chromium 87: the TV has 87.0.4280.88, 87 branched
+// at revision 812852 (chromiumdash), and 812851 (Mac) and 812847 (Linux) are the snapshots just before it.
 const ENGINES = [
+  [
+    'Chromium 87 (webOS 22)',
+    { mac: '812851', linux: '812847' },
+    {
+      mac: 'e10533c84ef57232975d6bde9cd28fd0354371e9556dda85e01178e6dcd56b93',
+      linux: '36759ed6d151645d00a3a015200334edc70188b422eec51bcaa5790c8e906e27',
+    },
+  ],
   [
     'Chromium 120 (webOS 25)',
     '120.0.6099.109',
@@ -39,9 +52,11 @@ const PLAT =
     : process.platform === 'linux' && process.arch === 'x64'
       ? 'linux64'
       : '';
+// this platform as the snapshots name it
+const SNAP = /^mac/.test(PLAT) ? 'mac' : 'linux';
 const args = process.argv.slice(2);
 const shots = args.indexOf('--shots') >= 0 ? path.resolve(args[args.indexOf('--shots') + 1]) : '';
-// --engine 120: only the engines whose name has that text
+// --engine 87: only the engines whose name has that text
 const only = args.indexOf('--engine') >= 0 ? String(args[args.indexOf('--engine') + 1] || '') : '';
 // --page strip: only the pages whose name has that text (to look at one check again; check.sh and CI run them all)
 const pageOnly = args.indexOf('--page') >= 0 ? String(args[args.indexOf('--page') + 1] || '') : '';
@@ -52,22 +67,38 @@ const ok = (c, name) => {
   if (!c) failed++;
 };
 
-function engine(version, sums) {
-  const dir = path.join(CACHE, 'chrome-headless-shell-' + version + '-' + PLAT);
-  const bin = path.join(dir, 'chrome-headless-shell-' + PLAT, 'chrome-headless-shell');
+// an engine's build in file names (the screenshots): its Chrome for Testing version or "chromium-" and its snapshot revision
+const tag = e => (typeof e[1] === 'string' ? e[1] : 'chromium-' + e[1][SNAP]);
+// the engine's program: downloaded, checked and unpacked the first time
+function engine(build, sums) {
+  const snapshot = typeof build !== 'string',
+    rev = snapshot ? build[SNAP] : '';
+  const dir = snapshot ? path.join(CACHE, 'chromium-' + SNAP + '-' + rev) : path.join(CACHE, 'chrome-headless-shell-' + build + '-' + PLAT);
+  const bin = !snapshot
+    ? path.join(dir, 'chrome-headless-shell-' + PLAT, 'chrome-headless-shell')
+    : SNAP === 'mac'
+      ? path.join(dir, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium')
+      : path.join(dir, 'chrome-linux', 'chrome');
   if (fs.existsSync(bin)) return bin;
   cp.spawnSync('mkdir', ['-p', dir]);
-  const zip = dir + '.zip';
+  const zip = snapshot ? path.join(CACHE, 'chrome-' + SNAP + '-' + rev + '.zip') : dir + '.zip';
   if (!fs.existsSync(zip)) {
-    const url =
-      'https://storage.googleapis.com/chrome-for-testing-public/' + version + '/' + PLAT + '/chrome-headless-shell-' + PLAT + '.zip';
+    const url = snapshot
+      ? 'https://storage.googleapis.com/chromium-browser-snapshots/' +
+        (SNAP === 'mac' ? 'Mac' : 'Linux_x64') +
+        '/' +
+        rev +
+        '/chrome-' +
+        SNAP +
+        '.zip'
+      : 'https://storage.googleapis.com/chrome-for-testing-public/' + build + '/' + PLAT + '/chrome-headless-shell-' + PLAT + '.zip';
     console.log('downloading ' + url);
     const r = cp.spawnSync('curl', ['-fsSL', url, '-o', zip + '.part'], { stdio: 'inherit' });
     if (r.status !== 0) throw new Error('download failed');
     fs.renameSync(zip + '.part', zip);
   }
   const sum = crypto.createHash('sha256').update(fs.readFileSync(zip)).digest('hex');
-  if (sum !== sums[PLAT]) {
+  if (sum !== sums[snapshot ? SNAP : PLAT]) {
     fs.unlinkSync(zip);
     throw new Error('checksum mismatch for ' + zip);
   }
@@ -929,8 +960,9 @@ function run(bin, url, extra, budget) {
     for (const e of ENGINES.filter(x => !only || x[0].indexOf(only) >= 0)) {
       const bin = engine(e[1], e[2]);
       // a build that cannot start on this computer fails here once instead of on every page: Chrome 120 for macOS stops with SIGTRAP
-      // at start on macOS 26 (its helper processes cannot find the browser's Mach rendezvous service), and every start that dies
-      // leaves crash reports. (--single-process is no way around it: Chrome 120 stops in it on Linux too.)
+      // at start on macOS 26 (its helper processes cannot find the browser's Mach rendezvous service), as Chromium 79 for macOS did on
+      // newer macOS (Chromium 87 for macOS starts there), and every start that dies leaves crash reports. (--single-process is no way
+      // around it: Chrome 120 stops in it on Linux too.)
       const probe = await run(bin, 'about:blank', ['--dump-dom'], 1000);
       if (probe.status !== 0 || probe.stdout.indexOf('<body') < 0) {
         ok(
@@ -942,6 +974,10 @@ function run(bin, url, extra, budget) {
         );
         continue;
       }
+      // which build this is: a snapshot says its version itself (the headless shell has no --version; its version is the download's)
+      const said = typeof e[1] === 'string' ? null : cp.spawnSync(bin, ['--version'], { encoding: 'utf8', timeout: 20000 });
+      const version = said ? (said.stdout || '').trim() || 'its version could not be read' : "Chrome for Testing's headless shell " + e[1];
+      console.log('     ' + e[0] + ': ' + version + ' (' + tag(e) + ')');
       for (const p of PAGES.filter(x => !pageOnly || x[0].indexOf(pageOnly) >= 0)) {
         const url = 'http://127.0.0.1:8765/' + p[0].replace(/ /g, '-') + '.html';
         // headless Chromium on Linux now and then fails to hand over the page ("Failed to serialize document"), hangs or hands it over
@@ -996,7 +1032,7 @@ function run(bin, url, extra, budget) {
         if (p[0] === 'launcher' && ready)
           console.log('     ' + e[0] + ': launcher ready ' + ready.split(' ').pop() + ' ms after the page load (this computer, not a TV)');
         marks.length = 0;
-        if (shots) await run(bin, url, ['--screenshot=' + path.join(shots, e[1] + '-' + p[0] + '.png')], p[4]);
+        if (shots) await run(bin, url, ['--screenshot=' + path.join(shots, tag(e) + '-' + p[0] + '.png')], p[4]);
       }
     }
   } catch (err) {

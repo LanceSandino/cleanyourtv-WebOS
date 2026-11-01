@@ -1,9 +1,10 @@
 // Type checks and lint, with the tools in package.json (run npm install once; nothing of it is shipped):
 //   node tools/lint.js
 // 1. TypeScript checks the service (helper/*.js) from its code and JSDoc comments, without compiling anything (tsconfig.json);
-// 2. ESLint checks the service, the scripts and tools for mistakes such as a name that is never defined (eslint.config.js);
-// 3. ESLint checks the script of every page the TV loads as ES2023 in a browser (Chromium 120), with the TV's globals (webOSSystem,
-//    PalmServiceBridge);
+// 2. ESLint checks the service, the scripts and tools for mistakes such as a name that is never defined, the service, the scripts and
+//    the tests as ES2019, what Node 12 parses (eslint.config.js);
+// 3. ESLint checks the script of every page the TV loads as ES2021 in a browser (Chromium 87, webOS 22), with the TV's globals
+//    (webOSSystem, PalmServiceBridge);
 // 4. Prettier checks that the code is formatted (npm run format formats it).
 'use strict';
 const fs = require('fs'),
@@ -35,7 +36,7 @@ for (const p of pages) {
   html.replace(/<script>([\s\S]*?)<\/script>/g, (_, s) => scripts.push(s));
   fs.writeFileSync(path.join(tmp, p.replace(/\//g, '-') + '.page.js'), scripts.join('\n;\n'));
 }
-step('lint of the page scripts for Chromium 120 (eslint)', bin('eslint'), [path.relative(root, tmp)]);
+step('lint of the page scripts for Chromium 87 (eslint)', bin('eslint'), [path.relative(root, tmp)]);
 cp.spawnSync('rm', ['-rf', tmp]);
 step('formatting (prettier --check)', bin('prettier'), [
   '--check',

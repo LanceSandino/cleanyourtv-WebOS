@@ -7,7 +7,7 @@
 // rewritten in place. Edit the sources, then run:
 //   node tools/build-pages.js           writes the pages
 //   node tools/build-pages.js --check   only checks that the pages match their sources (tools/check.sh runs this)
-// The pages run on Chromium 120 (webOS 25): tools/test/pages.test.js checks what the scripts use. Runs on Node 16 and newer.
+// The pages run on Chromium 87 (webOS 22) and newer: tools/test/pages.test.js checks what the scripts use. Runs on Node 16 and newer.
 'use strict';
 const fs = require('fs'),
   path = require('path');

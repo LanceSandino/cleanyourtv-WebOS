@@ -77,13 +77,20 @@ run(async () => {
   put(SYS + '/block/mmcblk0/device/life_time', '0x01 0x02\n');
   put(SYS + '/block/mmcblk0/device/pre_eol_info', '0x01\n');
 
-  // every file the service opens, to prove the load average is never one of them
+  // every file the service opens, to prove the load average is never one of them. One entry per call of the service: on Node 12
+  // readFileSync calls fs.openSync itself, which must not count as a second read
   const opened = [];
+  let inside = 0;
   const spy = (obj, fn) => {
     const orig = obj[fn];
     obj[fn] = function (f) {
-      opened.push(String(f));
-      return orig.apply(this, arguments);
+      if (!inside) opened.push(String(f));
+      inside++;
+      try {
+        return orig.apply(this, arguments);
+      } finally {
+        inside--;
+      }
     };
   };
   for (const fn of ['readFileSync', 'readFile', 'openSync', 'open', 'createReadStream']) spy(fs, fn);

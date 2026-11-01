@@ -20,23 +20,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Cache the Chromium 120 build (webOS 25)
+      - name: Cache Node.js 12.21 and the Chromium 87 and 120 builds (webOS 22 and 25)
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.cache/cleanyourtv
-          key: cytv-engines-${{ runner.os }}-chrome-headless-shell-120.0.6099.109
+          key: cytv-engines-${{ runner.os }}-node12.21.0-chromium812847-chrome-headless-shell-120.0.6099.109
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
       - name: Development tools (type checks, lint, formatting)
         run: npm ci --no-audit --no-fund
-      - name: Checks (tests, pages up to date, types and lint, the pages in Chromium 120)
+      - name: Checks (tests on Node 12.21 and 22, pages up to date, types and lint, the pages in Chromium 87 and 120)
         run: CYTV_CHROMIUM_IMAGE=ubuntu:26.04 CYTV_SHOTS=$RUNNER_TEMP/shots sh tools/check.sh --chromium
-      - name: Screenshots of the pages in Chromium 120
+      - name: Screenshots of the pages in Chromium 87 and 120
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: chromium-120-screenshots
+          name: chromium-screenshots
           path: ${{ runner.temp }}/shots
           if-no-files-found: ignore
       - name: Build the package

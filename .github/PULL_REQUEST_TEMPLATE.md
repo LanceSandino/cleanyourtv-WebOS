@@ -4,7 +4,8 @@
 
 ## How it was checked
 
-- [ ] `sh tools/check.sh` passes (tests, built pages, types and lint; `--chromium` for the pages in Chromium 120)
+- [ ] `sh tools/check.sh` passes (tests on Node 12.21 and the current Node, built pages, types and lint; `--chromium` for the pages in
+  Chromium 87 and 120)
 - [ ] A test for the bug or feature was added (or: it cannot be tested without a TV, because ...)
 - [ ] `python3 ipk/build.py` builds
 - [ ] The documentation was changed where behaviour changed

@@ -1,6 +1,7 @@
 // The hub (hub/server.js): with a stand-in TV on this computer, it passes the phone remote through unchanged (the Host header too), keeps
 // the phone page and learns the TV's MAC from an ARP table while the TV answers; with the TV gone it serves the kept page, says
 // {off: true} and sends Wake-on-LAN magic packets (caught here by a UDP listener), at most one every few seconds, only from its page.
+// needs Node 22: the hub runs on Node 22 on the home server (hub/compose.yml), never on the TV, so it is tested on that Node, not the TV's 12
 const http = require('http'),
   dgram = require('dgram'),
   fs = require('fs'),
