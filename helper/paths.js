@@ -34,7 +34,7 @@ module.exports = {
   RUNFILE: env.CYTV_RUNFILE || '/tmp/cytv-run.json',
   ONSCREEN: env.CYTV_ONSCREEN || '/tmp/cytv-onscreen.json', // the apps that were on the screen, with their process (apps.js, running.js)
   HOOK_CFG: '/home/root/.config/lginputhook',
-  HOOK_LOG: '/tmp/lginput-hook-lginput2.log',
+  HOOK_LOG: env.CYTV_HOOK_LOG || '/tmp/lginput-hook-lginput2.log',
   LASTAPP: '/var/luna/preferences/bootd_last_foreground_app_id.json',
   PROC: env.CYTV_PROC || '/proc',
   SYS: env.CYTV_SYS || '/sys', // the kernel's devices: thermal zones, the cores' clock, the eMMC's wear (metrics.js)

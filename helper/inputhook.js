@@ -112,9 +112,17 @@ function hookInfo() {
   try {
     t = fs.readFileSync(HOOKLOG, 'utf8');
   } catch (_) {}
+  const sawKeys = /lginput_uinput_send_button called/.test(t);
+  // attached: its start in the log, or (the log keeps only its newest lines, so a hook that has run a while has lost its start: seen
+  // on a webOS 22 TV, where the manager then said the Input key was not available) the library in LG's input service and keys
+  // going through it
+  const loaded = () =>
+    procs()
+      .filter(p => p.name === 'lginput2')
+      .some(p => hooked(p.pid));
   return {
-    attached: /InputHook initialized/.test(t) && /lib_main returned: 0/.test(t),
-    sawKeys: /lginput_uinput_send_button called/.test(t),
+    attached: (/InputHook initialized/.test(t) && /lib_main returned: 0/.test(t)) || (sawKeys && loaded()),
+    sawKeys,
     errors: t
       .split('\n')
       .filter(l => /\[(ERRO|FAIL|WARN)/.test(l))

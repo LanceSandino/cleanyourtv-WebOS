@@ -44,6 +44,21 @@ run(async () => {
   );
   await C.repair('after the start');
   ok(!ran.some(c => /debloat-stop\.sh/.test(c)), 'in place: the repair runs nothing');
+  // webOS 22 (tvprofile.js adManagerStub false): admanager is LG's own there, so it is not looked for, and the rest is still in place
+  {
+    fs.writeFileSync(path.join(process.env.CYTV_PROC, 'mounts'), mountsOf(['adoverlay-service', 'acr2', 'sportsalarm']));
+    const C22 = req('debloatcheck').create({
+      config: conf,
+      profile: { get: () => req('tvprofile').decide({ sdk: '7.6.0' }) },
+      feature: n => (n === 'lgsettings' ? lgs : null),
+    });
+    const r22 = await C22.check();
+    fs.writeFileSync(path.join(process.env.CYTV_PROC, 'mounts'), mountsOf(['adoverlay-service', 'admanager', 'acr2', 'sportsalarm']));
+    ok(
+      !r22.groups.some(g => g.id === 'adapps') && r22.groups.length === 6 && r22.groups.every(g => g.ok),
+      'webOS 22: admanager is left to LG and not looked for: ' + r22.groups.map(g => g.id + (g.ok ? '' : '!')).join()
+    );
+  }
   // LG brought acr2 back (no stub, running) and the hosts file lost the ad servers
   fs.writeFileSync(path.join(process.env.CYTV_PROC, 'mounts'), mountsOf(['adoverlay-service', 'admanager', 'sportsalarm']));
   fs.writeFileSync(process.env.CYTV_HOSTS, '127.0.0.1 localhost\n');

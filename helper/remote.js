@@ -6,7 +6,8 @@
 // The phone page and its API are a server on the LAN (port 8794) that runs only while a phone is paired or pairing is open, and that
 // answers only addresses of the home network (private ranges). Keys go to LG's own network input (com.webos.service.networkinput): the
 // keys it names through sendSpecialKey ({key: 'HOME'}), the others as Linux key codes through sendKeyCodes ({keyCode1: 103}), as seen
-// working on the owner's webOS 25 TV (Home, the arrows, the quick settings, Exit). The volume and mute go to LG's audio service
+// working on the owner's webOS 25 TV (Home, the arrows, the quick settings, Exit); webOS 22 has test/sendKeyCode ({keyCode: 103})
+// instead, and no long press (below). The volume and mute go to LG's audio service
 // (com.webos.service.audio/master), as LG's own volume does: network input's volume keys did not reach a soundbar on eARC, the audio
 // service does (it drives the soundbar over HDMI-CEC). The pointer moves, clicks and scrolls through network input's pointer socket
 // (getPointerInputSocket, a local socket): each message is its text (type:move, dx, dy, down; type:click; type:scroll) after its
@@ -70,6 +71,7 @@ for (let d = 1; d <= 9; d++) CODES[d] = d + 1; // KEY_1 is 2 ... KEY_9 is 10
 const KEYS = Object.keys(SPECIAL).concat(Object.keys(CODES));
 const LONG = ['ENTER', 'BACK', 'HOME', 'MENU']; // held on the phone: LG's long press
 const AUDIO = 'luna://com.webos.service.audio/master/';
+const NET = 'luna://com.webos.service.networkinput/';
 
 // an address of the home network: 10/8, 172.16/12, 192.168/16, link-local, loopback, IPv6 unique local and link-local
 function homeAddress(a) {
@@ -106,6 +108,29 @@ function create(ctx, opts) {
   };
   const helper = () => (hubOk(String(conf().helper || '')) ? conf().helper : '');
   const tvStatus = statusdata.create(ctx); // the TV tab's read-only data
+
+  // ---- the keys on an older webOS: network input on webOS 22 (seen on the owner's 2022 TV) has no sendKeyCodes, only test/sendKeyCode
+  // {keyCode} with the same Linux codes, and no long press (sendLongKeyEvent); each answers "Unknown method" the first time, and the
+  // older way is used from then on (a held key is then its plain press)
+  const unknown = r => !!(r && r.returnValue === false && /Unknown method/.test(String(r.errorText || '')));
+  let oldCodes = false,
+    noLong = false;
+  async function keyCode(c) {
+    if (!oldCodes) {
+      const r = await luna(NET + 'sendKeyCodes', { keyCode1: c });
+      if (!unknown(r)) return r;
+      oldCodes = true;
+    }
+    return luna(NET + 'test/sendKeyCode', { keyCode: c });
+  }
+  async function longKey(k) {
+    if (!noLong) {
+      const r = await luna(NET + 'sendLongKeyEvent', { key: k });
+      if (!unknown(r)) return r;
+      noLong = true;
+    }
+    return luna(NET + 'sendSpecialKey', { key: k });
+  }
 
   // ---- LG's network input: one socket, opened when a press comes and again after it closed ----
   let sock = null,
@@ -247,6 +272,11 @@ function create(ctx, opts) {
   }
   async function act(u, b, res) {
     if (u === '/ping') return { ok: true, now: await nowOn(), sound: await soundNow() };
+    // the TV's name in the phone's list of TVs, set from the phone ('' for LG's own)
+    if (u === '/name') return { ok: true, name: setName(b.name) || (await tvName()) };
+    // the sound through a soundbar (HDMI ARC or optical) set up again: to the TV's speakers and back, as LG's own menu does, which
+    // brings back a soundbar that went silent after a restart (seen on the owner's TV: the picture and no sound until then)
+    if (u === '/sound/reset') return soundReset();
     if (statusdata.PATHS.indexOf(u) >= 0) return tvStatus.get(u);
     if (u === '/press') {
       const k = String(b.key || '');
@@ -258,15 +288,15 @@ function create(ctx, opts) {
         // master/muteVolume {mute} (there is no master/mute: that call did nothing); seen muting the soundbar over eARC too
         return luna(AUDIO + 'muteVolume', { mute: !(v && v.volumeStatus && v.volumeStatus.muteStatus) });
       }
-      if (SPECIAL[k]) return luna('luna://com.webos.service.networkinput/sendSpecialKey', { key: SPECIAL[k] });
-      return luna('luna://com.webos.service.networkinput/sendKeyCodes', { keyCode1: CODES[k] });
+      if (SPECIAL[k]) return luna(NET + 'sendSpecialKey', { key: SPECIAL[k] });
+      return keyCode(CODES[k]);
     }
     if (u === '/move') return send({ type: 'move', dx: clamp(b.dx, -300, 300), dy: clamp(b.dy, -300, 300), down: 0 });
     if (u === '/click') return send({ type: 'click' });
     if (u === '/hold') {
       const k = String(b.key || '');
       if (LONG.indexOf(k) < 0) return { error: 'unknown key', code: 400 };
-      return luna('luna://com.webos.service.networkinput/sendLongKeyEvent', { key: SPECIAL[k] });
+      return longKey(SPECIAL[k]);
     }
     if (u === '/scroll') return send({ type: 'scroll', dx: 0, dy: clamp(b.dy, -50, 50) });
     if (u === '/text') {
@@ -405,6 +435,35 @@ function create(ctx, opts) {
     nameCache = (n || 'TV').slice(0, 40);
     nameAt = Date.now();
     return nameCache;
+  }
+  function setName(raw) {
+    const n = String(raw || '')
+      .replace(/[\u0000-\u001f]/g, '')
+      .trim()
+      .slice(0, 40);
+    config.update('remote (name)', c => {
+      const r = Object.assign({}, c.remote);
+      if (n) r.name = n;
+      else delete r.name;
+      c.remote = r;
+    });
+    return n;
+  }
+  const OUT = 'luna://com.webos.service.apiadapter/audio/';
+  let resetAt = 0;
+  async function soundReset() {
+    if (Date.now() - resetAt < 8000) return { error: 'a moment, the sound is being set up again', code: 429 };
+    let out = '';
+    try {
+      const r = await luna(OUT + 'getSoundOutput', {});
+      out = String((r && r.soundOutput) || '');
+    } catch (_) {}
+    if (!/^external_/.test(out)) return { error: 'the TV plays through its own speakers: nothing to set up again', code: 409 };
+    resetAt = Date.now();
+    await luna(OUT + 'changeSoundOutput', { output: 'tv_speaker' });
+    await new Promise(r => setTimeout(r, 1500));
+    const back = await luna(OUT + 'changeSoundOutput', { output: out });
+    return back && back.returnValue !== false ? { ok: true, out } : { error: 'the TV did not switch back to ' + out, code: 502 };
   }
   async function soundNow() {
     const so = ctx.feature && ctx.feature('sonos'),
@@ -720,16 +779,7 @@ function create(ctx, opts) {
     }
     // the TV's name in the phone's list of TVs ('' for LG's own)
     if (u === '/api/remote/name') {
-      const n = String(b.name || '')
-        .replace(/[\u0000-\u001f]/g, '')
-        .trim()
-        .slice(0, 40);
-      config.update('remote (name)', c => {
-        const r = Object.assign({}, c.remote);
-        if (n) r.name = n;
-        else delete r.name;
-        c.remote = r;
-      });
+      setName(b.name);
       return web.json(res, status());
     }
     if (u === '/api/remote/via') {

@@ -3,7 +3,8 @@
 # Six groups, each can be switched off in the manager (options.debloatOff in config.json lists the ones that are off):
 #   ads          adoverlay-service and the ad servers in /etc/hosts
 #   adapps       admanager, LG's ad service for apps: only while ads is on too (a TV that had ads off before keeps it); some apps
-#                (HBO Max, issue 47 upstream) do not play without it, so it can be switched off on its own
+#                (HBO Max, issue 47 upstream) do not play without it, so it can be switched off on its own; only where tvprofile.js
+#                says adManagerStub (webOS 25 and newer: on webOS 22 Disney+ stayed on its logo without it)
 #   tracking     acr2 (viewing tracking, LivePlus) and livepick-plus (LG's shopping overlays from what acr2 recognises; it follows
 #                every app that opens)
 #   logs         remotelogger, service-logger, and LG's crash and log reports: rdxd (makes them) and uploadd (sends them to LG)
@@ -35,7 +36,11 @@ on suggestions && { units="$units contentminer"; bins="$bins sportsalarm nudge";
 on miner && optin miner && { units="$units contentminer"; stubs="$stubs contentminer"; }
 on tracking && bins="$bins acr2 livepick-plus"
 on ads && bins="$bins adoverlay-service"
-{ on ads || on adapps; } && ! off ads && ! off adapps && bins="$bins admanager"
+# admanager only on a webOS where apps were tried without it (tvprofile.js adManagerStub), read from /etc/os-release (its VERSION_ID is
+# the SDK version, and it is there before luna is); an unreadable version counts as not tried
+TVP=${CYTV_TVPROFILE:-$L/tvprofile.js}
+sdk=$(sed -n 's/^VERSION_ID="\{0,1\}\([0-9.]*\).*/\1/p' ${CYTV_OS_RELEASE:-/etc/os-release} 2>/dev/null | head -1)
+{ on ads || on adapps; } && ! off ads && ! off adapps && [ "$(node "$TVP" get adManagerStub --sdk "$sdk" 2>/dev/null)" = 1 ] && bins="$bins admanager"
 on lan && units="$units cups-lpd.socket ninfod"
 # --no-block: contentminer can take a minute to stop, which held up the rest of the script (and the manager waiting for it)
 for s in $units; do

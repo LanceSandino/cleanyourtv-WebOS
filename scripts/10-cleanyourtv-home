@@ -56,8 +56,10 @@ if [ "$method" = standin ]; then
   (
     sleep 3
     fg=$(luna-send -n 1 -w 5000 -f luna://com.webos.applicationManager/getForegroundAppInfo '{}' </dev/null | grep '"appId"')
+    # nothing, Home, or the manager app that runs this setup in front: Home is opened, so the new Home can be checked (a setup from
+    # the manager used to be undone here: nothing opened Home within the check, seen on a webOS 22 TV)
     case "$fg" in
-      *'"appId": ""'*|*com.webos.app.home*|"") luna-send -n 1 -w 10000 -f luna://com.webos.applicationManager/launch '{"id":"com.webos.app.home"}' </dev/null ;;
+      *'"appId": ""'*|*com.webos.app.home*|*com.cleanyourtv.manager*|"") luna-send -n 1 -w 10000 -f luna://com.webos.applicationManager/launch '{"id":"com.webos.app.home"}' </dev/null ;;
     esac
     # the launcher must be open in webapp-mgr by now; otherwise LG's Home comes back until the next reboot
     open=0

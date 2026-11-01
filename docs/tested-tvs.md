@@ -73,7 +73,8 @@ from the SDK version and the kind of LG's Home app as it came with the TV. **Sha
 | How the launcher becomes Home | stand-in over LG's Home program; the app manager is not restarted | stand-in, as on webOS 5 and 6 | launcher folder mounted over LG's Home app and the app manager restarted; the stand-in where LG's Home is native |
 | Setup on unlisted firmware | **Set up anyway** needed | **Set up anyway** needed | continues by itself |
 | Input key | Inputs list started on each press | started on each press | kept ready over the running app on webOS 25 (SDK 10); started on each press on SDK 9 and 11 |
-| LG's screensaver question, WebAppMgr restarted without its inspector, LG's volume bar hidden, LG's pre-loading stopped | not supported | off: tried on webOS 25 only (LG shows its own screensaver; port 9998 closes when WebAppMgr next starts by itself) | from webOS 25 (SDK 10); volume bar and pre-loading on webOS 25 only |
+| LG's screensaver question | not supported | answered on webOS 22 (SDK 7); off on webOS 23 (LG shows its own screensaver) | from webOS 25 (SDK 10); off on webOS 24 |
+| WebAppMgr restarted without its inspector, LG's volume bar hidden, LG's pre-loading stopped, LG's admanager stubbed | not supported | off: tried on webOS 25 only (port 9998 closes when WebAppMgr next starts by itself; admanager stays, Disney+ needs it on webOS 22) | from webOS 25 (SDK 10); volume bar and pre-loading on webOS 25 only |
 | Picture notifications window | `overlay` | `overlay` | `topui` from SDK 10, `overlay` on SDK 9 |
 | Node.js, browser engine (LG) | Node.js 8.12; Chromium 68 (webOS 5) or 79 (webOS 6) | Node.js 12; Chromium 87 (webOS 22) or 94 (webOS 23) | Node.js 16 and Chromium 108 (webOS 24), Node.js 16 and Chromium 120 (webOS 25), Node.js 20 and Chromium 132 (webOS 26) |
 | Supported by this fork | no | yes, from webOS 22 (SDK 7) | yes |

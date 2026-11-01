@@ -331,13 +331,20 @@ run(async () => {
     'where /etc/hosts is read-only (issue 11) the servers go into a copy in RAM, unmounted when no line is left (debloat-hosts.sh)'
   );
   // the groups debloat-stop.sh and debloat-undo.sh act on: only the part that picks the programs is run here (it stops and mounts
-  // nothing); admanager has its own group (adapps), on by default, and only while ads is on too
-  const pick = (script, args, off) => {
+  // nothing); admanager has its own group (adapps), on by default, and only while ads is on too, and only on webOS 25 and newer (the
+  // TV's version from its os-release, webOS 25 unless a check says otherwise)
+  const pick = (script, args, off, sdk) => {
     const d = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cytv-debloat-'));
     fs.writeFileSync(path.join(d, 'config.json'), JSON.stringify({ options: { debloatOff: off || [] } }));
+    fs.writeFileSync(path.join(d, 'os-release'), sdk === null ? '' : 'NAME="webOS"\nVERSION_ID=' + (sdk || '10.3.2') + '\n');
     const body = script.replace(/^L=.*$/m, 'L=' + d).split(/\n# --no-block|\nfor b in \$bins/)[0] + '\necho "units:$units bins:$bins"\n';
     fs.writeFileSync(path.join(d, 's.sh'), body);
-    const r = cp.spawnSync('sh', [path.join(d, 's.sh')].concat(args || []), { encoding: 'utf8' });
+    const env = Object.assign({}, process.env, {
+      CYTV_TVPROFILE: path.join(helper, 'tvprofile.js'),
+      CYTV_OS_RELEASE: path.join(d, 'os-release'),
+      PATH: path.dirname(process.execPath) + ':' + process.env.PATH,
+    });
+    const r = cp.spawnSync('sh', [path.join(d, 's.sh')].concat(args || []), { encoding: 'utf8', env });
     cp.spawnSync('rm', ['-rf', d]);
     return r.stdout.trim().replace(/\s+/g, ' ');
   };
@@ -357,6 +364,14 @@ run(async () => {
       / admanager/.test(undoAds),
     'admanager is its own group, on by default, off with ads too, back with ads, and undone with ads: ' +
       [all, adsOff, appsOff, redoAds, undoAds].join(' | ')
+  );
+  // webOS 22 (Disney+ stayed on its logo with admanager stubbed) and a TV whose version cannot be read: LG's admanager is left running,
+  // the rest of the ads group still applies
+  const w22 = pick(stop, [], [], '7.6.0'),
+    noVersion = pick(stop, [], [], null);
+  ok(
+    !/admanager/.test(w22) && / adoverlay-service/.test(w22) && !/admanager/.test(noVersion) && / adoverlay-service/.test(noVersion),
+    'webOS 22 and an unknown version: admanager is not stubbed, adoverlay-service still is: ' + [w22, noVersion].join(' | ')
   );
   // LG's content miner from the start (the opt-in group "miner", options.debloatOn): stopped by systemd and its program stubbed (never
   // killed) only when switched on; the undo starts it again only when no group still holds it (suggestions or the miner still on)
@@ -971,6 +986,18 @@ run(async () => {
         (log2.match(/not starting it again/g) || []).length === 1 &&
         fs.readFileSync(path.join(W2, 'helper.crash.log'), 'utf8') === 'the first crash\n',
       'a service that keeps stopping is started at most the limit, then left with one note; the first crash log is kept: ' + n2()
+    );
+  }
+  // the stand-in way checks that the new Home opened; a setup run from the manager app has it in front, so Home is opened then too
+  {
+    const home = fs.readFileSync(path.join(root, 'scripts', '10-cleanyourtv-home'), 'utf8');
+    const standin = home.slice(
+      home.indexOf('if [ "$method" = standin ]'),
+      home.indexOf('else\n  echo "$(up) home: mounting the launcher over')
+    );
+    ok(
+      /com\.cleanyourtv\.manager\*\|""\) luna-send[^\n]*applicationManager\/launch[^\n]*com\.webos\.app\.home/.test(standin),
+      'the stand-in way opens Home when nothing, Home or the manager app (a setup from it) is in front, before it checks the new Home'
     );
   }
 });

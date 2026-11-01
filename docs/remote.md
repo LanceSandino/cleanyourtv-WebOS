@@ -60,11 +60,13 @@ through your home server reaches the TV tab the same way.
 - Every command carries the phone's key. Another web site open on the phone cannot send commands (the TV refuses requests from other
   pages), and the page cannot be shown inside another site.
 - The keys go to LG's own network input: the keys LG names (Home, Back, OK, Exit, the gear key's quick settings) by name, the arrows
-  and the rest by their key code; text goes to LG's on-screen keyboard. The volume and Mute go to LG's audio service, as the TV's own
+  and the rest by their key code (`sendKeyCodes`; webOS 22 has only `test/sendKeyCode` for that, used there instead); text goes to
+  LG's on-screen keyboard. The volume and Mute go to LG's audio service, as the TV's own
   volume does, so a soundbar on HDMI eARC follows them (network input's volume keys did not reach one). The remote presses only what
   you tap: nothing here changes the TV or its volume by itself.
 - The touchpad moves, clicks and scrolls LG's pointer through its pointer input (each message framed with its length, as LG's
-  input service reads it; it then moves its own touchpad device). Held keys use LG's long press (`sendLongKeyEvent`).
+  input service reads it; it then moves its own touchpad device). Held keys use LG's long press (`sendLongKeyEvent`); webOS 22 has
+  none, so there a held key is its plain press.
 
 ## Turning the TV on: the hub
 
@@ -119,10 +121,14 @@ key or an app opened from the phone).
 
 **Several TVs.** One hub can serve several TVs: list their addresses in the hub's `TV_HOSTS` (comma-separated, the first is the one a
 phone gets by default), and set each TV's Phone remote to go through that hub. The phone then opens the hub's address as before; with
-more than one TV the status line starts with the TV's name, and a tap on it lists the TVs (on or off, paired or not) to switch
-between. Each TV pairs the phone with its own code and key (a TV's QR code names that TV, so scanning it switches to it), each has its
-own link, Wake-on-LAN and kept name: LG's own TV name (Settings > General > Devices > TV name) without "[LG] ", or one set with
-`POST /api/remote/name {"name": "..."}` on that TV. The history and alerts follow the first TV.
+more than one TV the status line starts with the TV's name. A tap on the status line opens the TV's sheet: the TVs (on or off,
+paired or not) to switch between (the list is read again each time; a switch starts that TV's checks afresh, so it shows on or off
+at once), **Rename this TV**, and, while the sound goes to a soundbar (HDMI ARC or optical), **Fix the sound**: the sound is set to
+the TV's speakers and back, as LG's own sound menu does, which brings back a soundbar that went silent after a restart (at most once
+every 8 seconds). Each TV pairs the phone with its own code and key (a TV's QR code names that TV, so scanning it switches to it),
+each has its own link, Wake-on-LAN and kept name: LG's own TV name (Settings > General > Devices > TV name) without "[LG] ", or one
+set from the phone (**Rename this TV**, blank for LG's own) or with `POST /api/remote/name {"name": "..."}` on that TV; the hub asks
+the names again at most every 20 seconds. The history and alerts follow the first TV.
 
 **Volume and mute.** The volume rocker shows the volume in place of VOL, and the Mute key is lit red while the sound is muted. With
 the Sonos soundbar followed (Sonos volume on screen), they are the soundbar's own volume and mute; otherwise the TV's own (no number

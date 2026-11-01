@@ -1829,3 +1829,81 @@ commit_ref: "feature/webos22 (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-01T16:38:32Z"
 ```
+
+```yaml
+id: CU-20261101-03
+type: fix
+title: "Setup through the stand-in: Home is opened when the manager app is in front, so the new Home is not undone"
+description: "On the owner's webOS 22 TV the setup run from the manager app ended with LG's Home back: scripts/10-cleanyourtv-home (the stand-in way) opens Home only when nothing or Home is in front, then checks that the launcher opened in webapp-mgr and undoes the mount otherwise; with the manager app in front nothing opened Home within the check. It now opens Home when the manager app (com.cleanyourtv.manager) is in front too. Checked on the TV: after a reboot the launcher took over Home (home: mounting the launcher over LG's Home, sam restarted)."
+impact: low
+affected_modules: ["scripts/10-cleanyourtv-home"]
+related_tests: ["tools/test/scripts.test.js (the stand-in way opens Home when nothing, Home or the manager app is in front, before it checks the new Home)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-01T17:30:00Z"
+```
+
+```yaml
+id: CU-20261101-04
+type: fix
+title: "Input key: a hook that has run a while is seen as attached (the manager said not available on this firmware)"
+description: "The owner: the Input key said it was not available on this firmware, yet it worked. helper/inputhook.js hookInfo() counted the hook attached only from its start lines in its log (InputHook initialized, lib_main returned: 0), and the log keeps only its newest lines, so a hook that has run a while had lost them (seen on the webOS 22 TV: only key lines left). Attached is now its start in the log, or its library in lginput2's memory maps with keys going through it; keys alone are not enough. helper/paths.js HOOK_LOG may be set with CYTV_HOOK_LOG (for the tests)."
+impact: low
+affected_modules: ["helper/inputhook.js", "helper/paths.js"]
+related_tests: ["tools/test/inputhook.test.js (attached from the start lines, or from the library in lginput2 with keys; keys without the library, or the library without keys, are not)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-01T17:30:00Z"
+```
+
+```yaml
+id: CU-20261101-05
+type: feature
+title: "Phone remote: rename a TV, fix a silent soundbar, and a switch to another TV starts afresh"
+description: "The owner: the second TV showed as TV 2 with no way to rename it; switching TVs did not refresh (a TV that had rebooted showed inactive); and the sound fix used on the living-room TV (picture, no sound until the output was set to the TV's speakers and back to the soundbar) should be on the remote. helper/remote.js: POST /name {name} on the phone's API sets the TV's name (remote.name, cleaned; blank for LG's own), as /api/remote/name now does through the same setName; POST /sound/reset reads the sound output (com.webos.service.apiadapter/audio/getSoundOutput), and when it is a soundbar (external_*) sets tv_speaker, waits 1.5 s and sets it back; 409 when the sound is not on a soundbar, 429 within 8 s of the last. helper/remotepage.js: the status line opens the TV's sheet whenever a key is held: the TVs (read again from /hub/tvs each time), Rename this TV, and Fix the sound while the last status said a soundbar; useTv() clears the sleeping state, the last status, what is on and the sound before it starts that TV's checks. hub/server.js: /hub/tvs asks the linked TVs their names again at most every 20 s, so a rename shows in the next list. Checked on the living-room TV by hand before this (the same output change brought the sound back)."
+impact: medium
+affected_modules: ["helper/remote.js", "helper/remotepage.js", "hub/server.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (from the phone: the TV renamed and its name back to LG's own; the soundbar set up again by the TV speakers and back, refused when not on a soundbar and when asked twice at once; the page has useTv, /sound/reset and /name)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-01T17:30:00Z"
+```
+
+```yaml
+id: CU-20261101-06
+type: fix
+title: "Phone remote on webOS 22: the arrows, play, info, blue and the digits work (no sendKeyCodes there), a held key is its press"
+description: "The owner: the phone remote did not move with the arrows on the playroom TV (webOS 22). Its network input has no sendKeyCodes (\"Unknown method\"); read from its service's API permissions and binary: sendSpecialKey, test/sendKeyCode {keyCode} and the pointer socket, and no sendLongKeyEvent. helper/remote.js keyCode(): sendKeyCodes, and on Unknown method test/sendKeyCode with the same Linux code from then on; longKey(): sendLongKeyEvent, and on Unknown method the plain key through sendSpecialKey from then on. Checked on the TV by hand: test/sendKeyCode 103 (Up) moved the launcher's focus from the dock to the top row, 108 (Down) moved it back; sendSpecialKey takes BACK, HOME and DASH there and answers invalid key for a name it does not know."
+impact: medium
+affected_modules: ["helper/remote.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (webOS 22: the arrows through test/sendKeyCode with sendKeyCodes asked once, named keys unchanged, a held key its plain press)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-01T17:40:00Z"
+```
+
+```yaml
+id: CU-20261101-07
+type: fix
+title: "webOS 22: Disney+ opens (LG's admanager left running there), and the debloat check no longer looks for its stub"
+description: "The owner: Disney+ spun for ever on the playroom TV (webOS 22) and not on the living-room TV. Same Disney+ (24.5.8) on both; with the whole debloat undone it reached Who's watching, with the ads and adapps groups off too, and with only adapps off (adoverlay-service stubbed, the ad servers blocked) it opened a profile at once; with admanager stubbed again it stayed on its logo (35 s, twice). So the do-nothing stub over LG's admanager is the cause there (DECISIONS.md D-20261101-2). helper/tvprofile.js adManagerStub: true from webOS 25 (SDK 10) on, false below and when unknown; scripts/debloat-stop.sh adds admanager to the stubbed programs only when tvprofile.js says so for the SDK in /etc/os-release (VERSION_ID, there before luna is; read the same as the SDK on both TVs: 7.6.0, 10.3.2); helper/debloatcheck.js does not look for the admanager stub where the profile says LG keeps it. The playroom TV was left with adapps switched off until this ships. Gap: the manager's debloat menu still lists the app ads group as on there."
+impact: medium
+affected_modules: ["helper/tvprofile.js", "scripts/debloat-stop.sh", "helper/debloatcheck.js", "DECISIONS.md"]
+related_tests: ["tools/test/tvprofile.test.js (adManagerStub from webOS 25 on only, also from the shell)", "tools/test/scripts.test.js (webOS 22 and an unreadable version: admanager not stubbed, adoverlay-service still)", "tools/test/debloatcheck.test.js (webOS 22: admanager not looked for, the rest in place)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-01T18:10:00Z"
+```
+
+```yaml
+id: CU-20261101-08
+type: feature
+title: "webOS 22: the service answers LG's screensaver question, so the photos show instead of LG's screensaver"
+description: "The owner: the screensaver did not work on the playroom TV; it should be ours before LG's. On webOS 22 nothing registered (tvprofile.js lgScreensaver '' below webOS 25, as nothing had been tried there), so LG's own screensaver came after its 3 minutes without a key (nopd's [TIMER]ScreenSaver:180; tvpowerd asked its two /power2 clients, screenmanager and Netflix, and launched com.webos.app.screensaver). Read on that TV: LG's bus module /usr/lib/nodejs/palmbus.js is there and tvpowerd's API has registerScreenSaverRequest and responseScreenSaverRequest under /power, with the same 3000 ms wait and a string timestamp. tvprofile.js lgScreensaver is 'bus' on webOS 22 (SDK 7) as from webOS 25 on; webOS 23 and 24 stay off until tried. helper/lgscreensaver.js unchanged but for its notes."
+impact: medium
+affected_modules: ["helper/tvprofile.js", "helper/lgscreensaver.js"]
+related_tests: ["tools/test/tvprofile.test.js (lgScreensaver 'bus' on webOS 22 and from webOS 25 on, '' on 23, 24 and unknown)", "tools/test/lgscreensaver.test.js (webOS SDK 7.6.0 registers and answers on the same connection; 8 and 9 do not register)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-01T18:10:00Z"
+```

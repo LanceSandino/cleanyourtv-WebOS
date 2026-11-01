@@ -30,10 +30,17 @@ function create(ctx, opts) {
   const o = Object.assign({ startMs: 90000, tickMs: 10000, wakeGapMs: 60000 }, opts);
   const options = () => ctx.config.options();
   const debloatOn = () => options().debloat !== false && !fs.existsSync(P.DISABLE);
+  // admanager is left to LG where tvprofile.js says so (adManagerStub false: below webOS 25, where Disney+ needs it), as debloat-stop.sh
+  // does, so it is not looked for there
+  const lgAdManager = () => {
+    const p = ctx.profile && ctx.profile.get ? ctx.profile.get() : null;
+    return !!p && p.adManagerStub === false;
+  };
   const groupOn = g =>
     OPT_IN.indexOf(g) >= 0
       ? (options().debloatOn || []).indexOf(g) >= 0
-      : (options().debloatOff || []).indexOf(g) < 0 && !(g === 'adapps' && (options().debloatOff || []).indexOf('ads') >= 0);
+      : (options().debloatOff || []).indexOf(g) < 0 &&
+        !(g === 'adapps' && ((options().debloatOff || []).indexOf('ads') >= 0 || lgAdManager()));
   const read = f => {
     try {
       return fs.readFileSync(f, 'utf8');

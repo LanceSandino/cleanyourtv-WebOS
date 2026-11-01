@@ -23,6 +23,7 @@ run(async () => {
         tested: true,
         legacyNode: false,
         lgScreensaver: 'bus',
+        adManagerStub: true,
         devtoolsRestart: true,
         supported: true,
       },
@@ -53,7 +54,8 @@ run(async () => {
         afterSam: 'eim webapp-mgr preload-manager memorymanager',
         lgVolumeBar: '',
         lgPreload: '',
-        lgScreensaver: '',
+        lgScreensaver: 'bus',
+        adManagerStub: false,
         devtoolsRestart: false,
         legacyNode: false,
         supported: true,
@@ -84,6 +86,7 @@ run(async () => {
         tested: false,
         sdkMajor: 0,
         lgScreensaver: '',
+        adManagerStub: false,
         devtoolsRestart: false,
         supported: false,
       },
@@ -125,14 +128,20 @@ run(async () => {
     tv.decide({ sdk: '10.2.2' }).lgPreload === 'api' && ['6.5.0', '7.6.0', '11.2.0', ''].every(v => tv.decide({ sdk: v }).lgPreload === ''),
     "stopping LG's pre-loading: webOS 25 only"
   );
-  // LG's screensaver question and WebAppMgr's restart without its inspector: from webOS 25 on, where they were tried; a registered
-  // client that answers wrong reboots the TV at standby (D-20261029-9), so webOS 22 to 24 and an unknown TV are left out
+  // LG's screensaver question: on webOS 22 and from webOS 25 on, where it was tried; a registered client that answers wrong reboots
+  // the TV at standby (D-20261029-9), so webOS 23 and 24 and an unknown TV are left out. WebAppMgr's restart without its inspector and
+  // the admanager stub: from webOS 25 on (on webOS 22 Disney+ stayed on its logo with the stub)
   ok(
-    ['10.2.2', '11.2.0'].every(v => tv.decide({ sdk: v }).lgScreensaver === 'bus' && tv.decide({ sdk: v }).devtoolsRestart === true) &&
+    ['7.6.0', '10.2.2', '11.2.0'].every(v => tv.decide({ sdk: v }).lgScreensaver === 'bus') &&
+      ['8.4.0', '9.2.4', ''].every(v => tv.decide({ sdk: v }).lgScreensaver === ''),
+    "LG's screensaver question: webOS 22 and webOS 25 and newer"
+  );
+  ok(
+    ['10.2.2', '11.2.0'].every(v => tv.decide({ sdk: v }).devtoolsRestart === true && tv.decide({ sdk: v }).adManagerStub === true) &&
       ['7.6.0', '8.4.0', '9.2.4', ''].every(
-        v => tv.decide({ sdk: v }).lgScreensaver === '' && tv.decide({ sdk: v }).devtoolsRestart === false
+        v => tv.decide({ sdk: v }).devtoolsRestart === false && tv.decide({ sdk: v }).adManagerStub === false
       ),
-    "LG's screensaver question and the WebAppMgr restart: webOS 25 and newer only"
+    'the WebAppMgr restart and the admanager stub: webOS 25 and newer only'
   );
   // the setup script asks the same rules from the shell
   const cli = args => cp.spawnSync(process.execPath, [path.join(helper, 'tvprofile.js')].concat(args), { encoding: 'utf8' }).stdout.trim();
@@ -158,10 +167,13 @@ run(async () => {
     'from the shell: is the TV at least the floor (the Node.js running it counts too), and what the floor is'
   );
   ok(
-    cli(['get', 'lgScreensaver', '--sdk', '7.6.0']) === '' &&
+    cli(['get', 'lgScreensaver', '--sdk', '7.6.0']) === 'bus' &&
       cli(['get', 'devtoolsRestart', '--sdk', '7.6.0']) === '0' &&
-      cli(['get', 'devtoolsRestart', '--sdk', '10.2.2']) === '1',
-    'from the shell: no WebAppMgr restart on webOS 22 (devtools-close.sh asks)'
+      cli(['get', 'devtoolsRestart', '--sdk', '10.2.2']) === '1' &&
+      cli(['get', 'adManagerStub', '--sdk', '7.6.0']) === '0' &&
+      cli(['get', 'adManagerStub', '--sdk', '10.3.2']) === '1' &&
+      cli(['get', 'adManagerStub']) === '0',
+    'from the shell: no WebAppMgr restart and no admanager stub on webOS 22 (devtools-close.sh and debloat-stop.sh ask)'
   );
   ok(
     cli(['get', 'afterSam', '--sdk', arc.sdk, '--home', arc.home]) === 'arccontroller',

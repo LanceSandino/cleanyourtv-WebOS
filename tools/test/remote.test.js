@@ -70,6 +70,8 @@ run(async () => {
       rs.end('png');
     },
   };
+  let soundOut = 'external_arc'; // where the TV's sound goes, for the sound set up again
+  let oldNet = false; // network input as on webOS 22: no sendKeyCodes, no long press
   // the Sonos part, for the sound: its own volume and mute while it follows a soundbar
   const sonosStub = { status: () => ({ enabled: false }) };
   // the watch part, for what is on: an app's Continue watching, and Plex's own now playing
@@ -83,7 +85,14 @@ run(async () => {
   const R = req('remote').create({
     config,
     luna: async (uri, p) => (
-      calls.push([uri, p]), /getVolume/.test(uri) ? { returnValue: true, volumeStatus: { muteStatus: false } } : { returnValue: true }
+      calls.push([uri, p]),
+      oldNet && /\/(sendKeyCodes|sendLongKeyEvent)$/.test(uri)
+        ? { returnValue: false, errorCode: -1, errorText: 'Unknown method "' + uri.split('/').pop() + '" for category "/"' }
+        : /getVolume/.test(uri)
+          ? { returnValue: true, volumeStatus: { muteStatus: false } }
+          : /getSoundOutput/.test(uri)
+            ? { returnValue: true, soundOutput: soundOut }
+            : { returnValue: true }
     ),
     feature: n => (n === 'apps' ? apps : n === 'watch' ? watchStub : n === 'sonos' ? sonosStub : null),
   });
@@ -123,6 +132,9 @@ run(async () => {
       /fetch\('\/hub\/tvs'/.test(pageR.text) &&
       /h\['x-tv'\] = tv/.test(pageR.text) &&
       /function tvSheet\(\)/.test(pageR.text) &&
+      /sleeping\(false\); \/\* the other TV/.test(pageR.text) &&
+      /call\('\/sound\/reset'\)/.test(pageR.text) &&
+      /call\('\/name'/.test(pageR.text) &&
       /mute\.classList\.toggle\('muted'/.test(pageR.text) &&
       /if \(\$\('sheet'\)\.className !== 'hide'\) feedbackSheet\(\)/.test(pageR.text) &&
       /\(way \|\| fb\.way\) === 2/.test(pageR.text) &&
@@ -201,6 +213,30 @@ run(async () => {
   ok(
     r.code === 200 && r2.code === 400 && JSON.stringify(calls) === JSON.stringify([[N + 'sendLongKeyEvent', { key: 'ENTER' }]]),
     "holding OK on the phone is LG's long press; a key it does not hold is refused: " + JSON.stringify(calls)
+  );
+  // webOS 22 (the owner's 2022 TV): network input answers "Unknown method" for sendKeyCodes and for the long press; the arrows go
+  // through test/sendKeyCode with the same codes, asked the new way only once, and a held key is its plain press
+  oldNet = true;
+  calls.length = 0;
+  r = await lan('POST', '/press', { key: 'DOWN' }, key);
+  await lan('POST', '/press', { key: 'LEFT' }, key);
+  await lan('POST', '/press', { key: 'BACK' }, key);
+  const held = await lan('POST', '/hold', { key: 'HOME' }, key);
+  await lan('POST', '/hold', { key: 'BACK' }, key);
+  ok(
+    r.code === 200 &&
+      held.code === 200 &&
+      JSON.stringify(calls) ===
+        JSON.stringify([
+          [N + 'sendKeyCodes', { keyCode1: 108 }],
+          [N + 'test/sendKeyCode', { keyCode: 108 }],
+          [N + 'test/sendKeyCode', { keyCode: 105 }],
+          [N + 'sendSpecialKey', { key: 'BACK' }],
+          [N + 'sendLongKeyEvent', { key: 'HOME' }],
+          [N + 'sendSpecialKey', { key: 'HOME' }],
+          [N + 'sendSpecialKey', { key: 'BACK' }],
+        ]),
+    'webOS 22: the arrows through test/sendKeyCode (sendKeyCodes asked once), a held key its plain press: ' + JSON.stringify(calls)
   );
   r = await lan('POST', '/press', { key: 'rm -rf' }, key);
   const nokey = await lan('POST', '/press', { key: 'UP' });
@@ -387,6 +423,26 @@ run(async () => {
     ok(
       s1.volume === 24 && s1.muted === true && s1.out === 'sonos' && s1.name === 'Living Room' && s2.volume === null && s2.muted === false,
       "the ping says the sound: the soundbar's volume and mute, else LG's own: " + JSON.stringify([s1, s2])
+    );
+    // from the phone: the TV's name, and the sound through a soundbar set up again (to the TV's speakers and back, not twice at once)
+    const nm = JSON.parse((await lan('POST', '/name', { name: '  Playroom\u0007 TV ' }, key)).text);
+    const named2 = config.get().remote.name;
+    await lan('POST', '/name', { name: '' }, key);
+    calls.length = 0;
+    const rs1 = await lan('POST', '/sound/reset', {}, key);
+    const outs = calls.filter(c => /changeSoundOutput/.test(c[0])).map(c => c[1].output);
+    const rs2 = await lan('POST', '/sound/reset', {}, key);
+    soundOut = 'tv_speaker';
+    await sleep(10);
+    ok(
+      nm.name === 'Playroom TV' &&
+        named2 === 'Playroom TV' &&
+        config.get().remote.name === undefined &&
+        rs1.code === 200 &&
+        outs.join() === 'tv_speaker,external_arc' &&
+        rs2.code === 429,
+      'from the phone: the TV renamed (and back to LG name), and the soundbar set up again by the TV speakers and back, not twice at once: ' +
+        outs.join()
     );
     tm.server.close();
     delete process.env.CYTV_TELEMACHUS;

@@ -179,7 +179,9 @@ function showNow(n) {
 }
 /* the sound (with every /ping): the volume in the rocker in place of VOL, and the Mute key lit while the sound is muted */
 var soundT = 0;
+var lastSound = null;
 function showSound(snd) {
+  lastSound = snd || null;
   var up = document.querySelector('[data-k=VOLUMEUP]'),
     lb = up && up.parentNode.querySelector('b'),
     mute = document.querySelector('[data-k=MUTE]');
@@ -533,32 +535,76 @@ function go() {
 $('go').onclick = go;
 $('code').oninput = function () { var v = this.value.replace(/\D/g, '').slice(0, 6); if (v !== this.value) this.value = v; };
 $('code').onkeydown = function (e) { if (e.keyCode === 13) { e.preventDefault(); go(); } };
-/* the switcher: a tap on the status lists the TVs (through a hub with more than one); a TV this phone has no key for asks for its code */
+/* a tap on the status: the TVs to switch between (through a hub with more than one; read again each time, so on and off are new),
+   setting up the sound again (a soundbar that went silent: to the TV's speakers and back) and the TV's name */
+function useTv(id, name) {
+  $('sheet').className = 'hide';
+  if (id === tv) return ping();
+  tv = id;
+  try { if (tv) localStorage.setItem(KT, tv); else localStorage.removeItem(KT); } catch (e) {}
+  key = keyOf(tv);
+  up = null;
+  nowText = '';
+  lastSound = null;
+  sleeping(false); /* the other TV's 'off' must not stay on the screen; its own /ping says */
+  $('tv').textContent = '';
+  if (key) start();
+  else login(t('Pair this phone with %s: on that TV open CleanYourTV > Phone remote and type the code it shows.').replace('%s', name));
+}
 function tvSheet() {
-  if (tvs.length < 2) return;
+  if (!key) return;
   var list = $('sheetlist');
-  $('sheettitle').textContent = t('TVs');
-  $('sheetp').textContent = t('Which TV this remote works.');
+  $('sheettitle').textContent = tvs.length > 1 ? t('TVs') : t('TV');
+  $('sheetp').textContent = tvs.length > 1 ? t('Which TV this remote works.') : '';
   list.textContent = '';
-  tvs.forEach(function (x) {
-    var id = slot(x.id), b = document.createElement('button');
-    b.className = 'key opt' + (id === tv ? ' on' : '');
-    b.textContent = x.name + ' \u00b7 ' + (x.on ? t('On') : t('Off')) + (keyOf(id) ? '' : ' \u00b7 ' + t('not paired'));
-    b.onclick = function () {
-      $('sheet').className = 'hide';
-      if (id === tv) return;
-      tv = id;
-      try { if (tv) localStorage.setItem(KT, tv); else localStorage.removeItem(KT); } catch (e) {}
-      key = keyOf(tv);
-      up = null;
-      asleep = false;
-      nowText = '';
-      if (key) start();
-      else login(t('Pair this phone with %s: on that TV open CleanYourTV > Phone remote and type the code it shows.').replace('%s', x.name));
-    };
-    list.appendChild(b);
-  });
+  function draw() {
+    list.textContent = '';
+    tvs.forEach(function (x) {
+      var id = slot(x.id), b = document.createElement('button');
+      b.className = 'key opt' + (id === tv ? ' on' : '');
+      b.textContent = x.name + ' \u00b7 ' + (x.on ? t('On') : t('Off')) + (keyOf(id) ? '' : ' \u00b7 ' + t('not paired'));
+      b.onclick = function () { useTv(id, x.name); };
+      list.appendChild(b);
+    });
+    if (!asleep && lastSound && /^external_/.test(lastSound.out || '')) {
+      var f = document.createElement('button');
+      f.className = 'key opt';
+      f.textContent = t('Fix the sound (the soundbar is silent)');
+      f.onclick = function () {
+        f.textContent = t('Setting up the sound again\u2026');
+        call('/sound/reset').then(function (r) {
+          note(r.error ? t(r.error) : t('The sound was set up again.'), !!r.error);
+          $('sheet').className = 'hide';
+          soundSoon();
+        });
+      };
+      list.appendChild(f);
+    }
+    if (!asleep) {
+      var rn = document.createElement('button');
+      rn.className = 'key opt';
+      rn.textContent = t('Rename this TV');
+      rn.onclick = function () {
+        var n = prompt(t('The name of this TV'), tvName(tv) || '');
+        if (n === null) return;
+        call('/name', { name: n }).then(function (r) {
+          if (r.error) return note(t(r.error), true);
+          tvs.forEach(function (x) { if (slot(x.id) === tv) x.name = r.name; });
+          $('sheet').className = 'hide';
+          showNow(null);
+          ping();
+        });
+      };
+      list.appendChild(rn);
+    }
+  }
+  draw();
   $('sheet').className = '';
+  /* the list again, for which TV is on now */
+  if (tvs.length)
+    fetch('/hub/tvs', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { if (j && Array.isArray(j.tvs) && $('sheet').className !== 'hide') { tvs = j.tvs; draw(); } }, function () {});
 }
 $('st').onclick = tvSheet;
 function boot() {
@@ -579,7 +625,7 @@ fetch('/hub/tvs', { cache: 'no-store' })
     tvs = (j && Array.isArray(j.tvs) && j.tvs) || [];
     if (tv && !tvs.some(function (x) { return slot(x.id) === tv; })) tv = '';
     key = keyOf(tv);
-    $('st').classList.toggle('many', tvs.length > 1);
+    $('st').classList.add('many');
     boot();
   }, boot);
 setInterval(function () { if (key && !document.hidden) ping(); }, 15000);

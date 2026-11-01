@@ -7,9 +7,9 @@
 // / clientName: cleanyourtv is not exist" when the answer came from another luna-send, read on 2026-10-30 after such a fault; it
 // still replied returnValue true), so the subscription and every answer go through one palmbus handle (LG's own module for its
 // JavaScript services, /usr/lib/nodejs/palmbus.js). Where that module is not there nothing is registered: LG decides, as before this
-// launcher, rather than a question no one can answer. Only where tvprofile.js says lgScreensaver: 'bus' (webOS 25 and newer, where this
-// was tried): on an older webOS nothing is registered either, since a registered client that answers wrong is the same fault, and
-// while the TV's version is not known yet (the very first start, before the profile is read) it waits for it.
+// launcher, rather than a question no one can answer. Only where tvprofile.js says lgScreensaver: 'bus' (webOS 22, and webOS 25 and
+// newer, where this was tried): on webOS 23 and 24 nothing is registered either, since a registered client that answers wrong is the
+// same fault, and while the TV's version is not known yet (the very first start, before the profile is read) it waits for it.
 // Ours (the photos, saver.js) when the screensaver is on and has photos and the TV is not on an HDMI input (a console or a set-top box
 // is in use even when the remote is not): LG is told no, and Home is opened with {saver: 'start', from: the app that was in front}, so
 // the launcher shows the photos and a key goes back to that app. Otherwise LG decides, as before this launcher.
@@ -156,7 +156,7 @@ function create(ctx, opts) {
       return;
     }
     if (tv.lgScreensaver !== 'bus')
-      return log('not registered on webOS SDK ' + (tv.sdk || tv.sdkMajor) + ' (tried from webOS 25 on): LG decides');
+      return log('not registered on webOS SDK ' + (tv.sdk || tv.sdkMajor) + ' (tried on webOS 22 and from webOS 25 on): LG decides');
     if (!handle) {
       const bus = o.bus();
       if (!bus) return log("LG's bus module is not on this TV: not registered, LG decides");

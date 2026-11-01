@@ -5,8 +5,8 @@
 // opened with the photos and the app that was in front) when the screensaver is ours, yes when it is off or has no photos, yes over an
 // HDMI input. Each answer is kept in a short record with LG's reply. LG's responseScreenSaverRequest takes the timestamp only as a
 // string, and the answer carries it unchanged. Without the bus module nothing is registered. A subscription that ends is asked again.
-// Only from webOS 25 on (tvprofile.js lgScreensaver: 'bus', where this was tried): on webOS 22 to 24 nothing is registered, and while
-// the TV's version is not known yet it waits for it.
+// Only on webOS 22 and from webOS 25 on (tvprofile.js lgScreensaver: 'bus', where this was tried): on webOS 23 and 24 nothing is
+// registered, and while the TV's version is not known yet it waits for it.
 const fs = require('fs'),
   path = require('path'),
   EventEmitter = require('events');
@@ -166,9 +166,27 @@ run(async () => {
       'without the bus module nothing is registered: ' + part.status().last
     );
   }
-  // webOS 22 to 24 (tvprofile.js lgScreensaver ''): not tried there, and a registered client that answers wrong is a fault that
+  // webOS 22 (the owner's 86UQ8000): registered and answered on the same connection, as on webOS 25
+  {
+    const bus = fakeBus();
+    const part = S.create(
+      { config: memoryConfig(on), profile: profileOf('7.6.0'), feature: featureOf(3), luna: async () => ({ returnValue: true }) },
+      { bus: () => bus, minWaitMs: 30, maxWaitMs: 60, proc: path.join(tmp, 'no-proc') }
+    );
+    part.start();
+    await sleep(20);
+    bus.ask('2176077378');
+    for (let i = 0; i < 40 && !bus.calls.length; i++) await sleep(10);
+    part.stop();
+    const a = bus.calls.filter(x => /responseScreenSaverRequest/.test(x.uri))[0];
+    ok(
+      bus.subs.length === 1 && !!a && a.handle === bus.subs[0].handle && a.args.ack === false && a.args.timestamp === '2176077378',
+      'webOS SDK 7.6.0: registered, and the answer on the same connection: ' + JSON.stringify(bus.calls)
+    );
+  }
+  // webOS 23 and 24 (tvprofile.js lgScreensaver ''): not tried there, and a registered client that answers wrong is a fault that
   // reboots the TV at standby, so nothing registers and LG shows its own screensaver
-  for (const sdk of ['7.6.0', '8.4.0', '9.2.4']) {
+  for (const sdk of ['8.4.0', '9.2.4']) {
     const bus = fakeBus();
     const part = S.create(
       { config: memoryConfig(on), profile: profileOf(sdk), feature: featureOf(3), luna: async () => ({ returnValue: true }) },

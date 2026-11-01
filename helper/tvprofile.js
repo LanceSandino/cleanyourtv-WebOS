@@ -29,10 +29,15 @@
 //   lgPreload      how LG's app pre-loading can be stopped (helper/lgpreload.js): 'api' (the preload manager's own setPreloadPolicy
 //                  switches one app's pre-loading off until it restarts) on webOS 25 (SDK 10), where that was tried; '' elsewhere.
 //   lgScreensaver  how LG's screensaver question is answered (helper/lgscreensaver.js): 'bus' (the service registers on its own
-//                  connection to LG's bus, through LG's /usr/lib/nodejs/palmbus.js, and answers at once) from webOS 25 (SDK 10) on, where
-//                  that was tried; '' before and when the SDK is unknown: nothing registers and LG shows its own screensaver, as before
-//                  this launcher. A registered client that answers wrong or late is a fault for LG, which then reboots the TV fully at
-//                  its next standby (D-20261029-9), so an untried webOS is left out rather than risked.
+//                  connection to LG's bus, through LG's /usr/lib/nodejs/palmbus.js, and answers at once) on webOS 22 (SDK 7; the owner's
+//                  86UQ8000 has the same module and tvpowerd asks the same question, after 3 minutes without a key) and from webOS 25
+//                  (SDK 10) on, where that was tried; '' on webOS 23 and 24 and when the SDK is unknown: nothing registers and LG shows
+//                  its own screensaver, as before this launcher. A registered client that answers wrong or late is a fault for LG,
+//                  which then reboots the TV fully at its next standby (D-20261029-9), so an untried webOS is left out rather than risked.
+//   adManagerStub  whether the debloat (group adapps) mounts the do-nothing stub over LG's admanager (scripts/debloat-stop.sh): from
+//                  webOS 25 (SDK 10) on, where apps were tried with it. On webOS 22 Disney+ stayed on its logo with the stub (the owner's
+//                  86UQ8000: LG's own admanager back, it opened at once; with the stub again, the logo for good), so below webOS 25 and
+//                  when the SDK is unknown LG's admanager is left running; the ad servers are still blocked (group ads).
 //   devtoolsRestart  whether the boot starts WebAppMgr again once without LG's web inspector (scripts/devtools-close.sh restart): from
 //                  webOS 25 (SDK 10) on, where it was tried. Before that the copy of LG's start script is only mounted, and the port
 //                  (9998) closes when WebAppMgr starts again by itself: the restart closes every web app at boot, and it was not
@@ -98,7 +103,8 @@ function decide(facts, compat) {
     homeTakeover: /^com\.webos\.app\.home native$/.test(homeKind) ? 'standin' : 'mount',
     lgVolumeBar: major === 10 ? 'configd' : '',
     lgPreload: major === 10 ? 'api' : '',
-    lgScreensaver: major >= 10 ? 'bus' : '',
+    lgScreensaver: major === 7 || major >= 10 ? 'bus' : '',
+    adManagerStub: major >= 10,
     devtoolsRestart: major >= 10,
     supported: major >= FLOOR.sdk && nodeMajor >= FLOOR.node,
     floor: FLOOR.name + ' (SDK ' + FLOOR.sdk + ')',

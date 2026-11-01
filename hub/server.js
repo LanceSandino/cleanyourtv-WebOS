@@ -401,7 +401,15 @@ function create(opts) {
       const t = tvs[0];
       return json(res, 200, { tv: t.on || t.link ? 'on' : 'off', link: !!t.link, mac: !!t.mac, page: !!page, tvs: list() });
     }
-    if (u === '/hub/tvs' && req.method === 'GET') return json(res, 200, { tvs: list() });
+    if (u === '/hub/tvs' && req.method === 'GET') {
+      // the names asked again, at most every 20 s (a TV renamed from the phone shows in the next list)
+      for (const x of tvs)
+        if (x.link && Date.now() - (x.namedAt || 0) > 20000) {
+          x.namedAt = Date.now();
+          askName(x);
+        }
+      return json(res, 200, { tvs: list() });
+    }
     if (u === '/hub/dashboard' && req.method === 'GET') {
       res.writeHead(200, {
         'content-type': 'text/html; charset=utf-8',
