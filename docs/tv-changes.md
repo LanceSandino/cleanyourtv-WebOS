@@ -24,7 +24,8 @@ uninstall. Optional features contact other services only when you switch them on
 1. The Homebrew Channel runs the boot scripts in `/var/lib/webosbrew/init.d/`.
 2. `10-cleanyourtv-home` starts the service, closes LG's web inspector (port 9998) unless that is switched off: a copy of LG's
    `/etc/systemd/system/scripts/webapp-mgr.sh` without `--remote-debugging-port=9998` (`/tmp/cleanyourtv-webapp-mgr.sh`) is
-   **bind-mounted** over it and WebAppMgr is restarted once, before Home is taken over (see [Security](security.md#what-this-changes-on-a-tv)).
+   **bind-mounted** over it and WebAppMgr is restarted once, before Home is taken over, on webOS 25 and newer (see
+   [Security](security.md#what-this-changes-on-a-tv)).
    With the debloat on it starts the debloat at once (step 3). Then, unless `/media/developer/cleanyourtv/DISABLE` exists, it
    replaces LG's Home. How
    depends on LG's Home app as it came with the TV (`helper/tvprofile.js`, `homeTakeover`; see

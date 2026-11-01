@@ -34,8 +34,8 @@ sets up, updates and removes everything.
 
 ### Compatibility at a glance
 
-* **webOS**: 25 and newer (SDK 10: Node.js 16, Chromium 120). This fork dropped webOS 5, 6 and 22 to 24; on an older TV the install
-  and the setup stop before they change anything. LG names its versions two ways: [webOS version numbers](https://lancesandino.github.io/cleanyourtv-WebOS/tested-tvs/#webos-version-numbers) gives both.
+* **webOS**: 22 and newer (SDK 7: Node.js 12, Chromium 87). This fork dropped webOS 5 and 6; on an older TV the install and the setup
+  stop before they change anything. LG names its versions two ways: [webOS version numbers](https://lancesandino.github.io/cleanyourtv-WebOS/tested-tvs/#webos-version-numbers) gives both.
 * **Access**: a TV rooted with the [Homebrew Channel](https://webosbrew.org) ([rootmy.tv](https://rootmy.tv)) and internet access
   on the TV for the download. Install from the Homebrew Channel, or with one command over SSH as `root`.
 * **Tested hardware**: LG OLED65G26LA on webOS 25. Other TVs are reported in
@@ -177,7 +177,7 @@ Troubleshooting and fixing with an AI assistant (Claude, ChatGPT, a local model)
 Translations are welcome too: a language is one file in [`i18n/`](i18n/), no programming needed
 ([how](https://lancesandino.github.io/cleanyourtv-WebOS/languages/)). Reports from other TVs are the most useful contribution: open an [issue](https://github.com/LanceSandino/cleanyourtv-WebOS/issues)
 with the output of **Share log** in the manager app. For code, see [Contributing](https://lancesandino.github.io/cleanyourtv-WebOS/development/):
-the service runs on Node.js 16 and the pages in Chromium 120 (webOS 25), `sh tools/check.sh` runs every check, every push to `dev` publishes a dev build, and a release goes out from `dev` when the maintainer runs the Release workflow.
+the service runs on Node.js 12 and the pages in Chromium 87 (webOS 22), `sh tools/check.sh` runs every check, every push to `dev` publishes a dev build, and a release goes out from `dev` when the maintainer runs the Release workflow.
 
 ---
 

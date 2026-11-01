@@ -36,14 +36,18 @@ disk, and a reboot without the boot scripts brings LG's Home back.
 | Screensaver, photo feed | `app/src/js/saver.js` (idle, LG's screensaver request, Left/Right), `helper/photofeed.js` (a server's read-only photo feed, small cache, saved round), `docs/screensaver.md` (with the feed contract) |
 | LG's settings changed in RAM (configd layer `/var/run/tvconfig/rmm`), LG's app pre-loading stopped | `helper/lgconfig.js`, `helper/lgpreload.js` (a debloat group; the preload manager's own setPreloadPolicy, in its memory), `docs/debloat.md` |
 | The report people attach to issues | `helper/sharelog.js` (`node sharelog.js --print` prints it) |
-| Node 8 compatibility helpers (from before the webOS 25 floor, still used), diagnostics | `helper/netcompat.js`, `helper/diag.js` |
+| Node 8 compatibility helpers (from the webOS 5 days, still used), diagnostics | `helper/netcompat.js`, `helper/diag.js` |
 | Build and checks | `ipk/build.py`, `tools/build-pages.js`, `tools/check.sh`, the tests in `tools/test/` |
 
 ## Facts about the TV that matter
 
-- Test TV: LG OLED65G26LA, webOS 25 (SDK 10), Node.js 16.20 and Chromium 120. **webOS 25 is the oldest version this fork supports**
-  (DECISIONS.md D-20261029-3; `FLOOR` in `helper/tvprofile.js`): `install.sh` and `bootstrap.sh` refuse an older TV before they change
-  anything. webOS 26 (SDK 11) has Node.js 20 and Chromium 132. The userland is 32-bit ARM on a 64-bit kernel.
+- Test TV: LG OLED65G26LA, webOS 25 (SDK 10), Node.js 16.20 and Chromium 120. **webOS 22 is the oldest version this fork supports**
+  (SDK 7: Node.js 12.21 and Chromium 87; DECISIONS.md D-20261101-1; `FLOOR` in `helper/tvprofile.js`): the owner's second TV, an
+  86UQ8000AUB on webOS 22 (firmware 04.60.91, 1.7 GB of RAM), stays there because a firmware update would remove root. `install.sh`
+  and `bootstrap.sh` refuse an older TV before they change anything. webOS 23 has Node.js 12 and Chromium 94, webOS 24 Node.js 16 and
+  Chromium 108, webOS 26 (SDK 11) Node.js 20 and Chromium 132. What was tried only on webOS 25 (the hidden picker, LG's volume bar,
+  LG's pre-loading, LG's screensaver question, WebAppMgr's restart without its inspector) is off below it in `tvprofile.js`. The
+  userland is 32-bit ARM on a 64-bit kernel.
 - The root filesystem, `/usr` and `/etc` are read-only. Writable: `/media/developer`, `/var`, `/tmp`. Use bind mounts, never write into `/usr`.
 - Where things are on the TV: `/media/developer/cleanyourtv/` (service files, `config.json`, `app/`, `live/`, `themes/`, `backup/`),
   `/var/lib/webosbrew/init.d/` (boot scripts, run by the Homebrew Channel), `/media/developer/cytv-setup.log` (setup log),
@@ -64,13 +68,16 @@ disk, and a reboot without the boot scripts brings LG's Home back.
    delete files or change boot scripts on your own.
 2. **Never put private data in the repository, an issue or a pull request:** no playlist addresses, access keys, tokens, IP addresses,
    user or device names, webhook addresses. Mask them. `tools/diagnose.sh` and Share log already mask what they can; read the output.
-3. **The service runs on Node.js 16** (webOS 25 has 16.20.2): nothing newer, such as global `fetch`, `structuredClone`, `findLast`,
-   `toSorted` or `Object.groupBy` (`tools/test/service.test.js` lists them). Start programs through `helper/exec.js`. The Node 8
-   helpers (`helper/netcompat.js`, `diag.execFile`) still work and stay until they are cleaned up; new code may use Node 16's own.
-   **The pages run in Chromium 120** (webOS 25): new code may use what it has (ES2023, flex `gap`, `:has()`, ...); the older ES5 scripts
-   are not rewritten for its own sake. Only transform and opacity animate (the GPU is weak).
+3. **The service runs on Node.js 12** (webOS 22 has 12.21.0): nothing newer, such as `?.`, `??`, `||=`, `replaceAll`, `.at()`,
+   `Object.hasOwn`, `fs.rmSync`, `crypto.randomUUID`, `'base64url'`, `AbortController`, global `fetch` or `structuredClone`
+   (`tools/test/service.test.js` lists them; `tools/check.sh` runs the tests under Node.js 12.21.0). Start programs through
+   `helper/exec.js`. The Node 8 helpers (`helper/netcompat.js`, `diag.execFile`) still work and stay until they are cleaned up.
+   **The pages run in Chromium 87** (webOS 22): new code may use what it has (ES2021, flex `gap`, `inset`, `:focus-visible`), not
+   `:is()`, `:where()`, `:has()`, `aspect-ratio` or `dvh` (`tools/test/pages.test.js` lists them); the older ES5 scripts are not
+   rewritten for its own sake. Only transform and opacity animate (the GPU is weak).
 4. **A fix needs a test** in `tools/test/` (the file of that area) when it can be tested without a TV, and everything must pass:
-   `sh tools/check.sh` (the tests on the current Node, the built pages, types and lint; `--chromium` adds the pages in Chromium 120).
+   `sh tools/check.sh` (the tests on Node 12.21 and the current Node, the built pages, types and lint; `--chromium` adds the pages in
+   Chromium 87 and 120).
    `tools/test/api.test.js` compares every API reply with a recorded one: a reply that changes needs a reason. Say plainly what was
    checked on a real TV and what was not.
 5. **Documentation must match the code.** Change the page in `docs/` when behaviour changes, and the README if it is mentioned there.
@@ -83,9 +90,11 @@ disk, and a reboot without the boot scripts brings LG's Home back.
 ## Commands
 
 ```sh
-sh tools/check.sh                  # every check: the tests on the current Node, built pages, types and lint
-sh tools/check.sh --chromium       # also the pages in Chromium 120 (webOS 25), Chrome for Testing's headless shell; on macOS in the
-                                   # Linux container when Docker runs (Chrome 120 for macOS does not start on macOS 26)
+sh tools/check.sh                  # every check: the tests on Node 12.21 (webOS 22) and the current Node, built pages, types and lint
+sh tools/check.sh --chromium       # also the pages in Chromium 87 and 120 (webOS 22 and 25: a Chromium snapshot build and Chrome for
+                                   # Testing's headless shell); on macOS in the Linux container when Docker runs (Chrome 120 for macOS
+                                   # does not start on macOS 26)
+node tools/oldchrome.js --engine 87   # the pages in Chromium 87 only (it starts on macOS 26 too)
 CYTV_CHROMIUM_IMAGE=ubuntu:26.04 sh tools/check.sh --chromium   # the same in a Linux container, as CI does (Docker)
 npm install                        # once: TypeScript, ESLint and Prettier for check.sh (development only, nothing is shipped)
 npm run format                     # formats the code (Prettier) and rebuilds the pages

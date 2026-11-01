@@ -19,7 +19,7 @@
 |---|---|
 | `paths.js` | Every place on the TV the service reads or writes; the tests move them with environment variables. |
 | `config.js` | The settings in `config.json`. `config.update(source, fn)` reads, changes and writes in one step, so two parts never overwrite each other's settings; every change of an option, a learned key or the Input-key mode is logged with its source (`config: options.inputKey true -> false (manager)`), which shows up in Share log. |
-| `tvprofile.js` | Everything that differs between TVs: the Input key's default mode, the notification window type, whether the firmware is in `compat.json`, whether LG's Home is a supported kind, how Home is taken over (`homeTakeover`) and which services are restarted after the app manager (`afterSam`). The service saves it in `tv.json` (`GET /api/tv`); the setup script asks the same rules (`node tvprofile.js get notifyWindow --sdk 10.2.2`). |
+| `tvprofile.js` | Everything that differs between TVs: the Input key's default mode, the notification window type, whether the firmware is in `compat.json`, whether LG's Home is a supported kind, how Home is taken over (`homeTakeover`), which services are restarted after the app manager (`afterSam`), and which of LG's parts tried only on webOS 25 are used (`lgVolumeBar`, `lgPreload`, `lgScreensaver`, `devtoolsRestart`); whether the TV is at least the oldest supported (`supported`, `floor`: webOS 22). The service saves it in `tv.json` (`GET /api/tv`); the setup script asks the same rules (`node tvprofile.js get notifyWindow --sdk 10.2.2`). |
 | `exec.js`, `luna.js`, `fetch.js` | The one way to start a program (time limits without Node's own `timeout` option, which can abort Node 8), to call `luna-send`, and to download (redirects, gzip, size and time limits, dropped connections). |
 | `server.js`, `web.js` | The HTTP server with the origin rules, and small reply helpers. |
 | `apps.js`, `running.js` | The app list, icons, usage, launching and the launcher's own settings; the running apps to close (Back on Home). |
@@ -83,26 +83,42 @@ Nothing is written under `/usr`: the mount disappears at reboot. `DISABLE` in `/
 
 ## Supported webOS versions
 
-This fork supports **webOS 25 (SDK 10) and newer** ([DECISIONS.md](https://github.com/LanceSandino/cleanyourtv-WebOS/blob/main/DECISIONS.md),
-D-20261029-3). webOS 25 ships Node.js 16.20 and Chromium 120, webOS 26 Node.js 20 and Chromium 132. The floor is `FLOOR` in
+This fork supports **webOS 22 (SDK 7) and newer** ([DECISIONS.md](https://github.com/LanceSandino/cleanyourtv-WebOS/blob/main/DECISIONS.md),
+D-20261101-1, which replaced the webOS 25 floor of D-20261029-3 for the owner's second TV, a webOS 22 set that would lose root with a
+firmware update). webOS 22 ships Node.js 12.21 and Chromium 87, webOS 23 Node.js 12 and Chromium 94, webOS 24 Node.js 16 and
+Chromium 108, webOS 25 Node.js 16.20 and Chromium 120, webOS 26 Node.js 20 and Chromium 132. The floor is `FLOOR` in
 `helper/tvprofile.js` (the `supported` and `floor` decisions); `scripts/bootstrap.sh` checks the TV's Node.js and webOS version before
 it changes anything, and `install.sh` checks the same numbers before it downloads the package. An update that reaches an older TV is
 refused the same way and noted in `last-error.txt`, so the service keeps running its version.
 
-The code still carries what the older versions needed, until it is cleaned up:
+What differs below webOS 25 is decided in `helper/tvprofile.js`, and what was tried only on webOS 25 stays off there until it has been
+seen working on an older TV:
+
+- the Input key starts the Inputs list on each press (`pickerMode` `ondemand`), and the notification app gets the `overlay` window
+  (an app of the `topui` type does not start before SDK 10);
+- where LG's Home is the native program (webOS 22 and 23) the launcher becomes Home through the stand-in (`homeTakeover` `standin`),
+  and the services that talk to the app manager are restarted after it is restarted (`afterSam`);
+- LG's screensaver question is not answered (`lgScreensaver` empty): nothing registers, and LG shows its own screensaver. A
+  registered client that answers late or wrong is a fault for LG, which then reboots the TV at its next standby (D-20261029-9);
+- at boot WebAppMgr is not restarted without LG's web inspector (`devtoolsRestart` false): the copy of LG's start script is mounted,
+  and port 9998 closes when WebAppMgr next starts by itself;
+- LG's volume bar is not hidden and LG's pre-loading is not stopped (`lgVolumeBar`, `lgPreload` empty).
+
+The code still carries what older versions needed, until it is cleaned up:
 
 - `helper/netcompat.js` supplies `URL`, `URLSearchParams`, `crypto.randomInt`, `mkdir -p` and the `http(s).get(url, options)` form,
-  which Node.js 8 lacked; the modules that use it keep working, and new code may use Node 16's own.
-- `helper/tvprofile.js` still decides for SDKs below 10 (the picker started on demand, the `overlay` notification window, the stand-in
-  for LG's native Home on webOS 5 to 23). Below the floor only a TV whose version could not be read gets that far ("Set up anyway").
+  which Node.js 8 lacked; the modules that use it keep working.
+- `helper/tvprofile.js` still decides for SDKs below 7 (webOS 5 and 6). Below the floor only a TV whose version could not be read gets
+  that far ("Set up anyway").
 - The pages' older scripts are ES5, and flex children are spaced with sibling margins (flex `gap` came in Chromium 84). The focus ring
   of a tile is a `::before` with its own radius, because Chromium before 94 drew an `outline` as a rectangle.
 - The service accepts the `file://<appId>-webos` origin that webOS 6 apps send, for our own apps and the Home slot only, and
   `scripts/reload-home.sh` restarts `webapp-mgr` on webOS 6, where a relaunch alone kept the old page.
 
-!!! note "Checked on webOS 25"
-    The maintainer's TV runs webOS 25. Every change is checked by the tests on the current Node (with rules for what Node 16 lacks)
-    and in Chromium 120 (`sh tools/check.sh --chromium`, Chrome for Testing's headless shell 120.0.6099.109).
+!!! note "Checked on webOS 25, in Node.js 12.21 and in Chromium 87"
+    The maintainer's TV runs webOS 25. Every change is checked by the tests under Node.js 12.21.0 (the Node of webOS 22) and the
+    current Node (with rules for what Node 12 lacks), and in Chromium 87 and 120 (`sh tools/check.sh --chromium`: a Chromium snapshot
+    build of 87.0.4280 and Chrome for Testing's headless shell 120.0.6099.109).
 
 ## Things that were tried
 

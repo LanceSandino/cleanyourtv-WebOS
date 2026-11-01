@@ -48,7 +48,9 @@ remote is not (LG does not count a game controller), so there the launcher answe
 TV asks Home at all depends on the firmware: if LG's screensaver still appears, set **Starts after** shorter than LG's.
 The service answers on its own connection to LG's bus (LG's `palmbus` module, the one LG's JavaScript services use): LG takes an
 answer only from the connection that asked to be told, so an answer sent any other way is refused even though LG replies "ok". On a
-TV without that module nothing is registered and LG's screensaver runs as before. Each answer is kept on the TV in
+TV without that module, and on webOS 22 to 24 (where this has not been tried: a wrong answer is the same fault), nothing is
+registered and LG's screensaver runs as before; there the photos come only from **Starts after**, so set it shorter than LG's. Each
+answer is kept on the TV in
 `/media/developer/cleanyourtv/screensaver-answers.log` (the last 40: the time, the app in front, how
 many milliseconds the answer took and LG's reply, `ok` or LG's reason, such as "The response is too late"), because the service's own
 log is gone after the reboot such a fault causes.

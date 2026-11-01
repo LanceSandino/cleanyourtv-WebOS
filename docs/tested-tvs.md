@@ -3,10 +3,12 @@
 CleanYourTV is written for rooted LG webOS TVs. Only a few models have been tried, and reports are welcome: open an issue with
 the output of **Share log** (see [Troubleshooting](troubleshooting.md#reporting-a-problem)) and say whether it worked.
 
-!!! warning "This fork supports webOS 25 and newer"
-    This fork runs only on **webOS 25 (SDK 10) and newer**: the service is written for Node.js 16 and the pages for Chromium 120.
-    On an older TV the install command and the setup stop before they change anything. The rows for webOS 24 and older below are
-    reports on the upstream project's versions, kept as history; those TVs need the upstream project.
+!!! warning "This fork supports webOS 22 and newer"
+    This fork runs only on **webOS 22 (SDK 7) and newer**: the service is written for Node.js 12 and the pages for Chromium 87.
+    On an older TV the install command and the setup stop before they change anything. The rows for webOS 6 and older below are
+    reports on the upstream project's versions, kept as history; those TVs need the upstream project. The rows for webOS 22 to 24
+    are reports on older versions too: this fork supports those TVs again, and its current versions have not been reported on them
+    yet.
 
 | TV | Firmware | webOS (SDK) | Status |
 |---|---|---|---|
@@ -57,7 +59,7 @@ LG names its webOS versions in two ways: a marketing name and the version the TV
 | webOS 25 | 2025 | 10.x |
 | webOS 26 | 2026 | 11.x |
 
-LG also updates older TVs to newer versions, so the SDK version, not the model year, is what counts. This fork needs **SDK 10 or
+LG also updates older TVs to newer versions, so the SDK version, not the model year, is what counts. This fork needs **SDK 7 or
 newer**; the details are in [Internals](development/internals.md#supported-webos-versions).
 
 ## What differs between webOS versions
@@ -71,9 +73,10 @@ from the SDK version and the kind of LG's Home app as it came with the TV. **Sha
 | How the launcher becomes Home | stand-in over LG's Home program; the app manager is not restarted | stand-in, as on webOS 5 and 6 | launcher folder mounted over LG's Home app and the app manager restarted; the stand-in where LG's Home is native |
 | Setup on unlisted firmware | **Set up anyway** needed | **Set up anyway** needed | continues by itself |
 | Input key | Inputs list started on each press | started on each press | kept ready over the running app on webOS 25 (SDK 10); started on each press on SDK 9 and 11 |
+| LG's screensaver question, WebAppMgr restarted without its inspector, LG's volume bar hidden, LG's pre-loading stopped | not supported | off: tried on webOS 25 only (LG shows its own screensaver; port 9998 closes when WebAppMgr next starts by itself) | from webOS 25 (SDK 10); volume bar and pre-loading on webOS 25 only |
 | Picture notifications window | `overlay` | `overlay` | `topui` from SDK 10, `overlay` on SDK 9 |
 | Node.js, browser engine (LG) | Node.js 8.12; Chromium 68 (webOS 5) or 79 (webOS 6) | Node.js 12; Chromium 87 (webOS 22) or 94 (webOS 23) | Node.js 16 and Chromium 108 (webOS 24), Node.js 16 and Chromium 120 (webOS 25), Node.js 20 and Chromium 132 (webOS 26) |
-| Supported by this fork | no | no | from webOS 25 (SDK 10); not webOS 24 |
+| Supported by this fork | no | yes, from webOS 22 (SDK 7) | yes |
 
 The Home row follows LG's Home app, not the version number: a TV with a native Home gets the stand-in whatever its version, and a
 flutter or web Home gets the mount. How both work is in [What it changes on the TV](tv-changes.md#at-boot).

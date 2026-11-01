@@ -49,8 +49,9 @@ required: **Share log** and an [issue](https://github.com/LanceSandino/cleanyour
 
 **Understand the code behind a symptom**
 
-> Using AGENTS.md ("Where things are") find the code responsible for *symptom* in this repository. Explain how it works on webOS 25
-> (Node 16, Chromium 120) and on webOS 26, and list what could make it fail on a TV that is not the maintainer's.
+> Using AGENTS.md ("Where things are") find the code responsible for *symptom* in this repository. Explain how it works on webOS 22
+> (Node 12, Chromium 87), on webOS 25 (Node 16, Chromium 120) and on webOS 26, and list what could make it fail on a TV that is not the
+> maintainer's.
 
 ## Part 2: fix the bug and send the fix
 
@@ -59,10 +60,10 @@ Codex, Cursor, Copilot agent mode and similar). The project's rules are in `AGEN
 
 1. **Fork and clone**, and make a branch: `git checkout -b fix-short-description`.
 2. **Reproduce the bug.** From the report, then from the code. Many bugs can be reproduced without a TV: the service runs under
-   `sh tools/check.sh` (the tests on the current Node), and the pages run in Chromium 120, the engine of webOS 25, against a stand-in
-   service (`sh tools/check.sh --chromium`).
+   `sh tools/check.sh` (the tests on Node 12.21, the Node of webOS 22, and on the current Node), and the pages run in Chromium 87 and
+   120, the engines of webOS 22 and 25, against a stand-in service (`sh tools/check.sh --chromium`).
 3. **Write a test that fails**, then fix the code until it passes. A test in `tools/test/` is expected whenever the bug can be
-   tested without a TV. Keep to the compatibility rules (Node 16 for the service, Chromium 120 for the pages).
+   tested without a TV. Keep to the compatibility rules (Node 12 for the service, Chromium 87 for the pages).
 4. **Run everything:** `sh tools/check.sh`, and `python3 ipk/build.py` to check that the package builds.
 5. **Try it on a TV** if you can: once your change is merged into `dev` it is in the dev build (the pre-release `dev`); in the manager
    app **Update channel** > **Dev builds** installs it, and **Update channel** > **Stable releases** goes back. A branch of your own
@@ -80,13 +81,13 @@ saying which AI tools helped. It is reviewed like any other pull request.
 **Fix a bug**
 
 > Read AGENTS.md. Issue: *paste the issue text and the masked report*. Reproduce the problem (a failing test in `tools/test/` if it can
-> be tested without a TV), find the cause, and make the smallest fix that follows the rules in AGENTS.md (Node 16 for the service, Chromium 120
+> be tested without a TV), find the cause, and make the smallest fix that follows the rules in AGENTS.md (Node 12 for the service, Chromium 87
 > for the pages, no private data). Run `sh tools/check.sh` and `python3 ipk/build.py`. Update the documentation if behaviour changes.
 > Do not commit to main, do not release. Tell me what is verified and what only a real TV can verify.
 
 **Review a change**
 
-> Review my change against AGENTS.md: Node 16 compatibility for the service, Chromium 120 for the pages, private data, missing tests, documentation that no
+> Review my change against AGENTS.md: Node 12 compatibility for the service, Chromium 87 for the pages, private data, missing tests, documentation that no
 > longer matches, and anything that could leave a TV in a state it cannot recover from (boot scripts, mounts, the update path).
 
 **Write the pull request text**

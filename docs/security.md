@@ -27,7 +27,8 @@ no password: anyone on your network can open it and run code inside any web app,
 table to close the port. **LG's web inspector (port 9998)** in the manager is on by default: at every start the boot script mounts a
 copy of LG's script without that switch over LG's (`/tmp/cleanyourtv-webapp-mgr.sh` over
 `/etc/systemd/system/scripts/webapp-mgr.sh`, in RAM; LG's file is not changed) and starts WebAppMgr again once, early, before Home is
-taken over, so it costs nothing later. The switch is removed rather than narrowed to `127.0.0.1`: WebAppMgr's engine has no
+taken over, so it costs nothing later. That restart was tried on webOS 25: on webOS 22 to 24 only the copy is mounted, and the port
+stays open until WebAppMgr starts again by itself (the manager and the Share log say it still listens). The switch is removed rather than narrowed to `127.0.0.1`: WebAppMgr's engine has no
 `--remote-debugging-address`. Switched off (for a developer's `ares-inspect`), the copy is unmounted and the port opens again at the
 next start of the TV; switched on in the manager, it closes at the next start (WebAppMgr is not restarted while you use the TV). By
 hand: `sh /media/developer/cleanyourtv/devtools-undo.sh` removes the mount.
