@@ -1907,3 +1907,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-01T18:10:00Z"
 ```
+
+```yaml
+id: CU-20261101-09
+type: security
+title: "Dev tools: minimatch 11.0.1 under ESLint (Dependabot alert 1, GHSA-g3hv-75wg-m249)"
+description: "GitHub flagged minimatch below 11.0.1 (denial of service through glob-part amplification), pulled in by ESLint 9.9.0 (3.1.5, through @eslint/eslintrc and @eslint/config-array). It is a development tool only: nothing in package.json reaches the TV. No 3.x or 10.x fix exists, so package.json overrides minimatch to 11.0.1 (Node 18 and newer; lint runs on the current Node, CI on Node 22). Checked: npm run lint passes, ESLint still applies its config (ES2019, 7 rules) and still reports a planted no-undef error in helper/."
+impact: none
+affected_modules: ["package.json", "package-lock.json"]
+related_tests: ["tools/lint.js (ESLint over the service, scripts, tools and pages)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-01T18:40:00Z"
+```
