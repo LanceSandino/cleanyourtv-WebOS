@@ -3,8 +3,8 @@
 # Six groups, each can be switched off in the manager (options.debloatOff in config.json lists the ones that are off):
 #   ads          adoverlay-service and the ad servers in /etc/hosts
 #   adapps       admanager, LG's ad service for apps: only while ads is on too (a TV that had ads off before keeps it); some apps
-#                (HBO Max, issue 47 upstream) do not play without it, so it can be switched off on its own; only where tvprofile.js
-#                says adManagerStub (webOS 25 and newer: on webOS 22 Disney+ stayed on its logo without it)
+#                (HBO Max, issue 47 upstream) do not play without it, so it can be switched off on its own; as tvprofile.js adManager
+#                says (webOS 25 and newer: stubbed; webOS 22: stubbed and its service entry hidden from LG's hub; others: left)
 #   tracking     acr2 (viewing tracking, LivePlus) and livepick-plus (LG's shopping overlays from what acr2 recognises; it follows
 #                every app that opens)
 #   logs         remotelogger, service-logger, and LG's crash and log reports: rdxd (makes them) and uploadd (sends them to LG)
@@ -36,11 +36,14 @@ on suggestions && { units="$units contentminer"; bins="$bins sportsalarm nudge";
 on miner && optin miner && { units="$units contentminer"; stubs="$stubs contentminer"; }
 on tracking && bins="$bins acr2 livepick-plus"
 on ads && bins="$bins adoverlay-service"
-# admanager only on a webOS where apps were tried without it (tvprofile.js adManagerStub), read from /etc/os-release (its VERSION_ID is
-# the SDK version, and it is there before luna is); an unreadable version counts as not tried
+# admanager as tvprofile.js adManager says for this webOS, read from /etc/os-release (its VERSION_ID is the SDK version, and it is there
+# before luna is; an unreadable version counts as not tried): 'stub' stubbed, 'hide' stubbed and its service entry hidden (below),
+# '' left running
 TVP=${CYTV_TVPROFILE:-$L/tvprofile.js}
 sdk=$(sed -n 's/^VERSION_ID="\{0,1\}\([0-9.]*\).*/\1/p' ${CYTV_OS_RELEASE:-/etc/os-release} 2>/dev/null | head -1)
-{ on ads || on adapps; } && ! off ads && ! off adapps && [ "$(node "$TVP" get adManagerStub --sdk "$sdk" 2>/dev/null)" = 1 ] && bins="$bins admanager"
+am=""; hide=""
+{ on ads || on adapps; } && ! off ads && ! off adapps && am=$(node "$TVP" get adManager --sdk "$sdk" 2>/dev/null)
+case "$am" in stub) bins="$bins admanager" ;; hide) bins="$bins admanager"; hide=1 ;; esac
 on lan && units="$units cups-lpd.socket ninfod"
 # --no-block: contentminer can take a minute to stop, which held up the rest of the script (and the manager waiting for it)
 for s in $units; do
@@ -62,6 +65,16 @@ for b in $bins; do
   grep -q " /usr/sbin/$b " /proc/mounts || mount --bind $L/stub-noop /usr/sbin/$b
   pkill -9 -f "^/usr/sbin/$b"
 done
+# webOS 22: admanager's service entry hidden from LG's hub (tvprofile.js adManager 'hide'): an empty file mounted over its two .service
+# files, then the hub reads its directories again, so a call to admanager is answered "Service does not exist" at once instead of
+# waiting for a service that never registers (Disney+ waited for its advertising ID on its logo). In RAM: a restart brings them back.
+if [ -n "$hide" ]; then
+  [ -f $L/empty.service ] && [ ! -s $L/empty.service ] || : > $L/empty.service
+  for f in ${CYTV_ADMANAGER_SVC:-/usr/share/dbus-1/services/com.webos.service.admanager.service /usr/share/dbus-1/system-services/com.webos.service.admanager.service}; do
+    [ -e $f ] && ! grep -q " $f " /proc/mounts && mount --bind $L/empty.service $f
+  done
+  ls-control scan-services >/dev/null 2>&1
+fi
 # the hosts lines (debloat-hosts.sh): written again for every group that is on, whichever was asked for
 on ads || on lgservers || exit 0
 keep=""; off ads || keep="ads"; optin lgservers && keep="$keep lgservers"

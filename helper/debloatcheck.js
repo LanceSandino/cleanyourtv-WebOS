@@ -16,7 +16,7 @@ const HOSTS = () => process.env.CYTV_HOSTS || '/etc/hosts';
 // and which ignores a stop) and systemd units stopped (a name without a type is a .service)
 const SCRIPT_GROUPS = {
   ads: { bins: ['adoverlay-service'], hosts: true },
-  adapps: { bins: ['admanager'] },
+  adapps: { bins: ['admanager'], hidden: ['services', 'system-services'] }, // hidden: its .service files, where adManager is 'hide'
   tracking: { bins: ['acr2', 'livepick-plus'] },
   logs: { units: ['remotelogger', 'service-logger', 'rdxd'], bins: ['uploadd'] },
   suggestions: { units: ['contentminer'], bins: ['sportsalarm', 'nudge'] },
@@ -30,12 +30,12 @@ function create(ctx, opts) {
   const o = Object.assign({ startMs: 90000, tickMs: 10000, wakeGapMs: 60000 }, opts);
   const options = () => ctx.config.options();
   const debloatOn = () => options().debloat !== false && !fs.existsSync(P.DISABLE);
-  // admanager is left to LG where tvprofile.js says so (adManagerStub false: below webOS 25, where Disney+ needs it), as debloat-stop.sh
-  // does, so it is not looked for there
-  const lgAdManager = () => {
+  // how admanager is kept from running here (tvprofile.js adManager): '' leaves it to LG (not looked for), as debloat-stop.sh does
+  const adManager = () => {
     const p = ctx.profile && ctx.profile.get ? ctx.profile.get() : null;
-    return !!p && p.adManagerStub === false;
+    return p && typeof p.adManager === 'string' ? p.adManager : 'stub';
   };
+  const lgAdManager = () => adManager() === '';
   // LG's online servers cannot be blocked by name below webOS 25 (tvprofile.js lgServerHosts): not looked for there either
   const noServerHosts = () => {
     const p = ctx.profile && ctx.profile.get ? ctx.profile.get() : null;
@@ -68,6 +68,11 @@ function create(ctx, opts) {
       const r = await exec.sh('systemctl is-active ' + (/\./.test(u) ? u : u + '.service'), 5000);
       if (r.out.trim() === 'active') notes.push(u + ' is running');
     }
+    if (g.hidden && adManager() === 'hide')
+      for (const d of g.hidden) {
+        const f = P.DBUS + '/' + d + '/com.webos.service.admanager.service';
+        if (fs.existsSync(f) && mounts.indexOf(' ' + f + ' ') < 0) notes.push("admanager's service is not hidden (" + d + ')');
+      }
     if (g.hosts && !/(ads\.lgtvcommon|lgsmartad)\.com[^\n]*# cleanyourtv-debloat/.test(read(HOSTS())))
       notes.push('the ad servers are not in the hosts file');
     if (g.lgHosts && !/\.tv\.wiselg\.com[^\n]*# cleanyourtv-debloat/.test(read(HOSTS())))

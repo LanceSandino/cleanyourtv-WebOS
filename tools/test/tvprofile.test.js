@@ -24,7 +24,7 @@ run(async () => {
         tested: true,
         legacyNode: false,
         lgScreensaver: 'bus',
-        adManagerStub: true,
+        adManager: 'stub',
         devtoolsRestart: true,
         supported: true,
       },
@@ -56,7 +56,7 @@ run(async () => {
         lgVolumeBar: '',
         lgPreload: '',
         lgScreensaver: 'bus',
-        adManagerStub: false,
+        adManager: 'hide',
         devtoolsRestart: false,
         legacyNode: false,
         supported: true,
@@ -87,7 +87,7 @@ run(async () => {
         tested: false,
         sdkMajor: 0,
         lgScreensaver: '',
-        adManagerStub: false,
+        adManager: '',
         devtoolsRestart: false,
         supported: false,
       },
@@ -138,11 +138,11 @@ run(async () => {
     "LG's screensaver question: webOS 22 and webOS 25 and newer"
   );
   ok(
-    ['10.2.2', '11.2.0'].every(v => tv.decide({ sdk: v }).devtoolsRestart === true && tv.decide({ sdk: v }).adManagerStub === true) &&
+    ['10.2.2', '11.2.0'].every(v => tv.decide({ sdk: v }).devtoolsRestart === true && tv.decide({ sdk: v }).adManager === 'stub') &&
       ['7.6.0', '8.4.0', '9.2.4', ''].every(
-        v => tv.decide({ sdk: v }).devtoolsRestart === false && tv.decide({ sdk: v }).adManagerStub === false
+        v => tv.decide({ sdk: v }).devtoolsRestart === false && tv.decide({ sdk: v }).adManager !== 'stub'
       ),
-    'the WebAppMgr restart and the admanager stub: webOS 25 and newer only'
+    'the WebAppMgr restart and the admanager stub: webOS 25 and newer (webOS 22 hides admanager instead)'
   );
   // the setup script asks the same rules from the shell
   const cli = args => cp.spawnSync(process.execPath, [path.join(helper, 'tvprofile.js')].concat(args), { encoding: 'utf8' }).stdout.trim();
@@ -171,12 +171,13 @@ run(async () => {
     cli(['get', 'lgScreensaver', '--sdk', '7.6.0']) === 'bus' &&
       cli(['get', 'devtoolsRestart', '--sdk', '7.6.0']) === '0' &&
       cli(['get', 'devtoolsRestart', '--sdk', '10.2.2']) === '1' &&
-      cli(['get', 'adManagerStub', '--sdk', '7.6.0']) === '0' &&
-      cli(['get', 'adManagerStub', '--sdk', '10.3.2']) === '1' &&
-      cli(['get', 'adManagerStub']) === '0' &&
+      cli(['get', 'adManager', '--sdk', '7.6.0']) === 'hide' &&
+      cli(['get', 'adManager', '--sdk', '10.3.2']) === 'stub' &&
+      cli(['get', 'adManager', '--sdk', '8.4.0']) === '' &&
+      cli(['get', 'adManager']) === '' &&
       cli(['get', 'lgServerHosts', '--sdk', '7.6.0']) === '0' &&
       cli(['get', 'lgServerHosts', '--sdk', '10.3.2']) === '1',
-    'from the shell: no WebAppMgr restart and no admanager stub on webOS 22 (devtools-close.sh and debloat-stop.sh ask)'
+    'from the shell: no WebAppMgr restart on webOS 22, admanager hidden there and stubbed on webOS 25 (devtools-close.sh and debloat-stop.sh ask)'
   );
   ok(
     cli(['get', 'afterSam', '--sdk', arc.sdk, '--home', arc.home]) === 'arccontroller',
@@ -206,8 +207,7 @@ run(async () => {
   );
   const old = tv.create({ luna: async () => ({ returnValue: false }) }).get();
   ok(
-    old.lgScreensaver === 'bus' && old.adManagerStub === false && old.model === '86UQ8000AUB' && old.homeTakeover === 'standin',
-    'a profile saved by an older version is decided again at start: ' +
-      JSON.stringify([old.lgScreensaver, old.adManagerStub, old.homeTakeover])
+    old.lgScreensaver === 'bus' && old.adManager === 'hide' && old.model === '86UQ8000AUB' && old.homeTakeover === 'standin',
+    'a profile saved by an older version is decided again at start: ' + JSON.stringify([old.lgScreensaver, old.adManager, old.homeTakeover])
   );
 });

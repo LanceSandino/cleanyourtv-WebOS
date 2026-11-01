@@ -34,10 +34,13 @@
 //                  (SDK 10) on, where that was tried; '' on webOS 23 and 24 and when the SDK is unknown: nothing registers and LG shows
 //                  its own screensaver, as before this launcher. A registered client that answers wrong or late is a fault for LG,
 //                  which then reboots the TV fully at its next standby (D-20261029-9), so an untried webOS is left out rather than risked.
-//   adManagerStub  whether the debloat (group adapps) mounts the do-nothing stub over LG's admanager (scripts/debloat-stop.sh): from
-//                  webOS 25 (SDK 10) on, where apps were tried with it. On webOS 22 Disney+ stayed on its logo with the stub (the owner's
-//                  86UQ8000: LG's own admanager back, it opened at once; with the stub again, the logo for good), so below webOS 25 and
-//                  when the SDK is unknown LG's admanager is left running; the ad servers are still blocked (group ads).
+//   adManager      how the debloat (group adapps) keeps LG's admanager from running (scripts/debloat-stop.sh). 'stub' from webOS 25
+//                  (SDK 10) on: the do-nothing stub over its program; LG's hub starts it for a call, sees it end and fails the call at
+//                  once. 'hide' on webOS 22 (SDK 7): there the hub answers nothing to a call whose service ended without registering,
+//                  and Disney+ waited for its advertising ID (admanager getAdid) for ever on its logo (the owner's 86UQ8000), so the
+//                  service's entry is hidden from the hub too (an empty file over its two .service files, the hub told to rescan) and
+//                  a call is answered "Service does not exist" at once (Disney+ then opened). '' on webOS 23 and 24 and when the SDK is
+//                  unknown (not tried): LG's admanager is left running; the ad servers are still blocked (group ads).
 //   lgServerHosts  whether LG's online services can be blocked by name (debloat group lgservers, scripts/debloat-hosts.sh): from webOS
 //                  25 (SDK 10) on, where LG's sdx names a host per service (the region's tv.wiselg.com, ibsstat, rdx2, lgtviot). On
 //                  webOS 22 it names only US.lgtvsdp.com for every one of them, the host LG's app store and its updates use too, so
@@ -108,7 +111,7 @@ function decide(facts, compat) {
     lgVolumeBar: major === 10 ? 'configd' : '',
     lgPreload: major === 10 ? 'api' : '',
     lgScreensaver: major === 7 || major >= 10 ? 'bus' : '',
-    adManagerStub: major >= 10,
+    adManager: major >= 10 ? 'stub' : major === 7 ? 'hide' : '',
     lgServerHosts: major >= 10,
     devtoolsRestart: major >= 10,
     supported: major >= FLOOR.sdk && nodeMajor >= FLOOR.node,

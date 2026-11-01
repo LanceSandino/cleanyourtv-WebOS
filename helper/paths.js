@@ -37,6 +37,7 @@ module.exports = {
   HOOK_LOG: env.CYTV_HOOK_LOG || '/tmp/lginput-hook-lginput2.log',
   LASTAPP: '/var/luna/preferences/bootd_last_foreground_app_id.json',
   PROC: env.CYTV_PROC || '/proc',
+  DBUS: env.CYTV_DBUS || '/usr/share/dbus-1', // LG's luna service files (debloat check: admanager's hidden on webOS 22)
   SYS: env.CYTV_SYS || '/sys', // the kernel's devices: thermal zones, the cores' clock, the eMMC's wear (metrics.js)
   // the writable places whose free space TV health shows (metrics.js); a list separated by ':' in the tests
   DISKS: (env.CYTV_DISKS || '/var:/tmp:/media/developer').split(':'),

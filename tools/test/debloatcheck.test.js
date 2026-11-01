@@ -10,6 +10,16 @@ run(async () => {
   if (!fs.existsSync(sbin)) fs.mkdirSync(sbin);
   for (const b of ['adoverlay-service', 'admanager', 'acr2', 'sportsalarm']) fs.writeFileSync(path.join(sbin, b), '');
   process.env.CYTV_SBIN = sbin;
+  // LG's luna service files (admanager's two, hidden on webOS 22)
+  const dbus = path.join(tmp, 'dbus');
+  for (const d of ['services', 'system-services']) {
+    fs.mkdirSync(path.join(dbus, d), { recursive: true });
+    fs.writeFileSync(path.join(dbus, d, 'com.webos.service.admanager.service'), '[D-BUS Service]\n');
+  }
+  process.env.CYTV_DBUS = dbus;
+  const svcMounts = ['services', 'system-services']
+    .map(d => 'stub ' + path.join(dbus, d, 'com.webos.service.admanager.service') + ' ext4 rw 0 0')
+    .join('\n');
   process.env.CYTV_HOSTS = path.join(tmp, 'hosts-check');
   delete require.cache[require.resolve('../../helper/paths.js')];
   const mountsOf = list => list.map(b => 'stub ' + path.join(sbin, b) + ' ext4 rw 0 0').join('\n') + '\n';
@@ -44,26 +54,39 @@ run(async () => {
   );
   await C.repair('after the start');
   ok(!ran.some(c => /debloat-stop\.sh/.test(c)), 'in place: the repair runs nothing');
-  // webOS 22 (tvprofile.js adManagerStub false): admanager is LG's own there, so it is not looked for, and the rest is still in place
+  // webOS 22 (tvprofile.js adManager 'hide'): admanager stubbed and its service files hidden from LG's hub; either missing is said; LG's
+  // online servers (one host there, the store's) are not looked for. webOS 23 (adManager ''): admanager is LG's, not looked for
   {
-    fs.writeFileSync(path.join(process.env.CYTV_PROC, 'mounts'), mountsOf(['adoverlay-service', 'acr2', 'sportsalarm']));
-    const C22 = req('debloatcheck').create({
-      config: conf,
-      profile: { get: () => req('tvprofile').decide({ sdk: '7.6.0' }) },
-      feature: n => (n === 'lgsettings' ? lgs : null),
-    });
+    const make = sdk =>
+      req('debloatcheck').create({
+        config: conf,
+        profile: { get: () => req('tvprofile').decide({ sdk }) },
+        feature: n => (n === 'lgsettings' ? lgs : null),
+      });
     conf.update('test', c => {
       c.options = Object.assign({}, c.options, { debloatOn: ['lgservers'] });
     });
-    const r22 = await C22.check();
+    const all = ['adoverlay-service', 'admanager', 'acr2', 'sportsalarm'];
+    fs.writeFileSync(path.join(process.env.CYTV_PROC, 'mounts'), mountsOf(all) + svcMounts + '\n');
+    const r22 = await make('7.6.0').check();
+    fs.writeFileSync(path.join(process.env.CYTV_PROC, 'mounts'), mountsOf(all));
+    const shown = (await make('7.6.0').check()).groups.filter(g => g.id === 'adapps')[0];
+    fs.writeFileSync(path.join(process.env.CYTV_PROC, 'mounts'), mountsOf(['adoverlay-service', 'acr2', 'sportsalarm']));
+    const r23 = await make('8.4.0').check();
     conf.update('test', c => {
       c.options = Object.assign({}, c.options, { debloatOn: [] });
     });
-    fs.writeFileSync(path.join(process.env.CYTV_PROC, 'mounts'), mountsOf(['adoverlay-service', 'admanager', 'acr2', 'sportsalarm']));
+    fs.writeFileSync(path.join(process.env.CYTV_PROC, 'mounts'), mountsOf(all));
     ok(
-      !r22.groups.some(g => g.id === 'adapps' || g.id === 'lgservers') && r22.groups.length === 6 && r22.groups.every(g => g.ok),
-      "webOS 22: admanager is left to LG and LG's online servers (one host there, the store's) are not looked for: " +
-        r22.groups.map(g => g.id + (g.ok ? '' : '!')).join()
+      r22.groups.some(g => g.id === 'adapps') &&
+        !r22.groups.some(g => g.id === 'lgservers') &&
+        r22.groups.every(g => g.ok) &&
+        !shown.ok &&
+        shown.notes.join() === "admanager's service is not hidden (services),admanager's service is not hidden (system-services)" &&
+        !r23.groups.some(g => g.id === 'adapps') &&
+        r23.groups.every(g => g.ok),
+      'webOS 22: admanager stubbed and hidden is in place, not hidden is said; webOS 23 leaves it to LG: ' +
+        JSON.stringify([r22.groups.map(g => g.id + (g.ok ? '' : '!')).join(), shown.notes, r23.groups.map(g => g.id).join()])
     );
   }
   // LG brought acr2 back (no stub, running) and the hosts file lost the ad servers

@@ -1972,3 +1972,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-01T19:20:00Z"
 ```
+
+```yaml
+id: CU-20261101-14
+type: fix
+title: "webOS 22: LG's admanager kept off again, and Disney+ still opens (its entry hidden from LG's hub)"
+description: "The owner: keep the ads off and Disney+ working, even if an LG part has to be replaced, unless letting it run is fine with the hosts blocked. Read on the playroom TV: Disney+ asks admanager for LG's advertising ID (getAdid) when it starts. On webOS 25 LG's hub starts the stub for that call, sees it end and answers 'Failed Connecting to Service' at once (living-room TV log), so Disney+ goes on; on webOS 22 the hub logs the stub's start and end and answers nothing, so Disney+ waited on its logo (reproduced). Letting admanager run is not enough there: it reaches LG's ad servers through sdx (sdx/send, getServer), which on webOS 22 names only US.lgtvsdp.com, the app store's host, so the hosts file cannot block it. With an empty file bind-mounted over admanager's two .service files and ls-control scan-services, a call is answered 'Service does not exist' at once, and Disney+ opened to its home (tried by hand, then undone). helper/tvprofile.js adManager replaces adManagerStub: 'stub' from webOS 25, 'hide' on webOS 22, '' on webOS 23 and 24 and unknown; scripts/debloat-stop.sh stubs admanager for stub and hide and, for hide, mounts the empty file over both .service files and has the hub rescan; scripts/debloat-undo.sh unmounts them and rescans; helper/debloatcheck.js looks for both on webOS 22 (paths.js DBUS for the tests). DECISIONS.md D-20261101-3 supersedes D-20261101-2."
+impact: medium
+affected_modules: ["helper/tvprofile.js", "scripts/debloat-stop.sh", "scripts/debloat-undo.sh", "helper/debloatcheck.js", "helper/paths.js", "DECISIONS.md", "docs/debloat.md", "docs/tested-tvs.md"]
+related_tests: ["tools/test/tvprofile.test.js (adManager: stub from webOS 25, hide on webOS 22, nothing on 23, 24 and unknown, also from the shell)", "tools/test/scripts.test.js (admanager hidden as well on webOS 22, stubbed on webOS 25, left where the version is unknown; the stop script mounts over both .service files and rescans, the undo unmounts and rescans)", "tools/test/debloatcheck.test.js (webOS 22: stubbed and hidden is in place, not hidden is said; webOS 23 leaves it to LG)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-01T19:40:00Z"
+```

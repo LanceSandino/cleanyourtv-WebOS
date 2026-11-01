@@ -30,6 +30,14 @@ for s in $units; do
   case $s in *.*) u=$s ;; *) u=$s.service ;; esac
   systemctl --no-block start $u
 done
+# admanager's service entry, hidden from LG's hub on webOS 22 (debloat-stop.sh), shown again
+if on ads || on adapps; then
+  n=0
+  for f in ${CYTV_ADMANAGER_SVC:-/usr/share/dbus-1/services/com.webos.service.admanager.service /usr/share/dbus-1/system-services/com.webos.service.admanager.service}; do
+    grep -q " $f " /proc/mounts && umount $f 2>/dev/null && n=1
+  done
+  [ $n = 1 ] && ls-control scan-services >/dev/null 2>&1
+fi
 # the hosts lines (debloat-hosts.sh): only those of the groups that stay on (ads not switched off, lgservers still switched on)
 on ads || on lgservers || exit 0
 keep=""

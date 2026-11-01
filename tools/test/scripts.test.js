@@ -337,7 +337,8 @@ run(async () => {
     const d = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cytv-debloat-'));
     fs.writeFileSync(path.join(d, 'config.json'), JSON.stringify({ options: { debloatOff: off || [] } }));
     fs.writeFileSync(path.join(d, 'os-release'), sdk === null ? '' : 'NAME="webOS"\nVERSION_ID=' + (sdk || '10.3.2') + '\n');
-    const body = script.replace(/^L=.*$/m, 'L=' + d).split(/\n# --no-block|\nfor b in \$bins/)[0] + '\necho "units:$units bins:$bins"\n';
+    const body =
+      script.replace(/^L=.*$/m, 'L=' + d).split(/\n# --no-block|\nfor b in \$bins/)[0] + '\necho "units:$units bins:$bins hide:$hide"\n';
     fs.writeFileSync(path.join(d, 's.sh'), body);
     const env = Object.assign({}, process.env, {
       CYTV_TVPROFILE: path.join(helper, 'tvprofile.js'),
@@ -365,13 +366,31 @@ run(async () => {
     'admanager is its own group, on by default, off with ads too, back with ads, and undone with ads: ' +
       [all, adsOff, appsOff, redoAds, undoAds].join(' | ')
   );
-  // webOS 22 (Disney+ stayed on its logo with admanager stubbed) and a TV whose version cannot be read: LG's admanager is left running,
-  // the rest of the ads group still applies
+  // webOS 22: admanager stubbed and its service entry hidden from LG's hub (a call to a stubbed service waited for ever there: Disney+
+  // stayed on its logo); webOS 25: stubbed only; a TV whose version cannot be read: left running, the rest of the ads group applies
   const w22 = pick(stop, [], [], '7.6.0'),
+    w22off = pick(stop, [], ['adapps'], '7.6.0'),
     noVersion = pick(stop, [], [], null);
   ok(
-    !/admanager/.test(w22) && / adoverlay-service/.test(w22) && !/admanager/.test(noVersion) && / adoverlay-service/.test(noVersion),
-    'webOS 22 and an unknown version: admanager is not stubbed, adoverlay-service still is: ' + [w22, noVersion].join(' | ')
+    / admanager/.test(w22) &&
+      /hide:1$/.test(w22) &&
+      / admanager/.test(all) &&
+      /hide:$/.test(all) &&
+      !/admanager/.test(w22off) &&
+      /hide:$/.test(w22off) &&
+      !/admanager/.test(noVersion) &&
+      / adoverlay-service/.test(noVersion),
+    'admanager hidden as well on webOS 22, stubbed on webOS 25, left where the version is unknown: ' +
+      [w22, all, w22off, noVersion].join(' | ')
+  );
+  // the hiding itself: an empty file over both .service files, then LG's hub rescans; the undo unmounts them and rescans
+  ok(
+    /mount --bind \$L\/empty\.service \$f/.test(stop) &&
+      /com\.webos\.service\.admanager\.service/.test(stop) &&
+      /ls-control scan-services/.test(stop) &&
+      /umount \$f/.test(undo) &&
+      /ls-control scan-services/.test(undo),
+    "the debloat hides admanager's service files and the undo shows them again, each time telling LG's hub to rescan"
   );
   // LG's content miner from the start (the opt-in group "miner", options.debloatOn): stopped by systemd and its program stubbed (never
   // killed) only when switched on; the undo starts it again only when no group still holds it (suggestions or the miner still on)
