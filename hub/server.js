@@ -65,6 +65,12 @@ function create(opts) {
       arp: process.env.ARP_FILE || '/proc/net/arp',
       timeoutMs: 4000,
       wakeEveryMs: 10000,
+      // a linked TV is asked a small question every beatMs and dropped when it does not answer within aliveMs: a TV in standby keeps
+      // its connection open but answers nothing (seen on the living-room TV, 18:58 to 19:10 on 2026-11-01: the phone's presses went
+      // down the link and waited 8 s each for "the TV did not answer in time", where an off TV gets the Turn the TV on button)
+      beatMs: 20000,
+      aliveMs: 6000,
+      answerMs: 8000,
       webhook: process.env.ALERT_WEBHOOK || '',
       keepDays: +process.env.HISTORY_DAYS || 30,
       peer: null, // the tests' stand-in for the address a request came from
@@ -161,17 +167,33 @@ function create(opts) {
     return a.length === b.length && crypto.timingSafeEqual(a, b) ? t : null;
   }
   // a question of the hub's own down a TV's link: {status, body}, or an error when it is not linked or does not answer
-  function linkAsk(t, msg) {
+  function linkAsk(t, msg, ms) {
     return new Promise((resolve, reject) => {
       if (!t || !t.link) return reject(new Error('the TV is not linked'));
       const id = crypto.randomBytes(9).toString('base64').replace(/[+/=]/g, ''),
         timer = setTimeout(() => {
           pending.delete(id);
           reject(new Error('the TV did not answer in time'));
-        }, 8000);
+        }, ms || o.answerMs);
       pending.set(id, { tv: t.ip, timer, cb: r => (r ? resolve(r) : reject(new Error('the TV link closed'))) });
       t.link.write(JSON.stringify(Object.assign({ id, method: 'GET', headers: {}, ip: '127.0.0.1', body: '' }, msg)) + '\n');
     });
+  }
+  // is the linked TV awake: its own small answer (/tv-info, a name it keeps) within aliveMs; else the link is dropped, the TV counts as
+  // off (the phone offers to turn it on) and the TV links again when it wakes (remote.js notices the gap)
+  function alive(t) {
+    const l = t.link;
+    if (!l || t.asking) return;
+    t.asking = true;
+    linkAsk(t, { url: '/tv-info', self: true }, o.aliveMs)
+      .catch(() => {
+        if (t.link !== l) return;
+        console.log('hub: a TV stopped answering (' + (t.name || t.ip) + '): asleep or off, link dropped');
+        l.destroy();
+      })
+      .then(() => {
+        t.asking = false;
+      });
   }
   // the TV's own name (remote.js /tv-info), kept so the phone can list a TV that sleeps
   function askName(t) {
@@ -199,7 +221,11 @@ function create(opts) {
     t.on = true;
     if (!t.mac) learn();
     clearInterval(t.beat);
-    t.beat = setInterval(() => t.link && t.link.write('\n'), 20000);
+    t.beat = setInterval(() => {
+      if (!t.link) return;
+      t.link.write('\n');
+      alive(t);
+    }, o.beatMs);
     console.log('hub: a TV is linked (' + (t.name || t.ip) + ')');
     setTimeout(() => askName(t), 300);
     res.on('close', () => {
@@ -273,7 +299,8 @@ function create(opts) {
       const timer = setTimeout(() => {
         pending.delete(id);
         json(res, 504, { error: 'the TV did not answer in time' });
-      }, 8000);
+        alive(t); // asleep? then the next press gets the off answer
+      }, o.answerMs);
       pending.set(id, { tv: t.ip, req, res, timer });
       t.link.write(
         JSON.stringify({

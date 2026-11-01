@@ -303,6 +303,9 @@ run(async () => {
       wakePorts: [udp.address().port],
       timeoutMs: 300,
       wakeEveryMs: 1,
+      beatMs: 100, // each linked TV asked every 100 ms whether it is awake, and dropped after 80 ms without an answer
+      aliveMs: 80,
+      answerMs: 400,
       // the tests' stand-in for where a request comes from (one computer is both TVs here)
       peer: rq => rq.headers['x-test-peer'] || rq.socket.remoteAddress,
     });
@@ -357,7 +360,10 @@ run(async () => {
     }
     const KA = 'c'.repeat(43),
       KB = 'd'.repeat(43);
-    const one = await link('127.0.0.1', KA, m => (m.url === '/tv-info' ? { name: 'Living Room' } : { tv: 'one', url: m.url }));
+    let oneAsleep = false; // the first TV in standby: its link stays open, it answers nothing
+    const one = await link('127.0.0.1', KA, m =>
+      oneAsleep ? null : m.url === '/tv-info' ? { name: 'Living Room' } : { tv: 'one', url: m.url }
+    );
     const two = await link(TV2, KB, m => (m.url === '/tv-info' ? { name: 'Bedroom' } : { tv: 'two', url: m.url }));
     await sleep(600);
     const a = await ask(port2, 'POST', '/press', { key: 'UP' }, { 'x-remote-key': 'k'.repeat(43) });
@@ -412,6 +418,19 @@ run(async () => {
         list2[1].name === 'Bedroom' &&
         list2[0].link === true,
       'the second TV asleep: listed off by its name, and woken at its own MAC'
+    );
+    // the first TV goes into standby without closing its link (as the living-room TV did): the hub's question goes unanswered, the
+    // link is dropped, the TV is listed off and a press gets the off answer (the page's Turn the TV on), not a wait for a timeout
+    oneAsleep = true;
+    await sleep(400);
+    const list3 = (await ask(port2, 'GET', '/hub/tvs')).j.tvs;
+    const t0 = Date.now();
+    const asleep = await ask(port2, 'POST', '/press', { key: 'UP' }, { 'x-remote-key': 'k'.repeat(43) });
+    const took = Date.now() - t0;
+    ok(
+      list3[0].link === false && list3[0].on === false && asleep.code === 503 && asleep.j.off === true && took < 200,
+      'a TV in standby with its link still open: dropped after its unanswered question, listed off, a press answered off at once: ' +
+        JSON.stringify([list3[0], asleep.code, took])
     );
     one.close();
     hub2.close();
