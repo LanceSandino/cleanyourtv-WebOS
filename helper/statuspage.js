@@ -7,7 +7,7 @@
 const JS = String.raw`
 var tvOn = false, tvT = 0, tvSeq = 0;
 function tvGet(path) {
-  return fetch(path, { headers: { 'x-remote-key': key }, cache: 'no-store' })
+  return fetch(path, { headers: hdr(), cache: 'no-store' })
     .then(function (r) { return r.json().then(function (j) { j.status = r.status; return j; }); });
 }
 function tvEl(tag, cls, text) {

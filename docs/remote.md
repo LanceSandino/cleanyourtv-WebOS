@@ -117,6 +117,13 @@ was watched there last, usually what is on. LG's webOS 25 has no media-session s
 app or input is named. It comes with the remote's regular check (every 15 seconds, and a few seconds after a
 key or an app opened from the phone).
 
+**Several TVs.** One hub can serve several TVs: list their addresses in the hub's `TV_HOSTS` (comma-separated, the first is the one a
+phone gets by default), and set each TV's Phone remote to go through that hub. The phone then opens the hub's address as before; with
+more than one TV the status line starts with the TV's name, and a tap on it lists the TVs (on or off, paired or not) to switch
+between. Each TV pairs the phone with its own code and key (a TV's QR code names that TV, so scanning it switches to it), each has its
+own link, Wake-on-LAN and kept name: LG's own TV name (Settings > General > Devices > TV name) without "[LG] ", or one set with
+`POST /api/remote/name {"name": "..."}` on that TV. The history and alerts follow the first TV.
+
 **Volume and mute.** The volume rocker shows the volume in place of VOL, and the Mute key is lit red while the sound is muted. With
 the Sonos soundbar followed (Sonos volume on screen), they are the soundbar's own volume and mute; otherwise the TV's own (no number
 for a soundbar the TV does not know). They come with the remote's regular check, and again a moment after Volume or Mute.

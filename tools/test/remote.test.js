@@ -120,6 +120,9 @@ run(async () => {
       /querySelectorAll\('button\.key, button\[data-k\]'\)/.test(pageR.text) &&
       /i\.setAttribute\('switch', ''\)/.test(pageR.text) &&
       /function showSound\(snd\)/.test(pageR.text) &&
+      /fetch\('\/hub\/tvs'/.test(pageR.text) &&
+      /h\['x-tv'\] = tv/.test(pageR.text) &&
+      /function tvSheet\(\)/.test(pageR.text) &&
       /mute\.classList\.toggle\('muted'/.test(pageR.text) &&
       /if \(\$\('sheet'\)\.className !== 'hide'\) feedbackSheet\(\)/.test(pageR.text) &&
       /\(way \|\| fb\.way\) === 2/.test(pageR.text) &&
@@ -249,8 +252,9 @@ run(async () => {
       bad2.code === 400 &&
       r.j.helper === 'http://192.168.1.40:8794' &&
       r.j.url === 'http://192.168.1.40:8794' &&
-      pr.j.qr === 'http://192.168.1.40:8794/#p=' + pr.j.code,
-    'a hub on the home network is where the QR code and the address point; any other address is refused'
+      new RegExp('^http://192\\.168\\.1\\.40:8794/#p=' + pr.j.code + '&tv=[0-9a-fA-F.:%]+$').test(pr.j.qr),
+    'a hub on the home network is where the QR code and the address point (with this TV named, for a hub with several); any other address is refused: ' +
+      pr.j.qr
   );
   await call(R, '/api/remote/pair', 'POST', { stop: true });
   // through the hub: the LAN server closes, the TV links out to the hub and answers what comes down the link with the same handler
@@ -276,6 +280,7 @@ run(async () => {
       );
       rs.write(JSON.stringify({ id: 'a3', method: 'GET', url: '/status-data', headers: {}, ip: '127.0.0.1', body: '', self: true }) + '\n');
       rs.write(JSON.stringify({ id: 'a4', method: 'POST', url: '/press', headers: {}, ip: '127.0.0.1', body: '', self: true }) + '\n');
+      rs.write(JSON.stringify({ id: 'a5', method: 'GET', url: '/tv-info', headers: {}, ip: '127.0.0.1', body: '', self: true }) + '\n');
       return;
     }
     const b = [];
@@ -308,11 +313,21 @@ run(async () => {
     "through the hub the TV listens on nothing, links out with its own key, and answers the hub's requests with the same checks (an address off the home network refused)"
   );
   const hubRead = replies.filter(x => x.id === 'a3')[0],
-    hubPress = replies.filter(x => x.id === 'a4')[0];
+    hubPress = replies.filter(x => x.id === 'a4')[0],
+    hubName = replies.filter(x => x.id === 'a5')[0];
+  const named = hubName && JSON.parse(Buffer.from(hubName.body, 'base64').toString());
   ok(
     !!hubRead && hubRead.status !== 401 && hubRead.status !== 403 && !!hubPress && hubPress.status === 403,
     "the hub's own request (self) may read the status without a phone's key, and do nothing else"
   );
+  ok(
+    !!named && hubName.status === 200 && typeof named.name === 'string' && named.name.length > 0,
+    "the hub may ask the TV's name (self /tv-info), for its list of TVs: " + JSON.stringify(named)
+  );
+  r = await call(R, '/api/remote/name', 'POST', { name: '  Living Room\u0007 ' });
+  const setName = r.j.name;
+  await call(R, '/api/remote/name', 'POST', { name: '' });
+  ok(setName === 'Living Room' && config.get().remote.name === undefined, "the TV's own name for the list is set, cleaned, and cleared");
   r = await call(R, '/api/remote/via', 'POST', { via: 'tv' });
   await sleep(200);
   const back = await lan('GET', '/').then(

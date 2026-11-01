@@ -10,11 +10,37 @@ const web = require('./web'),
   statuspage = require('./statuspage'); // the TV tab
 
 const JS = String.raw`
-var K = 'cytv-remote-key', key = '';
-try { key = localStorage.getItem(K) || ''; } catch (e) {}
+/* the TVs: through a hub with several (its /hub/tvs) each has its own key on this phone and the requests name the TV (x-tv); the
+   first TV keeps the key this page always had (cytv-remote-key), the others are in cytv-remote-keys by the TV's id */
+var K = 'cytv-remote-key', KS = 'cytv-remote-keys', KT = 'cytv-remote-tv', key = '', keys = {}, tv = '', tvs = [];
+try { keys = JSON.parse(localStorage.getItem(KS) || '{}') || {}; tv = localStorage.getItem(KT) || ''; } catch (e) {}
+function keyOf(id) {
+  try { return id ? keys[id] || '' : localStorage.getItem(K) || ''; } catch (e) { return ''; }
+}
+function keep(k) {
+  key = k;
+  try {
+    if (tv) { if (k) keys[tv] = k; else delete keys[tv]; localStorage.setItem(KS, JSON.stringify(keys)); }
+    else if (k) localStorage.setItem(K, k); else localStorage.removeItem(K);
+  } catch (e) {}
+}
+key = keyOf(tv);
+function hdr(extra) {
+  var h = { 'x-remote-key': key };
+  if (tv) h['x-tv'] = tv;
+  for (var x in extra || {}) h[x] = extra[x];
+  return h;
+}
+/* a TV's id as this page keeps it: the hub's first TV is '' (the key it always had) */
+function slot(id) { return tvs.length && id === tvs[0].id ? '' : id || ''; }
+function tvName(id) {
+  var n = '';
+  tvs.forEach(function (x) { if (slot(x.id) === id) n = x.name; });
+  return n;
+}
 function $(id) { return document.getElementById(id); }
 function call(path, body) {
-  return fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-remote-key': key }, body: JSON.stringify(body || {}) })
+  return fetch(path, { method: 'POST', headers: hdr({ 'content-type': 'application/json' }), body: JSON.stringify(body || {}) })
     .then(function (r) { return r.json().then(function (j) { j.status = r.status; return j; }); });
 }
 /* a message over the remote: it goes away by itself (or with a tap); on the pairing screen it stays */
@@ -147,6 +173,7 @@ function showNow(n) {
     }
     s = parts.join(' \u00b7 ');
   }
+  if (tvs.length > 1) s = (tvName(tv) || t('TV')) + (s ? ' \u00b7 ' + s : '');
   nowText = s;
   if (up) $('tv').textContent = s || t('Connected to the TV');
 }
@@ -203,8 +230,7 @@ function ack(b, good) {
   setTimeout(function () { b.classList.remove('ack', 'nak'); }, 260);
 }
 function login(why) {
-  key = '';
-  try { localStorage.removeItem(K); } catch (e) {}
+  keep('');
   $('main').className = 'hide';
   $('login').className = '';
   note(why || '', !!why);
@@ -212,12 +238,13 @@ function login(why) {
 function pair(code) {
   note(t('Pairing…'));
   var name = /iPhone|iPad/.test(navigator.userAgent) ? 'iPhone' : /Android/.test(navigator.userAgent) ? 'Android phone' : 'Phone';
-  fetch('/pair', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: code, name: name }) })
+  var h = { 'content-type': 'application/json' };
+  if (tv) h['x-tv'] = tv;
+  fetch('/pair', { method: 'POST', headers: h, body: JSON.stringify({ code: code, name: name }) })
     .then(function (r) { return r.json(); })
     .then(function (j) {
       if (!j.key) return login(t(j.error || 'Pairing did not work.'));
-      key = j.key;
-      try { localStorage.setItem(K, key); } catch (e) {}
+      keep(j.key);
       note('');
       start();
     }, function () { login(t('The TV does not answer. Is it on, and the phone on the same Wi-Fi?')); });
@@ -412,7 +439,7 @@ function apps() {
       b.appendChild(s);
       b.onclick = function () { buzz(); soon(); send('/launch', { id: a.id }); };
       g.appendChild(b);
-      fetch('/icon/' + encodeURIComponent(a.id), { headers: { 'x-remote-key': key } }).then(function (x) { return x.ok ? x.blob() : null; }).then(function (bl) { if (bl) i.src = URL.createObjectURL(bl); });
+      fetch('/icon/' + encodeURIComponent(a.id), { headers: hdr() }).then(function (x) { return x.ok ? x.blob() : null; }).then(function (bl) { if (bl) i.src = URL.createObjectURL(bl); });
     });
   });
 }
@@ -506,10 +533,55 @@ function go() {
 $('go').onclick = go;
 $('code').oninput = function () { var v = this.value.replace(/\D/g, '').slice(0, 6); if (v !== this.value) this.value = v; };
 $('code').onkeydown = function (e) { if (e.keyCode === 13) { e.preventDefault(); go(); } };
-var m = /p=(\d{6})/.exec(location.hash);
-if (m) { history.replaceState(null, '', location.pathname); pair(m[1]); }
-else if (key) start();
-else login('');
+/* the switcher: a tap on the status lists the TVs (through a hub with more than one); a TV this phone has no key for asks for its code */
+function tvSheet() {
+  if (tvs.length < 2) return;
+  var list = $('sheetlist');
+  $('sheettitle').textContent = t('TVs');
+  $('sheetp').textContent = t('Which TV this remote works.');
+  list.textContent = '';
+  tvs.forEach(function (x) {
+    var id = slot(x.id), b = document.createElement('button');
+    b.className = 'key opt' + (id === tv ? ' on' : '');
+    b.textContent = x.name + ' \u00b7 ' + (x.on ? t('On') : t('Off')) + (keyOf(id) ? '' : ' \u00b7 ' + t('not paired'));
+    b.onclick = function () {
+      $('sheet').className = 'hide';
+      if (id === tv) return;
+      tv = id;
+      try { if (tv) localStorage.setItem(KT, tv); else localStorage.removeItem(KT); } catch (e) {}
+      key = keyOf(tv);
+      up = null;
+      asleep = false;
+      nowText = '';
+      if (key) start();
+      else login(t('Pair this phone with %s: on that TV open CleanYourTV > Phone remote and type the code it shows.').replace('%s', x.name));
+    };
+    list.appendChild(b);
+  });
+  $('sheet').className = '';
+}
+$('st').onclick = tvSheet;
+function boot() {
+  var m = /p=(\d{6})/.exec(location.hash), w = /[#&]tv=([0-9a-fA-F.:]{3,45})/.exec(location.hash);
+  if (w) {
+    tv = slot(decodeURIComponent(w[1]));
+    try { if (tv) localStorage.setItem(KT, tv); else localStorage.removeItem(KT); } catch (e) {}
+    key = keyOf(tv);
+  }
+  if (m) { history.replaceState(null, '', location.pathname); pair(m[1]); }
+  else if (key) start();
+  else login('');
+}
+/* the TVs a hub knows (not there when the page comes from a TV itself): read first, so the right key is used */
+fetch('/hub/tvs', { cache: 'no-store' })
+  .then(function (r) { return r.ok ? r.json() : null; })
+  .then(function (j) {
+    tvs = (j && Array.isArray(j.tvs) && j.tvs) || [];
+    if (tv && !tvs.some(function (x) { return slot(x.id) === tv; })) tv = '';
+    key = keyOf(tv);
+    $('st').classList.toggle('many', tvs.length > 1);
+    boot();
+  }, boot);
 setInterval(function () { if (key && !document.hidden) ping(); }, 15000);
 document.addEventListener('visibilitychange', function () { if (key && !document.hidden) ping(); });
 `;
@@ -534,7 +606,7 @@ svg.f{fill:currentColor;stroke-width:1.4}
 .top{display:flex;align-items:center;height:${u(48)};margin-bottom:${u(12)}}
 .pw{flex:none;width:${u(48)};height:${u(48)};border-radius:50%;color:#ff4d42}
 .pw svg{stroke-width:2.5}.pw.dn,.pw:active{color:#ff7a70;box-shadow:inset 0 ${u(1)} ${u(3)} rgba(0,0,0,.65),0 0 ${u(14)} rgba(255,77,66,.45)}
-#st{flex:1;min-width:0;display:flex;align-items:center;margin:0 ${u(12)}}
+#st{flex:1;min-width:0;display:flex;align-items:center;margin:0 ${u(12)}}#st.many{cursor:pointer}
 #wakeb{display:none;width:100%;height:${u(56)};margin:0 0 ${u(12)};border-radius:${u(18)};font-size:${u(16)};font-weight:700}#wakeb svg{width:${u(20)};height:${u(20)};margin-right:${u(8)}}
 .asleep #wakeb{display:flex}.asleep section{opacity:.35;pointer-events:none}
 #dot{flex:none;width:${u(9)};height:${u(9)};margin-right:${u(8)};border-radius:50%;background:#5a5d65}

@@ -283,6 +283,138 @@ run(async () => {
   ok(r.code === 200 && stranger.code === 401, 'with the TV asleep the history still opens for a phone it vouched for, not for another key');
 
   hub.close();
+
+  // ---- two TVs (TV_HOSTS): each its own link and pinned key, its name and MAC; a phone names the TV it means (x-tv) ----
+  {
+    const data2 = path.join(dir, 'data2'),
+      TV2 = '10.0.0.7',
+      MAC2 = '02:00:5e:10:20:31';
+    fs.mkdirSync(data2);
+    fs.appendFileSync(arp, TV2 + '        0x1         0x2         ' + MAC2 + '     *        eth0\n');
+    const hub2 = hubMod.create({
+      sampleMs: 3600000,
+      exposureMs: 3600000,
+      tv: '127.0.0.1,' + TV2,
+      tvPort: 1,
+      data: data2,
+      arp,
+      wakeAddr: '127.0.0.1',
+      wakePorts: [udp.address().port],
+      timeoutMs: 300,
+      wakeEveryMs: 1,
+      // the tests' stand-in for where a request comes from (one computer is both TVs here)
+      peer: rq => rq.headers['x-test-peer'] || rq.socket.remoteAddress,
+    });
+    await new Promise(r => hub2.server.listen(0, '127.0.0.1', r));
+    const port2 = hub2.server.address().port;
+    // a TV's link: its lines, answered by a function
+    function link(peer, key, answer) {
+      const got = [];
+      return new Promise(resolve => {
+        const rq = http.request(
+          {
+            host: '127.0.0.1',
+            port: port2,
+            path: '/link',
+            method: 'GET',
+            agent: false,
+            headers: { 'x-link-key': key, 'x-test-peer': peer },
+          },
+          res => {
+            let buf = '';
+            res.setEncoding('utf8');
+            res.on('data', d => {
+              buf += d;
+              let i;
+              while ((i = buf.indexOf('\n')) >= 0) {
+                const l = buf.slice(0, i);
+                buf = buf.slice(i + 1);
+                if (!l.trim()) continue;
+                const m = JSON.parse(l);
+                got.push(m);
+                const a = answer(m);
+                if (a)
+                  ask(
+                    port2,
+                    'POST',
+                    '/link/reply',
+                    {
+                      id: m.id,
+                      status: 200,
+                      headers: { 'content-type': 'application/json' },
+                      body: Buffer.from(JSON.stringify(a)).toString('base64'),
+                    },
+                    { 'x-link-key': key, 'x-test-peer': peer }
+                  );
+              }
+            });
+            resolve({ res, got, close: () => rq.destroy() });
+          }
+        );
+        rq.end();
+      });
+    }
+    const KA = 'c'.repeat(43),
+      KB = 'd'.repeat(43);
+    const one = await link('127.0.0.1', KA, m => (m.url === '/tv-info' ? { name: 'Living Room' } : { tv: 'one', url: m.url }));
+    const two = await link(TV2, KB, m => (m.url === '/tv-info' ? { name: 'Bedroom' } : { tv: 'two', url: m.url }));
+    await sleep(600);
+    const a = await ask(port2, 'POST', '/press', { key: 'UP' }, { 'x-remote-key': 'k'.repeat(43) });
+    const b = await ask(port2, 'POST', '/press', { key: 'UP' }, { 'x-remote-key': 'k'.repeat(43), 'x-tv': TV2 });
+    const list = (await ask(port2, 'GET', '/hub/tvs')).j.tvs;
+    // a TV may not answer a request that went to the other one
+    const stolen = ask(port2, 'POST', '/press', { key: 'DOWN' }, { 'x-remote-key': 'k'.repeat(43), 'x-tv': TV2 });
+    await sleep(150);
+    const toTwo = two.got.filter(m => m.url === '/press').pop();
+    const cross = await ask(
+      port2,
+      'POST',
+      '/link/reply',
+      { id: toTwo.id, status: 200, body: '' },
+      { 'x-link-key': KA, 'x-test-peer': '127.0.0.1' }
+    );
+    await stolen;
+    const wrongKey = await ask(port2, 'GET', '/link', undefined, { 'x-link-key': KA, 'x-test-peer': TV2 });
+    const stranger = await ask(port2, 'GET', '/link', undefined, { 'x-link-key': KA, 'x-test-peer': '10.0.0.9' });
+    ok(
+      a.j.tv === 'one' &&
+        b.j.tv === 'two' &&
+        list.length === 2 &&
+        list[0].id === '127.0.0.1' &&
+        list[0].name === 'Living Room' &&
+        list[1].id === TV2 &&
+        list[1].name === 'Bedroom' &&
+        list[1].link === true &&
+        JSON.stringify(list).indexOf(MAC2) < 0 &&
+        cross.code === 404 &&
+        wrongKey.code === 403 &&
+        stranger.code === 403 &&
+        fs.existsSync(path.join(data2, 'link-key')) &&
+        fs.existsSync(path.join(data2, 'link-key-' + TV2)),
+      'two TVs: a phone reaches the one it names (else the first), each TV pinned with its own key and named by itself; a TV cannot answer for the other, nor link as it: ' +
+        JSON.stringify(list)
+    );
+    // asleep: the second TV's link gone, it is listed off, and Wake-on-LAN goes to its own MAC
+    two.close();
+    await sleep(150);
+    const before = packets.length;
+    const w = await ask(port2, 'POST', '/wake', {}, { 'x-tv': TV2 });
+    await sleep(200);
+    const pk = packets[before],
+      m2 = Buffer.from(MAC2.split(':').map(h => parseInt(h, 16)));
+    const list2 = (await ask(port2, 'GET', '/hub/tvs')).j.tvs;
+    ok(
+      w.j.sent === true &&
+        !!pk &&
+        pk.slice(6, 12).equals(m2) &&
+        list2[1].on === false &&
+        list2[1].name === 'Bedroom' &&
+        list2[0].link === true,
+      'the second TV asleep: listed off by its name, and woken at its own MAC'
+    );
+    one.close();
+    hub2.close();
+  }
   udp.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });

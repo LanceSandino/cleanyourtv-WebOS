@@ -5,7 +5,8 @@
 // /ping answers {off: true} and the page offers "Turn the TV on": POST /wake sends Wake-on-LAN magic packets (UDP broadcast, ports 9
 // and 7) to the TV's MAC, which it learns from this host's ARP table while the TV is on and keeps in its data folder (never logged).
 // It answers only addresses of the home network, forwards only to the TV, and keeps one connection open to the TV for the touchpad.
-//   TV_HOST (required) the TV's address · TV_PORT (8794) · HUB_PORT (8794) · HUB_DATA (/data) · WAKE_ADDR (255.255.255.255; a LAN's
+//   TV_HOST (required) the TV's address, or TV_HOSTS: several, comma-separated (the first is the one a phone gets when it names none;
+//   a phone names one with the header x-tv; GET /hub/tvs lists them) · TV_PORT (8794) · HUB_PORT (8794) · HUB_DATA (/data) · WAKE_ADDR (255.255.255.255; a LAN's
 //   broadcast address such as 192.168.1.255 is better) · WAKE_PORTS (9,7) · TV_MAC (instead of learning it) · ARP_FILE (/proc/net/arp)
 // With the TV's Phone remote set to go through the hub (remote.js: via 'hub'), the TV listens on nothing: it keeps one connection to
 // the hub (GET /link, only from TV_HOST, with a link key the hub pins the first time it sees one, as a SHA-256 in its data folder), and
@@ -14,7 +15,8 @@
 // While linked it also keeps the TV's health over time (history.js: a sample every 25 s, alerts), shown at GET /hub/dashboard; its
 // data (GET /hub/history?hours=) needs a phone's paired key, which the TV vouches for once over the link, then the hub keeps only its
 // SHA-256 for a week (data/keys.json), so the history opens while the TV sleeps. ALERT_WEBHOOK: where alerts are posted (optional).
-//   GET /hub/status -> {tv: 'on' | 'off', link: bool, mac: known?, page: cached?}    POST /wake -> {sent: true} | {error}
+//   GET /hub/status -> {tv: 'on' | 'off', link: bool, mac: known?, page: cached?, tvs}    GET /hub/tvs -> {tvs: [{id, name, on, link,
+//   mac}]}    POST /wake (x-tv: which) -> {sent: true} | {error}
 'use strict';
 const http = require('http'),
   crypto = require('crypto'),
@@ -54,7 +56,7 @@ function macFromArp(text, ip) {
 function create(opts) {
   const o = Object.assign(
     {
-      tv: process.env.TV_HOST,
+      tv: process.env.TV_HOSTS || process.env.TV_HOST,
       tvPort: +process.env.TV_PORT || 8794,
       data: process.env.HUB_DATA || '/data',
       wakeAddr: process.env.WAKE_ADDR || '255.255.255.255',
@@ -65,13 +67,19 @@ function create(opts) {
       wakeEveryMs: 10000,
       webhook: process.env.ALERT_WEBHOOK || '',
       keepDays: +process.env.HISTORY_DAYS || 30,
+      peer: null, // the tests' stand-in for the address a request came from
     },
     opts
   );
-  if (!o.tv) throw new Error('TV_HOST is not set');
+  // the TVs: their addresses, the first is the one a phone gets when it names none (and the one the history follows)
+  const ips = String(o.tv || '')
+    .split(',')
+    .map(x => x.trim())
+    .filter(x => /^[0-9a-f.:]{3,45}$/i.test(x));
+  if (!ips.length) throw new Error('TV_HOST (or TV_HOSTS) is not set');
   const agent = new http.Agent({ keepAlive: true, maxSockets: 16 }); // the touchpad's moves reuse one connection
-  const macFile = path.join(o.data, 'tv-mac'),
-    pageFile = path.join(o.data, 'page.html');
+  const pageFile = path.join(o.data, 'page.html'),
+    namesFile = path.join(o.data, 'tvs.json');
   const read = f => {
     try {
       return fs.readFileSync(f, 'utf8');
@@ -79,103 +87,142 @@ function create(opts) {
       return '';
     }
   };
-  const keyFile = path.join(o.data, 'link-key');
-  let mac = MAC.test(o.mac) ? o.mac : read(macFile).trim(),
-    page = read(pageFile),
-    manifest = '',
-    tvOn = false,
-    lastWake = 0;
-  // the TV's MAC, learned while it answers; written only when it changes, readable only by this user
-  function learn() {
-    if (MAC.test(o.mac)) return;
-    const m = macFromArp(read(o.arp), o.tv);
-    if (!m || m === mac) return;
-    mac = m;
+  const write = (f, text) => {
     try {
-      fs.writeFileSync(macFile + '.tmp', mac + '\n', { mode: 0o600 });
-      fs.renameSync(macFile + '.tmp', macFile);
+      fs.writeFileSync(f + '.tmp', text, { mode: 0o600 });
+      fs.renameSync(f + '.tmp', f);
     } catch (_) {}
-    console.log("hub: learned the TV's MAC address");
+  };
+  const peerOf = req => String((o.peer ? o.peer(req) : req.socket.remoteAddress) || '').replace(/^::ffff:/, '');
+  let names = {};
+  try {
+    names = JSON.parse(read(namesFile) || '{}') || {};
+  } catch (_) {}
+  // one entry per TV; the first keeps the file names it had when the hub knew one TV (link-key, tv-mac)
+  const tvs = ips.map((ip, i) => {
+    const suffix = i === 0 ? '' : '-' + ip.replace(/[^0-9a-f.]/gi, '_');
+    const t = {
+      ip,
+      keyFile: path.join(o.data, 'link-key' + suffix),
+      macFile: path.join(o.data, 'tv-mac' + suffix),
+      link: null,
+      beat: null,
+      on: false,
+      lastWake: 0,
+      name: typeof names[ip] === 'string' ? names[ip].slice(0, 60) : '',
+    };
+    t.mac = i === 0 && MAC.test(o.mac) ? o.mac : read(t.macFile).trim();
+    return t;
+  });
+  const byIp = ip => tvs.filter(t => t.ip === ip)[0] || null;
+  // the TV a phone's request is for: the one it names (x-tv), else the first
+  const pick = req => byIp(String(req.headers['x-tv'] || '')) || tvs[0];
+  let page = read(pageFile),
+    manifest = '';
+  // a TV's MAC, learned while it answers; written only when it changes, readable only by this user
+  function learn() {
+    const arp = read(o.arp);
+    tvs.forEach((t, i) => {
+      if (i === 0 && MAC.test(o.mac)) return;
+      const m = macFromArp(arp, t.ip);
+      if (!m || m === t.mac) return;
+      t.mac = m;
+      write(t.macFile, m + '\n');
+      console.log("hub: learned a TV's MAC address (" + (t.name || 'TV ' + (i + 1)) + ')');
+    });
   }
   function keepPage(body) {
     if (body === page) return;
     page = body;
-    try {
-      fs.writeFileSync(pageFile + '.tmp', body);
-      fs.renameSync(pageFile + '.tmp', pageFile);
-    } catch (_) {}
+    write(pageFile, body);
   }
   const json = (res, code, obj) => {
     res.writeHead(code, { 'content-type': 'application/json', 'cache-control': 'no-store' });
     res.end(JSON.stringify(obj));
   };
-  // ---- the TV's own link: one stream the phones' requests go down, answered with POST /link/reply ----
+  // ---- each TV's own link: one stream the phones' requests go down, answered with POST /link/reply ----
   const sha = k => crypto.createHash('sha256').update(String(k)).digest('hex');
-  let tvLink = null,
-    beat = null;
   const pending = new Map();
-  // only the TV's address, and the key pinned the first time (a later link with another key is refused)
-  function linkAllowed(req) {
-    if (String(req.socket.remoteAddress || '').replace(/^::ffff:/, '') !== o.tv) return false;
+  // the TV a link request comes from: one of the TVs' addresses, with the key pinned for that TV the first time (a later link with
+  // another key is refused); null otherwise
+  function linkTv(req) {
+    const t = byIp(peerOf(req));
+    if (!t) return null;
     const k = String(req.headers['x-link-key'] || '');
-    if (!/^[A-Za-z0-9_-]{43}$/.test(k)) return false;
-    const pinned = read(keyFile).trim();
+    if (!/^[A-Za-z0-9_-]{43}$/.test(k)) return null;
+    const pinned = read(t.keyFile).trim();
     if (!pinned) {
-      try {
-        fs.writeFileSync(keyFile + '.tmp', sha(k) + '\n', { mode: 0o600 });
-        fs.renameSync(keyFile + '.tmp', keyFile);
-      } catch (_) {}
-      console.log('hub: the TV linked for the first time; its link key is pinned');
-      return true;
+      write(t.keyFile, sha(k) + '\n');
+      console.log('hub: a TV linked for the first time; its link key is pinned');
+      return t;
     }
     const a = Buffer.from(pinned, 'hex'),
       b = Buffer.from(sha(k), 'hex');
-    return a.length === b.length && crypto.timingSafeEqual(a, b);
+    return a.length === b.length && crypto.timingSafeEqual(a, b) ? t : null;
   }
-  function openLink(req, res) {
-    if (!linkAllowed(req)) return json(res, 403, { error: 'not the TV' });
-    if (tvLink) tvLink.end();
-    res.writeHead(200, { 'content-type': 'application/x-ndjson', 'cache-control': 'no-store' });
-    res.write('\n');
-    tvLink = res;
-    tvOn = true;
-    if (!mac) learn();
-    clearInterval(beat);
-    beat = setInterval(() => tvLink && tvLink.write('\n'), 20000);
-    console.log('hub: the TV is linked');
-    res.on('close', () => {
-      if (tvLink !== res) return;
-      tvLink = null;
-      tvOn = false;
-      clearInterval(beat);
-      console.log('hub: the TV link closed');
-      for (const [, p] of pending) {
-        clearTimeout(p.timer);
-        if (p.cb) p.cb(null);
-        else off(p.req, p.res);
-      }
-      pending.clear();
-    });
-  }
-  const PASS = ['x-remote-key', 'origin', 'host', 'content-type', 'accept-language'];
-  // a question of the hub's own down the link: {status, body}, or an error when the TV is not linked or does not answer
-  function linkAsk(msg) {
+  // a question of the hub's own down a TV's link: {status, body}, or an error when it is not linked or does not answer
+  function linkAsk(t, msg) {
     return new Promise((resolve, reject) => {
-      if (!tvLink) return reject(new Error('the TV is not linked'));
+      if (!t || !t.link) return reject(new Error('the TV is not linked'));
       const id = crypto.randomBytes(9).toString('base64').replace(/[+/=]/g, ''),
         timer = setTimeout(() => {
           pending.delete(id);
           reject(new Error('the TV did not answer in time'));
         }, 8000);
-      pending.set(id, { timer, cb: r => (r ? resolve(r) : reject(new Error('the TV link closed'))) });
-      tvLink.write(JSON.stringify(Object.assign({ id, method: 'GET', headers: {}, ip: '127.0.0.1', body: '' }, msg)) + '\n');
+      pending.set(id, { tv: t.ip, timer, cb: r => (r ? resolve(r) : reject(new Error('the TV link closed'))) });
+      t.link.write(JSON.stringify(Object.assign({ id, method: 'GET', headers: {}, ip: '127.0.0.1', body: '' }, msg)) + '\n');
     });
   }
-  // ---- the TV's health over time (history.js), and who may see it: a phone the TV knows ----
+  // the TV's own name (remote.js /tv-info), kept so the phone can list a TV that sleeps
+  function askName(t) {
+    linkAsk(t, { url: '/tv-info', self: true })
+      .then(r => {
+        let j = null;
+        try {
+          j = JSON.parse(r.body);
+        } catch (_) {}
+        const n = j && typeof j.name === 'string' ? j.name.trim().slice(0, 60) : '';
+        if (r.status !== 200 || !n || n === t.name) return;
+        t.name = n;
+        names[t.ip] = n;
+        write(namesFile, JSON.stringify(names));
+      })
+      .catch(() => {});
+  }
+  function openLink(req, res) {
+    const t = linkTv(req);
+    if (!t) return json(res, 403, { error: 'not a TV of this hub' });
+    if (t.link) t.link.end();
+    res.writeHead(200, { 'content-type': 'application/x-ndjson', 'cache-control': 'no-store' });
+    res.write('\n');
+    t.link = res;
+    t.on = true;
+    if (!t.mac) learn();
+    clearInterval(t.beat);
+    t.beat = setInterval(() => t.link && t.link.write('\n'), 20000);
+    console.log('hub: a TV is linked (' + (t.name || t.ip) + ')');
+    setTimeout(() => askName(t), 300);
+    res.on('close', () => {
+      if (t.link !== res) return;
+      t.link = null;
+      t.on = false;
+      clearInterval(t.beat);
+      console.log('hub: a TV link closed (' + (t.name || t.ip) + ')');
+      for (const [id, p] of pending) {
+        if (p.tv !== t.ip) continue;
+        pending.delete(id);
+        clearTimeout(p.timer);
+        if (p.cb) p.cb(null);
+        else off(p.req, p.res, t);
+      }
+    });
+  }
+  const PASS = ['x-remote-key', 'origin', 'host', 'content-type', 'accept-language'];
+  // ---- the first TV's health over time (history.js), and who may see it: a phone that TV knows ----
   const hist = history.create({
     data: o.data,
-    ask: url => linkAsk({ url, self: true }),
-    linked: () => !!tvLink,
+    ask: url => linkAsk(tvs[0], { url, self: true }),
+    linked: () => !!tvs[0].link,
     sampleMs: o.sampleMs,
     exposureMs: o.exposureMs,
     keepDays: o.keepDays,
@@ -192,10 +239,11 @@ function create(opts) {
     if (!/^[A-Za-z0-9_-]{43}$/.test(k)) return false;
     const h = sha(k);
     if (keys[h] > Date.now()) return true;
-    if (!tvLink) return false;
+    const t = pick(req);
+    if (!t.link) return false;
     let r = null;
     try {
-      r = await linkAsk({
+      r = await linkAsk(t, {
         method: 'POST',
         url: '/ping',
         headers: { host: String(req.headers.host || ''), 'x-remote-key': k },
@@ -205,14 +253,11 @@ function create(opts) {
     if (!r || r.status !== 200) return false;
     keys[h] = Date.now() + 7 * 86400000;
     for (const x of Object.keys(keys)) if (keys[x] < Date.now()) delete keys[x];
-    try {
-      fs.writeFileSync(phoneFile + '.tmp', JSON.stringify(keys), { mode: 0o600 });
-      fs.renameSync(phoneFile + '.tmp', phoneFile);
-    } catch (_) {}
+    write(phoneFile, JSON.stringify(keys));
     return true;
   }
   const dashboard = () => read(path.join(__dirname, 'dashboard.html'));
-  function viaLink(req, res) {
+  function viaLink(req, res, t) {
     const b = [];
     let size = 0;
     req.on('data', d => {
@@ -221,6 +266,7 @@ function create(opts) {
     });
     req.on('end', () => {
       if (size > 65536) return json(res, 413, { error: 'too large' });
+      if (!t.link) return off(req, res, t);
       const id = crypto.randomBytes(9).toString('base64').replace(/[+/=]/g, ''),
         headers = {};
       for (const h of PASS) if (req.headers[h] !== undefined) headers[h] = String(req.headers[h]);
@@ -228,8 +274,8 @@ function create(opts) {
         pending.delete(id);
         json(res, 504, { error: 'the TV did not answer in time' });
       }, 8000);
-      pending.set(id, { req, res, timer });
-      tvLink.write(
+      pending.set(id, { tv: t.ip, req, res, timer });
+      t.link.write(
         JSON.stringify({
           id,
           method: req.method,
@@ -242,7 +288,8 @@ function create(opts) {
     });
   }
   function linkReply(req, res) {
-    if (!linkAllowed(req)) return json(res, 403, { error: 'not the TV' });
+    const t = linkTv(req);
+    if (!t) return json(res, 403, { error: 'not a TV of this hub' });
     const b = [];
     let size = 0;
     req.on('data', d => {
@@ -255,7 +302,8 @@ function create(opts) {
         m = JSON.parse(Buffer.concat(b).toString('utf8'));
       } catch (_) {}
       const p = m && pending.get(String(m.id));
-      if (!p) return json(res, 404, { error: 'no such request' });
+      // only the TV the request went to may answer it
+      if (!p || p.tv !== t.ip) return json(res, 404, { error: 'no such request' });
       pending.delete(String(m.id));
       clearTimeout(p.timer);
       if (p.cb) {
@@ -278,11 +326,12 @@ function create(opts) {
   function wake(req, res) {
     const origin = req.headers.origin;
     if (origin && origin !== 'http://' + req.headers.host) return json(res, 403, { error: 'not from this page' });
-    if (!mac) return json(res, 503, { error: "the TV's address is not known yet: switch it on once while the hub runs" });
-    if (Date.now() - lastWake < o.wakeEveryMs) return json(res, 200, { sent: false, waiting: true });
-    lastWake = Date.now();
+    const t = pick(req);
+    if (!t.mac) return json(res, 503, { error: "the TV's address is not known yet: switch it on once while the hub runs" });
+    if (Date.now() - t.lastWake < o.wakeEveryMs) return json(res, 200, { sent: false, waiting: true });
+    t.lastWake = Date.now();
     const s = dgram.createSocket('udp4'),
-      pkt = magic(mac);
+      pkt = magic(t.mac);
     s.on('error', () => s.close());
     s.bind(() => {
       s.setBroadcast(true);
@@ -292,12 +341,12 @@ function create(opts) {
           if (--left === 0) s.close();
         });
     });
-    console.log('hub: Wake-on-LAN sent');
+    console.log('hub: Wake-on-LAN sent (' + (t.name || t.ip) + ')');
     json(res, 200, { sent: true });
   }
-  // the TV does not answer: the kept page (the phone page asks /ping next and offers to turn the TV on), else a short answer
-  function off(req, res) {
-    tvOn = false;
+  // a TV does not answer: the kept page (the phone page asks /ping next and offers to turn the TV on), else a short answer
+  function off(req, res, t) {
+    (t || pick(req)).on = false;
     const u = req.url.split('?')[0];
     if (req.method === 'GET' && u === '/' && page) {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-hub': 'kept' });
@@ -309,12 +358,12 @@ function create(opts) {
     }
     json(res, 503, { off: true, error: 'the TV does not answer: it is off or asleep' });
   }
-  function forward(req, res) {
+  function forward(req, res, t) {
     const up = http.request(
-      { host: o.tv, port: o.tvPort, method: req.method, path: req.url, headers: req.headers, agent, timeout: o.timeoutMs },
+      { host: t.ip, port: o.tvPort, method: req.method, path: req.url, headers: req.headers, agent, timeout: o.timeoutMs },
       r => {
-        if (!tvOn || !mac) learn();
-        tvOn = true;
+        if (!t.on || !t.mac) learn();
+        t.on = true;
         const u = req.url.split('?')[0],
           keep = req.method === 'GET' && r.statusCode === 200 && (u === '/' || u === '/manifest.json');
         if (!keep) {
@@ -334,18 +383,25 @@ function create(opts) {
     );
     up.on('timeout', () => up.destroy(new Error('timeout')));
     up.on('error', () => {
-      if (!res.headersSent) off(req, res);
+      if (!res.headersSent) off(req, res, t);
       else res.destroy();
     });
     req.pipe(up);
   }
+  // the TVs as the phone lists them (their addresses are the ids it names one by; never a MAC)
+  const list = () =>
+    tvs.map((t, i) => ({ id: t.ip, name: t.name || 'TV ' + (i + 1), on: !!(t.on || t.link), link: !!t.link, mac: !!t.mac }));
   const server = http.createServer((req, res) => {
     if (!homeAddress(req.socket.remoteAddress)) return json(res, 403, { error: 'only for the home network' });
     const u = req.url.split('?')[0];
     if (u === '/link' && req.method === 'GET') return openLink(req, res);
     if (u === '/link/reply' && req.method === 'POST') return linkReply(req, res);
     if (u === '/wake' && req.method === 'POST') return wake(req, res);
-    if (u === '/hub/status') return json(res, 200, { tv: tvOn ? 'on' : 'off', link: !!tvLink, mac: !!mac, page: !!page });
+    if (u === '/hub/status') {
+      const t = tvs[0];
+      return json(res, 200, { tv: t.on || t.link ? 'on' : 'off', link: !!t.link, mac: !!t.mac, page: !!page, tvs: list() });
+    }
+    if (u === '/hub/tvs' && req.method === 'GET') return json(res, 200, { tvs: list() });
     if (u === '/hub/dashboard' && req.method === 'GET') {
       res.writeHead(200, {
         'content-type': 'text/html; charset=utf-8',
@@ -362,8 +418,14 @@ function create(opts) {
         json(res, 200, hist.data(hours));
       });
     }
-    if (tvLink) return viaLink(req, res);
-    forward(req, res);
+    const t = pick(req);
+    // the page itself is the same on every TV: from whichever TV is linked when the one asked for is not
+    if (req.method === 'GET' && (u === '/' || u === '/manifest.json') && !t.link) {
+      const other = tvs.filter(x => x.link)[0];
+      if (other) return viaLink(req, res, other);
+    }
+    if (t.link) return viaLink(req, res, t);
+    forward(req, res, t);
   });
   const timer = setInterval(learn, 60000);
   timer.unref();
@@ -372,9 +434,11 @@ function create(opts) {
     server,
     close: () => {
       clearInterval(timer);
-      clearInterval(beat);
+      for (const t of tvs) {
+        clearInterval(t.beat);
+        if (t.link) t.link.destroy();
+      }
       hist.stop();
-      if (tvLink) tvLink.destroy();
       agent.destroy();
       server.close();
     },
@@ -389,7 +453,15 @@ if (require.main === module) {
   const hub = create();
   const port = +process.env.HUB_PORT || 8794;
   hub.server.listen(port, '0.0.0.0', () =>
-    console.log('hub: on port ' + port + ', the TV at ' + process.env.TV_HOST + ':' + (process.env.TV_PORT || 8794))
+    console.log(
+      'hub: on port ' +
+        port +
+        ', the TVs at ' +
+        (process.env.TV_HOSTS || process.env.TV_HOST) +
+        ' (port ' +
+        (process.env.TV_PORT || 8794) +
+        ')'
+    )
   );
   process.on('SIGTERM', () => {
     hub.close();

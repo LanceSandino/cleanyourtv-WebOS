@@ -1803,3 +1803,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-10-31T16:40:00Z"
 ```
+
+```yaml
+id: CU-20261101-02
+type: feature
+title: "Phone remote: several TVs through one hub, a switcher on the phone"
+description: "The owner has a second TV and wants the phone remote to switch between them. hub/server.js: TV_HOSTS (comma-separated; TV_HOST still works) gives one entry per TV with its own link, pinned link key, learned MAC, Wake-on-LAN and name (asked of the TV over its link, kept in data/tvs.json for a TV that sleeps); the first TV keeps the files it had (link-key, tv-mac), so a one-TV hub needs nothing moved; a phone's request goes to the TV its x-tv header names (else the first); a TV may answer only requests that went to it; the page itself comes from any linked TV; GET /hub/tvs lists {id, name, on, link, mac} (never a MAC), /hub/status adds tvs; the history and alerts follow the first TV. helper/remote.js: the hub's self request /tv-info answers the TV's name (remote.name, set with POST /api/remote/name, else LG's deviceName without '[LG] '); through a hub the pairing QR names this TV (&tv=<its address>). helper/remotepage.js (and statuspage.js): one key per TV on the phone (the first TV keeps cytv-remote-key, the others cytv-remote-keys), x-tv on every request, the TV's name first in the status line and a tap on it lists the TVs to switch (a TV not paired asks for its code); the QR's tv switches to that TV. Checked in Chromium with a stand-in two-TV hub: the first TV with the key it had and no x-tv, the second listed not paired, paired with x-tv, its own volume, and back."
+impact: medium
+affected_modules: ["hub/server.js", "helper/remote.js", "helper/remotepage.js", "helper/statuspage.js", "docs/remote.md"]
+related_tests: ["tools/test/hub.test.js (two TVs: a phone reaches the one it names, each pinned with its own key and named by itself, a TV cannot answer for the other nor link as it; the second asleep: listed off and woken at its own MAC)", "tools/test/remote.test.js (the hub may ask the TV's name; the TV's own name is set, cleaned and cleared; the QR names this TV; the page has the TV list and x-tv)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-01T11:30:00Z"
+```

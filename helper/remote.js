@@ -16,7 +16,7 @@
 // Nothing here presses a key by itself: every press comes from a paired phone.
 //   GET  /api/remote/status    {on, url, devices: [{id, name, added, used}], pairing: {until} | null}
 //   POST /api/remote/pair      {} opens pairing: {url, code, qr, seconds}; {stop: true} closes it
-//   POST /api/remote/forget {id}    POST /api/remote/on {on}
+//   POST /api/remote/forget {id}    POST /api/remote/on {on}    POST /api/remote/name {name} (the TV's name in a phone's list of TVs)
 //   POST /api/remote/via {via}      'hub': the TV listens on nothing for the phones; it keeps one connection to the hub (GET /link,
 //                                   with its own link key) and answers the requests the hub passes down it with the same handler;
 //                                   'tv' (the default): the LAN server on 8794
@@ -177,7 +177,9 @@ function create(ctx, opts) {
     };
     return listen().then(() => {
       const url = helper() || 'http://' + web.lanIp() + ':' + PORT;
-      return { url, code: pairing.code, qr: url + '/#p=' + pairing.code, seconds: PAIR_MS / 1000 };
+      // through a hub with several TVs the phone must know which one the code is from: this TV's address, as the hub knows it
+      const tv = helper() ? '&tv=' + encodeURIComponent(web.lanIp()) : '';
+      return { url, code: pairing.code, qr: url + '/#p=' + pairing.code + tv, seconds: PAIR_MS / 1000 };
     });
   }
   function closePairing() {
@@ -385,6 +387,25 @@ function create(ctx, opts) {
   // the sound, with every /ping: the Sonos soundbar's own volume and mute while the Sonos part follows one (its events, in memory),
   // else LG's own (master getVolume); a number only where it means something (LG's volume is 0 for a soundbar on ARC that it does not
   // know). Not kept: the phone asks again right after Volume or Mute.
+  // the TV's name for the phone's list of TVs: the one set here (POST /api/remote/name), else LG's own (Settings > General > Devices >
+  // TV name) without its "[LG] ", else the model; read at most every ten minutes
+  let nameCache = '',
+    nameAt = 0;
+  async function tvName() {
+    const own = String(conf().name || '').trim();
+    if (own) return own.slice(0, 40);
+    if (nameCache && Date.now() - nameAt < 600000) return nameCache;
+    let n = '';
+    try {
+      const r = await luna('luna://com.webos.settingsservice/getSystemSettings', { category: 'network', keys: ['deviceName'] });
+      n = String((r && r.settings && r.settings.deviceName) || '')
+        .replace(/^\[LG\]\s*/, '')
+        .trim();
+    } catch (_) {}
+    nameCache = (n || 'TV').slice(0, 40);
+    nameAt = Date.now();
+    return nameCache;
+  }
   async function soundNow() {
     const so = ctx.feature && ctx.feature('sonos'),
       st = so && so.status ? so.status() : null;
@@ -588,6 +609,12 @@ function create(ctx, opts) {
     // itself is the proof (the hub's key, pinned there, and the TV's own connection). A phone's request never carries this mark
     if (m.self === true) {
       res.setHeader('content-type', 'application/json');
+      // the TV's own name, for the hub's list of TVs (several TVs through one hub)
+      if (req.method === 'GET' && req.url === '/tv-info')
+        return tvName().then(name => {
+          res.writeHead(200);
+          res.end(JSON.stringify({ name }));
+        });
       if (req.method !== 'GET' || statusdata.PATHS.indexOf(req.url) < 0) {
         res.writeHead(403);
         return res.end(JSON.stringify({ error: 'the hub may only read the status' }));
@@ -651,6 +678,7 @@ function create(ctx, opts) {
       url: srv || via() === 'hub' ? helper() || 'http://' + web.lanIp() + ':' + PORT : '',
       helper: helper(),
       via: via(),
+      name: String(conf().name || ''),
       link: via() === 'hub' ? linkState : '',
       devices: devices().map(d => ({ id: d.id, name: d.name, added: d.added || 0, used: d.used || 0 })),
       pairing: pairing ? { until: pairing.until } : null,
@@ -690,6 +718,20 @@ function create(ctx, opts) {
       if (isOn() || pairing) await listen();
       return web.json(res, status());
     }
+    // the TV's name in the phone's list of TVs ('' for LG's own)
+    if (u === '/api/remote/name') {
+      const n = String(b.name || '')
+        .replace(/[\u0000-\u001f]/g, '')
+        .trim()
+        .slice(0, 40);
+      config.update('remote (name)', c => {
+        const r = Object.assign({}, c.remote);
+        if (n) r.name = n;
+        else delete r.name;
+        c.remote = r;
+      });
+      return web.json(res, status());
+    }
     if (u === '/api/remote/via') {
       const v = b.via === 'hub' ? 'hub' : 'tv';
       if (v === 'hub' && !helper()) return web.json(res, { error: 'set the hub first' }, 400);
@@ -720,7 +762,15 @@ function create(ctx, opts) {
 
   return {
     name: 'remote',
-    paths: ['/api/remote/status', '/api/remote/pair', '/api/remote/forget', '/api/remote/on', '/api/remote/helper', '/api/remote/via'],
+    paths: [
+      '/api/remote/status',
+      '/api/remote/pair',
+      '/api/remote/forget',
+      '/api/remote/on',
+      '/api/remote/helper',
+      '/api/remote/via',
+      '/api/remote/name',
+    ],
     handle,
     start: () => {
       if (isOn()) listen();
