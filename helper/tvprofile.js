@@ -22,7 +22,13 @@
 //                  (issues 14, 23 and 24). TVs with the flutter or web Home (webOS 24 and newer) restart what depends on SAM themselves.
 //                  On webOS 26 (SDK 11) with the flutter or web Home, HDMI ARC to a soundbar stayed silent after the restart until
 //                  arccontroller was restarted (issue 21, OLED65C35LA), and on a 50NU850BPSA video apps stayed black because umediaserver
-//                  lost its subscription to SAM (pull request 73): both are restarted there. webOS 25 (SDK 10) keeps eARC.
+//                  lost its subscription to SAM (pull request 73): both are restarted there. webOS 25 (SDK 10) keeps eARC, but on an
+//                  OLED65B2RLA (SDK 10.3.2, flutter Home, CRIU) video apps now and then played with a black picture: the media services had
+//                  no foreground app after the restart, and restarting videooutputd and then umediaserver brought picture and sound back
+//                  (issue 122). The owner's 86UR8000 (SDK 10.3.2, flutter Home) showed the same three times (LG's videoMute set as each
+//                  app started and never lifted; picturediag.js). That is restarted there too, ARC left alone; other webOS 25 TVs (a C3
+//                  on 10.3.0 among them) were fine without it, so a file after-sam-services in the service folder replaces the list on
+//                  one TV (an empty file: none).
 //                  scripts/after-sam.sh restarts only services that exist and are active.
 //   lgVolumeBar    how LG's own volume bar can be hidden while the Sonos volume shows (helper/lgvolume.js): 'configd' (LG's surface manager
 //                  follows the configd setting com.webos.surfacemanager.volumeOSD) on webOS 25 (SDK 10), where that was read in LG's files;
@@ -105,12 +111,15 @@ function decide(facts, compat) {
     testedNote,
     legacyNode: nodeMajor > 0 && nodeMajor < 10,
     // where LG's Home is the native app (webOS 5, 6, 22, 23 reports) or the webOS version is before 7; on webOS 26 the ARC controller
+    // and the media server, on webOS 25 the video output and the media server (flutter or web Home)
     afterSam:
       (major > 0 && major < 7) || /\snative$/.test(homeKind)
         ? 'eim webapp-mgr preload-manager memorymanager'
         : major === 11 && /\s(?:flutter|web)$/.test(homeKind)
           ? 'arccontroller umediaserver'
-          : '',
+          : major === 10 && /\s(?:flutter|web)$/.test(homeKind)
+            ? 'videooutputd umediaserver'
+            : '',
     homeTakeover: /^com\.webos\.app\.home native$/.test(homeKind) ? 'standin' : 'mount',
     homeKeyWatch: major >= 10,
     lgVolumeBar: major === 10 ? 'configd' : '',
