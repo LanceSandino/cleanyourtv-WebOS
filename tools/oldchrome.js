@@ -385,6 +385,33 @@ const TV_HEALTH =
   'var ok=scaled&&cores===4&&cpu&&mem&&devtools&&back&&stopped;' +
   'out(ok?"ok":"bad scaled="+scaled+" cores="+cores+" cpu="+cpu+" mem="+mem+" devtools="+devtools+" back="+back+" stopped="+stopped)},6000)},' +
   '"a reading after Back")},"the red port")},"a second reading")},"the health screen")},"the main list")})()</script>';
+// Dawn (its scenery's cut-out over the clock, the apps' area brought forward over it from the top of the screen): the pointer reaches
+// each button at the top (the point at its middle is the button), and the apps still take it. The outcome lands in data-ptr.
+const DAWN_POINTER =
+  '<script>(function(){function out(v){document.body.setAttribute("data-ptr",v)}function mid(el){var b=el.getBoundingClientRect();return [b.left+b.width/2,b.top+b.height/2]}' +
+  'var go=setInterval(function(){var pills=document.querySelectorAll("#bar .pill"),t=document.querySelector("#view .tile");if(!pills.length||!t)return;clearInterval(go);setTimeout(function(){' +
+  'var fg=document.documentElement.hasAttribute("data-fg")||document.body.hasAttribute("data-fg"),miss=[];for(var i=0;i<pills.length;i++){var m=mid(pills[i]),e=document.elementFromPoint(m[0],m[1]);' +
+  'if(!e||!pills[i].contains(e))miss.push(i+":"+(e?(e.id||e.className):"none"))}var tm=mid(t),te=document.elementFromPoint(tm[0],tm[1]),tile=!!te&&!!te.closest&&!!te.closest(".tile");' +
+  'out(fg&&!miss.length&&tile?"ok":"bad fg="+fg+" pills="+pills.length+" miss="+miss.join("|")+" tile="+tile)},800)},200)})()</script>';
+// Customize > Theme > Holiday themes: By date and each holiday theme with its dates; Winter holidays picked out of its dates is shown
+// until the end of them, with a Stop row; Stop ends it. The theme list is a stand-in here (no catalogue without GitHub); the calls are
+// noted. The outcome lands in data-holiday.
+const HOLIDAY_MENU =
+  '<script>(function(){var A=window.api,calls=[],H={on:false,active:null,name:"",pick:null,themes:[' +
+  '{id:"halloween",name:"Halloween",from:"10-15",to:"10-31",installed:true,preview:false},{id:"harvest",name:"Harvest",from:"11-20",to:"11-30",installed:false,preview:false},' +
+  '{id:"winter-holidays",name:"Winter holidays",from:"12-01",to:"12-26",installed:false,preview:false}]};' +
+  'function L(){return{current:{id:"dawn",accent:""},clock:{pos:"",size:"",front:true},holidays:H,themes:[{id:"dawn",name:"Dawn",installed:true}],accents:[],catalogue:{ok:true}}}' +
+  'window.api=function(p,b){if(p==="/api/theme/list")return Promise.resolve(L());if(p==="/api/theme/holiday-pick"){calls.push(b);H.pick=b.id?{id:b.id,until:"2026-12-26"}:null;' +
+  'H.active=b.id||null;H.name=b.id?"Winter holidays":"";return Promise.resolve(L())}return A(p,b)};' +
+  'function out(v){document.body.setAttribute("data-holiday",v)}function top(){return stack[stack.length-1]}function row(l){var m=top();if(!m)return null;for(var i=0;i<m.items.length;i++)if(m.items[i].label===l)return m.items[i];return null}' +
+  'function pick(l){var m=top();for(var i=0;i<m.items.length;i++)if(m.items[i].label===l){m.idx=i;pickMenu();return}}' +
+  'function until(c,then,what){var n=0,t=setInterval(function(){var ok=false;try{ok=c()}catch(e){}if(ok){clearInterval(t);then()}else if(++n>100){clearInterval(t);out("bad waiting for "+what)}},100)}' +
+  'until(function(){return document.querySelector(".tile")},function(){themeMenu();until(function(){return row("Holiday themes")},function(){pick("Holiday themes");' +
+  'until(function(){return row("By date")&&row("Winter holidays")},function(){var w=row("Winter holidays"),dates=/Dec/.test(w.sub)&&/26/.test(w.sub),noStop=!row("Stop the holiday theme");' +
+  'pick("Winter holidays");until(function(){return row("Stop the holiday theme")},function(){var shown=/Showing until/.test(row("Winter holidays").sub),first=calls[0]&&calls[0].id==="winter-holidays";' +
+  'pick("Stop the holiday theme");until(function(){return !row("Stop the holiday theme")},function(){var ended=calls[1]&&calls[1].id==="";' +
+  'var ok=dates&&noStop&&shown&&first&&ended;out(ok?"ok":"bad dates="+dates+" sub="+w.sub+" noStop="+noStop+" shown="+shown+" first="+first+" ended="+ended)},"the pick ended")},"the pick")},' +
+  '"the holiday list")},"the Theme menu")},"the tiles")})()</script>';
 // the manager's App updates: LG's list (an update, one LG needs before the app opens, one needing newer TV software, shown but not
 // offered), Update all for the two it can install, OK on Disney+ starts it, its row says Updating while the progress is read again
 // (the state only, not LG's list), and once done the result is green and Disney+ leaves the list. The outcome lands in data-apps.
@@ -563,6 +590,8 @@ const PAGES = [
   ['manager closes when left', 'manager/app/index.html', /data-left="ok"/g, 1, 150000, MANAGER_LEFT],
   ['tv health', 'manager/app/index.html', /data-health="ok"/g, 1, 30000, TV_HEALTH],
   ['app updates', 'manager/app/index.html', /data-apps="ok"/g, 1, 30000, APP_UPDATES],
+  ['holiday themes', 'app/index.html', /data-holiday="ok"/g, 1, 20000, HOLIDAY_MENU],
+  ['dawn pointer', 'app/index.html', /data-ptr="ok"/g, 1, 15000, DAWN_POINTER, 'dawn'],
   ['weather in a short place', 'app/index.html', /data-slim="ok"/g, 1, 12000, SLIM_WX, 'glass'],
   ['search', 'app/index.html', /data-search="ok"/g, 1, 15000, SEARCH_KEYS],
   ['where to watch', 'app/index.html', /data-where="ok"/g, 1, 20000, WHERE_KEYS],

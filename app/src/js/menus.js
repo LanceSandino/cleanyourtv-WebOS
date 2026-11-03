@@ -1588,18 +1588,29 @@ function themeMenu() {
               },
             };
           });
-        /* Holiday themes (the service's holiday themes: Halloween, Thanksgiving, the winter holidays...): during a holiday's dates its
-           colours and effects go over the chosen theme, which comes back after */
+        /* Holiday themes (the service's holiday themes: Halloween, the harvest, the winter holidays...): one picked now, or each during
+           its dates; its colours and frame go over the chosen theme, which comes back after (holidayMenu) */
         var hol = r.holidays || {};
         items.push({ sep: true });
         items.push({
           label: t('Holiday themes'),
-          sub: hol.on ? (hol.active ? t('On, %s now').replace('%s', hol.name) : t('On')) : t('Off'),
-          desc: t("A holiday's colours and frame go over your theme during its dates; yours comes back after."),
+          sub: hol.pick
+            ? t('%s until %s')
+                .replace('%s', hol.name || hol.pick.id)
+                .replace('%s', dayText(hol.pick.until))
+            : hol.on
+              ? hol.active
+                ? t('By date, %s now').replace('%s', hol.name)
+                : t('By date')
+              : t('Off'),
+          desc: t(
+            "Pick one to show now, or let each come during its dates. A holiday's colours and frame go over your theme; yours comes back after."
+          ),
           stay: true,
           fn: function () {
-            if (!hol.on) toast(t('Getting the holiday theme...'));
-            themeCall('/api/theme/holidays', { on: !hol.on }, update);
+            holidayMenu(function () {
+              themeList(update);
+            });
           },
         });
         if (r.previous && r.previous.id) {
@@ -1629,6 +1640,78 @@ function themeMenu() {
     build();
     if (data.catalogue && !data.catalogue.ok) toast(t('Could not reach GitHub: showing the themes on this TV'));
     openBuilt(t('Theme'), build, at);
+  });
+}
+/* a day as the TV's language writes it: "12-26" or "2026-12-26" as "Dec 26" */
+function dayText(s) {
+  var p = String(s || '').split('-');
+  if (p.length === 3) p = p.slice(1);
+  try {
+    return new Date(2001, +p[0] - 1, +p[1], 12).toLocaleDateString(LOC, { month: 'short', day: 'numeric' });
+  } catch (e) {
+    return s;
+  }
+}
+/* Customize > Theme > Holiday themes: By date (each holiday theme over your theme during its dates), and each holiday theme, which
+   picked is shown now, whatever the date, until the end of its dates (then By date again); Stop ends a picked one */
+function holidayMenu(back) {
+  themeList(function (data) {
+    var build = function () {
+        var hol = data.holidays || {},
+          pick = hol.pick,
+          items = [
+            {
+              label: t('By date'),
+              sub: hol.on ? (hol.active && !pick ? t('On, %s now').replace('%s', hol.name) : t('On')) : t('Off'),
+              desc: t('Each holiday theme comes by itself during its dates and goes after.'),
+              stay: true,
+              fn: function () {
+                if (!hol.on) toast(t('Getting the holiday theme...'));
+                themeCall('/api/theme/holidays', { on: !hol.on }, update);
+              },
+            },
+            { sep: true },
+          ];
+        (hol.themes || []).forEach(function (x) {
+          var picked = !!pick && pick.id === x.id;
+          items.push({
+            label: x.name,
+            pv: x.preview ? x.id : '',
+            sub: picked
+              ? t('Showing until %s').replace('%s', dayText(pick.until))
+              : hol.active === x.id
+                ? t('Showing now, by date')
+                : dayText(x.from) + ' \u2013 ' + dayText(x.to),
+            desc: t('Show it now over your theme, whatever the date, until the end of its dates.'),
+            stay: true,
+            fn: function () {
+              if (picked) return;
+              if (!x.installed) toast(t('Getting the holiday theme...'));
+              themeCall('/api/theme/holiday-pick', { id: x.id }, update);
+            },
+          });
+        });
+        if (pick) {
+          items.push({ sep: true });
+          items.push({
+            icon: 'restore',
+            label: t('Stop the holiday theme'),
+            sub: hol.name || pick.id,
+            desc: t('Your theme comes back now; holiday themes by date still come during their dates when that is on.'),
+            stay: true,
+            fn: function () {
+              themeCall('/api/theme/holiday-pick', { id: '' }, update);
+            },
+          });
+        }
+        return items;
+      },
+      update = function (r) {
+        data = r;
+        if (stack.length && stack[stack.length - 1].build === build) refreshMenu();
+        if (back) back();
+      };
+    openBuilt(t('Holiday themes'), build, 0);
   });
 }
 function accentMenu() {

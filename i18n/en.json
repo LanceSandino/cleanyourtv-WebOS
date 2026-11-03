@@ -890,5 +890,14 @@
  "Also: %s": "Also: %s",
  "On: what you type is sent to Plex's catalogue (with your linked Plex account), to Disney+ when it is linked, to Stremio's public catalogue and to your Plex server, to say where a title is. Off: Search looks only at the apps on this TV.": "On: what you type is sent to Plex's catalogue (with your linked Plex account), to Disney+ when it is linked, to Stremio's public catalogue and to your Plex server, to say where a title is. Off: Search looks only at the apps on this TV.",
  "Recent searches": "Recent searches",
- "OK searches for it again, Back to close": "OK searches for it again, Back to close"
+ "OK searches for it again, Back to close": "OK searches for it again, Back to close",
+ "%s until %s": "%s until %s",
+ "By date, %s now": "By date, %s now",
+ "By date": "By date",
+ "Each holiday theme comes by itself during its dates and goes after.": "Each holiday theme comes by itself during its dates and goes after.",
+ "Showing until %s": "Showing until %s",
+ "Showing now, by date": "Showing now, by date",
+ "Show it now over your theme, whatever the date, until the end of its dates.": "Show it now over your theme, whatever the date, until the end of its dates.",
+ "Stop the holiday theme": "Stop the holiday theme",
+ "Your theme comes back now; holiday themes by date still come during their dates when that is on.": "Your theme comes back now; holiday themes by date still come during their dates when that is on."
 }

@@ -833,7 +833,9 @@
       "holidays": {
         "active": null,
         "name": "",
-        "on": false
+        "on": false,
+        "pick": null,
+        "themes": []
       },
       "previous": null,
       "themes": [

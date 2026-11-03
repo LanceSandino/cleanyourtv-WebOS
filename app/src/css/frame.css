@@ -41,3 +41,11 @@ body.wpon[data-bigclock] {
 [data-fg] #shelf {
   z-index: 7;
 }
+/* the apps' area comes forward over the buttons too (Dawn's starts at the top of the screen): only the tiles take the pointer, the
+   rest of it lets the pointer through to the buttons under it (Input, Search, Customize: they took only the remote's keys before) */
+[data-fg] #view {
+  pointer-events: none;
+}
+[data-fg] #view .tile {
+  pointer-events: auto;
+}

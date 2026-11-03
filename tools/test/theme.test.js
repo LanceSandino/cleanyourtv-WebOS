@@ -534,6 +534,59 @@ run(async () => {
   );
   r = await call(th2, '/api/theme/holidays', 'POST', { on: false });
   ok(r.j.holidays.on === false && th2.resolved().id === 'classic', 'switched off: the chosen theme only');
+  // a holiday theme picked now (Holiday themes > Winter holidays on 3 November): over the chosen theme at once, whatever the date and
+  // with the by-date switch off, until the end of its dates; then the holidays by date again. Ended on request; only holiday themes.
+  today = new Date(2026, 10, 3);
+  r = await call(th2, '/api/theme/holiday-pick', 'POST', { id: 'winter-holidays' });
+  const picked = th2.resolved();
+  ok(
+    r.code === 200 &&
+      r.j.holidays.pick &&
+      r.j.holidays.pick.id === 'winter-holidays' &&
+      r.j.holidays.pick.until === '2026-12-26' &&
+      r.j.holidays.active === 'winter-holidays' &&
+      picked.id === 'winter-holidays' &&
+      hcfg.get().theme.id === 'classic',
+    'Winter holidays picked on 3 November: shown now over the chosen theme, until 26 December: ' + JSON.stringify(r.j.holidays.pick)
+  );
+  const list = r.j.holidays.themes || [];
+  ok(
+    list.length === 6 &&
+      list.map(x => x.id).join() === 'valentines,independence-day,halloween,harvest,winter-holidays,new-year' &&
+      list.filter(x => x.id === 'harvest')[0].from === '11-20' &&
+      list.filter(x => x.id === 'winter-holidays')[0].installed === true,
+    'the holiday themes are listed in the order of the year, with their dates: ' + list.map(x => x.id + ' ' + x.from).join(', ')
+  );
+  await call(th2, '/api/theme/set', 'POST', { id: 'bloom' });
+  ok(hcfg.get().theme.holidayPick && th2.resolved().id === 'winter-holidays', 'choosing another theme keeps the picked holiday over it');
+  today = new Date(2026, 11, 26);
+  const lastDay = th2.holiday();
+  today = new Date(2026, 11, 27); // after its dates, with the by-date switch off: the chosen theme
+  const after = th2.holiday();
+  await call(th2, '/api/theme/holidays', 'POST', { on: true });
+  ok(
+    lastDay === 'winter-holidays' && after === null && th2.holiday() === 'new-year',
+    'the pick ends with its dates; then the holidays by date, when on: ' + [lastDay, after, th2.holiday()].join()
+  );
+  // Halloween picked in November: shown until the next 31 October; ended on request
+  today = new Date(2026, 10, 3);
+  r = await call(th2, '/api/theme/holiday-pick', 'POST', { id: 'halloween' });
+  const until = r.j.holidays.pick && r.j.holidays.pick.until;
+  r = await call(th2, '/api/theme/holiday-pick', 'POST', { id: '' });
+  const refused = [
+    (await call(th2, '/api/theme/holiday-pick', 'POST', { id: 'bloom' })).code,
+    (await call(th2, '/api/theme/holiday-pick', 'POST', { id: '../x' })).code,
+  ];
+  ok(
+    until === '2027-10-31' &&
+      r.j.holidays.pick === null &&
+      !hcfg.get().theme.holidayPick &&
+      th2.holiday() === null &&
+      refused.join() === '400,400',
+    'a holiday picked after its dates lasts until the next ones; the pick is ended on request; a theme that is not a holiday is refused: ' +
+      [until, refused.join()].join(' ')
+  );
+  await call(th2, '/api/theme/holidays', 'POST', { on: false });
   ok(
     JSON.parse(fs.readFileSync(path.join(tdir, 'index.json'), 'utf8')).themes.filter(t => t.holiday).length === 6,
     'the catalogue names the six holiday themes with their dates'

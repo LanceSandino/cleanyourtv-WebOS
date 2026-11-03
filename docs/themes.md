@@ -12,9 +12,14 @@ Your own photos can replace a theme's background: see [Wallpapers](wallpapers.md
 
 ## Holiday themes
 
-**Customize** > **Theme** > **Holiday themes** switches them on (off unless you do). During a holiday's dates its colours and a still
-frame go over your theme: your layout, wallpaper and photos stay, and your theme stays chosen and comes back after the dates. The TV
-downloads a holiday theme a few days before it begins.
+**Customize** > **Theme** > **Holiday themes** lists them with their dates. A holiday theme's colours and a still frame go over your
+theme: your layout, wallpaper and photos stay, and your theme stays chosen and comes back after.
+
+- **By date** (off unless you switch it on): each holiday theme comes by itself during its dates. The TV downloads it a few days
+  before it begins.
+- **A holiday theme picked** (OK on it): shown now, whatever the date, until the end of its dates (Winter holidays picked on
+  3 November stays until 26 December; one picked after its dates stays until they come round again). Then By date takes over again,
+  when it is on. **Stop the holiday theme** brings your theme back at once.
 
 | Theme | Dates | Frame |
 |---|---|---|

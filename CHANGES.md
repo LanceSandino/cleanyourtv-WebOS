@@ -1985,3 +1985,29 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-01T19:40:00Z"
 ```
+
+```yaml
+id: CU-20261103-01
+type: feature
+title: "Customize > Theme > Holiday themes: pick one now (Christmas, fall...), or let each come by date"
+description: "The owner: Halloween turned itself off, and now wants Christmas or fall, but could only pick a theme that replaces Dawn. Holiday themes were one switch: during a holiday's dates its theme went over the chosen theme. helper/theme.js: a holiday theme can be picked now (POST /api/theme/holiday-pick {id}; {id: ''} ends it), kept as theme.holidayPick {id, until}: shown over the chosen theme at once, whatever the date and with the by-date switch off, until the end of its dates on or after the day it was picked (Winter holidays picked on 3 November until 26 December; Halloween picked in November until the next 31 October), then the holidays by date again when that switch is on; downloaded when picked, kept when another theme is chosen; only a holiday theme is taken. GET /api/theme/list holidays adds pick and themes (each holiday theme with its dates, in the order of the year). Launcher: the Holiday themes row opens its own menu: By date (the switch), each holiday theme with its dates (Showing until <day> when picked, Showing now, by date), and Stop the holiday theme while one is picked; dates in the TV's language."
+impact: low
+affected_modules: ["helper/theme.js", "app/src/js/menus.js", "i18n/en.json", "tools/oldchrome.js", "docs/themes.md"]
+related_tests: ["tools/test/theme.test.js (Winter holidays picked on 3 November: shown now until 26 December, kept when another theme is chosen, ended with its dates, then by date; Halloween picked in November until the next 31 October; ended on request; a theme that is not a holiday refused; the holiday themes listed with their dates)", "tools/oldchrome.js 'holiday themes' (Chromium 87 and 120: the menu with By date and the holiday themes with their dates; Winter holidays picked: Showing until and a Stop row; Stop ends it)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-03T03:10:00Z"
+```
+
+```yaml
+id: CU-20261103-02
+type: fix
+title: "Dawn: the pointer reaches the buttons at the top again (Input, Search...), not only the remote's keys"
+description: "The owner: on Dawn the Magic Remote's pointer could not select the top buttons such as Input; only the arrow keys could. Dawn has a cut-out of its scenery over the clock (effects.foreground), so the apps' area (#view) is brought forward over it (z-index 7, over #top with the buttons at 5), and Dawn's apps' area starts at the top of the screen (--view-top 0px): its empty part lay over the buttons and took the pointer (the point at each button's middle was #scroll). app/src/css/frame.css: with a foreground, #view lets the pointer through and only its tiles (apps and watch cards) take it."
+impact: low
+affected_modules: ["app/src/css/frame.css", "app/index.html", "tools/oldchrome.js"]
+related_tests: ["tools/oldchrome.js 'dawn pointer' (Chromium 87 and 120, Dawn: the point at the middle of each of the five top buttons is that button, and a tile still takes the pointer; it failed before the fix with #scroll there)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-03T03:40:00Z"
+```

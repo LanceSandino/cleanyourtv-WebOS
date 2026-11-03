@@ -150,10 +150,25 @@ function create(ctx) {
     const x = md(d);
     return h.from <= h.to ? x >= h.from && x <= h.to : x >= h.from || x <= h.to;
   };
-  // the downloaded holiday theme for that day (the shortest range when two overlap)
+  // ---- a holiday theme picked now (Customize > Theme > Holiday themes): over the chosen theme from the day it is picked, whatever
+  // the date, until the end of its holiday's dates (the next one on or after that day: Winter holidays picked on 3 November is shown
+  // until 26 December); then the holidays by date again, when that switch is on. Kept as theme.holidayPick {id, until: YYYY-MM-DD}.
+  const ymd = d => d.getFullYear() + '-' + md(d);
+  const endOf = (h, d) => {
+    const end = d.getFullYear() + '-' + h.to;
+    return end >= ymd(d) ? end : d.getFullYear() + 1 + '-' + h.to;
+  };
+  const pickOf = d => {
+    const p = (conf().theme || {}).holidayPick;
+    if (!p || !ID.test(String(p.id || '')) || !/^\d{4}-\d{2}-\d{2}$/.test(String(p.until || ''))) return null;
+    return ymd(d || now()) <= p.until ? { id: p.id, until: p.until } : null;
+  };
+  // the downloaded holiday theme for that day: the one picked, else the one whose dates include it (the shortest range when two overlap)
   function holiday(d) {
-    if (!holidaysOn()) return null;
     const all = load();
+    const p = pickOf(d);
+    if (p && all[p.id] && all[p.id].holiday && all[p.id].raw) return p.id;
+    if (!holidaysOn()) return null;
     const ids = Object.keys(all).filter(id => all[id].holiday && all[id].raw && inDates(all[id].holiday, d || now()));
     const span = id => {
       const h = all[id].holiday,
@@ -200,10 +215,13 @@ function create(ctx) {
       const was = c.theme || {};
       c.theme = o;
       if (was.holidays === true && o.holidays === undefined) c.theme.holidays = true;
+      if (was.holidayPick && o.holidayPick === undefined) c.theme.holidayPick = was.holidayPick;
       if (was.clock && o.clock === undefined) c.theme.clock = was.clock;
     });
   // downloads the holiday theme for today or the next 3 days when it is not on the TV (and a newer copy of one that is)
   async function ensureHoliday() {
+    const p = pickOf();
+    if (p && !load()[p.id]) await install(p.id).catch(() => {});
     if (!holidaysOn()) return;
     const c = await refreshCatalogue(false),
       today = now(),
@@ -361,12 +379,27 @@ function create(ctx) {
       current: { id: c.id, accent: c.accent },
       clock: clockOf(),
       hasFront: !!(all[c.id] && all[c.id].v['effects.foreground']),
-      holidays: { on: holidaysOn(), active: h, name: h ? all[h].name : '' },
+      holidays: { on: holidaysOn(), active: h, name: h ? all[h].name : '', pick: pickOf(), themes: holidayThemes() },
       previous: c.prev,
       accents: ACCENTS.map(x => ({ name: x[0], hex: x[1] })),
       themes,
       catalogue: { ok: !cat.error, error: cat.error, at: cat.at },
     };
+  }
+
+  // the holiday themes there are (the catalogue's and those on the TV), with their dates, for Customize > Theme > Holiday themes
+  function holidayThemes() {
+    const all = load(),
+      out = [],
+      seen = {};
+    const add = (id, name, h, preview) => {
+      if (seen[id] || !h) return;
+      seen[id] = 1;
+      out.push({ id, name, from: h.from, to: h.to, installed: !!all[id], preview: !!preview });
+    };
+    for (const t of cat.themes) add(t.id, t.name, t.holiday, t.preview);
+    for (const id of Object.keys(all)) add(id, all[id].name, all[id].holiday, false);
+    return out.sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
   }
 
   async function handle(req, res, u, body) {
@@ -473,6 +506,31 @@ function create(ctx) {
         cf.theme = Object.assign({}, cf.theme, { holidays: b.on === true });
       });
       if (b.on === true) await ensureHoliday();
+      return json(await list());
+    }
+    // a holiday theme picked now ({id}), or the pick ended ({id: ''}): shown over the chosen theme until its holiday's end date
+    if (act === 'holiday-pick') {
+      const id = String(b.id || '');
+      if (id) {
+        if (!ID.test(id)) return json({ error: 'unknown theme' }, 400);
+        await refreshCatalogue(false);
+        const known = holidayThemes().filter(x => x.id === id)[0];
+        if (!known) return json({ error: 'not a holiday theme' }, 400);
+        try {
+          await install(id);
+        } catch (e) {
+          if (!load()[id]) return json({ error: 'could not download the holiday theme: ' + e.message }, 502);
+        }
+        const h = load()[id].holiday;
+        if (!h) return json({ error: 'not a holiday theme' }, 400);
+        ctx.config.update('theme', cf => {
+          cf.theme = Object.assign({}, cf.theme, { holidayPick: { id, until: endOf(h, now()) } });
+        });
+      } else
+        ctx.config.update('theme', cf => {
+          cf.theme = Object.assign({}, cf.theme);
+          delete cf.theme.holidayPick;
+        });
       return json(await list());
     }
     if (act === 'revert') {
