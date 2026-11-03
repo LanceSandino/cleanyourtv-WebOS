@@ -72,6 +72,7 @@ load('search', () => require('./search').create(ctx));
 load('cards', () => require('./cards').create(ctx));
 load('remote', () => require('./remote').create(ctx));
 const inputkey = load('inputkey', () => require('./inputkey').create(ctx));
+load('homekey', () => require('./homekey').create(ctx)); // the Home key while Home is in front, where LG does nothing then (webOS 25)
 if (notify) load('notifyapi', () => require('./notifyapi').create(ctx));
 if (notify) load('sonos', () => require('./sonos').create(ctx));
 load('lgpreload', () => require('./lgpreload').create(ctx));

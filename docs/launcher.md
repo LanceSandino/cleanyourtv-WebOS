@@ -33,7 +33,7 @@ same on every supported webOS version.
 | Switch input | The **Inputs** button |
 | Put an input on Home | Hold OK on it in the Inputs list |
 | Close running apps | Back on the home screen |
-| Back to Home | The remote's **Home** key closes whatever is open over Home (Customize, the Inputs list, the photo chooser); coming back from an app with Back keeps the menu you left |
+| Back to Home | The remote's **Home** key closes whatever is open over Home (Customize, Search, the Inputs list and picker, the photo chooser, the photos); coming back from an app with Back keeps the menu you left. On webOS 25, where LG does nothing with Home while Home is in front, the service passes the key on (it reads it from the input hook) |
 
 The Magic Remote pointer works too: pointing and clicking, and holding the button on an app for its options.
 

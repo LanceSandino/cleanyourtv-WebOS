@@ -49,6 +49,9 @@
 //                  webOS 25 (SDK 10) on, where it was tried. Before that the copy of LG's start script is only mounted, and the port
 //                  (9998) closes when WebAppMgr starts again by itself: the restart closes every web app at boot, and it was not
 //                  tried with LG's native Home and the stand-in (webOS 22 and 23), whose launcher WebAppMgr opens right after it.
+//   homeKeyWatch   whether the service passes the Home key to the launcher while Home is in front (helper/homekey.js): from webOS 25
+//                  (SDK 10) on, where LG's window manager then does nothing (the owner's TV: "KEYFILTER_APPLAUNCH ... com.webos.app.home is
+//                  foreground app"), so a menu or Search stayed open; webOS 22 relaunches Home with launchType homeKey itself.
 //   homeTakeover   how the launcher becomes Home. 'mount': its folder is mounted over LG's Home app and the app manager is restarted
 //                  to read it (flutter and web Home). 'standin' where LG's Home is the native program: a small script is mounted over
 //                  that program and asks webapp-mgr to open the launcher as com.webos.app.home, so LG's Home manifest stays and the
@@ -108,6 +111,7 @@ function decide(facts, compat) {
           ? 'arccontroller'
           : '',
     homeTakeover: /^com\.webos\.app\.home native$/.test(homeKind) ? 'standin' : 'mount',
+    homeKeyWatch: major >= 10,
     lgVolumeBar: major === 10 ? 'configd' : '',
     lgPreload: major === 10 ? 'api' : '',
     lgScreensaver: major === 7 || major >= 10 ? 'bus' : '',

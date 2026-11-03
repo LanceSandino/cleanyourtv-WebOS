@@ -2024,3 +2024,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-03T04:20:00Z"
 ```
+
+```yaml
+id: CU-20261103-04
+type: fix
+title: "webOS 25: the Home key closes Customize, Search and the rest while Home is in front (LG did nothing then)"
+description: "The owner: on Dawn the Home key did nothing from Customize's settings or from Search. The launcher closes its menus, Search, the photo chooser and the picker on the Home key's relaunch (input.js homeKey), but on the living-room TV (webOS 25) no relaunch came: LG's log for a Home press while Home was in front reads lginput2 [KEY_HOME] button press, then surface-manager KEYFILTER_APPLAUNCH 'com.webos.app.home is foreground app', and nothing more. webOS 22 relaunches Home with launchType homeKey itself. The input hook already logs every key LG's input service sends with its Linux code; lined up against LG's own key names, KEY_HOME is 773 there (KEY_PREVIOUS 412, OK with the pointer 272). helper/homekey.js: where tvprofile.js says homeKeyWatch (webOS 25 and newer), it reads what the hook's log gained every 300 ms and, on a Home press (state=1) while Home is in front, relaunches Home with {launchType: 'homeKey'}, which the launcher already answers; not while another app is in front (LG goes Home then), once per press, a log that shrank read from its start. VRR, asked at the same time: the TV's model config says supportVRR vrr_off and supportFreesync false (its panel runs at 120 Hz), so the PS5 is right that it has none."
+impact: low
+affected_modules: ["helper/homekey.js", "helper/tvprofile.js", "helper/helper.js", "docs/launcher.md", "AGENTS.md"]
+related_tests: ["tools/test/homekey.test.js (a Home press while Home is in front relaunches Home with homeKey, once; nothing for older lines, other keys, a release or another app in front; a shrunk log read from its start; webOS 22 left to LG)", "tools/test/tvprofile.test.js (homeKeyWatch from webOS 25 on)", "tools/test/api.test.js (the homekey part runs)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-03T20:55:00Z"
+```

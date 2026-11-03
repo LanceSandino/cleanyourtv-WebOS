@@ -176,7 +176,9 @@ run(async () => {
       cli(['get', 'adManager', '--sdk', '8.4.0']) === '' &&
       cli(['get', 'adManager']) === '' &&
       cli(['get', 'lgServerHosts', '--sdk', '7.6.0']) === '0' &&
-      cli(['get', 'lgServerHosts', '--sdk', '10.3.2']) === '1',
+      cli(['get', 'lgServerHosts', '--sdk', '10.3.2']) === '1' &&
+      cli(['get', 'homeKeyWatch', '--sdk', '10.3.2']) === '1' &&
+      cli(['get', 'homeKeyWatch', '--sdk', '7.6.0']) === '0',
     'from the shell: no WebAppMgr restart on webOS 22, admanager hidden there and stubbed on webOS 25 (devtools-close.sh and debloat-stop.sh ask)'
   );
   ok(

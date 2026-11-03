@@ -382,6 +382,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       'cards',
       'remote',
       'inputkey',
+      'homekey',
       'notifyapi',
       'sonos',
       'lgpreload',

@@ -1142,6 +1142,7 @@
             "cards",
             "remote",
             "inputkey",
+            "homekey",
             "notifyapi",
             "sonos",
             "lgpreload",
