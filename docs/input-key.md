@@ -1,6 +1,7 @@
 # The Input key
 
-The remote's **Input** button opens an Inputs picker over the running app.
+The remote's **Input** button opens an Inputs picker over the running app. The **Inputs** button on the Home screen opens the same
+picker (or the launcher's own list, where the key is set to show that).
 
 ![Inputs picker on the Input key](screenshots/picker.jpg)
 
@@ -15,6 +16,7 @@ the end of that line when it is longer still, so a long name (HDMI-CEC ones can 
 | OK | Open |
 | Hold OK on an HDMI input | Put it on Home as a tile, or take it off again ([An input on Home](launcher.md#an-input-on-home)) |
 | Back or Input | Close |
+| Home | Close, and Home |
 
 The pointer works too, and the Magic Remote's wheel moves along the row.
 

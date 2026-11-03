@@ -171,6 +171,18 @@ var liveGuard = 0,
 function guarded() {
   return LIVE.on && Date.now() < liveGuard;
 }
+/* the Input button on Home: the Inputs picker, as the remote's Input key shows it (the service starts it the same way), or this
+   launcher's own list where the key opens that or the picker does not start */
+function inputsPicker() {
+  api('/api/picker/show', {}).then(
+    function (r) {
+      if (!r || !r.shown) inputsMenu();
+    },
+    function () {
+      inputsMenu();
+    }
+  );
+}
 /* launching Home with {inputs:true} opens the Inputs list */
 function wantInputs() {
   var p = {};
@@ -210,6 +222,11 @@ document.addEventListener('webOSRelaunch', function () {
     if (stack.length) closeMenus();
     WALLPICK.close();
     SEARCH.close();
+    /* and the Inputs picker, a window of its own over Home that the Home key never reaches */
+    api('/api/picker/hide', {}).then(
+      function () {},
+      function () {}
+    );
   }
   if (LIVE.on && p && p.guide && liveOn()) {
     LIVE.toggleGuide();

@@ -2011,3 +2011,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-03T03:40:00Z"
 ```
+
+```yaml
+id: CU-20261103-03
+type: fix
+title: "The Input button on Home shows the Inputs picker as the Input key does, and the Home key puts the picker away"
+description: "The owner: the Input button on the Home screen opened a full-screen menu (the launcher's own Inputs list) where the remote's Input key shows the Inputs picker; and over some overlays the Home key did not go home. The launcher already closes its own menus, search and photo chooser on the Home key (input.js webOSRelaunch); the Inputs picker is an app of its own (an overlay window) that the Home key never reaches and that had nothing for the TV going elsewhere. helper/inputkey.js: POST /api/picker/show shows the picker as scripts/inputkey.sh does (the kept-ready picker relaunched, the on-demand one started with ondemand; {launcher: true} where the key opens the launcher's list or the picker does not start); POST /api/picker/hide relaunches it with {hide: true} only while its own notes said it is up (picker show, then hide or close). Launcher: the Input button asks for the picker and opens its own list only when told to or when the service does not answer; the Home key also asks for the picker to be put away. Picker 1.2.2: a relaunch or start with hide only puts it away (never shows it), and it goes when its page is hidden. Not tried on a TV yet (both were off)."
+impact: low
+affected_modules: ["helper/inputkey.js", "app/src/js/config.js", "app/src/js/input.js", "picker/app/index.html", "picker/app/appinfo.json", "tools/oldchrome.js"]
+related_tests: ["tools/test/inputkey.test.js (the kept-ready picker asked to show itself, the on-demand one started with ondemand, the launcher's list where the key opens it or the picker fails; the Home key puts the picker away only while it is up, and once)", "tools/oldchrome.js 'input button' (Chromium 87 and 120: the Input button asks for the picker and opens no list, opens the launcher's list when told to; the Home key asks for the picker to be put away)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-03T04:20:00Z"
+```

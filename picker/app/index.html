@@ -355,6 +355,7 @@ document.addEventListener('wheel',function(e){
 document.addEventListener('webOSRelaunch',function(){
   log('relaunch shown='+shown);
   if(params().prewarm)return;
+  if(params().hide){if(shown)hide();return}   // the launcher on the Home key: put away, never shown
   idle();
   if(shown){if(Date.now()-shownAt>700)hide()}   // Input pressed again closes it
   else show()});
@@ -364,5 +365,7 @@ if(params().prewarm){
   refresh();   // built and filled while hidden
   var done=false,go=function(){if(done)return;done=true;setTimeout(hide,150)};
   window.addEventListener('focus',go);setTimeout(go,12000);
-}else show();
+}else if(params().hide)hide();else show();
+// the TV went elsewhere while the list is up (an app or Home over it): it goes, as Back does
+document.addEventListener('visibilitychange',function(){if(document.hidden&&shown)hide()});
 </script></body></html>

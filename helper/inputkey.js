@@ -1,6 +1,10 @@
 // The remote's Input key (and the learned Voice and Guide keys): keeps the hook in LG's input processes and the key binds up to date
 // (inputhook.js), keeps the Inputs picker ready where that works (picker.js), closes the picker when it asks, and writes the mode
 // that scripts/inputkey.sh follows. GET /api/log?m=... is the picker's and the overlay apps' small diagnostics channel.
+//   POST /api/picker/show   the Inputs picker as the Input key shows it (the launcher's Input button): {shown: true}, or {launcher: true}
+//                           where the key opens the launcher's own list (mode launcher) or the picker could not be started
+//   POST /api/picker/hide   the picker put away when it is up (the launcher on the Home key: the key never reaches the picker, whose
+//                           window stayed over Home): {hidden}
 const fs = require('fs');
 const P = require('./paths'),
   web = require('./web'),
@@ -11,7 +15,8 @@ const PICKER = 'com.cleanyourtv.picker';
 function create(ctx) {
   const { config, luna, profile } = ctx;
   const inputhook = ctx.inputhook || require('./inputhook');
-  let pickerShownAt = 0;
+  let pickerShownAt = 0,
+    pickerUp = false; // from the picker's own notes (picker show, picker hide, picker close)
 
   const keyCode = () => String(config.keys().input || '241');
   // the voice key belongs to us only while voice is installed and on; the Guide key only while Live TV is on and a key was learned
@@ -42,9 +47,33 @@ function create(ctx) {
       console.error('picker: could not close it (' + (a.errorText || 'closeByAppId failed') + '; ' + (b.errorText || 'close failed') + ')');
   }
 
+  // the picker as the Input key opens it (scripts/inputkey.sh): started on demand, or the one kept ready asked to show itself
+  async function showPicker() {
+    const md = mode();
+    if (md === 'launcher') return { launcher: true };
+    const r = await luna(
+      'luna://com.webos.applicationManager/launch',
+      md === 'ondemand' ? { id: PICKER, params: { ondemand: true } } : { id: PICKER }
+    );
+    return r && r.returnValue === true ? { shown: true } : { launcher: true, error: (r && r.errorText) || 'the picker did not start' };
+  }
+  async function hidePicker() {
+    if (!pickerUp) return { hidden: false };
+    pickerUp = false;
+    await luna('luna://com.webos.applicationManager/launch', { id: PICKER, params: { hide: true } });
+    return { hidden: true };
+  }
+
   async function handle(req, res) {
+    const u = req.url.split('?')[0];
+    if (u === '/api/picker/show' && req.method === 'POST') return web.json(res, await showPicker());
+    if (u === '/api/picker/hide' && req.method === 'POST') return web.json(res, await hidePicker());
     const m = decodeURIComponent(req.url.split('m=')[1] || '');
-    if (/picker show/.test(m)) pickerShownAt = Date.now();
+    if (/picker show/.test(m)) {
+      pickerShownAt = Date.now();
+      pickerUp = true;
+    }
+    if (/picker (hide|close)/.test(m)) pickerUp = false;
     if (/picker close/.test(m)) setTimeout(closePicker, 400);
     let up = '';
     try {
@@ -82,7 +111,7 @@ function create(ctx) {
 
   return {
     name: 'inputkey',
-    paths: ['/api/log'],
+    paths: ['/api/log', '/api/picker/show', '/api/picker/hide'],
     handle,
     start,
     // for the manager

@@ -385,6 +385,18 @@ const TV_HEALTH =
   'var ok=scaled&&cores===4&&cpu&&mem&&devtools&&back&&stopped;' +
   'out(ok?"ok":"bad scaled="+scaled+" cores="+cores+" cpu="+cpu+" mem="+mem+" devtools="+devtools+" back="+back+" stopped="+stopped)},6000)},' +
   '"a reading after Back")},"the red port")},"a second reading")},"the health screen")},"the main list")})()</script>';
+// the Input button on Home: the Inputs picker as the remote's Input key shows it (the service asked, no full-screen list), the launcher's
+// own list where the service says so; and the Home key asks the service to put the picker away. The answers are stand-ins; the calls
+// are noted. The outcome lands in data-inbtn.
+const INPUT_BUTTON =
+  '<script>(function(){var A=window.api,calls=[],answer={shown:true};window.api=function(p,b){if(p==="/api/picker/show"||p==="/api/picker/hide"){calls.push(p);' +
+  'return Promise.resolve(p==="/api/picker/show"?answer:{hidden:true})}return A(p,b)};function out(v){document.body.setAttribute("data-inbtn",v)}' +
+  'function pill(){var ps=document.querySelectorAll("#bar .pill");for(var i=0;i<ps.length;i++)if(ps[i]._o&&ps[i]._o.action==="inputs")return ps[i];return null}' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile")||!pill())return;clearInterval(go);act(pill());setTimeout(function(){' +
+  'var asked=calls[0]==="/api/picker/show",noMenu=!document.getElementById("ov")&&!stack.length;answer={launcher:true};act(pill());setTimeout(function(){' +
+  'var list=!!document.getElementById("ov")&&stack.length>0;closeMenus();webOSSystem.launchParams=JSON.stringify({keepAlive:true});var e=document.createEvent("Event");' +
+  'e.initEvent("webOSRelaunch",true,true);document.dispatchEvent(e);setTimeout(function(){var hid=calls.indexOf("/api/picker/hide")>=0;' +
+  'out(asked&&noMenu&&list&&hid?"ok":"bad asked="+asked+" noMenu="+noMenu+" list="+list+" hid="+hid+" calls="+calls.join())},400)},600)},600)},200)})()</script>';
 // Dawn (its scenery's cut-out over the clock, the apps' area brought forward over it from the top of the screen): the pointer reaches
 // each button at the top (the point at its middle is the button), and the apps still take it. The outcome lands in data-ptr.
 const DAWN_POINTER =
@@ -592,6 +604,7 @@ const PAGES = [
   ['app updates', 'manager/app/index.html', /data-apps="ok"/g, 1, 30000, APP_UPDATES],
   ['holiday themes', 'app/index.html', /data-holiday="ok"/g, 1, 20000, HOLIDAY_MENU],
   ['dawn pointer', 'app/index.html', /data-ptr="ok"/g, 1, 15000, DAWN_POINTER, 'dawn'],
+  ['input button', 'app/index.html', /data-inbtn="ok"/g, 1, 15000, INPUT_BUTTON],
   ['weather in a short place', 'app/index.html', /data-slim="ok"/g, 1, 12000, SLIM_WX, 'glass'],
   ['search', 'app/index.html', /data-search="ok"/g, 1, 15000, SEARCH_KEYS],
   ['where to watch', 'app/index.html', /data-where="ok"/g, 1, 20000, WHERE_KEYS],
