@@ -2050,3 +2050,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-04T04:10:00Z"
 ```
+
+```yaml
+id: CU-20261105-01
+type: fix
+title: "The Input key and the Input button did nothing: the Home key's call could leave a hidden picker LG never showed again"
+description: "The owner: the Input key and the Input button on Home did nothing on the living-room TV (picker mode on demand, chosen in the manager). Since 1.6.59 (CU-20261103-03) the launcher asks on the Home key for the picker to be put away. The service believed the picker was up from its notes and relaunched it with {hide: true}, also when it had already been closed, which started it: that page stayed alive, hidden, without its on-demand flag (set only from the first launch's parameters), so it no longer closed after use. Every Input press then woke the hidden page (picker relaunch, show, painted in the log) with LG's window not shown (surface-manager NL_VSC had no visible:true for those launches); closing the app brought it back (the next launch showed its window at once). helper/inputkey.js hidePicker: only a picker in the app manager's running list is touched; the on-demand one is closed, only the kept-ready one told to hide; it is never started. Picker 1.2.3: a page started only to be put away closes itself, and a relaunch with ondemand makes it close after use however it was first started."
+impact: medium
+affected_modules: ["helper/inputkey.js", "picker/app/index.html", "picker/app/appinfo.json"]
+related_tests: ["tools/test/inputkey.test.js (kept ready: told to hide while up, once; on demand: closed; not running although it said it was up: nothing is started)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-05T04:25:00Z"
+```

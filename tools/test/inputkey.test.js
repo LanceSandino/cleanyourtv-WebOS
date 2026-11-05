@@ -11,7 +11,11 @@ function make(o) {
     profile: { get: () => ({ pickerMode: o.mode || 'overlay' }) },
     luna: async (uri, p) => (
       calls.push([uri.replace('luna://com.webos.applicationManager/', ''), p]),
-      o.fail ? { returnValue: false, errorText: 'no' } : { returnValue: true }
+      /\/running$/.test(uri)
+        ? { returnValue: true, running: o.running === false ? [] : [{ id: 'com.cleanyourtv.picker' }] }
+        : o.fail
+          ? { returnValue: false, errorText: 'no' }
+          : { returnValue: true }
     ),
     feature: () => null,
     inputhook: { ensure() {}, hookInfo: () => ({ attached: true }) },
@@ -45,24 +49,43 @@ run(async () => {
     "the launcher's own list where the key opens it or the picker fails"
   );
 
-  // the Home key: put away only while the picker said it is up (its own notes on /api/log)
+  // the Home key: put away only while the picker said it is up (its own notes on /api/log), and only when it is running: never started
+  const say = (K, m) => call(K, '/api/log?m=' + encodeURIComponent(m), 'GET');
+  const noRun = c => c[0] !== 'running';
   t = make({ mode: 'overlay' });
   r = await call(t.K, '/api/picker/hide', 'POST', {});
-  const before = t.calls.length;
-  await call(t.K, '/api/log?m=' + encodeURIComponent('picker show'), 'GET');
+  const quiet = t.calls.length;
+  await say(t.K, 'picker show');
   const up = await call(t.K, '/api/picker/hide', 'POST', {});
-  const sent = t.calls.slice(before);
+  const sent = t.calls.filter(noRun);
   const again = await call(t.K, '/api/picker/hide', 'POST', {});
-  await call(t.K, '/api/log?m=' + encodeURIComponent('picker show'), 'GET');
-  await call(t.K, '/api/log?m=' + encodeURIComponent('picker hide'), 'GET');
+  await say(t.K, 'picker show');
+  await say(t.K, 'picker hide');
   const gone = await call(t.K, '/api/picker/hide', 'POST', {});
   ok(
     r.j.hidden === false &&
-      before === 0 &&
+      quiet === 0 &&
       up.j.hidden === true &&
       JSON.stringify(sent) === JSON.stringify([['launch', { id: 'com.cleanyourtv.picker', params: { hide: true } }]]) &&
       again.j.hidden === false &&
       gone.j.hidden === false,
-    'the Home key puts the picker away only while it is up (and once): ' + JSON.stringify(sent)
+    'kept ready: the Home key tells the picker to hide, only while it is up, and once: ' + JSON.stringify(sent)
+  );
+  // on demand: closed, not told to hide
+  let up2;
+  t = make({ mode: 'ondemand' });
+  await say(t.K, 'picker show');
+  up2 = await call(t.K, '/api/picker/hide', 'POST', {});
+  ok(
+    up2.j.hidden === true && JSON.stringify(t.calls.filter(noRun)) === JSON.stringify([['closeByAppId', { id: 'com.cleanyourtv.picker' }]]),
+    'on demand: the Home key closes the picker: ' + JSON.stringify(t.calls)
+  );
+  // not running although it said it was up (closed another way): nothing is started; a launch left a hidden page Input could not show
+  t = make({ mode: 'ondemand', running: false });
+  await say(t.K, 'picker show');
+  const stale = await call(t.K, '/api/picker/hide', 'POST', {});
+  ok(
+    stale.j.hidden === false && !t.calls.filter(noRun).length,
+    'a picker that is not running is never started to put it away: ' + JSON.stringify(t.calls)
   );
 });

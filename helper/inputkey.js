@@ -57,10 +57,15 @@ function create(ctx) {
     );
     return r && r.returnValue === true ? { shown: true } : { launcher: true, error: (r && r.errorText) || 'the picker did not start' };
   }
+  // never starts it: a launch of a picker that is not running left a hidden page, whose window LG did not show again, so Input did
+  // nothing until it was closed (1.6.59 to 1.6.61, the owner's TV). The on-demand picker is closed, the kept-ready one told to hide.
   async function hidePicker() {
     if (!pickerUp) return { hidden: false };
     pickerUp = false;
-    await luna('luna://com.webos.applicationManager/launch', { id: PICKER, params: { hide: true } });
+    const run = await luna('luna://com.webos.applicationManager/running', {});
+    if (!(run && Array.isArray(run.running) && run.running.some(a => (a.id || a.appId) === PICKER))) return { hidden: false };
+    if (mode() === 'overlay') await luna('luna://com.webos.applicationManager/launch', { id: PICKER, params: { hide: true } });
+    else await closePicker();
     return { hidden: true };
   }
 
