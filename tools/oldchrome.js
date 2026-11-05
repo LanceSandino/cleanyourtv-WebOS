@@ -385,6 +385,12 @@ const TV_HEALTH =
   'var ok=scaled&&cores===4&&cpu&&mem&&devtools&&back&&stopped;' +
   'out(ok?"ok":"bad scaled="+scaled+" cores="+cores+" cpu="+cpu+" mem="+mem+" devtools="+devtools+" back="+back+" stopped="+stopped)},6000)},' +
   '"a reading after Back")},"the red port")},"a second reading")},"the health screen")},"the main list")})()</script>';
+// the Inputs picker's icons: an input named Game console gets the game pad, not the plain HDMI icon, which HDMI 2 keeps. The outcome
+// lands in data-icons.
+const PICKER_ICONS =
+  '<script>(function(){var go=setInterval(function(){var c=document.querySelectorAll(".chip");if(c.length<2)return;clearInterval(go);setTimeout(function(){c=document.querySelectorAll(".chip");' +
+  'var a=c[0].querySelector("svg"),b=c[1].querySelector("svg"),pad=!!a&&/M7 7\\.5h10/.test(a.innerHTML),plain=!!b&&/M4 8h16/.test(b.innerHTML);' +
+  'document.body.setAttribute("data-icons",pad&&plain?"ok":"bad pad="+pad+" plain="+plain+" a="+(a&&a.innerHTML.slice(0,60)))},300)},100)})()</script>';
 // the Input button on Home: the Inputs picker as the remote's Input key shows it (the service asked, no full-screen list), the launcher's
 // own list where the service says so; and the Home key asks the service to put the picker away. The answers are stand-ins; the calls
 // are noted. The outcome lands in data-inbtn.
@@ -573,6 +579,7 @@ const PAGES = [
   ['launcher', 'app/index.html', /class="tile[ "]/g, 8, 8000],
   ['manager', 'manager/app/index.html', /class="row[ "]/g, 5, 8000],
   ['picker', 'picker/app/index.html', /class="chip[ "]/g, 2, 3000],
+  ['picker icons', 'picker/app/index.html', /data-icons="ok"/g, 1, 3000, PICKER_ICONS],
   // the launcher left alone for its screensaver's minute (virtual time): the screensaver is up with a photo from the feed drawn
   ['saver', 'app/index.html', /class="svp[^"]* on"/g, 1, 75000],
   // and its keys: Left and Right step through the photos, another key ends it without acting on Home

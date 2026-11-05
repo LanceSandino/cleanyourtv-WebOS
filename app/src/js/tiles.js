@@ -11,7 +11,8 @@ function tile(a) {
     return d;
   }
   if (a.input) {
-    d.innerHTML = svg('hdmi') + '<div class="slab"></div><div class="slab sub"></div>';
+    d._ic = deviceIcon(a.title);
+    d.innerHTML = svg(d._ic) + '<div class="slab"></div><div class="slab sub"></div>';
     var f = hsl2rgb(hashHue(a.id), 0.3, 0.3);
     paint(d, { c: f, b: hsl2rgb(hashHue(a.id), 0.3, 0.16) });
     return inputTile(d, a);
@@ -82,6 +83,12 @@ function inputTile(d, a) {
     named = a.title && a.title !== port;
   d._a = a;
   d.className = d.className.replace(/ ?\binp\b| ?\boff\b/g, '') + ' inp' + (a.off ? ' off' : '');
+  /* the device's name can come or change later (HDMI-CEC): its icon follows */
+  var ic = deviceIcon(a.title);
+  if (ic !== d._ic) {
+    d._ic = ic;
+    d.children[0].outerHTML = svg(ic);
+  }
   d.children[1].textContent = named ? a.title : port;
   d.children[2].textContent = named ? port : '';
   return d;

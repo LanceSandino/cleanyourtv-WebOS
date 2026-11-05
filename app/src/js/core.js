@@ -47,6 +47,42 @@ var ICONS = {
   phone: '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
   more: '<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>',
 };
+/* device icons start: the same in the launcher (core.js) and the picker (tools/test/deviceicons.test.js holds them to it). An input's
+   icon, from the name its device gives: the shape of the device, never a company's logo; hdmi when the name says nothing */
+var DEVICE_ICONS = {
+  tower:
+    '<path d="M6 2.5c1.2 3.8 3 7 2.8 10.5-.2 3.3-.8 5.5-.8 8.5h8c0-3-.6-5.2-.8-8.5-.2-3.5 1.6-6.7 2.8-10.5z"/><path d="M10.4 2.5v19M13.6 2.5v19"/>',
+  handheld:
+    '<rect x="7" y="6" width="10" height="12" rx="1"/><path d="M7 6H5.5A3.5 3.5 0 0 0 2 9.5v5A3.5 3.5 0 0 0 5.5 18H7"/><path d="M17 6h1.5A3.5 3.5 0 0 1 22 9.5v5a3.5 3.5 0 0 1-3.5 3.5H17"/><circle cx="4.6" cy="9.8" r="1.2"/><circle cx="19.4" cy="14.2" r="1.2"/>',
+  block: '<rect x="7" y="2.5" width="10" height="19" rx="1.5"/><circle cx="12" cy="6.5" r="2.2"/><path d="M12 17.5h.01"/>',
+  soundbar:
+    '<rect x="1.5" y="11" width="21" height="6" rx="3"/><path d="M6 14h.01M12 14h.01M18 14h.01"/><path d="M8 7.5c2.5-1.6 5.5-1.6 8 0"/><path d="M10 4.8c1.3-.6 2.7-.6 4 0"/>',
+  box: '<rect x="4.5" y="8" width="15" height="8" rx="2.5"/><path d="M8 19h8"/><path d="M15.5 12h.01"/>',
+  stick:
+    '<rect x="2.5" y="8.5" width="13" height="7" rx="2"/><path d="M15.5 10.5h4.5a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1h-4.5"/><path d="M6 12h.01"/>',
+  pad: '<path d="M7 7.5h10a5 5 0 0 1 5 4.9l.2 3.6a2.9 2.9 0 0 1-5.2 1.9L15.5 16h-7L7 17.9A2.9 2.9 0 0 1 1.8 16l.2-3.6A5 5 0 0 1 7 7.5z"/><path d="M7.5 10.5v3M6 12h3"/><path d="M15.5 11h.01M18 13h.01"/>',
+  disc: '<circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="2.5"/><path d="M12 5.5a6.5 6.5 0 0 1 6.5 6.5"/>',
+  laptop: '<rect x="4.5" y="5" width="15" height="10.5" rx="1.5"/><path d="M2.5 19h19"/>',
+  settop: '<rect x="2.5" y="8" width="19" height="8" rx="1.5"/><path d="M6 12h5"/><path d="M15 12h.01M18 12h.01"/>',
+};
+var DEVICE_NAMES = [
+  ['tower', /play ?station|\bps ?[345]\b/i],
+  ['handheld', /nintendo|\bswitch\b/i],
+  ['block', /xbox/i],
+  ['soundbar', /sonos|sound ?bar|\bbose\b|denon|yamaha|marantz|onkyo|receiver|\bavr\b|\bbeam\b/i],
+  ['box', /apple ?tv|shield|tivo|roku ultra/i],
+  ['stick', /fire ?tv|chromecast|google tv|roku|\bstick\b/i],
+  ['pad', /steam|console|\bgame\b|gaming|\bwii\b|sega|retro/i],
+  ['disc', /blu-?ray|\bdvd\b|\bbdp?\b/i],
+  ['laptop', /\bpc\b|laptop|macbook|\bmac\b|computer|windows/i],
+  ['settop', /cable|direct ?tv|xfinity|comcast|spectrum|\bcox\b|\bdish\b|set.?top|\bstb\b|hopper/i],
+];
+function deviceIcon(label) {
+  for (var i = 0; i < DEVICE_NAMES.length; i++) if (DEVICE_NAMES[i][1].test(label || '')) return DEVICE_NAMES[i][0];
+  return 'hdmi';
+}
+/* device icons end */
+for (var dvk in DEVICE_ICONS) ICONS[dvk] = DEVICE_ICONS[dvk];
 function svg(name) {
   return (
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +

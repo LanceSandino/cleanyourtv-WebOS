@@ -5,7 +5,7 @@ picker (or the launcher's own list, where the key is set to show that).
 
 ![Inputs picker on the Input key](screenshots/picker.jpg)
 
-The picker shows the dock apps in a row, with a green dot on the ones that are open when that is switched on in the launcher's **Customize**, the inputs below (each with its port and
+The picker shows the dock apps in a row, with a green dot on the ones that are open when that is switched on in the launcher's **Customize**, the inputs below (each with an icon for the kind of device its name says, such as a game console, a handheld, a soundbar, a streaming box or a disc player, its port and
 what is connected, and a green dot on the active one) and, when [Live TV](live-tv.md) is on, **Live TV**. A device's name wraps onto a second line, with an ellipsis at
 the end of that line when it is longer still, so a long name (HDMI-CEC ones can be) never runs over the cards beside it.
 

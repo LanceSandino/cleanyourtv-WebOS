@@ -2063,3 +2063,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-05T04:25:00Z"
 ```
+
+```yaml
+id: CU-20261105-02
+type: feature
+title: "Inputs show an icon for the device plugged in (a PS5-style console, a Switch-style handheld, a soundbar...)"
+description: "The owner: nice icons for what is plugged in, such as the PS5, a Nintendo Switch or the Sonos. Every input had the same HDMI icon. A block shared by the launcher (app/src/js/core.js) and the picker (picker/app/index.html, 1.2.4): ten line icons drawn here in the style of the others, the shape of the device and never a company's logo, as this repository is public (tower, handheld, block, soundbar, box, stick, pad, disc, laptop, settop), and deviceIcon(name), which matches the name the device gives over HDMI-CEC or the owner's label (PS5, PlayStation, Nintendo, Xbox, Sonos, Bose, Apple TV, Fire TV, Roku, Blu-ray, Xfinity...); a name that says nothing keeps the HDMI icon. Used by the picker's inputs and pinned inputs, the launcher's Inputs list and its input tiles (the icon follows a name that comes or changes later). Also: the 2-second Home delay reported earlier was not real, two log clocks 2.07 s apart (/proc/uptime and LG's log clock); measured, Home reaches the launcher in 0.2 to 0.7 s, and nothing was changed for it."
+impact: low
+affected_modules: ["app/src/js/core.js", "app/src/js/tiles.js", "app/src/js/menus.js", "app/index.html", "picker/app/index.html", "picker/app/appinfo.json", "tools/oldchrome.js", "docs/input-key.md"]
+related_tests: ["tools/test/deviceicons.test.js (the same block in the launcher and the picker; each device name gets its icon, one that says nothing keeps HDMI; plain drawn shapes; used by all four places)", "tools/oldchrome.js 'picker icons' (Chromium 87 and 120: an input named Game console gets the pad, HDMI 2 the plain icon)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-05T05:50:00Z"
+```

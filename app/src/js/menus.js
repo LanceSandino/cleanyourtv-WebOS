@@ -475,7 +475,7 @@ function inputsMenu() {
         if (d.hdmiPlugIn) parts.push(t('Connected'));
         if (d.activate) parts.push(t('Active'));
         return {
-          icon: 'hdmi',
+          icon: deviceIcon(d.label),
           label: d.label || port,
           sub: parts.join(' \u00B7 '),
           dim: !d.hdmiPlugIn,

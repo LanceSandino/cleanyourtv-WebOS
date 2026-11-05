@@ -58,6 +58,42 @@ var running={},dots=false;   /* dots: Customise > Open apps in the launcher (con
 var ICON={
   hdmi:'<svg viewBox="0 0 24 24"><path d="M4 8h16v7l-3 3H7l-3-3z"/><path d="M9 11v3M12 11v3M15 11v3"/></svg>',
   tv:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 21h8M12 18v3"/></svg>'};
+/* device icons start: the same in the launcher (core.js) and the picker (tools/test/deviceicons.test.js holds them to it). An input's
+   icon, from the name its device gives: the shape of the device, never a company's logo; hdmi when the name says nothing */
+var DEVICE_ICONS = {
+  tower:
+    '<path d="M6 2.5c1.2 3.8 3 7 2.8 10.5-.2 3.3-.8 5.5-.8 8.5h8c0-3-.6-5.2-.8-8.5-.2-3.5 1.6-6.7 2.8-10.5z"/><path d="M10.4 2.5v19M13.6 2.5v19"/>',
+  handheld:
+    '<rect x="7" y="6" width="10" height="12" rx="1"/><path d="M7 6H5.5A3.5 3.5 0 0 0 2 9.5v5A3.5 3.5 0 0 0 5.5 18H7"/><path d="M17 6h1.5A3.5 3.5 0 0 1 22 9.5v5a3.5 3.5 0 0 1-3.5 3.5H17"/><circle cx="4.6" cy="9.8" r="1.2"/><circle cx="19.4" cy="14.2" r="1.2"/>',
+  block: '<rect x="7" y="2.5" width="10" height="19" rx="1.5"/><circle cx="12" cy="6.5" r="2.2"/><path d="M12 17.5h.01"/>',
+  soundbar:
+    '<rect x="1.5" y="11" width="21" height="6" rx="3"/><path d="M6 14h.01M12 14h.01M18 14h.01"/><path d="M8 7.5c2.5-1.6 5.5-1.6 8 0"/><path d="M10 4.8c1.3-.6 2.7-.6 4 0"/>',
+  box: '<rect x="4.5" y="8" width="15" height="8" rx="2.5"/><path d="M8 19h8"/><path d="M15.5 12h.01"/>',
+  stick:
+    '<rect x="2.5" y="8.5" width="13" height="7" rx="2"/><path d="M15.5 10.5h4.5a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1h-4.5"/><path d="M6 12h.01"/>',
+  pad: '<path d="M7 7.5h10a5 5 0 0 1 5 4.9l.2 3.6a2.9 2.9 0 0 1-5.2 1.9L15.5 16h-7L7 17.9A2.9 2.9 0 0 1 1.8 16l.2-3.6A5 5 0 0 1 7 7.5z"/><path d="M7.5 10.5v3M6 12h3"/><path d="M15.5 11h.01M18 13h.01"/>',
+  disc: '<circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="2.5"/><path d="M12 5.5a6.5 6.5 0 0 1 6.5 6.5"/>',
+  laptop: '<rect x="4.5" y="5" width="15" height="10.5" rx="1.5"/><path d="M2.5 19h19"/>',
+  settop: '<rect x="2.5" y="8" width="19" height="8" rx="1.5"/><path d="M6 12h5"/><path d="M15 12h.01M18 12h.01"/>',
+};
+var DEVICE_NAMES = [
+  ['tower', /play ?station|\bps ?[345]\b/i],
+  ['handheld', /nintendo|\bswitch\b/i],
+  ['block', /xbox/i],
+  ['soundbar', /sonos|sound ?bar|\bbose\b|denon|yamaha|marantz|onkyo|receiver|\bavr\b|\bbeam\b/i],
+  ['box', /apple ?tv|shield|tivo|roku ultra/i],
+  ['stick', /fire ?tv|chromecast|google tv|roku|\bstick\b/i],
+  ['pad', /steam|console|\bgame\b|gaming|\bwii\b|sega|retro/i],
+  ['disc', /blu-?ray|\bdvd\b|\bbdp?\b/i],
+  ['laptop', /\bpc\b|laptop|macbook|\bmac\b|computer|windows/i],
+  ['settop', /cable|direct ?tv|xfinity|comcast|spectrum|\bcox\b|\bdish\b|set.?top|\bstb\b|hopper/i],
+];
+function deviceIcon(label) {
+  for (var i = 0; i < DEVICE_NAMES.length; i++) if (DEVICE_NAMES[i][1].test(label || '')) return DEVICE_NAMES[i][0];
+  return 'hdmi';
+}
+/* device icons end */
+for(var dvk in DEVICE_ICONS)ICON[dvk]='<svg viewBox="0 0 24 24">'+DEVICE_ICONS[dvk]+'</svg>';
 /* @i18n */
 var I18N = {"ar":{"_name":"العربية","_dir":"rtl","_pct":75,"%d of %d":"%d من %d","%d of %d on":"%d من %d مفعّل","%s added to Home":"أُضيف %s إلى الشاشة الرئيسية","%s removed from Home":"أُزيل %s من الشاشة الرئيسية","Apps":"التطبيقات","Back":"رجوع","build %s":"البناء %s","Can’t read the inputs. Live TV still works.":"تعذّرت قراءة المداخل. البث المباشر يعمل.","Close":"إغلاق","Connected":"متصل","Could not change Home":"تعذّر تغيير الشاشة الرئيسية","default":"افتراضي","Home":"Home","Input":"Input","Input key":"زر Input","Inputs":"المداخل","Language":"اللغة","Live TV":"البث المباشر","More":"المزيد","never":"أبدًا","Nothing connected":"لا شيء متصل","On":"تشغيل","Open":"فتح","Open apps":"التطبيقات المفتوحة","optional":"اختياري","Service":"الخدمة","Start":"ابدأ","Text":"نص","Theme":"السمة","Your playlist":"قائمة التشغيل الخاصة بك"},"de":{"_name":"Deutsch","_dir":"ltr","_pct":75,"%d of %d":"%d von %d","%d of %d on":"%d von %d an","%s added to Home":"%s zu Home hinzugefügt","%s removed from Home":"%s von Home entfernt","Apps":"Apps","Back":"Zurück","build %s":"Build %s","Can’t read the inputs. Live TV still works.":"Eingänge nicht lesbar. Live-TV funktioniert weiter.","Close":"Schließen","Connected":"Verbunden","Could not change Home":"Home konnte nicht geändert werden","default":"Standard","Home":"Home","Input":"Input","Input key":"Eingangstaste","Inputs":"Eingänge","Language":"Sprache","Live TV":"Live-TV","More":"Mehr","never":"nie","Nothing connected":"Nichts angeschlossen","On":"An","Open":"Öffnen","Open apps":"Geöffnete Apps","optional":"optional","Service":"Dienst","Start":"Start","Text":"Text","Theme":"Design","Your playlist":"Deine Playlist"},"es":{"_name":"Español","_dir":"ltr","_pct":75,"%d of %d":"%d de %d","%d of %d on":"%d de %d activados","%s added to Home":"%s añadido a Inicio","%s removed from Home":"%s quitado de Inicio","Apps":"Apps","Back":"Atrás","build %s":"versión %s","Can’t read the inputs. Live TV still works.":"No se pueden leer las entradas. La TV en directo sigue funcionando.","Close":"Cerrar","Connected":"Conectado","Could not change Home":"No se pudo cambiar Inicio","default":"predeterminado","Home":"Home","Input":"Input","Input key":"Botón Entrada","Inputs":"Entradas","Language":"Idioma","Live TV":"TV en directo","More":"Más","never":"nunca","Nothing connected":"Nada conectado","On":"Activado","Open":"Abrir","Open apps":"Apps abiertas","optional":"opcional","Service":"Servicio","Start":"Empezar","Text":"Texto","Theme":"Tema","Your playlist":"Tu lista"},"fr":{"_name":"Français","_dir":"ltr","_pct":75,"%d of %d":"%d sur %d","%d of %d on":"%d sur %d activés","%s added to Home":"%s ajouté à l’accueil","%s removed from Home":"%s retiré de l’accueil","Apps":"Apps","Back":"Retour","build %s":"version %s","Can’t read the inputs. Live TV still works.":"Impossible de lire les entrées. La TV en direct fonctionne encore.","Close":"Fermer","Connected":"Connecté","Could not change Home":"Impossible de modifier l’accueil","default":"par défaut","Home":"Home","Input":"Input","Input key":"Touche Entrée","Inputs":"Entrées","Language":"Langue","Live TV":"TV en direct","More":"Plus","never":"jamais","Nothing connected":"Rien de connecté","On":"Activé","Open":"Ouvrir","Open apps":"Apps ouvertes","optional":"facultatif","Service":"Service","Start":"Démarrer","Text":"Texte","Theme":"Thème","Your playlist":"Votre playlist"},"nl":{"_name":"Nederlands","_dir":"ltr","_pct":75,"%d of %d":"%d van %d","%d of %d on":"%d van %d aan","%s added to Home":"%s is aan Home toegevoegd","%s removed from Home":"%s is van Home verwijderd","Apps":"Apps","Back":"Terug","build %s":"build %s","Can’t read the inputs. Live TV still works.":"Kan de ingangen niet lezen. Live TV werkt nog.","Close":"Sluiten","Connected":"Verbonden","Could not change Home":"Kan Home niet aanpassen","default":"standaard","Home":"Home","Input":"Input","Input key":"Ingangtoets","Inputs":"Ingangen","Language":"Taal","Live TV":"Live TV","More":"Meer","never":"nooit","Nothing connected":"Niets aangesloten","On":"Aan","Open":"Openen","Open apps":"Geopende apps","optional":"optioneel","Service":"Service","Start":"Start","Text":"Tekst","Theme":"Thema","Your playlist":"Je afspeellijst"},"ru":{"_name":"Русский","_dir":"ltr","_pct":75,"%d of %d":"%d из %d","%d of %d on":"%d из %d включено","%s added to Home":"%s добавлено на главный экран","%s removed from Home":"%s убрано с главного экрана","Apps":"Приложения","Back":"Назад","build %s":"сборка %s","Can’t read the inputs. Live TV still works.":"Не удаётся прочитать входы. Прямой эфир работает.","Close":"Закрыть","Connected":"Подключено","Could not change Home":"Не удалось изменить главный экран","default":"по умолчанию","Home":"Home","Input":"Input","Input key":"Кнопка Input","Inputs":"Входы","Language":"Язык","Live TV":"Прямой эфир","More":"Ещё","never":"никогда","Nothing connected":"Ничего не подключено","On":"Вкл.","Open":"Открыть","Open apps":"Открытые приложения","optional":"необязательно","Service":"Служба","Start":"Начать","Text":"Текст","Theme":"Тема","Your playlist":"Ваш плейлист"},"tr":{"_name":"Türkçe","_dir":"ltr","_pct":75,"%d of %d":"%d / %d","%d of %d on":"%d / %d açık","%s added to Home":"%s ana ekrana eklendi","%s removed from Home":"%s ana ekrandan kaldırıldı","Apps":"Uygulamalar","Back":"Geri","build %s":"derleme %s","Can’t read the inputs. Live TV still works.":"Girişler okunamıyor. Canlı TV çalışıyor.","Close":"Kapat","Connected":"Bağlı","Could not change Home":"Ana ekran değiştirilemedi","default":"varsayılan","Home":"Home","Input":"Input","Input key":"Input tuşu","Inputs":"Girişler","Language":"Dil","Live TV":"Canlı TV","More":"Daha fazla","never":"hiç","Nothing connected":"Hiçbir şey bağlı değil","On":"Açık","Open":"Aç","Open apps":"Açık uygulamalar","optional":"isteğe bağlı","Service":"Hizmet","Start":"Başlat","Text":"Metin","Theme":"Tema","Your playlist":"Oynatma listeniz"}};
 /* ---------- language: the pages are written in English and translated where text is shown ----------
@@ -261,7 +297,7 @@ function keep(img,id){   // remember the icon and its colour so the next open ne
 /* build the rows once per change of data; moving the focus only changes classes */
 function render(){
   $('capA').textContent=t('Apps');$('capI').textContent=t('Inputs');
-  var h='';apps.forEach(function(a,i){h+='<div class="tile'+(a.input?' inp':'')+'" data-r="0" data-i="'+i+'"'+(cache.colors[a.id]?' style="background:'+cache.colors[a.id]+'"':'')+'>'+(a.input?ICON.hdmi+'<span class="lb"></span>':'<img alt="">')+'</div>'});
+  var h='';apps.forEach(function(a,i){h+='<div class="tile'+(a.input?' inp':'')+'" data-r="0" data-i="'+i+'"'+(cache.colors[a.id]?' style="background:'+cache.colors[a.id]+'"':'')+'>'+(a.input?ICON[deviceIcon(a.title)]+'<span class="lb"></span>':'<img alt="">')+'</div>'});
   $('apps').innerHTML=h;
   var tl=$('apps').children;
   apps.forEach(function(a,i){if(a.input)tl[i].querySelector('.lb').textContent=a.title;else{var im=tl[i].querySelector('img'),data=cache.icons[a.id];im.crossOrigin='anonymous';
@@ -293,7 +329,7 @@ function buildInputs(devs){
     // as in the launcher's Inputs list: the device's name first, then the port and whether something is connected
     if(named)parts.push(port);
     parts.push(v.hdmiPlugIn?t('Connected'):t('Nothing connected'));
-    return {id:v.appId,icon:'hdmi',label:named?v.label:port,sub:parts.join(' \u00B7 '),dim:!v.hdmiPlugIn,active:!!v.activate}});
+    return {id:v.appId,icon:deviceIcon(v.label),label:named?v.label:port,sub:parts.join(' \u00B7 '),dim:!v.hdmiPlugIn,active:!!v.activate}});
   if(liveOn)r.push({id:'com.webos.app.home',params:{live:true},icon:'tv',label:t('Live TV'),sub:t('Your playlist')});
   return r}
 function setData(d,fresh){
