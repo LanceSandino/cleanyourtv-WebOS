@@ -71,6 +71,8 @@ run(async () => {
     },
   };
   let soundOut = 'external_arc'; // where the TV's sound goes, for the sound set up again
+  const fixes = []; // Fix the picture from the phone (picturediag.js: LG's logs kept, then the TV restarted)
+  const picStub = { fix: async b => (fixes.push(b), { saved: 'picture-x', restarting: true }) };
   let oldNet = false; // network input as on webOS 22: no sendKeyCodes, no long press
   // the Sonos part, for the sound: its own volume and mute while it follows a soundbar
   const sonosStub = { status: () => ({ enabled: false }) };
@@ -94,7 +96,7 @@ run(async () => {
             ? { returnValue: true, soundOutput: soundOut }
             : { returnValue: true }
     ),
-    feature: n => (n === 'apps' ? apps : n === 'watch' ? watchStub : n === 'sonos' ? sonosStub : null),
+    feature: n => (n === 'apps' ? apps : n === 'watch' ? watchStub : n === 'sonos' ? sonosStub : n === 'picturediag' ? picStub : null),
   });
   R.start();
   ok(
@@ -134,6 +136,7 @@ run(async () => {
       /function tvSheet\(\)/.test(pageR.text) &&
       /sleeping\(false\); \/\* the other TV/.test(pageR.text) &&
       /call\('\/sound\/reset'\)/.test(pageR.text) &&
+      /call\('\/picture\/fix'\)/.test(pageR.text) &&
       /call\('\/name'/.test(pageR.text) &&
       /mute\.classList\.toggle\('muted'/.test(pageR.text) &&
       /if \(\$\('sheet'\)\.className !== 'hide'\) feedbackSheet\(\)/.test(pageR.text) &&
@@ -443,6 +446,13 @@ run(async () => {
         rs2.code === 429,
       'from the phone: the TV renamed (and back to LG name), and the soundbar set up again by the TV speakers and back, not twice at once: ' +
         outs.join()
+    );
+    // Fix the picture from the phone: the picture part keeps LG's logs and restarts the TV
+    const px = await lan('POST', '/picture/fix', {}, key);
+    const pj = JSON.parse(px.text);
+    ok(
+      px.code === 200 && pj.restarting === true && fixes.length === 1 && fixes[0].restart === true && /phone/.test(fixes[0].why),
+      "Fix the picture from the phone: LG's logs kept, then the TV restarted: " + JSON.stringify(fixes)
     );
     tm.server.close();
     delete process.env.CYTV_TELEMACHUS;

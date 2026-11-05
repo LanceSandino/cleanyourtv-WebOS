@@ -2037,3 +2037,16 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-03T20:55:00Z"
 ```
+
+```yaml
+id: CU-20261104-01
+type: feature
+title: "Fix the picture (a black picture with only the sound or the subtitles): LG's logs kept, then the TV restarted; LG's logs kept at each start"
+description: "The owner on the living-room TV: videos played only their subtitles, then neither sound nor picture, in every app. LG's log showed every stream since the TV's start at 22:31 UTC muted by its video output (avmutemanager setAvMute videoMute on, owner com.webos.service.videooutput) and never unmuted (14 streams, no videoMute off), the players torn down and started again, and surface-manager 'Punch through is not working' (also seen in a good boot, so not the cause by itself). A restart cleared it, as on 2026-11-01; LG recorded no crash either time. Its logs from the bad start were gone (LG keeps them in RAM and turns them over within minutes), so the cause is not known yet; the suspect is our boot step that mounts the launcher and restarts SAM about 55 s into the start, while LG's media services start. The owner: an option for it in the settings, and find out why. helper/picturediag.js: a copy of LG's logs (dbg-log and its rotations, messages, bootd.log, our boot and service logs) four minutes into each start of the TV (the service up less than 15 minutes into it), the last 2 kept; POST /api/picture/fix {restart: true} keeps a copy at that moment (the last 3) with a summary (uptime, the app in front, LG's video mutes on and off and punch-through warnings) and restarts the TV 2 s later, at most once in 5 minutes; GET /api/picture/diag lists the copies; all in diag/, root only (LG's logs hold the TV's sdx sign-in headers), never sent anywhere. The phone remote's TV sheet: Fix the picture (it is black): restart the TV, with a confirmation (POST /picture/fix); the manager: Fix the picture, with Cancel and Yes, restart the TV."
+impact: medium
+affected_modules: ["helper/picturediag.js", "helper/helper.js", "helper/remote.js", "helper/remotepage.js", "manager/src/js/menu.js", "manager/app/index.html", "docs/troubleshooting.md", "docs/remote.md", "docs/manager.md"]
+related_tests: ["tools/test/picturediag.test.js (a start's copy only at a start of the TV, the last 2 kept, root only, with the summary of LG's video mutes; Fix the picture keeps the logs, then restarts the TV, at most once in 5 minutes; without restart only kept, the last 3 kept)", "tools/test/remote.test.js (Fix the picture from the phone goes to the picture part with restart; the page has the call)", "tools/test/api.test.js (the picturediag part runs)"]
+commit_ref: "feature/hardening (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-04T04:10:00Z"
+```

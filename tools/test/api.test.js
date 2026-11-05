@@ -389,6 +389,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       'lgsettings',
       'lgscreensaver',
       'debloatcheck',
+      'picturediag',
       'appupdates',
       'manager',
       'apps',

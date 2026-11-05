@@ -125,7 +125,8 @@ more than one TV the status line starts with the TV's name. A tap on the status 
 paired or not) to switch between (the list is read again each time; a switch starts that TV's checks afresh, so it shows on or off
 at once), **Rename this TV**, and, while the sound goes to a soundbar (HDMI ARC or optical), **Fix the sound**: the sound is set to
 the TV's speakers and back, as LG's own sound menu does, which brings back a soundbar that went silent after a restart (at most once
-every 8 seconds). Each TV pairs the phone with its own code and key (a TV's QR code names that TV, so scanning it switches to it),
+every 8 seconds), and **Fix the picture**: for a black picture with only the sound or the subtitles in every app, LG's logs are
+kept on the TV and the TV restarts (see [Troubleshooting](troubleshooting.md)). Each TV pairs the phone with its own code and key (a TV's QR code names that TV, so scanning it switches to it),
 each has its own link, Wake-on-LAN and kept name: LG's own TV name (Settings > General > Devices > TV name) without "[LG] ", or one
 set from the phone (**Rename this TV**, blank for LG's own) or with `POST /api/remote/name {"name": "..."}` on that TV; the hub asks
 the names again at most every 20 seconds. The history and alerts follow the first TV.

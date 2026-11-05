@@ -409,6 +409,13 @@ function build() {
     rows.push({ sep: true });
     rows.push({ label: 'Check for updates', sub: 'works without the service', fn: offlineCheck });
     rows.push({ label: 'Share log', sub: 'QR code for your phone', fn: openShare });
+    rows.push({
+      label: 'Fix the picture',
+      sub: 'a black picture with only the sound or subtitles: restarts the TV, its logs kept first',
+      fn: function () {
+        push('confirm-picture');
+      },
+    });
     return;
   }
   if (view === 'confirm-home' || view === 'confirm-uninstall') {
@@ -1078,6 +1085,26 @@ function build() {
           upl ? '/api/wallpapers/remove-uploads' : '/api/wallpapers/disconnect',
           {},
           upl ? 'Uploads removed' : 'Immich disconnected'
+        );
+      },
+    });
+    return;
+  }
+  /* Fix the picture: LG's video stuck muted after a start of the TV (picturediag.js); LG's logs are kept, then the TV restarts */
+  if (view === 'confirm-picture') {
+    rows.push({ label: 'Cancel', fn: pop });
+    rows.push({
+      label: 'Yes, restart the TV',
+      sub: "LG's logs are kept on the TV first, to find out why it happens",
+      fn: function () {
+        api('/api/picture/fix', { restart: true }).then(
+          function (r) {
+            pop();
+            banner(r && r.error ? r.error : 'The TV is restarting. It is back in about two minutes.', r && r.error ? 'err' : 'ok');
+          },
+          function () {
+            banner('The service did not answer', 'err');
+          }
         );
       },
     });

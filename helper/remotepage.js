@@ -581,6 +581,17 @@ function tvSheet() {
       list.appendChild(f);
     }
     if (!asleep) {
+      var px = document.createElement('button');
+      px.className = 'key opt';
+      px.textContent = t('Fix the picture (it is black): restart the TV');
+      px.onclick = function () {
+        if (!confirm(t('Restart the TV? Its logs are kept first, to find the cause.'))) return;
+        call('/picture/fix').then(function (r) {
+          note(r.error ? t(r.error) : t('The TV is restarting. It is back in about two minutes.'), !!r.error);
+          $('sheet').className = 'hide';
+        });
+      };
+      list.appendChild(px);
       var rn = document.createElement('button');
       rn.className = 'key opt';
       rn.textContent = t('Rename this TV');
