@@ -25,7 +25,8 @@
 //                                   to clear) that stays on when the TV sleeps: the QR code and the address shown then point there, so
 //                                   phones pair through it and it can wake the TV
 // On the LAN server: GET / (the phone page), POST /pair {code, name} -> {key, id}; with the key: POST /press {key}, /move {dx, dy},
-// /click, /scroll {dy}, /hold {key}, /text {text}, /backspace, /enter, /launch {id}, /power, GET /apps, GET /icon/<id>, GET /ping, and the
+// /click, /scroll {dy}, /hold {key}, /text {text}, /backspace, /enter, /launch {id}, /power, GET /apps, GET /inputs, /input {id} (an HDMI
+// input, or 'live' for Live TV, as the TV's Inputs picker offers them), GET /icon/<id>, GET /ping, and the
 // TV tab's read-only GET /status-data, /status-exposure, /status-services (statusdata.js: TV health and a summary, nothing secret).
 const http = require('http'),
   stream = require('stream'),
@@ -270,6 +271,24 @@ function create(ctx, opts) {
       .slice(0, 60)
       .map(x => ({ id: x.id, title: String(x.title || x.id) }));
   }
+  // the inputs as the TV's Inputs picker lists them (picker/app): the name the TV gives what is plugged in, else the port; whether
+  // something is plugged in; the one on the screen now; Live TV while the manager has it on
+  async function inputList() {
+    const a = ctx.feature('apps');
+    if (!a || !a.inputs) return [];
+    const r = await a.inputs().catch(() => null),
+      now = a.current ? a.current() : null;
+    const out = ((r && r.devices) || [])
+      .filter(d => d && /^com\.webos\.app\.hdmi\d$/.test(d.appId))
+      .map(d => {
+        const port = 'HDMI ' + d.port,
+          label = (typeof d.label === 'string' && d.label.trim()) || port;
+        return { id: d.appId, title: label, port: label === port ? '' : port, plugged: !!d.hdmiPlugIn, on: !!now && now.id === d.appId };
+      });
+    if (config.options().liveTv !== false) out.push({ id: 'live', title: 'Live TV', port: '', plugged: true, on: false });
+    return out;
+  }
+
   async function act(u, b, res) {
     if (u === '/ping') return { ok: true, now: await nowOn(), sound: await soundNow() };
     // the TV's name in the phone's list of TVs, set from the phone ('' for LG's own)
@@ -318,6 +337,14 @@ function create(ctx, opts) {
     if (u === '/enter') return luna('luna://com.webos.service.ime/sendEnterKey', {});
     if (u === '/power') return luna('luna://com.webos.service.networkinput/controls/power', {});
     if (u === '/apps') return { apps: await appsList() };
+    if (u === '/inputs') return { inputs: await inputList() };
+    if (u === '/input') {
+      const id = String(b.id || '');
+      if (!(await inputList()).some(x => x.id === id)) return { error: 'unknown input', code: 400 };
+      // Live TV is this launcher's own player, opened in its Home (the Inputs picker opens it the same way)
+      if (id === 'live') return luna('luna://com.webos.applicationManager/launch', { id: 'com.webos.app.home', params: { live: true } });
+      return luna('luna://com.webos.applicationManager/launch', { id, params: {} });
+    }
     if (u === '/launch') {
       const id = String(b.id || '');
       if (!(await appsList()).some(x => x.id === id)) return { error: 'unknown app', code: 400 };

@@ -2102,3 +2102,16 @@ commit_ref: "feature/black-picture (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-08T20:10:00Z"
 ```
+
+```yaml
+id: CU-20261108-03
+type: feature
+title: "Phone remote: an Input key that switches the TV to an HDMI input or Live TV"
+description: "The phone remote had no Input key. The top row gains one (beside the gear): a sheet with the TV's inputs as its own Inputs picker lists them (LG's eim getAllInputStatus through apps.js: the name the TV gives what is plugged in, then the port; Nothing connected dimmed), Live TV while the manager has it on, and the one on the screen outlined. A tap launches that input's app (com.webos.app.hdmiN) or this launcher's Live TV (Home with {live: true}). remote.js: GET /inputs and POST /input {id}, which switches only to an input on that list."
+impact: low
+affected_modules: ["helper/remote.js", "helper/remotepage.js", "helper/apps.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (the Input key lists the inputs and Live TV, and switches only to those; Live TV left out when switched off; the page has the key and its call)"]
+commit_ref: "feature/black-picture (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-08T23:00:00Z"
+```

@@ -379,6 +379,7 @@ function create(ctx) {
     inAppSearch,
     onScreen: () => onScreen,
     current, // what is on the screen now (remote.js)
+    inputs: askInputs, // the TV's inputs (remote.js: the phone's Input key)
     foreground: onForeground, // the poll's handler, for the tests
   };
 }

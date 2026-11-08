@@ -476,6 +476,28 @@ function colourPick(k) {
     sh.className = '';
   });
 }
+/* Input: the TV's inputs as its own Inputs picker lists them (what is plugged in by its name, then its port), Live TV, and the one on
+   the screen now marked; a tap switches the TV to it */
+function inputSheet() {
+  send('/inputs').then(function (r) {
+    if (!r || !r.inputs) return;
+    var sh = $('sheet'), list = $('sheetlist');
+    $('sheettitle').textContent = t('Input');
+    $('sheetp').textContent = r.inputs.length ? t('Choose what the TV shows.') : t('The TV listed no inputs.');
+    list.textContent = '';
+    r.inputs.forEach(function (x) {
+      var b = document.createElement('button'), parts = [x.id === 'live' ? t('Live TV') : x.title];
+      if (x.port) parts.push(x.port);
+      if (!x.plugged) parts.push(t('Nothing connected'));
+      b.className = 'key opt' + (x.on ? ' on' : '') + (x.plugged ? '' : ' dim');
+      b.textContent = parts.join(' \u00b7 ');
+      b.onclick = function () { buzz(); soon(); send('/input', { id: x.id }); sh.className = 'hide'; };
+      list.appendChild(b);
+    });
+    sh.className = '';
+  });
+}
+$('inb').onclick = function () { buzz(); inputSheet(); };
 $('sheetno').onclick = function () { $('sheet').className = 'hide'; };
 /* the gear: vibration and sound on each press, kept on this phone */
 function feedbackSheet() {
@@ -739,7 +761,7 @@ section{flex:1 0 auto;display:flex;flex-direction:column}
 #sheet .sh{width:100%;max-width:420px;max-height:80%;display:flex;flex-direction:column;padding:${u(18)} ${u(16)} max(${u(16)},env(safe-area-inset-bottom));border-radius:${u(24)} ${u(24)} 0 0;background:#17181d;box-shadow:0 -${u(6)} ${u(24)} rgba(0,0,0,.5)}
 #sheet h2{margin:0 0 ${u(4)};font-size:${u(18)}}#sheet p{margin:0 0 ${u(12)};font-size:${u(12.5)};color:#8a8d96}
 #sheetlist{overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:${u(12)}}
-.opt{width:100%;height:${u(46)};margin-bottom:${u(8)};border-radius:${u(14)};justify-content:flex-start;padding:0 ${u(16)};font-size:${u(15)}}.opt.on{box-shadow:inset 0 0 0 2px #4d8ef7}
+.opt{width:100%;height:${u(46)};margin-bottom:${u(8)};border-radius:${u(14)};justify-content:flex-start;padding:0 ${u(16)};font-size:${u(15)}}.opt.on{box-shadow:inset 0 0 0 2px #4d8ef7}.opt.dim{color:#80838c}
 .rock b.n{letter-spacing:0;text-indent:0;font-size:${u(14)};color:#d5d8de}
 .rd.muted{color:#ff8a80;box-shadow:inset 0 0 0 ${u(2)} rgba(255,107,95,.7),0 ${u(2)} 0 #0c0d10,0 0 ${u(14)} rgba(255,90,80,.35)}
 .hz{position:absolute;left:0;top:0;right:0;bottom:0;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:inherit;opacity:.011;z-index:3;background:none;box-shadow:none;-webkit-appearance:auto;appearance:auto;cursor:pointer}
@@ -776,7 +798,7 @@ small{display:block;margin-top:${u(16)};font-size:${u(12)};line-height:1.45;colo
 #msg{position:fixed;z-index:9;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 8px);width:calc(100% - 32px);max-width:380px;padding:12px 16px;border-radius:16px;transform:translateX(-50%);font-size:15px;line-height:1.35;color:#e9f7ec;background:#1e3425;box-shadow:0 10px 30px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.06)}
 #msg.e{color:#ffe9e7;background:#4a1a1a}
 .ack{box-shadow:0 0 0 3px rgba(48,209,88,.9)!important}.nak{box-shadow:0 0 0 3px rgba(255,69,58,.9)!important}
-.gear{margin-right:${u(8)}}.gear svg{width:${u(20)};height:${u(20)}}
+.gear,.ib{margin-right:${u(8)}}.gear svg,.ib svg{width:${u(20)};height:${u(20)}}
 ${statuspage.css(u)}`;
 
 // the icons, drawn on a 24 px grid in the text's colour (the filled ones with class f)
@@ -803,6 +825,7 @@ const ICONS = {
   rew: '<path d="M11.5 6.5v11L3.5 12z"/><path d="M20.5 6.5v11l-8-5.5z"/>',
   ff: '<path d="M12.5 6.5v11l8-5.5z"/><path d="M3.5 6.5v11l8-5.5z"/>',
   pointer: '<path d="M6 3.5l12.5 7.2-5.4 1.5 3.1 5.6-2.7 1.5-3.1-5.6-4 3.9z"/>',
+  input: '<path d="M7.5 7.5V6a1.5 1.5 0 0 1 1.5-1.5h10A1.5 1.5 0 0 1 20.5 6v9a1.5 1.5 0 0 1-1.5 1.5H9A1.5 1.5 0 0 1 7.5 15v-1.5"/><path d="M11.5 20h5"/><path d="M2.5 10.5h10"/><path d="M9.5 7.5l3 3-3 3"/>',
   remote: '<rect x="7" y="2.5" width="10" height="19" rx="3.5"/><circle cx="12" cy="8.5" r="2.4"/><path d="M10 14.5h4M10 17.5h4"/>',
 };
 const icon = (n, cls) => '<svg viewBox="0 0 24 24" aria-hidden="true"' + (cls ? ' class="' + cls + '"' : '') + '>' + ICONS[n] + '</svg>';
@@ -859,7 +882,7 @@ function html(lang) {
 <small>${T('Works on the same Wi-Fi as the TV. Add it to the Home Screen to open it like an app.')}</small></div>
 <div id=main class=hide>
 <div class=top><button class="key pw" id=off aria-label="${T('Power')}">${icon('power')}</button><div id=st><i id=dot></i><span id=tv></span></div>
-<button class="key nb gear" id=fbset aria-label="${T('Feedback')}">${icon('gear')}</button><button class="key nb" id=nb aria-label="${T('Numbers')}">123</button></div>
+<button class="key nb ib" id=inb aria-label="${T('Input')}">${icon('input')}</button><button class="key nb gear" id=fbset aria-label="${T('Feedback')}">${icon('gear')}</button><button class="key nb" id=nb aria-label="${T('Numbers')}">123</button></div>
 <button class="key p" id=wakeb>${icon('power')}<span>${T('Turn the TV on')}</span></button>
 <nav><button class=on data-p=keys>${T('Remote')}</button><button data-p=touch>${T('Touchpad')}</button><button data-p=type>${T('Type')}</button><button data-p=apps>${T('Apps')}</button><button data-p=tv>${T('TV')}</button></nav>
 <section id=keys>

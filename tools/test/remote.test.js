@@ -138,6 +138,8 @@ run(async () => {
       /call\('\/sound\/reset'\)/.test(pageR.text) &&
       /call\('\/picture\/fix', \{ media: true \}\)/.test(pageR.text) &&
       /call\('\/picture\/fix', \{ restart: true \}\)/.test(pageR.text) &&
+      /send\('\/input', \{ id: x\.id \}\)/.test(pageR.text) &&
+      /id=inb aria-label="Input"/.test(pageR.text) &&
       /\$\('off'\)\.onclick = function \(\) \{ if \(asleep\) return wake\(\); buzz\(\); powerSheet\(\); \}/.test(pageR.text) &&
       /if \(\+\+n > 90\)/.test(pageR.text) &&
       /call\('\/name'/.test(pageR.text) &&
@@ -284,6 +286,50 @@ run(async () => {
       icon.text === 'png',
     'the apps come in the order of the dock (hidden apps and inputs left out), and only those open'
   );
+  // the Input key: the TV's inputs as its Inputs picker lists them (the name of what is plugged in, then the port), the one on the
+  // screen marked, Live TV while it is on; only those are switched to, Live TV in this launcher's Home
+  apps.inputs = async () => ({
+    returnValue: true,
+    devices: [
+      { appId: 'com.webos.app.hdmi1', port: 1, label: 'HDMI 1', hdmiPlugIn: false },
+      { appId: 'com.webos.app.hdmi4', port: 4, label: ' PS5 Game Console ', hdmiPlugIn: true },
+      { appId: 'com.lge.other', port: 9, label: 'Other' },
+    ],
+  });
+  apps.current = () => ({ id: 'com.webos.app.hdmi4', title: 'HDMI 4', input: { port: 4, label: 'PS5 Game Console' } });
+  r = await lan('POST', '/inputs', {}, key);
+  calls.length = 0;
+  const i1 = await lan('POST', '/input', { id: 'com.webos.app.hdmi4' }, key);
+  const i2 = await lan('POST', '/input', { id: 'live' }, key);
+  const i3 = await lan('POST', '/input', { id: 'com.webos.app.hdmi9' }, key);
+  const i4 = await lan('POST', '/input', { id: 'a.one' }, key);
+  ok(
+    JSON.stringify(r.j.inputs) ===
+      JSON.stringify([
+        { id: 'com.webos.app.hdmi1', title: 'HDMI 1', port: '', plugged: false, on: false },
+        { id: 'com.webos.app.hdmi4', title: 'PS5 Game Console', port: 'HDMI 4', plugged: true, on: true },
+        { id: 'live', title: 'Live TV', port: '', plugged: true, on: false },
+      ]) &&
+      i1.code === 200 &&
+      i2.code === 200 &&
+      i3.code === 400 &&
+      i4.code === 400 &&
+      JSON.stringify(calls) ===
+        JSON.stringify([
+          ['luna://com.webos.applicationManager/launch', { id: 'com.webos.app.hdmi4', params: {} }],
+          ['luna://com.webos.applicationManager/launch', { id: 'com.webos.app.home', params: { live: true } }],
+        ]),
+    'the Input key lists the inputs and Live TV, and switches only to those: ' + JSON.stringify([r.j, calls])
+  );
+  config.update('test', c => ((c.options = Object.assign({}, c.options, { liveTv: false })), c));
+  r = await lan('POST', '/inputs', {}, key);
+  const i5 = await lan('POST', '/input', { id: 'live' }, key);
+  ok(
+    r.j.inputs.map(x => x.id).join() === 'com.webos.app.hdmi1,com.webos.app.hdmi4' && i5.code === 400,
+    'with Live TV switched off in the manager the Input key leaves it out'
+  );
+  config.update('test', c => ((c.options = Object.assign({}, c.options, { liveTv: true })), c));
+  delete apps.current;
   // a hub on the home network (hub/server.js): the QR code and the address shown point there; only http://<home address>:<port>
   const bad = await call(R, '/api/remote/helper', 'POST', { url: 'http://8.8.8.8:8794' });
   const bad2 = await call(R, '/api/remote/helper', 'POST', { url: 'https://192.168.1.40:8794/x' });
