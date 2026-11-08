@@ -1,6 +1,7 @@
 // Fix the picture and LG's logs kept (picturediag.js): a copy of LG's logs a few minutes into a start of the TV (not when the service
 // starts later, after an update), the last 2 starts kept; Fix the picture keeps the logs at that moment (the last 3), then restarts the
-// TV, at most once in 5 minutes; each copy readable only by root, with a summary of LG's video mutes and punch-through warnings.
+// TV, at most once in 5 minutes, or (media) restarts videooutputd and then umediaserver with the TV left on; each copy readable only
+// by root, with a summary of LG's video mutes and punch-through warnings.
 const fs = require('fs'),
   path = require('path');
 const { ok, call, tmp, sleep, req, run } = require('./lib');
@@ -23,7 +24,8 @@ run(async () => {
   );
   fs.writeFileSync(boot, '40.26 devtools: restarting WebAppMgr once\n');
   let t = Date.parse('2026-11-03T22:31:00Z');
-  const calls = [];
+  const calls = [],
+    shs = [];
   const make = up =>
     req('picturediag').create(
       {
@@ -38,7 +40,9 @@ run(async () => {
         uptime: () => up,
         bootAtS: 0.05,
         restartMs: 30,
+        mediaMs: 200,
         now: () => new Date((t += 1000)),
+        sh: async c => (shs.push(c), { ok: true, code: 0 }),
       }
     );
   // a start of the TV: the copy is made a little into it
@@ -93,5 +97,31 @@ run(async () => {
   ok(
     r.j.copies.filter(c => /^picture-/.test(c.name)).length === 3 && calls.filter(c => c[0] === 'reboot').length === 1,
     'only kept without restart, the last 3 kept: ' + r.j.copies.map(c => c.name).join()
+  );
+  // a black picture fixed without a restart: the logs kept, then videooutputd and then umediaserver restarted where they run
+  const reboots = calls.filter(c => c[0] === 'reboot').length;
+  r = await call(D, '/api/picture/fix', 'POST', { media: true });
+  const soon = await call(D, '/api/picture/fix', 'POST', { media: true });
+  ok(
+    r.code === 200 &&
+      /^picture-/.test(r.j.saved) &&
+      r.j.media.map(m => m.name + ':' + m.ok).join() === 'videooutputd:true,umediaserver:true' &&
+      shs.length === 2 &&
+      /is-active videooutputd .*restart videooutputd\.service$/.test(shs[0]) &&
+      /is-active umediaserver .*restart umediaserver\.service$/.test(shs[1]) &&
+      calls.filter(c => c[0] === 'reboot').length === reboots &&
+      soon.code === 429,
+    'Fix a black picture: the media services in order, the TV left on, not twice at once: ' + JSON.stringify([r.j, shs, soon.code])
+  );
+  // a service that does not run is left alone
+  shs.length = 0;
+  const S = req('picturediag').create(
+    { luna: async () => ({ returnValue: true }), profile: { get: () => ({}) } },
+    { dir, sources: [dbg], sh: async c => (shs.push(c), /videooutputd/.test(c) ? { ok: false, code: 3 } : { ok: true, code: 0 }) }
+  );
+  const m = await S.fix({ media: true });
+  ok(
+    m.media[0].skipped === true && m.media[1].ok === true && shs.length === 2,
+    'a media service that does not run is skipped: ' + JSON.stringify(m.media)
   );
 });

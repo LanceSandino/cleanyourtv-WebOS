@@ -411,7 +411,7 @@ function build() {
     rows.push({ label: 'Share log', sub: 'QR code for your phone', fn: openShare });
     rows.push({
       label: 'Fix the picture',
-      sub: 'a black picture with only the sound or subtitles: restarts the TV, its logs kept first',
+      sub: 'a black picture with only the sound or subtitles: restarts the media services or the TV, its logs kept first',
       fn: function () {
         push('confirm-picture');
       },
@@ -1090,9 +1090,25 @@ function build() {
     });
     return;
   }
-  /* Fix the picture: LG's video stuck muted after a start of the TV (picturediag.js); LG's logs are kept, then the TV restarts */
+  /* Fix the picture: LG's video stuck muted after a start of the TV (picturediag.js); LG's logs are kept, then the media services or
+     the TV restart */
   if (view === 'confirm-picture') {
     rows.push({ label: 'Cancel', fn: pop });
+    rows.push({
+      label: 'Restart the media services',
+      sub: 'the TV stays on; open the app again afterwards',
+      fn: function () {
+        api('/api/picture/fix', { media: true }).then(
+          function (r) {
+            pop();
+            banner(r && r.error ? r.error : 'Done. Still black? Restart the TV here.', r && r.error ? 'err' : 'ok');
+          },
+          function () {
+            banner('The service did not answer', 'err');
+          }
+        );
+      },
+    });
     rows.push({
       label: 'Yes, restart the TV',
       sub: "LG's logs are kept on the TV first, to find out why it happens",

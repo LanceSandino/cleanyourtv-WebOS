@@ -4,16 +4,19 @@
 // in RAM (/var/log, turned over within minutes), so a restart wipes what would say why. This part keeps copies on the TV's storage:
 //   - a few minutes into each start of the TV (when the service starts with the TV up less than 15 minutes, so not after an update):
 //     LG's logs from the start (boot-<time>), the last 2 starts kept;
-//   - Fix the picture (the phone remote's TV sheet, the manager): LG's logs at that moment (picture-<time>), the last 3 kept, then the
-//     TV restarts, the one fix seen to work; at most once in 5 minutes.
+//   - Fix the picture (the phone remote's power key, the manager): LG's logs at that moment (picture-<time>), the last 3 kept, then
+//     either the media services restarted (videooutputd, then umediaserver: what brought the picture back on an OLED65B2RLA in
+//     upstream's issue 122; the TV stays on) or the TV restarted, the fix seen to work here; a restart at most once in 5 minutes.
 // Each copy is a folder in diag/ that only root can read, with a summary.json (the TV's uptime, the app in front, LG's video mutes on
 // and off and its punch-through warnings in the log): LG's logs carry the TV's own sign-in headers (sdx), so they never leave the TV.
-//   POST /api/picture/fix   {restart: true} the logs kept, then the TV restarts 2 s later: {saved, restarting}; without restart only kept
+//   POST /api/picture/fix   {restart: true} the logs kept, then the TV restarts 2 s later: {saved, restarting}; {media: true} the logs
+//                           kept, then videooutputd and umediaserver restarted: {saved, media: [{name, ok}]}; with neither only kept
 //   GET  /api/picture/diag  the copies kept: {copies: [{name, files, bytes}]}
 const fs = require('fs'),
   os = require('os'),
   path = require('path');
 const P = require('./paths'),
+  exec = require('./exec'),
   web = require('./web');
 
 const SOURCES = [
@@ -29,8 +32,9 @@ const SOURCES = [
 ];
 const MAX_FILE = 8 << 20; // a log larger than this is left out
 const KEEP = { boot: 2, picture: 3 };
+const MEDIA = ['videooutputd', 'umediaserver']; // in this order (issue 122)
 
-// ctx: {luna, profile}; o: {dir, sources, uptime, bootAtS, restartMs, everyMs, now} (tests)
+// ctx: {luna, profile}; o: {dir, sources, uptime, bootAtS, restartMs, everyMs, mediaMs, now, sh} (tests)
 function create(ctx, opts) {
   const o = Object.assign(
     {
@@ -41,11 +45,14 @@ function create(ctx, opts) {
       lateS: 900, // a service started later than this is not a start of the TV
       restartMs: 2000,
       everyMs: 5 * 60 * 1000,
+      mediaMs: 30 * 1000, // the media services restarted at most this often
       now: () => new Date(),
+      sh: exec.sh,
     },
     opts
   );
   let lastFix = 0,
+    lastMedia = 0,
     timer = null;
   const stamp = () => o.now().toISOString().replace(/[:.]/g, '-');
   // LG's video mutes and punch-through warnings in its current log, for the summary
@@ -118,11 +125,30 @@ function create(ctx, opts) {
     console.log('picturediag: ' + why + ': LG logs kept in diag/' + name + ' (' + files.length + ' files)');
     return name;
   }
-  // Fix the picture: the logs kept, then (with restart) the TV restarted
+  // the media services restarted one after the other, each only where it runs (as scripts/after-sam.sh does)
+  async function media() {
+    const out = [];
+    for (const name of MEDIA) {
+      const r = await o.sh(
+        P.SYSTEMCTL + ' is-active ' + name + ' >/dev/null 2>&1 || exit 3; ' + P.SYSTEMCTL + ' restart ' + name + '.service',
+        30000
+      );
+      out.push({ name, ok: r.ok, skipped: r.code === 3 });
+    }
+    console.log('picturediag: media services restarted: ' + JSON.stringify(out));
+    return out;
+  }
+  // Fix the picture: the logs kept, then (with media) the media services or (with restart) the TV restarted
   async function fix(b) {
-    const restart = !!(b && b.restart);
+    const restart = !!(b && b.restart),
+      soft = !restart && !!(b && b.media);
     if (restart && Date.now() - lastFix < o.everyMs) return { error: 'the TV was restarted for this a moment ago', code: 429 };
+    if (soft && Date.now() - lastMedia < o.mediaMs) return { error: 'the picture was fixed a moment ago', code: 429 };
     const saved = await keep('picture', (b && b.why) || 'Fix the picture');
+    if (soft) {
+      lastMedia = Date.now();
+      return { saved, media: await media() };
+    }
     if (!restart) return { saved };
     lastFix = Date.now();
     setTimeout(() => {

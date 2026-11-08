@@ -17,7 +17,7 @@ forgetting them.
 
 | Tab | What it does |
 |---|---|
-| Remote | Power (asks first, then turns the TV off), the volume rocker (hold to repeat) and Mute, the channel rocker, Home, the arrows round OK (hold one to repeat), Settings, Info, Back and Exit, rewind, play, pause and fast forward, and the red, green, yellow and blue keys. **123** opens a number pad (1 to 9, 0, the dash and OK). Hold OK, Back, Home or Settings for LG's long press, as on the remote (on Home, holding OK opens an app's menu). Hold a colour key to give it an app: a tap then opens that app; **LG's own key** puts it back (Live TV and HbbTV use the colour keys). The choice stays on that phone. |
+| Remote | Power: **Turn the TV off**, **Fix a black picture** (only the sound or subtitles: LG's media services restarted, the TV stays on) or **Restart the TV** (asks first), the volume rocker (hold to repeat) and Mute, the channel rocker, Home, the arrows round OK (hold one to repeat), Settings, Info, Back and Exit, rewind, play, pause and fast forward, and the red, green, yellow and blue keys. **123** opens a number pad (1 to 9, 0, the dash and OK). Hold OK, Back, Home or Settings for LG's long press, as on the remote (on Home, holding OK opens an app's menu). Hold a colour key to give it an app: a tap then opens that app; **LG's own key** puts it back (Live TV and HbbTV use the colour keys). The choice stays on that phone. |
 | Touchpad | Drag to move the pointer (a quick drag goes further, a slow one is precise), tap to click where the pointer is, two fingers to scroll, as with the Magic Remote; Back, OK and Home under it. |
 | Type | Text for a search box on the TV: open the box first, the text goes where its cursor is; Delete and Enter. |
 | Apps | The apps in the order of your dock, then the others; a tap opens one. |
@@ -78,7 +78,8 @@ Wi-Fi** must be on). The hub (`hub/server.js`) is a small server for a computer 
   the TV, so the touchpad stays quick.
 - It keeps the last copy of the phone page (no key is in it). While the TV sleeps the page still opens, says the TV is off, and its
   power key or **Turn the TV on** sends Wake-on-LAN magic packets (UDP broadcast, ports 9 and 7), at most one every ten seconds; the
-  page then waits for the TV and carries on.
+  page then waits for the TV (up to three minutes: a TV that was switched off completely starts from cold, and its service links
+  again about a minute and a half in) and carries on; after that it checks every 15 seconds as usual.
 - It learns the TV's MAC from the computer's ARP table while the TV is on and keeps it in its data folder, never in a log or an answer.
 - It answers only addresses of the home network and forwards only to the TV: it is no proxy to anything else.
 
@@ -125,8 +126,7 @@ more than one TV the status line starts with the TV's name. A tap on the status 
 paired or not) to switch between (the list is read again each time; a switch starts that TV's checks afresh, so it shows on or off
 at once), **Rename this TV**, and, while the sound goes to a soundbar (HDMI ARC or optical), **Fix the sound**: the sound is set to
 the TV's speakers and back, as LG's own sound menu does, which brings back a soundbar that went silent after a restart (at most once
-every 8 seconds), and **Fix the picture**: for a black picture with only the sound or the subtitles in every app, LG's logs are
-kept on the TV and the TV restarts (see [Troubleshooting](troubleshooting.md)). Each TV pairs the phone with its own code and key (a TV's QR code names that TV, so scanning it switches to it),
+every 8 seconds), and the power key's **Fix a black picture** and **Restart the TV** (see [Troubleshooting](troubleshooting.md)). Each TV pairs the phone with its own code and key (a TV's QR code names that TV, so scanning it switches to it),
 each has its own link, Wake-on-LAN and kept name: LG's own TV name (Settings > General > Devices > TV name) without "[LG] ", or one
 set from the phone (**Rename this TV**, blank for LG's own) or with `POST /api/remote/name {"name": "..."}` on that TV; the hub asks
 the names again at most every 20 seconds. The history and alerts follow the first TV.

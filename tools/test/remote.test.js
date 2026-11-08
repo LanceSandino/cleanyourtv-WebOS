@@ -136,7 +136,10 @@ run(async () => {
       /function tvSheet\(\)/.test(pageR.text) &&
       /sleeping\(false\); \/\* the other TV/.test(pageR.text) &&
       /call\('\/sound\/reset'\)/.test(pageR.text) &&
-      /call\('\/picture\/fix'\)/.test(pageR.text) &&
+      /call\('\/picture\/fix', \{ media: true \}\)/.test(pageR.text) &&
+      /call\('\/picture\/fix', \{ restart: true \}\)/.test(pageR.text) &&
+      /\$\('off'\)\.onclick = function \(\) \{ if \(asleep\) return wake\(\); buzz\(\); powerSheet\(\); \}/.test(pageR.text) &&
+      /if \(\+\+n > 90\)/.test(pageR.text) &&
       /call\('\/name'/.test(pageR.text) &&
       /mute\.classList\.toggle\('muted'/.test(pageR.text) &&
       /if \(\$\('sheet'\)\.className !== 'hide'\) feedbackSheet\(\)/.test(pageR.text) &&
@@ -447,12 +450,18 @@ run(async () => {
       'from the phone: the TV renamed (and back to LG name), and the soundbar set up again by the TV speakers and back, not twice at once: ' +
         outs.join()
     );
-    // Fix the picture from the phone: the picture part keeps LG's logs and restarts the TV
+    // Fix the picture from the phone: the picture part keeps LG's logs and restarts the TV (also for a page from before media)
     const px = await lan('POST', '/picture/fix', {}, key);
     const pj = JSON.parse(px.text);
     ok(
       px.code === 200 && pj.restarting === true && fixes.length === 1 && fixes[0].restart === true && /phone/.test(fixes[0].why),
-      "Fix the picture from the phone: LG's logs kept, then the TV restarted: " + JSON.stringify(fixes)
+      "Restart the TV from the phone: LG's logs kept, then the TV restarted: " + JSON.stringify(fixes)
+    );
+    // a black picture from the power key: the media services restarted, the TV left on
+    const pm = await lan('POST', '/picture/fix', { media: true }, key);
+    ok(
+      pm.code === 200 && fixes.length === 2 && fixes[1].media === true && !fixes[1].restart && /phone/.test(fixes[1].why),
+      'Fix a black picture from the phone: the media services, not the TV: ' + JSON.stringify(fixes)
     );
     tm.server.close();
     delete process.env.CYTV_TELEMACHUS;

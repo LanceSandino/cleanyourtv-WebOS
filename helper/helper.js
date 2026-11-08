@@ -16,7 +16,7 @@ const luna = require('./luna'),
   config = require('./config').main(),
   tvprofile = require('./tvprofile');
 
-const PORT = 8765;
+const PORT = Number(process.env.CYTV_PORT) || 8765; // CYTV_PORT only for the API test on a computer; never set on the TV
 // the API token our apps send (apitoken.js); without it the service still runs, as before
 let apiToken = null;
 try {

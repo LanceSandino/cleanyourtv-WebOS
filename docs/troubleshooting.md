@@ -3,8 +3,12 @@
 - **Black screen after switching or rebooting.** Wait a minute; if it stays black, restart the TV. If the new Home does not come
   up, the setup removes the boot scripts and restarts the TV with LG's Home by itself.
 - **Every app's picture is black, with only the sound or the subtitles.** LG has the video muted at the start of every stream and
-  never lifts it (seen twice on webOS 25 right after the TV started; LG records no crash, and a restart clears it). Use **Fix the
-  picture** (the phone remote's TV sheet, or the manager): LG's logs are kept first, then the TV restarts. The service also keeps a
+  never lifts it (seen three times on webOS 25 right after the TV started; LG records no crash, and a restart clears it). On webOS 25
+  and 26 with LG's flutter or web Home the boot now restarts LG's media services after the app manager (see
+  [TV changes](tv-changes.md)), which is what fixed it on an OLED65B2RLA. If it happens anyway, use the phone remote's power key:
+  **Fix a black picture** restarts the media services (`videooutputd`, then `umediaserver`) with the TV left on; open the app again
+  afterwards. If the picture is still black, **Restart the TV** there (at most once in 5 minutes). The manager's **Fix the picture**
+  offers both. LG's logs are kept first each time. The service also keeps a
   copy of LG's logs from a few minutes into each start (the last 2). Both are in `/media/developer/cleanyourtv/diag/`, readable only
   by root: LG's logs hold the TV's own sign-in headers, so they never leave the TV; they are what can tell why it happens.
 - **The Home button opens LG's full-screen Home, not CleanYourTV.** Some TVs have a Home Style setting. Set TV Settings > General >

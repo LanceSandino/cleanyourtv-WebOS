@@ -2076,3 +2076,29 @@ commit_ref: "feature/hardening (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-05T05:50:00Z"
 ```
+
+```yaml
+id: CU-20261108-01
+type: fix
+title: "Black picture in every app on webOS 25: the media services restarted after the takeover, and a Fix a black picture / Restart the TV on the phone's power key"
+description: "The owner: no picture and no sound, only subtitles, a third time (2026-11-08), and no restart to be found on the phone remote (it was behind a tap on the status line). The copy picturediag.js kept 4 minutes into that start shows LG's videoMute set 4 times and never lifted, with Netflix in front, as on 2026-11-01 and -03. Upstream's issue 122 is the same TV software (SDK 10.3.2, flutter Home, the boot log 'after-sam ... services: none'): there, restarting videooutputd and then umediaserver brought the picture back. Taken from upstream by reviewed cherry-pick (D-20261028-1, authors kept, AI co-author lines removed): fe44798 (umediaserver after SAM on webOS 26) and 056fe08 (videooutputd and umediaserver on webOS 25 with the flutter or web Home; a file after-sam-services replaces the list on one TV). The fork's own part: POST /api/picture/fix {media: true} keeps LG's logs and restarts those two services where they run, the TV left on (at most every 30 s); the phone's power key opens a sheet (Turn the TV off, Fix a black picture, Restart the TV) instead of a bare 'Turn the TV off?'; the TV sheet has the same two; the manager's Fix the picture offers both; a page from before (POST /picture/fix with no body) still restarts the TV. The phone's wait after Turn the TV on is three minutes instead of 90 s, since a TV switched off completely starts from cold (that start, woken over Wi-Fi, linked about 100 s after the wake), and the off text comes back when it gives up."
+impact: medium
+affected_modules: ["helper/tvprofile.js", "scripts/after-sam.sh", "helper/picturediag.js", "helper/remote.js", "helper/remotepage.js", "manager/src/js/menu.js", "manager/app/index.html", "compat.json", "docs/tv-changes.md", "docs/tested-tvs.md", "docs/troubleshooting.md", "docs/remote.md", "docs/manager.md"]
+related_tests: ["tools/test/tvprofile.test.js (webOS 25 flutter/web: videooutputd umediaserver; webOS 26: arccontroller umediaserver; native and unknown unchanged)", "tools/test/after-sam.test.js (the after-sam-services file replaces the list; an update leaves it)", "tools/test/picturediag.test.js (media: the logs kept, then videooutputd and umediaserver in order, no reboot, not twice at once; a service that does not run is skipped)", "tools/test/remote.test.js (the power sheet and both calls in the page; no body restarts the TV; media restarts the services)"]
+commit_ref: "feature/black-picture (the cherry-picks of fe44798 and 056fe08 and the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-08T19:55:00Z"
+```
+
+```yaml
+id: CU-20261108-02
+type: chore
+title: "The API test runs the service on port 38765, not the TV's 8765"
+description: "tools/check.sh failed on the owner's Mac because another program there listened on 127.0.0.1:8765 (EADDRINUSE: the service in api.test.js did not start). helper/helper.js takes CYTV_PORT (never set on the TV, where it stays 8765); api.test.js sets it to 38765, or CYTV_TEST_PORT."
+impact: low
+affected_modules: ["helper/helper.js", "tools/test/api.test.js"]
+related_tests: ["tools/test/api.test.js (the whole contract runs against the service on the test port, with 8765 taken)"]
+commit_ref: "feature/black-picture (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-08T20:10:00Z"
+```

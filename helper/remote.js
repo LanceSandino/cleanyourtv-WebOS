@@ -277,12 +277,13 @@ function create(ctx, opts) {
     // the sound through a soundbar (HDMI ARC or optical) set up again: to the TV's speakers and back, as LG's own menu does, which
     // brings back a soundbar that went silent after a restart (seen on the owner's TV: the picture and no sound until then)
     if (u === '/sound/reset') return soundReset();
-    // a black picture with only the sound or the subtitles (LG's video stays muted after a start of the TV): LG's logs kept, then the
-    // TV restarted, the one fix seen to work (picturediag.js)
+    // a black picture with only the sound or the subtitles (LG's video stays muted after a start of the TV): LG's logs kept, then
+    // {media: true} the media services restarted (the TV stays on), else the TV restarted (a page from before media asks that)
     if (u === '/picture/fix') {
       const d = ctx.feature && ctx.feature('picturediag');
       if (!d) return { error: 'not on this version', code: 404 };
-      return d.fix({ restart: true, why: 'Fix the picture (phone remote)' });
+      if (b.media) return d.fix({ media: true, why: 'Fix the picture (phone remote)' });
+      return d.fix({ restart: true, why: 'Restart the TV (phone remote)' });
     }
     if (statusdata.PATHS.indexOf(u) >= 0) return tvStatus.get(u);
     if (u === '/press') {

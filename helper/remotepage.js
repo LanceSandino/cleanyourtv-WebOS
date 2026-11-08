@@ -146,9 +146,13 @@ function wake() {
   call('/wake').then(function (r) {
     if (r.error) return note(t(r.error), true);
     $('tv').textContent = t('Turning the TV on\u2026');
+    /* up to three minutes: a TV switched off completely starts from cold, and its service links again about a minute and a half in */
     var n = 0, iv = setInterval(function () {
       call('/ping').then(function (p) { if (p.status === 200 && !p.off) { clearInterval(iv); sleeping(false); state(true); } });
-      if (++n > 45) clearInterval(iv);
+      if (++n > 90) {
+        clearInterval(iv);
+        if (asleep) $('tv').textContent = t('The TV is off. The power key turns it on.');
+      }
     }, 2000);
   }, function () { note(t('The TV does not answer. Is it on, and the phone on the same Wi-Fi?'), true); });
 }
@@ -524,7 +528,39 @@ function feedbackSheet() {
 $('fbset').onclick = feedbackSheet;
 colourLabels();
 switches();
-$('off').onclick = function () { if (asleep) return wake(); buzz(); if (confirm(t('Turn the TV off?'))) send('/power'); };
+/* the power key: the TV off, or for a black picture (only the sound or the subtitles) the media services restarted, or the TV
+   restarted; LG's logs are kept first by both (picturediag.js) */
+function powerSheet() {
+  var list = $('sheetlist');
+  $('sheettitle').textContent = t('Power');
+  $('sheetp').textContent = '';
+  list.textContent = '';
+  [
+    [t('Turn the TV off'), function () { send('/power'); }],
+    [t('Fix a black picture (only sound or subtitles)'), fixPicture],
+    [t('Restart the TV'), restartTv],
+  ].forEach(function (o) {
+    var b = document.createElement('button');
+    b.className = 'key opt';
+    b.textContent = o[0];
+    b.onclick = function () { buzz(); $('sheet').className = 'hide'; o[1](); };
+    list.appendChild(b);
+  });
+  $('sheet').className = '';
+}
+function fixPicture() {
+  note(t('Fixing the picture\u2026'));
+  call('/picture/fix', { media: true }).then(function (r) {
+    note(r.error ? t(r.error) : t('Done. Still black? Open the app again, or Power > Restart the TV.'), !!r.error);
+  }, function () { state(false); });
+}
+function restartTv() {
+  if (!confirm(t('Restart the TV? Its logs are kept first, to find the cause.'))) return;
+  call('/picture/fix', { restart: true }).then(function (r) {
+    note(r.error ? t(r.error) : t('The TV is restarting. It is back in about two minutes.'), !!r.error);
+  }, function () { state(false); });
+}
+$('off').onclick = function () { if (asleep) return wake(); buzz(); powerSheet(); };
 $('wakeb').onclick = wake;
 /* pairing with the six digits from the TV */
 function go() {
@@ -581,17 +617,13 @@ function tvSheet() {
       list.appendChild(f);
     }
     if (!asleep) {
-      var px = document.createElement('button');
-      px.className = 'key opt';
-      px.textContent = t('Fix the picture (it is black): restart the TV');
-      px.onclick = function () {
-        if (!confirm(t('Restart the TV? Its logs are kept first, to find the cause.'))) return;
-        call('/picture/fix').then(function (r) {
-          note(r.error ? t(r.error) : t('The TV is restarting. It is back in about two minutes.'), !!r.error);
-          $('sheet').className = 'hide';
-        });
-      };
-      list.appendChild(px);
+      [[t('Fix a black picture (only sound or subtitles)'), fixPicture], [t('Restart the TV'), restartTv]].forEach(function (o) {
+        var px = document.createElement('button');
+        px.className = 'key opt';
+        px.textContent = o[0];
+        px.onclick = function () { $('sheet').className = 'hide'; o[1](); };
+        list.appendChild(px);
+      });
       var rn = document.createElement('button');
       rn.className = 'key opt';
       rn.textContent = t('Rename this TV');
@@ -826,7 +858,7 @@ function html(lang) {
 <button class="key p" id=go>${T('Pair')}</button>
 <small>${T('Works on the same Wi-Fi as the TV. Add it to the Home Screen to open it like an app.')}</small></div>
 <div id=main class=hide>
-<div class=top><button class="key pw" id=off aria-label="${T('Turn the TV off')}">${icon('power')}</button><div id=st><i id=dot></i><span id=tv></span></div>
+<div class=top><button class="key pw" id=off aria-label="${T('Power')}">${icon('power')}</button><div id=st><i id=dot></i><span id=tv></span></div>
 <button class="key nb gear" id=fbset aria-label="${T('Feedback')}">${icon('gear')}</button><button class="key nb" id=nb aria-label="${T('Numbers')}">123</button></div>
 <button class="key p" id=wakeb>${icon('power')}<span>${T('Turn the TV on')}</span></button>
 <nav><button class=on data-p=keys>${T('Remote')}</button><button data-p=touch>${T('Touchpad')}</button><button data-p=type>${T('Type')}</button><button data-p=apps>${T('Apps')}</button><button data-p=tv>${T('TV')}</button></nav>

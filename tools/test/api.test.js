@@ -4,7 +4,8 @@
 //   node tools/test/contract.js                  compare with the golden file
 //   node tools/test/contract.js --record         write the golden file (only when a change of the API is intended)
 //   node tools/test/contract.js --helper <dir>   run another copy of the service, e.g. an older version to record from
-// Runs on Node 12.21 (webOS 22) and newer. Uses port 8765, like the service on the TV: stop anything else that listens there.
+// Runs on Node 12.21 (webOS 22) and newer. The service listens on port 38765 here (CYTV_PORT; CYTV_TEST_PORT picks another), not the
+// TV's 8765, which a computer may already use; --helper with a copy older than 1.6.64 needs CYTV_TEST_PORT=8765.
 'use strict';
 const fs = require('fs'),
   os = require('os'),
@@ -188,7 +189,7 @@ function request(method, p, body, origin) {
     const data = body === undefined ? '' : JSON.stringify(body),
       headers = { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) };
     if (origin !== undefined) headers.origin = origin;
-    const q = http.request({ host: '127.0.0.1', port: 8765, method, path: p, headers }, r => {
+    const q = http.request({ host: '127.0.0.1', port: PORT, method, path: p, headers }, r => {
       const b = [];
       r.on('data', c => b.push(c));
       r.on('end', () =>
@@ -288,6 +289,7 @@ const CALLS = [
 ];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const PORT = Number(process.env.CYTV_TEST_PORT) || 38765;
 (async () => {
   await new Promise(r => gh.listen(0, '127.0.0.1', r));
   const ghUrl = 'http://127.0.0.1:' + gh.address().port;
@@ -305,6 +307,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     CYTV_INITD: INITD,
     CYTV_DISKS: [D, tmp].join(':'),
     CYTV_SYSTEMCTL: path.join(BIN, 'systemctl'),
+    CYTV_PORT: String(PORT),
   });
   const log = fs.openSync(path.join(tmp, 'service.log'), 'w');
   const svc = cp.spawn(process.execPath, [path.join(helperDir, 'helper.js')], { env, cwd: helperDir, stdio: ['ignore', log, log] });
