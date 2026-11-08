@@ -825,7 +825,8 @@ const ICONS = {
   rew: '<path d="M11.5 6.5v11L3.5 12z"/><path d="M20.5 6.5v11l-8-5.5z"/>',
   ff: '<path d="M12.5 6.5v11l8-5.5z"/><path d="M3.5 6.5v11l8-5.5z"/>',
   pointer: '<path d="M6 3.5l12.5 7.2-5.4 1.5 3.1 5.6-2.7 1.5-3.1-5.6-4 3.9z"/>',
-  input: '<path d="M7.5 7.5V6a1.5 1.5 0 0 1 1.5-1.5h10A1.5 1.5 0 0 1 20.5 6v9a1.5 1.5 0 0 1-1.5 1.5H9A1.5 1.5 0 0 1 7.5 15v-1.5"/><path d="M11.5 20h5"/><path d="M2.5 10.5h10"/><path d="M9.5 7.5l3 3-3 3"/>',
+  input:
+    '<path d="M7.5 7.5V6a1.5 1.5 0 0 1 1.5-1.5h10A1.5 1.5 0 0 1 20.5 6v9a1.5 1.5 0 0 1-1.5 1.5H9A1.5 1.5 0 0 1 7.5 15v-1.5"/><path d="M11.5 20h5"/><path d="M2.5 10.5h10"/><path d="M9.5 7.5l3 3-3 3"/>',
   remote: '<rect x="7" y="2.5" width="10" height="19" rx="3.5"/><circle cx="12" cy="8.5" r="2.4"/><path d="M10 14.5h4M10 17.5h4"/>',
 };
 const icon = (n, cls) => '<svg viewBox="0 0 24 24" aria-hidden="true"' + (cls ? ' class="' + cls + '"' : '') + '>' + ICONS[n] + '</svg>';
