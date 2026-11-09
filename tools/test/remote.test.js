@@ -140,7 +140,15 @@ run(async () => {
       /call\('\/picture\/fix', \{ restart: true \}\)/.test(pageR.text) &&
       /send\('\/input', \{ id: x\.id \}\)/.test(pageR.text) &&
       /function layout\(\)/.test(pageR.text) &&
-      /w > h && h >= 480 && w >= 700 \? 'wide' : w >= 460 && w \/ h >= 0\.6 \? 'rail' : ''/.test(pageR.text) &&
+      /w > h && h >= 400 && w >= 560 \? 'wide' : w >= 460 && w \/ h >= 0\.6 \? 'rail' : ''/.test(pageR.text) &&
+      !/m\.setAttribute\('content', 'width=/.test(pageR.text) &&
+      /window\.visualViewport\.addEventListener\('resize', turned\)/.test(pageR.text) &&
+      /window\.addEventListener\('orientationchange', turned\)/.test(pageR.text) &&
+      /setInterval\(function \(\) \{\s*if \(!document\.hidden\) layout\(\);/.test(pageR.text) &&
+      /call\('\/screen', r\)/.test(pageR.text) &&
+      /\.rail\.dl #main\{grid-template-columns/.test(pageR.text) &&
+      /\.rail\.db #main\{max-width:400px/.test(pageR.text) &&
+      /localStorage\.setItem\(AT, dockAt\)/.test(pageR.text) &&
       /\.rail #main\{max-width:calc\(400px \+ clamp\(84px,19vw,132px\) \+ 14px\)/.test(pageR.text) &&
       /\.wide #keys\{grid-area:keys;display:flex!important\}/.test(pageR.text) &&
       /<div id=dock><\/div>/.test(pageR.text) &&
@@ -292,6 +300,22 @@ run(async () => {
       calls[0][0] === 'luna://com.webos.applicationManager/launch' &&
       icon.text === 'png',
     'the apps come in the order of the dock (hidden apps and inputs left out), and only those open'
+  );
+  // the phone's screen (the page's layouts): to the service log once per new set of sizes, numbers and the layout's name only
+  const logged = [],
+    log0 = console.log;
+  console.log = (...a) => (/^remote: a phone screen/.test(String(a[0])) ? logged.push(a.join(' ')) : log0(...a));
+  const sc = { w: 382, h: 678, iw: 382, cw: 382, vs: 1, dpr: 3, lay: 'rail', evil: 'x\ny', sw: 'not a number' };
+  const s1 = await lan('POST', '/screen', sc, key);
+  await lan('POST', '/screen', sc, key);
+  await lan('POST', '/screen', Object.assign({}, sc, { lay: '<b>' }), key);
+  console.log = log0;
+  ok(
+    s1.code === 200 &&
+      logged.length === 2 &&
+      logged[0] === 'remote: a phone screen: w=382 h=678 iw=382 cw=382 vs=1 dpr=3 lay=rail' &&
+      /lay=phone$/.test(logged[1]),
+    'a phone screen is logged once per new set of sizes, numbers only: ' + JSON.stringify(logged)
   );
   // the Input key: the TV's inputs as its Inputs picker lists them (the name of what is plugged in, then the port), the one on the
   // screen marked, Live TV while it is on; only those are switched to, Live TV in this launcher's Home

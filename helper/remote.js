@@ -25,7 +25,7 @@
 //                                   to clear) that stays on when the TV sleeps: the QR code and the address shown then point there, so
 //                                   phones pair through it and it can wake the TV
 // On the LAN server: GET / (the phone page), POST /pair {code, name} -> {key, id}; with the key: POST /press {key}, /move {dx, dy},
-// /click, /scroll {dy}, /hold {key}, /text {text}, /backspace, /enter, /launch {id}, /power, GET /apps, GET /inputs, /input {id} (an HDMI
+// /click, /scroll {dy}, /hold {key}, /text {text}, /backspace, /enter, /launch {id}, /power, /screen {sizes}, GET /apps, GET /inputs, /input {id} (an HDMI
 // input, or 'live' for Live TV, as the TV's Inputs picker offers them), GET /icon/<id>, GET /ping, and the
 // TV tab's read-only GET /status-data, /status-exposure, /status-services (statusdata.js: TV health and a summary, nothing secret).
 const http = require('http'),
@@ -71,6 +71,9 @@ const CODES = { UP: 103, DOWN: 108, LEFT: 105, RIGHT: 106, PLAY: 207, INFO: 358,
 for (let d = 1; d <= 9; d++) CODES[d] = d + 1; // KEY_1 is 2 ... KEY_9 is 10
 const KEYS = Object.keys(SPECIAL).concat(Object.keys(CODES));
 const LONG = ['ENTER', 'BACK', 'HOME', 'MENU']; // held on the phone: LG's long press
+// what the phone page reports of its screen (/screen): the window, inner, client, outer, screen and visual viewport sizes, the scale,
+// and the pixel ratio
+const SCREEN_KEYS = ['w', 'h', 'iw', 'ih', 'cw', 'ch', 'ow', 'oh', 'sw', 'sh', 'vw', 'vh', 'vs', 'dpr'];
 const AUDIO = 'luna://com.webos.service.audio/master/';
 const NET = 'luna://com.webos.service.networkinput/';
 
@@ -254,6 +257,7 @@ function create(ctx, opts) {
     });
   }
 
+  let lastScreen = ''; // the last phone screen logged (/screen)
   // ---- what a phone asks for ----
   async function appsList() {
     const a = ctx.feature('apps'),
@@ -338,6 +342,19 @@ function create(ctx, opts) {
     if (u === '/power') return luna('luna://com.webos.service.networkinput/controls/power', {});
     if (u === '/apps') return { apps: await appsList() };
     if (u === '/inputs') return { inputs: await inputList() };
+    // the phone's screen as its page sees it (remotepage.js layout()), in the service log once per new set of sizes: the page's
+    // layouts for a phone not to hand (a folding iPhone) are tuned from it. Numbers only, and the layout's name
+    if (u === '/screen') {
+      const line = SCREEN_KEYS.filter(k => Number.isFinite(Number(b[k])))
+        .map(k => k + '=' + Math.round(Number(b[k]) * 100) / 100)
+        .concat('lay=' + (['rail', 'wide'].indexOf(b.lay) >= 0 ? b.lay : 'phone'))
+        .join(' ');
+      if (line !== lastScreen) {
+        lastScreen = line;
+        console.log('remote: a phone screen: ' + line);
+      }
+      return { ok: true };
+    }
     if (u === '/input') {
       const id = String(b.id || '');
       if (!(await inputList()).some(x => x.id === id)) return { error: 'unknown input', code: 400 };

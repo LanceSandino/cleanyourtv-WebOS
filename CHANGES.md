@@ -2128,3 +2128,16 @@ commit_ref: "feature/black-picture (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-09T00:30:00Z"
 ```
+
+```yaml
+id: CU-20261108-05
+type: fix
+title: "Phone remote: the folding iPhone closed and turned gets keys and touchpad side by side; turns are noticed at once; the apps on the right, left or under the remote"
+description: "On the owner's iPhone Duo closed, landscape showed the phone's column cut off at the bottom (the page is about 583 x 458 points there), and turning the open phone did not change the layout until it was folded and opened again. layout() now reads the window from the visual viewport as well as innerWidth/innerHeight, takes landscape from 560 x 400 (the keys may shrink to 0.66 of a unit there; their height budget is 600 without the tabs), skips while a text box has the keyboard, and runs on resize, the visual viewport's resize, orientationchange, the orientation media query, again 150/400/900 ms after each (iOS reports late; a fold passes through sizes of no pose) and each second while the page shows. Closed and upright the page gets 382 of the 466 points: iOS keeps the right column for its own controls in web pages and they cannot draw there (WebKit says it is exploring a way), so the phone's column stays. The gear (now This phone) gains Apps on a wider screen: Right, Left or Under the remote (the remote centred), kept on the phone. The page reports its sizes once per new set (POST /screen); the service logs them as numbers so the layouts can be tuned for a phone not to hand."
+impact: medium
+affected_modules: ["helper/remotepage.js", "helper/remote.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (layout() thresholds and its listeners, the 1 s check, the left and under layouts and their saved choice, no viewport rewrite; /screen logged once per new set of sizes, numbers only, the layout name from a fixed set)"]
+commit_ref: "feature/black-picture (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-09T01:30:00Z"
+```

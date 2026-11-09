@@ -267,6 +267,8 @@ function start() {
   $('main').className = '';
   ping();
   if (lay) apps();
+  reported = '';
+  layout();
 }
 /* the keys: data-k is the key; a key with data-hold (the arrows, the volume) repeats while it is held; OK, Back, Home and Settings held
    are LG's long press (/hold); a colour key held is given an app (colours), and then opens it. A key looks pressed while touched */
@@ -458,14 +460,32 @@ function apps() {
     r.apps.forEach(function (a) { g.appendChild(appTile(a)); d.appendChild(appTile(a)); });
   });
 }
-/* the layout from the screen: a phone (one column); a portrait screen wider than a phone's (a folding phone closed, a tablet) with
-   the apps in a rail beside the remote; a landscape screen with room (a folding phone open) with the keys on the left, the touchpad
-   (or Type, TV) on the right and the apps under it. The Remote and Apps tabs are not needed there; turned back, the remote shows */
-var lay = '';
+/* the layout from the screen: a phone (one column); a portrait screen wider than a phone's (a folding phone open, a tablet) with the
+   apps in a rail beside the remote (right, left or under it: the gear, kept on this phone); a landscape screen with room (a folding
+   phone open, or closed and turned) with the keys on the left, the touchpad (or Type, TV) on the right and the apps under it. The
+   Remote and Apps tabs are not needed there; turned back, the remote shows. A folding iPhone's closed screen gives a page only 382 of
+   its 466 points in portrait (iOS keeps the column on the right for its own controls; a page cannot draw there, only tint it with the
+   colour at its right edge), so it keeps the phone's column. The size is read again on every sign of a turn (resize, the visual
+   viewport, orientation; iOS reports the new size late and a fold passes through sizes of no pose, so again after a moment) and each
+   second while the page shows, since a turn with the folding phone open did not always tell the page */
+var lay = '', AT = 'cytv-remote-apps-at', dockAt = 'right';
+try { dockAt = { left: 'left', bottom: 'bottom' }[localStorage.getItem(AT)] || 'right'; } catch (e) {}
+function windowSize() {
+  var vv = window.visualViewport, v = vv && vv.width && vv.scale ? [vv.width * vv.scale, vv.height * vv.scale] : [0, 0];
+  return [Math.round(Math.max(v[0], window.innerWidth)), Math.round(Math.max(v[1], window.innerHeight))];
+}
+function dockClass() {
+  document.body.classList.toggle('dl', dockAt === 'left');
+  document.body.classList.toggle('db', dockAt === 'bottom');
+}
 function layout() {
-  var w = window.innerWidth, h = window.innerHeight,
-    m = w > h && h >= 480 && w >= 700 ? 'wide' : w >= 460 && w / h >= 0.6 ? 'rail' : '',
+  /* typing: the keyboard takes height, not a turn */
+  var a = document.activeElement;
+  if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) return;
+  var z = windowSize(), w = z[0], h = z[1];
+  var m = w > h && h >= 400 && w >= 560 ? 'wide' : w >= 460 && w / h >= 0.6 ? 'rail' : '',
     was = lay;
+  report();
   if (m === lay) return;
   lay = m;
   document.body.classList.toggle('wide', m === 'wide');
@@ -475,7 +495,33 @@ function layout() {
   if (m === 'wide' && (p === 'keys' || p === 'apps')) tab('touch');
   else if (was === 'wide' && p === 'touch') tab('keys');
 }
-window.addEventListener('resize', layout);
+function turned() {
+  layout();
+  [150, 400, 900].forEach(function (ms) { setTimeout(layout, ms); });
+}
+window.addEventListener('resize', turned);
+window.addEventListener('orientationchange', turned);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', turned);
+if (window.matchMedia) {
+  var mq = window.matchMedia('(orientation: landscape)');
+  if (mq.addEventListener) mq.addEventListener('change', turned);
+  else if (mq.addListener) mq.addListener(turned);
+}
+setInterval(function () { if (!document.hidden) layout(); }, 1000);
+/* the screen as the page sees it, to the TV's log once per new set of sizes (numbers only): the layouts for a phone not to hand are
+   tuned from it */
+var reported = '';
+function report() {
+  if (!key) return;
+  var vv = window.visualViewport, sc = window.screen || {}, d = document.documentElement, z = windowSize();
+  var r = { w: z[0], h: z[1], iw: window.innerWidth, ih: window.innerHeight, cw: d.clientWidth, ch: d.clientHeight, ow: window.outerWidth,
+    oh: window.outerHeight, sw: sc.width, sh: sc.height, vw: vv ? vv.width : 0, vh: vv ? vv.height : 0, vs: vv ? vv.scale : 0,
+    dpr: window.devicePixelRatio, lay: lay || 'phone' };
+  var j = JSON.stringify(r);
+  if (j === reported) return;
+  reported = j;
+  call('/screen', r).then(function () {}, function () {});
+}
 /* a colour key's app: held, the key offers the apps of the TV (and its own LG key); the choice stays on this phone */
 var COLOUR_NAMES = { RED: t('Red'), GREEN: t('Green'), YELLOW: t('Yellow'), BLUE: t('Blue') };
 function colourLabels() {
@@ -526,12 +572,24 @@ function inputSheet() {
 }
 $('inb').onclick = function () { buzz(); inputSheet(); };
 $('sheetno').onclick = function () { $('sheet').className = 'hide'; };
-/* the gear: vibration and sound on each press, kept on this phone */
+/* the gear: vibration and sound on each press, and where the apps go on a wider screen, kept on this phone */
+var AT_NAMES = { right: t('Right'), left: t('Left'), bottom: t('Under the remote') };
 function feedbackSheet() {
   var list = $('sheetlist');
-  $('sheettitle').textContent = t('Feedback');
+  $('sheettitle').textContent = t('This phone');
   $('sheetp').textContent = t('Kept on this phone.');
   list.textContent = '';
+  var ab = document.createElement('button');
+  ab.className = 'key opt';
+  ab.textContent = t('Apps on a wider screen') + ': ' + AT_NAMES[dockAt];
+  ab.onclick = function () {
+    dockAt = dockAt === 'right' ? 'left' : dockAt === 'left' ? 'bottom' : 'right';
+    try { localStorage.setItem(AT, dockAt); } catch (e) {}
+    buzz();
+    dockClass();
+    feedbackSheet();
+  };
+  list.appendChild(ab);
   [['vibrate', t('Vibrate on each press')], ['sound', t('Click sound on each press')]].forEach(function (x) {
     var b = document.createElement('button');
     b.className = 'key opt' + (fb[x[0]] ? ' on' : '');
@@ -721,6 +779,7 @@ fetch('/hub/tvs', { cache: 'no-store' })
     $('st').classList.add('many');
     boot();
   }, boot);
+dockClass();
 layout();
 setInterval(function () { if (key && !document.hidden) ping(); }, 15000);
 document.addEventListener('visibilitychange', function () { if (key && !document.hidden) ping(); });
@@ -729,18 +788,29 @@ document.addEventListener('visibilitychange', function () { if (key && !document
 // sizes scale with the phone: 1 unit is a pixel on a phone about 390 px wide and 680 px high, smaller when there is less room (so the
 // remote fits without scrolling), a little larger on big phones
 const u = n => 'calc(' + n + '*var(--u))';
-const unit = (vh, w) =>
-  'max(.74px,min(1.08px,(' +
+const unit = (vh, w, wd, hd, least) =>
+  'max(' +
+  (least || '.74px') +
+  ',min(1.08px,(' +
   (w || '100vw - 24px') +
-  ')/364,(' +
+  ')/' +
+  (wd || 364) +
+  ',(' +
   vh +
-  ' - max(10px,env(safe-area-inset-top)) - max(10px,env(safe-area-inset-bottom)))/640))';
-// beside a rail (layout() in the page) the remote has the width less the rail's
+  ' - max(10px,env(safe-area-inset-top)) - max(10px,env(safe-area-inset-bottom)))/' +
+  (hd || 640) +
+  '))';
+// beside a rail (layout() in the page) the remote has the width less the rail's; with the apps under it, the height less theirs (744:
+// the remote's 640 and the strip's 104); in landscape the keys have the height without the tabs (600) and the width beside the touchpad
+// (706: the keys, the gap and the touchpad's least), the keys a little smaller there if need be (a folding phone closed and turned is
+// about 460 points high)
 const RAIL = 'clamp(84px,19vw,132px)',
   BESIDE = '100vw - 24px - ' + RAIL + ' - 14px';
 
 const CSS = `:root{--u:${unit('100vh')}}@supports (height:100svh){:root{--u:${unit('100svh')}}}
 .rail{--u:${unit('100vh', BESIDE)}}@supports (height:100svh){.rail{--u:${unit('100svh', BESIDE)}}}
+.rail.db{--u:${unit('100vh', '', 0, 744)}}@supports (height:100svh){.rail.db{--u:${unit('100svh', '', 0, 744)}}}
+.wide{--u:${unit('100vh', '', 706, 600, '.66px')}}@supports (height:100svh){.wide{--u:${unit('100svh', '', 706, 600, '.66px')}}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 html{height:100%;background:#08090b;overscroll-behavior:none;-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100%;display:flex;flex-direction:column;padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:radial-gradient(130% 70% at 50% 0,#1b1d23 0,#0b0c0f 62%,#08090b 100%);color:#e8e9ed;font:16px -apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',Roboto,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation}
@@ -832,6 +902,10 @@ small{display:block;margin-top:${u(16)};font-size:${u(12)};line-height:1.45;colo
 .rail #main{max-width:calc(400px + ${RAIL} + 14px);grid-template-columns:minmax(0,1fr) ${RAIL};grid-template-rows:auto auto auto 1fr;grid-template-areas:'top dock' 'wake dock' 'nav dock' 'body dock';column-gap:14px}
 .rail #dock{grid-area:dock;display:block;contain:size;overflow-y:auto;margin:${u(-2)} ${u(-6)} 0 0;padding:${u(6)} ${u(4)};border-radius:${u(26)};background:#121317;box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.05)}
 .rail #dock .app{width:100%;padding:${u(9)} 0}
+.rail.dl #main{grid-template-columns:${RAIL} minmax(0,1fr);grid-template-areas:'dock top' 'dock wake' 'dock nav' 'dock body'}.rail.dl #dock{margin:${u(-2)} 0 0 ${u(-6)}}
+.rail.db #main{max-width:400px;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto;grid-template-areas:'top' 'wake' 'nav' 'body' 'dock'}
+.rail.db #dock{display:flex;contain:none;overflow-x:auto;overflow-y:hidden;margin:${u(12)} 0 0;padding:${u(4)} ${u(6)};border-radius:${u(22)}}
+.rail.db #dock .app{width:${u(78)};padding:${u(7)} 0}
 .wide #main{max-width:${u(1100)};grid-template-columns:${u(368)} minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto;grid-template-areas:'top top' 'wake wake' 'keys nav' 'keys body' 'keys dock';column-gap:${u(26)}}
 .wide #keys{grid-area:keys;display:flex!important}
 .wide nav [data-p=keys],.wide nav [data-p=apps],.wide #touch .row{display:none}
@@ -934,7 +1008,7 @@ function html(lang) {
 <small>${T('Works on the same Wi-Fi as the TV. Add it to the Home Screen to open it like an app.')}</small></div>
 <div id=main class=hide>
 <div class=top><button class="key pw" id=off aria-label="${T('Power')}">${icon('power')}</button><div id=st><i id=dot></i><span id=tv></span></div>
-<button class="key nb ib" id=inb aria-label="${T('Input')}">${icon('input')}</button><button class="key nb gear" id=fbset aria-label="${T('Feedback')}">${icon('gear')}</button><button class="key nb" id=nb aria-label="${T('Numbers')}">123</button></div>
+<button class="key nb ib" id=inb aria-label="${T('Input')}">${icon('input')}</button><button class="key nb gear" id=fbset aria-label="${T('This phone')}">${icon('gear')}</button><button class="key nb" id=nb aria-label="${T('Numbers')}">123</button></div>
 <button class="key p" id=wakeb>${icon('power')}<span>${T('Turn the TV on')}</span></button>
 <nav><button class=on data-p=keys>${T('Remote')}</button><button data-p=touch>${T('Touchpad')}</button><button data-p=type>${T('Type')}</button><button data-p=apps>${T('Apps')}</button><button data-p=tv>${T('TV')}</button></nav>
 <section id=keys>
