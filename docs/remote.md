@@ -24,13 +24,14 @@ forgetting them.
 | TV | The TV's health, read only: the processor per core, temperature, memory and swap, storage and the flash's wear, Wi-Fi, how long it has been up and this service's own use; a summary of the settings (versions, update channel, CleanYourTV as Home, the debloat groups and whether they work, the phone remote, Plex, Stremio and Disney+ linked or not, telnet, LG's web inspector, the API token); and, on a tap, the open ports with how each is guarded and the services. See below. |
 
 **Wider screens.** The page fits the screen it is on, and changes when the phone turns or folds. A portrait screen wider than a
-phone's (a folding phone open, a tablet) keeps the remote and shows the apps beside it: on the right, on the left or under the remote
-(the gear: **Apps on a wider screen**, kept on that phone), a tap opening one. A landscape screen with room (a folding phone open, or
-closed and turned, a tablet turned) shows the keys on the left and the touchpad on the right, with Type and TV as tabs above it and
-the apps in a strip under it; **123** opens the number pad over the keys there. Turned back to portrait, the remote shows again. A
-phone keeps the one column. On a folding iPhone closed and upright the page gets 382 of the screen's 466 points: iOS keeps the column
-on the right for its own controls in every web page (only an app made for the phone can use it), so the remote keeps the phone's
-column there.
+phone's (a folding phone open, a tablet) keeps the remote and shows the apps beside it, a tap opening one. A landscape screen with
+room (a folding phone open, or closed and turned, a tablet turned) shows the keys on the left and the touchpad on the right, with
+Type and TV as tabs above it; **123** opens the number pad over the keys there. Where the apps go is set in the gear for each:
+**Apps upright** (right by default) and **Apps turned** (under the touchpad by default), each Right, Left or Under, kept on that
+phone. The TV, Type and Apps tabs scroll in their own place there, so the keys stay as they are. Turned back to portrait, the remote
+shows again. A phone keeps the one column. On a folding iPhone closed and upright the page gets 382 of the screen's 466 points: iOS
+keeps the column on the right for its own controls in every web page (only an app made for the phone can use it), so the remote
+keeps the phone's column there.
 
 | | |
 |---|---|
@@ -144,14 +145,13 @@ the names again at most every 20 seconds. The history and alerts follow the firs
 the Sonos soundbar followed (Sonos volume on screen), they are the soundbar's own volume and mute; otherwise the TV's own (no number
 for a soundbar the TV does not know). They come with the remote's regular check, and again a moment after Volume or Mute.
 
-**Feedback.** The gear beside the status sets what each press does on this phone: a vibration (on by default; on an iPhone the tap
-of iOS 18 and later) and a click sound (off by default). A key also lights green when the TV took the press, red when it did not.
-Safari has no vibration call, and an iPhone taps only for a switch that the finger itself flips (the owner's iPhone: the switch
-in the test vibrates, the page flipping one does not). So by default (**Way 3**) every key carries an invisible switch over all of
-it: the tap lands on the switch, iOS taps, and the key works as before. **Way 1** and **Way 2** flip a hidden switch from the page
-instead, for a phone that taps for that. If even **The iPhone's own switch** does not vibrate, the iPhone itself is set not to:
-Settings > Sounds & Haptics > System Haptics (iOS 18 or later).
+**This phone.** The gear beside the status sets what each press does on this phone: a vibration (on by default; on an iPhone the
+tap of iOS 18 and later) and a click sound (off by default). A key also lights green when the TV took the press, red when it did not.
+Safari has no vibration call, and an iPhone taps only for a switch that the finger itself flips (the owner's iPhone: a switch the
+page flips does not tap). So every key carries an invisible switch over all of it: the tap lands on the switch, iOS taps, and the key
+works as before. If nothing vibrates, the iPhone itself is set not to: Settings > Sounds & Haptics > System Haptics (iOS 18 or
+later). The gear also sets where the apps go on a wider screen (below).
 
 | | |
 |---|---|
-| ![Feedback (the gear): vibration, click sound and the Vibration test](screenshots/remote-feedback.jpg) | |
+| ![This phone (the gear): vibration and click sound](screenshots/remote-feedback.jpg) | |

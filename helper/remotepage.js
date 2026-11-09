@@ -55,8 +55,8 @@ function note(s, bad) {
 $('msg').onclick = function () { note(''); };
 /* feedback on each press, as this phone's owner chose it (the gear by the status): a vibration (on by default) and a click sound
    (off by default, a few milliseconds made here, no file) */
-var FB = 'cytv-remote-feedback', fb = { vibrate: true, sound: false, way: 3 };
-try { var fbs = JSON.parse(localStorage.getItem(FB) || 'null'); if (fbs) fb = { vibrate: fbs.vibrate !== false, sound: !!fbs.sound, way: fbs.way === 1 || fbs.way === 2 ? fbs.way : 3 }; } catch (e) {}
+var FB = 'cytv-remote-feedback', fb = { vibrate: true, sound: false };
+try { var fbs = JSON.parse(localStorage.getItem(FB) || 'null'); if (fbs) fb = { vibrate: fbs.vibrate !== false, sound: !!fbs.sound }; } catch (e) {}
 var actx = null;
 function tick() {
   try {
@@ -74,41 +74,16 @@ function tick() {
     o.stop(t0 + 0.05);
   } catch (e) {}
 }
-/* a short buzz: vibrate where there is one. Safari on the iPhone has no vibrate, but toggling a switch through its label taps
-   (iOS 18 and later): a fresh one each time, so it never keeps the focus (a switch left focused made every later buzz look like typing
-   and skip). Two ways, chosen on the phone in Feedback (Vibration test): 1, hidden and removed at once; 2 (the default: the one the
-   owner's iPhone taps for), drawn (out of sight) and removed a moment later, for an iPhone that taps only for a switch on the screen. Not while typing into a text box (the click would
-   close the keyboard). */
-function buzz(way) {
-  if (fb.sound && !way) tick();
-  if (!fb.vibrate && !way) return;
-  try {
-    if (navigator.vibrate) { navigator.vibrate(8); return; }
-    if ((way || fb.way) === 3) return; /* way 3: the finger's own tap on the key's switch (switches(), below) */
-    var a = document.activeElement;
-    if (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && /^(text|search|number|tel|email|url|password)$/.test(a.type)))) return;
-    var l = document.createElement('label'), i = document.createElement('input');
-    l.setAttribute('aria-hidden', 'true');
-    i.type = 'checkbox';
-    i.tabIndex = -1;
-    i.setAttribute('switch', '');
-    l.appendChild(i);
-    if ((way || fb.way) === 2) {
-      l.style.cssText = 'position:fixed;left:0;top:0;width:52px;height:32px;opacity:.01;pointer-events:none;z-index:-1';
-      document.body.appendChild(l);
-      l.click();
-      setTimeout(function () { if (l.parentNode) l.parentNode.removeChild(l); }, 400);
-    } else {
-      l.style.display = 'none';
-      document.head.appendChild(l);
-      l.click();
-      document.head.removeChild(l);
-    }
-  } catch (e) {}
+/* a short buzz: vibrate where there is one. Safari on the iPhone has no vibrate, and an iPhone taps only for a switch the finger
+   itself flips (iOS 18 and later; the owner's iPhone): there every key carries one (switches(), below), so the tap is the finger's own */
+function buzz() {
+  if (fb.sound) tick();
+  if (!fb.vibrate) return;
+  try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {}
 }
-/* way 3 (the default): an iPhone taps only for a switch the finger itself flips (the owner's iPhone: the switch row in the test
-   vibrates, the page flipping one does not), so every key carries an invisible switch over all of it; the tap lands on the switch, iOS
-   taps, and the click goes on to the key as before. Off: the switches go. */
+/* an iPhone taps only for a switch the finger itself flips (the owner's iPhone: a switch flipped by the page does not tap), so every key
+   carries an invisible switch over all of it; the tap lands on the switch, iOS taps, and the click goes on to the key as before.
+   Vibration off: the switches go. */
 function hz(b) {
   if (b.querySelector(':scope > .hz')) return;
   var i = document.createElement('input');
@@ -121,7 +96,7 @@ function hz(b) {
   b.appendChild(i);
 }
 function switches() {
-  var on = fb.vibrate && fb.way === 3 && !navigator.vibrate;
+  var on = fb.vibrate && !navigator.vibrate;
   [].forEach.call(document.querySelectorAll('button.key, button[data-k]'), function (b) {
     var i = b.querySelector(':scope > .hz');
     if (on) hz(b);
@@ -461,39 +436,47 @@ function apps() {
   });
 }
 /* the layout from the screen: a phone (one column); a portrait screen wider than a phone's (a folding phone open, a tablet) with the
-   apps in a rail beside the remote (right, left or under it: the gear, kept on this phone); a landscape screen with room (a folding
-   phone open, or closed and turned) with the keys on the left, the touchpad (or Type, TV) on the right and the apps under it. The
+   apps in a rail beside the remote (right by default); a landscape screen with room (a folding phone open, or closed and turned) with
+   the keys on the left, the touchpad (or Type, TV) on the right and the apps under it (by default). Each side is set in the gear and
+   kept on this phone; a tab's own content (TV, Type, Apps) scrolls in its place there instead of growing the page. The
    Remote and Apps tabs are not needed there; turned back, the remote shows. A folding iPhone's closed screen gives a page only 382 of
    its 466 points in portrait (iOS keeps the column on the right for its own controls; a page cannot draw there, only tint it with the
    colour at its right edge), so it keeps the phone's column. The size is read again on every sign of a turn (resize, the visual
    viewport, orientation; iOS reports the new size late and a fold passes through sizes of no pose, so again after a moment) and each
    second while the page shows, since a turn with the folding phone open did not always tell the page */
-var lay = '', AT = 'cytv-remote-apps-at', dockAt = 'right';
-try { dockAt = { left: 'left', bottom: 'bottom' }[localStorage.getItem(AT)] || 'right'; } catch (e) {}
+var lay = '', AT = 'cytv-remote-apps', at = { portrait: 'right', landscape: 'bottom' }, SIDES = { right: 1, left: 1, bottom: 1 };
+try {
+  var ats = JSON.parse(localStorage.getItem(AT) || 'null');
+  if (ats && SIDES[ats.portrait]) at.portrait = ats.portrait;
+  if (ats && SIDES[ats.landscape]) at.landscape = ats.landscape;
+} catch (e) {}
 function windowSize() {
   var vv = window.visualViewport, v = vv && vv.width && vv.scale ? [vv.width * vv.scale, vv.height * vv.scale] : [0, 0];
   return [Math.round(Math.max(v[0], window.innerWidth)), Math.round(Math.max(v[1], window.innerHeight))];
 }
 function dockClass() {
-  document.body.classList.toggle('dl', dockAt === 'left');
-  document.body.classList.toggle('db', dockAt === 'bottom');
+  var side = lay === 'wide' ? at.landscape : at.portrait;
+  document.body.classList.toggle('dl', side === 'left');
+  document.body.classList.toggle('db', side === 'bottom');
 }
 function layout() {
-  /* typing: the keyboard takes height, not a turn */
+  /* typing: the keyboard takes height, not a turn (a text box only: a key's own switch is an input too, and keeps the focus) */
   var a = document.activeElement;
-  if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) return;
+  if (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && /^(text|search|number|tel|email|url|password)$/.test(a.type)))) return;
   var z = windowSize(), w = z[0], h = z[1];
   var m = w > h && h >= 400 && w >= 560 ? 'wide' : w >= 460 && w / h >= 0.6 ? 'rail' : '',
     was = lay;
-  report();
-  if (m === lay) return;
-  lay = m;
-  document.body.classList.toggle('wide', m === 'wide');
-  document.body.classList.toggle('rail', m === 'rail');
-  if (m && key && $('main').className !== 'hide') apps();
-  var on = document.querySelector('nav button.on'), p = on && on.getAttribute('data-p');
-  if (m === 'wide' && (p === 'keys' || p === 'apps')) tab('touch');
-  else if (was === 'wide' && p === 'touch') tab('keys');
+  if (m !== lay) {
+    lay = m;
+    document.body.classList.toggle('wide', m === 'wide');
+    document.body.classList.toggle('rail', m === 'rail');
+    dockClass();
+    if (m && key && $('main').className !== 'hide') apps();
+    var on = document.querySelector('nav button.on'), p = on && on.getAttribute('data-p');
+    if (m === 'wide' && (p === 'keys' || p === 'apps')) tab('touch');
+    else if (was === 'wide' && p === 'touch') tab('keys');
+  }
+  report(); /* with the layout just chosen */
 }
 function turned() {
   layout();
@@ -572,24 +555,27 @@ function inputSheet() {
 }
 $('inb').onclick = function () { buzz(); inputSheet(); };
 $('sheetno').onclick = function () { $('sheet').className = 'hide'; };
-/* the gear: vibration and sound on each press, and where the apps go on a wider screen, kept on this phone */
-var AT_NAMES = { right: t('Right'), left: t('Left'), bottom: t('Under the remote') };
+/* the gear: vibration and sound on each press, and where the apps go beside the remote on a wider screen (upright and turned), kept on
+   this phone */
+var AT_NAMES = { right: t('Right'), left: t('Left'), bottom: t('Under') };
 function feedbackSheet() {
   var list = $('sheetlist');
   $('sheettitle').textContent = t('This phone');
-  $('sheetp').textContent = t('Kept on this phone.');
+  $('sheetp').textContent = t('Kept on this phone. The apps show beside the remote on a screen wider than a phone.');
   list.textContent = '';
-  var ab = document.createElement('button');
-  ab.className = 'key opt';
-  ab.textContent = t('Apps on a wider screen') + ': ' + AT_NAMES[dockAt];
-  ab.onclick = function () {
-    dockAt = dockAt === 'right' ? 'left' : dockAt === 'left' ? 'bottom' : 'right';
-    try { localStorage.setItem(AT, dockAt); } catch (e) {}
-    buzz();
-    dockClass();
-    feedbackSheet();
-  };
-  list.appendChild(ab);
+  [['portrait', t('Apps upright')], ['landscape', t('Apps turned')]].forEach(function (x) {
+    var b = document.createElement('button');
+    b.className = 'key opt';
+    b.textContent = x[1] + ': ' + AT_NAMES[at[x[0]]];
+    b.onclick = function () {
+      at[x[0]] = at[x[0]] === 'right' ? 'left' : at[x[0]] === 'left' ? 'bottom' : 'right';
+      try { localStorage.setItem(AT, JSON.stringify(at)); } catch (e) {}
+      buzz();
+      dockClass();
+      feedbackSheet();
+    };
+    list.appendChild(b);
+  });
   [['vibrate', t('Vibrate on each press')], ['sound', t('Click sound on each press')]].forEach(function (x) {
     var b = document.createElement('button');
     b.className = 'key opt' + (fb[x[0]] ? ' on' : '');
@@ -603,33 +589,6 @@ function feedbackSheet() {
     };
     list.appendChild(b);
   });
-  /* the vibration test: each way taps once and is kept when chosen; the iPhone's own switch says whether it taps for a page at all */
-  var h = document.createElement('p');
-  h.className = 'sheetnote';
-  h.textContent = t('Vibration test: tap each and keep the one you feel. If even the switch does not vibrate, turn on Settings > Sounds & Haptics > System Haptics (iOS 18 or later).');
-  list.appendChild(h);
-  [3, 1, 2].forEach(function (w) {
-    var b = document.createElement('button');
-    b.className = 'key opt' + (fb.way === w ? ' on' : '');
-    b.textContent = t('Way %d').replace('%d', w) + (fb.way === w ? ': ' + t('In use') : '');
-    if (w === 3) hz(b); /* its own switch: the tap on it is the test */
-    b.onclick = function () {
-      buzz(w);
-      fb.way = w;
-      try { localStorage.setItem(FB, JSON.stringify(fb)); } catch (e) {}
-      switches();
-      /* the choice shown once the switch is gone; only while the sheet is still open (Cancel right after must keep it closed) */
-      setTimeout(function () { if ($('sheet').className !== 'hide') feedbackSheet(); }, 450);
-    };
-    list.appendChild(b);
-  });
-  var sw = document.createElement('label'), si = document.createElement('input');
-  sw.className = 'key opt sw';
-  si.type = 'checkbox';
-  si.setAttribute('switch', '');
-  sw.appendChild(si);
-  sw.appendChild(document.createTextNode(' ' + t("The iPhone's own switch")));
-  list.appendChild(sw);
   $('sheet').className = '';
 }
 $('fbset').onclick = feedbackSheet;
@@ -802,7 +761,7 @@ const unit = (vh, w, wd, hd, least) =>
   '))';
 // beside a rail (layout() in the page) the remote has the width less the rail's; with the apps under it, the height less theirs (744:
 // the remote's 640 and the strip's 104); in landscape the keys have the height without the tabs (600) and the width beside the touchpad
-// (706: the keys, the gap and the touchpad's least), the keys a little smaller there if need be (a folding phone closed and turned is
+// (706: the keys, the gap and the touchpad's least; 824 with the apps beside instead of under), the keys a little smaller there if need be (a folding phone closed and turned is
 // about 460 points high)
 const RAIL = 'clamp(84px,19vw,132px)',
   BESIDE = '100vw - 24px - ' + RAIL + ' - 14px';
@@ -810,7 +769,8 @@ const RAIL = 'clamp(84px,19vw,132px)',
 const CSS = `:root{--u:${unit('100vh')}}@supports (height:100svh){:root{--u:${unit('100svh')}}}
 .rail{--u:${unit('100vh', BESIDE)}}@supports (height:100svh){.rail{--u:${unit('100svh', BESIDE)}}}
 .rail.db{--u:${unit('100vh', '', 0, 744)}}@supports (height:100svh){.rail.db{--u:${unit('100svh', '', 0, 744)}}}
-.wide{--u:${unit('100vh', '', 706, 600, '.66px')}}@supports (height:100svh){.wide{--u:${unit('100svh', '', 706, 600, '.66px')}}}
+.wide{--u:${unit('100vh', '', 824, 600, '.66px')}}@supports (height:100svh){.wide{--u:${unit('100svh', '', 824, 600, '.66px')}}}
+.wide.db{--u:${unit('100vh', '', 706, 600, '.66px')}}@supports (height:100svh){.wide.db{--u:${unit('100svh', '', 706, 600, '.66px')}}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 html{height:100%;background:#08090b;overscroll-behavior:none;-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100%;display:flex;flex-direction:column;padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:radial-gradient(130% 70% at 50% 0,#1b1d23 0,#0b0c0f 62%,#08090b 100%);color:#e8e9ed;font:16px -apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',Roboto,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation}
@@ -899,18 +859,24 @@ small{display:block;margin-top:${u(16)};font-size:${u(12)};line-height:1.45;colo
 .rail #main,.wide #main{display:grid}
 .rail .top,.wide .top{grid-area:top}.rail #wakeb,.wide #wakeb{grid-area:wake}.rail nav,.wide nav{grid-area:nav}
 .rail section,.wide section{grid-area:body;min-height:0}
+.rail section:not(#keys),.wide section:not(#keys){contain:size;overflow-y:auto;overscroll-behavior:contain}
+.rail #dock,.wide #dock{background:#121317;box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.05)}
 .rail #main{max-width:calc(400px + ${RAIL} + 14px);grid-template-columns:minmax(0,1fr) ${RAIL};grid-template-rows:auto auto auto 1fr;grid-template-areas:'top dock' 'wake dock' 'nav dock' 'body dock';column-gap:14px}
-.rail #dock{grid-area:dock;display:block;contain:size;overflow-y:auto;margin:${u(-2)} ${u(-6)} 0 0;padding:${u(6)} ${u(4)};border-radius:${u(26)};background:#121317;box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.05)}
+.rail #dock{grid-area:dock;display:block;contain:size;overflow-y:auto;margin:${u(-2)} ${u(-6)} 0 0;padding:${u(6)} ${u(4)};border-radius:${u(26)}}
 .rail #dock .app{width:100%;padding:${u(9)} 0}
 .rail.dl #main{grid-template-columns:${RAIL} minmax(0,1fr);grid-template-areas:'dock top' 'dock wake' 'dock nav' 'dock body'}.rail.dl #dock{margin:${u(-2)} 0 0 ${u(-6)}}
 .rail.db #main{max-width:400px;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto;grid-template-areas:'top' 'wake' 'nav' 'body' 'dock'}
 .rail.db #dock{display:flex;contain:none;overflow-x:auto;overflow-y:hidden;margin:${u(12)} 0 0;padding:${u(4)} ${u(6)};border-radius:${u(22)}}
 .rail.db #dock .app{width:${u(78)};padding:${u(7)} 0}
-.wide #main{max-width:${u(1100)};grid-template-columns:${u(368)} minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto;grid-template-areas:'top top' 'wake wake' 'keys nav' 'keys body' 'keys dock';column-gap:${u(26)}}
+.wide #main{max-width:${u(1200)};grid-template-columns:${u(368)} minmax(0,1fr) ${u(96)};grid-template-rows:auto auto auto 1fr;grid-template-areas:'top top top' 'wake wake wake' 'keys nav dock' 'keys body dock';column-gap:${u(22)}}
+.wide.dl #main{grid-template-columns:${u(96)} ${u(368)} minmax(0,1fr);grid-template-areas:'top top top' 'wake wake wake' 'dock keys nav' 'dock keys body'}
+.wide.db #main{max-width:${u(1100)};grid-template-columns:${u(368)} minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto;grid-template-areas:'top top' 'wake wake' 'keys nav' 'keys body' 'keys dock';column-gap:${u(26)}}
 .wide #keys{grid-area:keys;display:flex!important}
 .wide nav [data-p=keys],.wide nav [data-p=apps],.wide #touch .row{display:none}
-.wide #dock{grid-area:dock;display:flex;overflow-x:auto;margin-top:${u(14)};padding:${u(4)} ${u(6)};border-radius:${u(22)};background:#121317;box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.05)}
-.wide #dock .app{width:${u(78)};padding:${u(7)} 0}
+.wide #dock{grid-area:dock;display:block;contain:size;overflow-y:auto;padding:${u(6)} ${u(4)};border-radius:${u(26)}}
+.wide #dock .app{width:100%;padding:${u(9)} 0}
+.wide.db #dock{display:flex;contain:none;overflow-x:auto;overflow-y:hidden;margin-top:${u(14)};padding:${u(4)} ${u(6)};border-radius:${u(22)}}
+.wide.db #dock .app{width:${u(78)};padding:${u(7)} 0}
 .wide #pad{min-height:0}
 #login{align-items:center;justify-content:center;text-align:center;padding:${u(28)} ${u(24)}}
 .badge{width:${u(76)};height:${u(76)};margin-bottom:${u(18)};border-radius:50%;display:flex;align-items:center;justify-content:center}

@@ -2141,3 +2141,16 @@ commit_ref: "feature/black-picture (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-09T01:30:00Z"
 ```
+
+```yaml
+id: CU-20261108-06
+type: fix
+title: "Phone remote: the apps' side set for upright and turned apart; tabs scroll in their place on wide screens; turns followed after a key press; the vibration test gone"
+description: "On the owner's iPhone Duo open in landscape, the gear's apps option changed nothing on the screen (it only set the upright rail), and the TV tab grew the page so the keys spread out and the D-pad went off the screen. The gear (This phone) now has Apps upright (right by default) and Apps turned (under the touchpad by default), each Right, Left or Under, kept on the phone (cytv-remote-apps); landscape gains a rail on the right or left of the keys and touchpad (the unit's width budget 824 there). In the rail and landscape layouts a tab other than the keys (TV, Type, Apps, Touchpad) is size-contained and scrolls in its place. layout() skipped every check after any key press (a key's own switch is an input and keeps the focus); it now waits only for a text box. The Vibration test (ways 1 and 2, the iPhone's own switch) is gone: the owner's iPhone taps with each key's own switch, which stays the only way."
+impact: low
+affected_modules: ["helper/remotepage.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (fb without a way, switches whenever vibration is on, no Vibration test; the landscape rails and the strip; the side per layout and its saved pair; the contained tabs; the typing check limited to text boxes)"]
+commit_ref: "feature/black-picture (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-09T02:30:00Z"
+```

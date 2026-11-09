@@ -124,9 +124,11 @@ run(async () => {
       /frame-ancestors|DENY/.test(JSON.stringify(pageR.headers)),
     'the phone page is served, and may not be framed by another site'
   );
-  // an iPhone's tap: two ways to flip a hidden switch, the one chosen in the vibration test kept on the phone, and the iPhone's own switch
+  // an iPhone's tap: every key carries a switch the finger flips (the vibration test and its other ways are gone: the owner's iPhone
+  // taps for this one)
   ok(
-    /way: 3 \}/.test(pageR.text) &&
+    /fb = \{ vibrate: true, sound: false \}/.test(pageR.text) &&
+      /var on = fb\.vibrate && !navigator\.vibrate;/.test(pageR.text) &&
       /function switches\(\)/.test(pageR.text) &&
       /querySelectorAll\('button\.key, button\[data-k\]'\)/.test(pageR.text) &&
       /i\.setAttribute\('switch', ''\)/.test(pageR.text) &&
@@ -148,7 +150,15 @@ run(async () => {
       /call\('\/screen', r\)/.test(pageR.text) &&
       /\.rail\.dl #main\{grid-template-columns/.test(pageR.text) &&
       /\.rail\.db #main\{max-width:400px/.test(pageR.text) &&
-      /localStorage\.setItem\(AT, dockAt\)/.test(pageR.text) &&
+      /\.wide\.dl #main\{grid-template-columns/.test(pageR.text) &&
+      /\.wide\.db #main\{max-width/.test(pageR.text) &&
+      /var side = lay === 'wide' \? at\.landscape : at\.portrait;/.test(pageR.text) &&
+      /at = \{ portrait: 'right', landscape: 'bottom' \}/.test(pageR.text) &&
+      /localStorage\.setItem\(AT, JSON\.stringify\(at\)\)/.test(pageR.text) &&
+      /\.rail section:not\(#keys\),\.wide section:not\(#keys\)\{contain:size;overflow-y:auto/.test(pageR.text) &&
+      /a\.tagName === 'INPUT' && \/\^\(text\|search\|number\|tel\|email\|url\|password\)\$\/\.test\(a\.type\)\)\)\) return;\n  var z = windowSize\(\)/.test(
+        pageR.text
+      ) &&
       /\.rail #main\{max-width:calc\(400px \+ clamp\(84px,19vw,132px\) \+ 14px\)/.test(pageR.text) &&
       /\.wide #keys\{grid-area:keys;display:flex!important\}/.test(pageR.text) &&
       /<div id=dock><\/div>/.test(pageR.text) &&
@@ -159,13 +169,10 @@ run(async () => {
       /if \(\+\+n > 90\)/.test(pageR.text) &&
       /call\('\/name'/.test(pageR.text) &&
       /mute\.classList\.toggle\('muted'/.test(pageR.text) &&
-      /if \(\$\('sheet'\)\.className !== 'hide'\) feedbackSheet\(\)/.test(pageR.text) &&
-      /\(way \|\| fb\.way\) === 2/.test(pageR.text) &&
-      /document\.body\.appendChild\(l\)/.test(pageR.text) &&
-      /document\.head\.appendChild\(l\)/.test(pageR.text) &&
-      /Vibration test/.test(pageR.text) &&
-      /The iPhone's own switch/.test(pageR.text),
-    'way 3 by default: every key carries a switch the finger flips (an iPhone taps only then); the test offers ways 3, 1 and 2 and the iPhone switch, the choice is kept, and Cancel right after choosing keeps the sheet closed'
+      !/Vibration test/.test(pageR.text) &&
+      !/fb\.way/.test(pageR.text) &&
+      !/The iPhone's own switch/.test(pageR.text),
+    'every key carries a switch the finger flips (an iPhone taps only then), with no vibration test; the page fits the screen, the apps upright and turned each on their own side'
   );
   // wrong codes: five of them close pairing
   for (let i = 0; i < 4; i++) await lan('POST', '/pair', { code: '000000' });
