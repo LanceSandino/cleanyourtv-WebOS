@@ -23,6 +23,12 @@ forgetting them.
 | Apps | The apps in the order of your dock, then the others; a tap opens one. |
 | TV | The TV's health, read only: the processor per core, temperature, memory and swap, storage and the flash's wear, Wi-Fi, how long it has been up and this service's own use; a summary of the settings (versions, update channel, CleanYourTV as Home, the debloat groups and whether they work, the phone remote, Plex, Stremio and Disney+ linked or not, telnet, LG's web inspector, the API token); and, on a tap, the open ports with how each is guarded and the services. See below. |
 
+**Wider screens.** The page fits the screen it is on. A portrait screen wider than a phone's (a folding phone closed, a tablet) keeps
+the remote as it is and shows the apps in a rail beside it, a tap opening one. A landscape screen with room (a folding phone open, a
+tablet turned) shows the keys on the left and the touchpad on the right, with Type and TV as tabs above it and the apps in a strip
+under it; **123** opens the number pad over the keys there. Turned back to portrait, the remote shows again. A phone keeps the
+one column.
+
 | | |
 |---|---|
 | ![The Remote tab](screenshots/remote-keys.jpg) | ![The Touchpad tab](screenshots/remote-touchpad.jpg) |

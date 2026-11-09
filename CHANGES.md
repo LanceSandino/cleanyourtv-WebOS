@@ -2115,3 +2115,16 @@ commit_ref: "feature/black-picture (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-08T23:00:00Z"
 ```
+
+```yaml
+id: CU-20261108-04
+type: feature
+title: "Phone remote: an apps rail beside the remote on a wide portrait screen; keys, touchpad and apps side by side in landscape"
+description: "On a folding iPhone the page kept its one phone column: closed, a strip beside it stayed empty; open in landscape, the remote sat in the middle of the screen. layout() in the page picks from the window: landscape with room (at least 700 x 480) puts the keys on the left (always shown), the touchpad, Type and TV as tabs on the right (no Remote or Apps tab there) and the apps as a strip under them; a portrait screen at least 460 wide and 0.6 as wide as high keeps the remote and adds a rail of the apps beside it (the unit is worked out from the width left beside the rail, the rail scrolls in its own space). A phone is unchanged. The apps (dock order) fill the Apps tab and the rail or strip from one /apps answer, each icon asked once. Also: 123 in landscape leaves the tab on the right as it is, and switching TVs reads that TV's apps (the old TV's list stayed before)."
+impact: low
+affected_modules: ["helper/remotepage.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (the page carries layout() with its thresholds, the rail and wide grids, the dock, 123 without a tab switch in landscape, and the apps read again after a TV switch)"]
+commit_ref: "feature/black-picture (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-09T00:30:00Z"
+```

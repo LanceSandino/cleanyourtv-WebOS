@@ -139,6 +139,13 @@ run(async () => {
       /call\('\/picture\/fix', \{ media: true \}\)/.test(pageR.text) &&
       /call\('\/picture\/fix', \{ restart: true \}\)/.test(pageR.text) &&
       /send\('\/input', \{ id: x\.id \}\)/.test(pageR.text) &&
+      /function layout\(\)/.test(pageR.text) &&
+      /w > h && h >= 480 && w >= 700 \? 'wide' : w >= 460 && w \/ h >= 0\.6 \? 'rail' : ''/.test(pageR.text) &&
+      /\.rail #main\{max-width:calc\(400px \+ clamp\(84px,19vw,132px\) \+ 14px\)/.test(pageR.text) &&
+      /\.wide #keys\{grid-area:keys;display:flex!important\}/.test(pageR.text) &&
+      /<div id=dock><\/div>/.test(pageR.text) &&
+      /if \(open && lay !== 'wide'\) tab\('keys'\)/.test(pageR.text) &&
+      /appsDone = false;\n  sleeping\(false\)/.test(pageR.text) &&
       /id=inb aria-label="Input"/.test(pageR.text) &&
       /\$\('off'\)\.onclick = function \(\) \{ if \(asleep\) return wake\(\); buzz\(\); powerSheet\(\); \}/.test(pageR.text) &&
       /if \(\+\+n > 90\)/.test(pageR.text) &&

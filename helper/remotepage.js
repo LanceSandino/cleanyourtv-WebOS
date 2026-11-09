@@ -266,6 +266,7 @@ function start() {
   $('login').className = 'hide';
   $('main').className = '';
   ping();
+  if (lay) apps();
 }
 /* the keys: data-k is the key; a key with data-hold (the arrows, the volume) repeats while it is held; OK, Back, Home and Settings held
    are LG's long press (/hold); a colour key held is given an app (colours), and then opens it. A key looks pressed while touched */
@@ -325,11 +326,11 @@ function tab(p) {
 [].forEach.call(document.querySelectorAll('nav button'), function (b) {
   b.onclick = function () { tab(b.getAttribute('data-p')); };
 });
-/* 123: the number pad over the keys */
+/* 123: the number pad over the keys (in landscape the keys are always there, beside the tab) */
 $('nb').onclick = function () {
   buzz();
   var open = $('num').className !== 'open';
-  if (open) tab('keys');
+  if (open && lay !== 'wide') tab('keys');
   $('num').className = open ? 'open' : '';
   $('nb').className = open ? 'key nb on' : 'key nb';
 };
@@ -427,28 +428,54 @@ $('send').onclick = sendText;
 $('txt').onkeydown = function (e) { if (e.keyCode === 13) { e.preventDefault(); sendText(); } };
 $('bs').onclick = function () { buzz(); send('/backspace', { count: 1 }); };
 $('ent').onclick = function () { buzz(); send('/enter'); };
-/* the apps, in the order of the dock, with their icons */
-var appsDone = false;
+/* the apps, in the order of the dock, with their icons: in the Apps tab, and beside the remote where the screen has room (the dock:
+   a rail on a wide portrait screen, a strip under the touchpad in landscape); each icon asked for once */
+var appsDone = false, appsAsk = null, icons = {};
+function appTile(a) {
+  var b = document.createElement('button'), i = document.createElement('img'), s = document.createElement('span');
+  b.className = 'app';
+  i.alt = '';
+  s.textContent = a.title;
+  b.appendChild(i);
+  b.appendChild(s);
+  b.onclick = function () { buzz(); soon(); send('/launch', { id: a.id }); };
+  if (!icons[a.id])
+    icons[a.id] = fetch('/icon/' + encodeURIComponent(a.id), { headers: hdr() })
+      .then(function (x) { return x.ok ? x.blob() : null; })
+      .then(function (bl) { return bl ? URL.createObjectURL(bl) : ''; }, function () { return ''; });
+  icons[a.id].then(function (src) { if (src) i.src = src; });
+  return b;
+}
 function apps() {
-  if (appsDone) return;
-  send('/apps').then(function (r) {
+  if (appsDone || appsAsk) return;
+  appsAsk = send('/apps').then(function (r) {
+    appsAsk = null;
     if (!r || !r.apps) return;
     appsDone = true;
-    var g = $('grid');
+    var g = $('grid'), d = $('dock');
     g.textContent = '';
-    r.apps.forEach(function (a) {
-      var b = document.createElement('button'), i = document.createElement('img'), s = document.createElement('span');
-      b.className = 'app';
-      i.alt = '';
-      s.textContent = a.title;
-      b.appendChild(i);
-      b.appendChild(s);
-      b.onclick = function () { buzz(); soon(); send('/launch', { id: a.id }); };
-      g.appendChild(b);
-      fetch('/icon/' + encodeURIComponent(a.id), { headers: hdr() }).then(function (x) { return x.ok ? x.blob() : null; }).then(function (bl) { if (bl) i.src = URL.createObjectURL(bl); });
-    });
+    d.textContent = '';
+    r.apps.forEach(function (a) { g.appendChild(appTile(a)); d.appendChild(appTile(a)); });
   });
 }
+/* the layout from the screen: a phone (one column); a portrait screen wider than a phone's (a folding phone closed, a tablet) with
+   the apps in a rail beside the remote; a landscape screen with room (a folding phone open) with the keys on the left, the touchpad
+   (or Type, TV) on the right and the apps under it. The Remote and Apps tabs are not needed there; turned back, the remote shows */
+var lay = '';
+function layout() {
+  var w = window.innerWidth, h = window.innerHeight,
+    m = w > h && h >= 480 && w >= 700 ? 'wide' : w >= 460 && w / h >= 0.6 ? 'rail' : '',
+    was = lay;
+  if (m === lay) return;
+  lay = m;
+  document.body.classList.toggle('wide', m === 'wide');
+  document.body.classList.toggle('rail', m === 'rail');
+  if (m && key && $('main').className !== 'hide') apps();
+  var on = document.querySelector('nav button.on'), p = on && on.getAttribute('data-p');
+  if (m === 'wide' && (p === 'keys' || p === 'apps')) tab('touch');
+  else if (was === 'wide' && p === 'touch') tab('keys');
+}
+window.addEventListener('resize', layout);
 /* a colour key's app: held, the key offers the apps of the TV (and its own LG key); the choice stays on this phone */
 var COLOUR_NAMES = { RED: t('Red'), GREEN: t('Green'), YELLOW: t('Yellow'), BLUE: t('Blue') };
 function colourLabels() {
@@ -604,6 +631,7 @@ function useTv(id, name) {
   up = null;
   nowText = '';
   lastSound = null;
+  appsDone = false;
   sleeping(false); /* the other TV's 'off' must not stay on the screen; its own /ping says */
   $('tv').textContent = '';
   if (key) start();
@@ -693,6 +721,7 @@ fetch('/hub/tvs', { cache: 'no-store' })
     $('st').classList.add('many');
     boot();
   }, boot);
+layout();
 setInterval(function () { if (key && !document.hidden) ping(); }, 15000);
 document.addEventListener('visibilitychange', function () { if (key && !document.hidden) ping(); });
 `;
@@ -700,10 +729,18 @@ document.addEventListener('visibilitychange', function () { if (key && !document
 // sizes scale with the phone: 1 unit is a pixel on a phone about 390 px wide and 680 px high, smaller when there is less room (so the
 // remote fits without scrolling), a little larger on big phones
 const u = n => 'calc(' + n + '*var(--u))';
-const unit = vh =>
-  'max(.74px,min(1.08px,(100vw - 24px)/364,(' + vh + ' - max(10px,env(safe-area-inset-top)) - max(10px,env(safe-area-inset-bottom)))/640))';
+const unit = (vh, w) =>
+  'max(.74px,min(1.08px,(' +
+  (w || '100vw - 24px') +
+  ')/364,(' +
+  vh +
+  ' - max(10px,env(safe-area-inset-top)) - max(10px,env(safe-area-inset-bottom)))/640))';
+// beside a rail (layout() in the page) the remote has the width less the rail's
+const RAIL = 'clamp(84px,19vw,132px)',
+  BESIDE = '100vw - 24px - ' + RAIL + ' - 14px';
 
 const CSS = `:root{--u:${unit('100vh')}}@supports (height:100svh){:root{--u:${unit('100svh')}}}
+.rail{--u:${unit('100vh', BESIDE)}}@supports (height:100svh){.rail{--u:${unit('100svh', BESIDE)}}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 html{height:100%;background:#08090b;overscroll-behavior:none;-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100%;display:flex;flex-direction:column;padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));background:radial-gradient(130% 70% at 50% 0,#1b1d23 0,#0b0c0f 62%,#08090b 100%);color:#e8e9ed;font:16px -apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',Roboto,sans-serif;user-select:none;-webkit-user-select:none;touch-action:manipulation}
@@ -787,6 +824,20 @@ small{display:block;margin-top:${u(16)};font-size:${u(12)};line-height:1.45;colo
 .app{flex-direction:column;min-width:0;padding:${u(8)} 0;border-radius:${u(16)}}.app.dn,.app:active{background:rgba(255,255,255,.06)}
 .app img{width:${u(60)};height:${u(60)};border-radius:${u(15)};object-fit:cover;background:#2a2c33;box-shadow:0 ${u(3)} ${u(8)} rgba(0,0,0,.45)}
 .app span{max-width:100%;margin-top:${u(7)};font-size:${u(11.5)};color:#c9cbd1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dock{display:none;scrollbar-width:none}#dock::-webkit-scrollbar{display:none}
+#dock .app{flex:none}#dock .app img{width:${u(50)};height:${u(50)};border-radius:${u(13)}}#dock .app span{font-size:${u(11)}}
+.rail #main,.wide #main{display:grid}
+.rail .top,.wide .top{grid-area:top}.rail #wakeb,.wide #wakeb{grid-area:wake}.rail nav,.wide nav{grid-area:nav}
+.rail section,.wide section{grid-area:body;min-height:0}
+.rail #main{max-width:calc(400px + ${RAIL} + 14px);grid-template-columns:minmax(0,1fr) ${RAIL};grid-template-rows:auto auto auto 1fr;grid-template-areas:'top dock' 'wake dock' 'nav dock' 'body dock';column-gap:14px}
+.rail #dock{grid-area:dock;display:block;contain:size;overflow-y:auto;margin:${u(-2)} ${u(-6)} 0 0;padding:${u(6)} ${u(4)};border-radius:${u(26)};background:#121317;box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.05)}
+.rail #dock .app{width:100%;padding:${u(9)} 0}
+.wide #main{max-width:${u(1100)};grid-template-columns:${u(368)} minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto;grid-template-areas:'top top' 'wake wake' 'keys nav' 'keys body' 'keys dock';column-gap:${u(26)}}
+.wide #keys{grid-area:keys;display:flex!important}
+.wide nav [data-p=keys],.wide nav [data-p=apps],.wide #touch .row{display:none}
+.wide #dock{grid-area:dock;display:flex;overflow-x:auto;margin-top:${u(14)};padding:${u(4)} ${u(6)};border-radius:${u(22)};background:#121317;box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.05)}
+.wide #dock .app{width:${u(78)};padding:${u(7)} 0}
+.wide #pad{min-height:0}
 #login{align-items:center;justify-content:center;text-align:center;padding:${u(28)} ${u(24)}}
 .badge{width:${u(76)};height:${u(76)};margin-bottom:${u(18)};border-radius:50%;display:flex;align-items:center;justify-content:center}
 .badge svg{width:${u(36)};height:${u(36)};stroke-width:1.7}
@@ -902,6 +953,7 @@ ${k('ENTER', '', 'OK', { cls: 'ok' })}</div></div>
 <section id=type class=hide><input id=txt autocomplete=off autocapitalize=off autocorrect=off spellcheck=false enterkeyhint=send placeholder="${T('Text for the box on the TV')}">
 <div class=row><button class="key p" id=send>${T('Send')}</button><button class=key id=bs>${T('Delete')}</button><button class=key id=ent>${T('Enter')}</button></div>
 <small>${T('Open a search box on the TV first; the text goes where its cursor is.')}</small></section>
+<div id=dock></div>
 <section id=apps class=hide><div id=grid></div><small>${T('Works on the same Wi-Fi as the TV. Add it to the Home Screen to open it like an app.')}</small></section>
 ${statuspage.html(T)}</div>
 <div id=sheet class=hide><div class=sh><h2 id=sheettitle></h2><p id=sheetp></p><div id=sheetlist></div>
