@@ -180,7 +180,8 @@ The Search button is in the top bar of a new installation. If you changed your t
 Holding OK on an app offers **Uninstall...** for the apps the TV lets go of: apps from LG's app store (also LG's own store apps, such
 as LG Movies & TV or LG Gaming Portal) and developer apps. It asks first; the app and its data leave the TV, and LG's app store
 installs it again. LG's system apps (Home Hub, LG Channels, Sports, Multi View and the like) are part of the firmware and can only be
-hidden. CleanYourTV, the Homebrew Channel (it keeps the TV rooted) and LG Input Hook (the Input key needs it) are never offered. In
+hidden. CleanYourTV, the Homebrew Channel (it runs the boot scripts and keeps the TV rooted), safeupdate and appupdateblocker (they keep
+LG's updates away) and LG Input Hook (the Input key needs it) are never offered. In
 **Customize** > **Hidden apps**, holding OK on a hidden app uninstalls it too.
 ## Cards
 

@@ -2219,3 +2219,16 @@ commit_ref: "feature/upstream-fixes-2026-11 (the commit that adds this entry, ch
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-12T14:30:00Z"
 ```
+
+```yaml
+id: CU-20261112-06
+type: fix
+title: "Uninstall is never offered for safeupdate and appupdateblocker (the Homebrew Channel already was not)"
+description: "Upstream bc8b93a, ported by hand (D-20261028-1): the fork already kept the Homebrew Channel, the input hook, LG's apps and its own out of Uninstall with one pattern (helper/apps.js KEEP), which both the removable flag Home is given and the uninstall call check. safeupdate and appupdateblocker join it: they keep LG's firmware and app updates away, and on the playroom TV a firmware update would remove root."
+impact: low
+affected_modules: ["helper/apps.js", "docs/launcher.md"]
+related_tests: ["tools/test/apps.test.js (neither is marked removable, and an uninstall of either is refused without a call to the app store)"]
+commit_ref: "feature/upstream-fixes-2026-11 (the commit that adds this entry, cherry picked from bc8b93a)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-12T15:00:00Z"
+```

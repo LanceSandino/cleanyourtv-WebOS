@@ -182,6 +182,8 @@ run(async () => {
           { id: 'netflix', title: 'Netflix', folderPath: '/media/cryptofs/apps/usr/palm/applications/netflix', removable: true },
           { id: 'com.webos.app.lgchannels', title: 'LG Channels', folderPath: '/media/system/apps/x', removable: false },
           { id: 'org.webosbrew.hbchannel', title: 'Homebrew Channel', folderPath: '/media/developer/apps/x', removable: true },
+          { id: 'org.webosbrew.safeupdate', title: 'safeupdate', folderPath: '/media/developer/apps/s', removable: true },
+          { id: 'org.webosbrew.appupdateblocker', title: 'appupdateblocker', folderPath: '/media/developer/apps/u', removable: true },
           { id: 'com.cleanyourtv.manager', title: 'CleanYourTV', folderPath: '/media/developer/apps/y', removable: true },
           {
             id: 'com.example.dev',
@@ -203,11 +205,21 @@ run(async () => {
       rm('com.example.dev') &&
       !rm('com.webos.app.lgchannels') &&
       !rm('org.webosbrew.hbchannel') &&
+      !rm('org.webosbrew.safeupdate') &&
+      !rm('org.webosbrew.appupdateblocker') &&
       !rm('com.cleanyourtv.manager'),
-    "the launcher is told which apps can be uninstalled: store and developer apps, not LG's system apps, the Homebrew Channel or CleanYourTV"
+    "the launcher is told which apps can be uninstalled: store and developer apps, not LG's system apps, the Homebrew Channel, safeupdate, appupdateblocker or CleanYourTV"
   );
   const refused = [];
-  for (const id of ['com.webos.app.lgchannels', 'org.webosbrew.hbchannel', 'com.cleanyourtv.manager', 'not.installed', '../x'])
+  for (const id of [
+    'com.webos.app.lgchannels',
+    'org.webosbrew.hbchannel',
+    'org.webosbrew.safeupdate',
+    'org.webosbrew.appupdateblocker',
+    'com.cleanyourtv.manager',
+    'not.installed',
+    '../x',
+  ])
     refused.push((await call(apps2, '/api/uninstall', 'POST', { id })).j.returnValue === false);
   ok(refused.every(Boolean) && !removed.length, 'LG apps, the apps CleanYourTV needs, unknown ids and bad ids are not uninstalled');
   const a1 = (await call(apps2, '/api/uninstall', 'POST', { id: 'netflix' })).j;

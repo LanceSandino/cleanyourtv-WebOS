@@ -13,9 +13,10 @@ const P = require('./paths'),
   { LAUNCHER_KEYS } = require('./config');
 
 const HALF_LIFE = 30 * 24 * 3600 * 1000; // usage counts halve every 30 days
-// apps that are never uninstalled from Home, whatever the app manager says: this project's, the Homebrew Channel (it keeps the TV
-// rooted), the input hook the Input key runs on, and LG's own
-const KEEP = /^(com\.cleanyourtv\.|org\.webosbrew\.hbchannel$|org\.webosbrew\.inputhook$|com\.webos\.|com\.lge\.)/;
+// apps that are never uninstalled from Home, whatever the app manager says: this project's, the Homebrew Channel (it runs the boot
+// scripts: root, CleanYourTV, the update blocking), safeupdate and appupdateblocker (they keep LG's firmware and app updates away), the
+// input hook the Input key runs on, and LG's own
+const KEEP = /^(com\.cleanyourtv\.|org\.webosbrew\.(?:hbchannel|inputhook|safeupdate|appupdateblocker)$|com\.webos\.|com\.lge\.)/;
 const WALL_SECS = [0, 10, 30, 60, 180, 300, 900, 3600]; // the photo-change intervals Customize > Wallpapers offers
 // Customize > Screensaver: how long Home is left alone before it starts, and how long each photo stays (seconds)
 const SAVER_AFTER = [60, 120, 300, 600, 900, 1800],
@@ -114,7 +115,8 @@ function create(ctx) {
       .map(a => ({ id: a.id, title: a.title, params: searchable[a.id] }));
   }
   // ---- uninstalling (hold OK on an app > Uninstall): what the app manager calls removable (LG's store apps, developer apps), never
-  // LG's system apps, this project's own apps, the Homebrew Channel (root) or the input hook the Input key uses ----
+  // LG's system apps, this project's own apps, the Homebrew Channel (root), safeupdate and appupdateblocker (the update blocking) or
+  // the input hook the Input key uses ----
   async function uninstall(id) {
     if (!/^[\w.\-]+$/.test(id)) return { returnValue: false, error: 'bad id' };
     appCache = null; // the app manager's own answer, not a list from before
