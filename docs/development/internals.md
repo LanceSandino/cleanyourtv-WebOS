@@ -50,7 +50,8 @@ card are small and stay single files.
 
 1. `10-cleanyourtv-home` runs at boot and starts the service.
 2. `stage-home.sh` builds a directory holding the launcher plus an `appinfo.json` derived from this TV's own stock Home (saved in
-   `backup/home-appinfo.orig.json` the first time), switched to the web type.
+   `backup/home-appinfo.orig.json` the first time), switched to the web type. It copies only the launcher files that changed (the
+   saver's pictures are several MB) and removes those gone from `app/`.
 3. `tvprofile.js` decides the way from the stock Home's kind (`homeTakeover`):
     - `mount` (flutter or web Home, webOS 24 and newer): the script **bind-mounts** that directory over
       `/usr/palm/applications/com.webos.app.home`, restarts the system app manager (`sam`) so it reads the new Home, and launches
@@ -64,13 +65,30 @@ card are small and stay single files.
       the launcher the same way. `/tmp/cleanyourtv-home-standin` holds the program's path while it is mounted; `reload-home.sh`,
       `undo-home.sh`, the debloat hook and the manager's status read it. If `webapp-mgr` does not list the launcher within 30
       seconds, `undo-home.sh temp` brings LG's Home back. `home-method` holding `mount` forces the first way.
+      The way and LG's Home program are kept in `home-takeover` (`standin /usr/bin/com.webos.app.home`). At the next boot, when that
+      file is newer than LG's Home as it came, `tvprofile.js` and `home-method`, and the launcher is staged as it is (no file in
+      `app/` but `cytv-token.js` newer than `home-overlay.staged`, which `stage-home.sh` touches, so after an update of the launcher
+      the slow way stages it first), the stand-in is mounted as the first step, before the service and the Node.js starts of the
+      steps above, so the Home key opens LG's Home for a shorter time after a boot (upstream issue 125); WebAppMgr is then not
+      restarted (it would close the launcher the stand-in opened) and the rest follows as before. The boot log says `known from an
+      earlier boot` then, and its first line `boot script started` shows when the Homebrew Channel ran the script.
+      LG's app manager can restart when the TV goes to standby. The new one does not know the stand-in as Home, while `webapp-mgr`
+      still has the launcher open as `com.webos.app.home`, so it takes that for Home and nothing comes to the front at power on or on
+      the Home key (a black screen with only the pointer). The stand-in sees its registration end with
+      `com.webos.applicationManager is not running`, waits until the app manager answers again, has `webapp-mgr` close the launcher
+      and ends, so the new app manager starts the stand-in afresh the next time Home is launched.
 4. A **watchdog** (`watchdog.sh`, one per boot, started by the boot script before any of its ways out, so also while LG's Home is
    selected and after an update) asks the service every 10 seconds. When the service has stopped, it starts it again (also while
    LG's Home is back after a fallback, but not while `bootstrap.sh` runs), notes that in `/tmp/cleanyourtv-boot.log` and adds the
    last 100 lines of the run that ended to `/tmp/cleanyourtv-helper.crash.log` (about 400 lines: the first run of the boot that ended
    and the latest ones; Share log includes it). A service that stops again at once is started less often (after 10, 20 ... up to
    120 seconds), and after 5 starts in 10 minutes not again until the next boot. If the service stays unreachable for about a minute
-   while our launcher is Home, it restores LG's Home until the next reboot. An update stops the watchdog and the boot script starts
+   while our launcher is Home, it restores LG's Home until the next reboot. On the stand-in way it also checks the screen (not in its
+   first 90 seconds, while the boot script brings Home up): when the TV is on (power state `Active`) and the service reports no app
+   in front for two checks in a row, it ends the stand-in, has `webapp-mgr` close the launcher and the app manager launch Home; when
+   the screen is still empty after two such tries, it restores LG's Home until the next reboot. When the app manager lists Home as
+   running while no stand-in runs (a restart of the app manager can end the stand-in too, and then the Home key does nothing), it
+   closes the launcher after two checks, and opens Home again if Home was in front. An update stops the watchdog and the boot script starts
    the one from the new files; it ends by itself when CleanYourTV is uninstalled (`helper.js` gone).
 
 Nothing is written under `/usr`: the mount disappears at reboot. `DISABLE` in `/media/developer/cleanyourtv` makes the script skip it.

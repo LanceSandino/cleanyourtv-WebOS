@@ -2167,3 +2167,16 @@ commit_ref: "feature/upstream-fixes-2026-11 (the commit that adds this entry, ch
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-12T12:00:00Z"
 ```
+
+```yaml
+id: CU-20261112-02
+type: fix
+title: "Boot on LG's native Home: the stand-in mounted first, launcher files copied only when changed, no black screen after the app manager restarts"
+description: "Upstream abf8682 (pull request 162, issues 125 and 162), ported by hand (D-20261028-1) to the fork's boot path. Applies to the stand-in way (LG's native Home: the playroom webOS 22 TV); stage-home.sh's change applies to every TV. (1) At boot, when an earlier boot wrote home-takeover ('standin <LG's Home program>') and LG's Home as it came, tvprofile.js, home-method and the staged launcher are unchanged since, the stand-in is mounted before the service and before any Node.js step; WebAppMgr's one restart without its inspector is then left out (it would close the launcher the stand-in opened; it is off below webOS 25 anyway). Unlike upstream, cytv-token.js (written into app/ by the service at every start) and the app folder itself do not count as a newer launcher, or the fast start would almost never run. (2) stage-home.sh copies only launcher files that changed (cmp), removes those gone from app/ (not appinfo.json), skips folders, and touches home-overlay.staged. (3) home-standin.sh: when its registration ends with 'com.webos.applicationManager is not running', it waits for the app manager, has webapp-mgr close the launcher and ends, so Home starts afresh (a launcher left open as Home gave a black screen with the pointer). (4) watchdog.sh on the stand-in way: the TV on with nothing in front for two checks sets Home up again (twice, then LG's Home until the next reboot); Home listed as running without its stand-in closes the launcher (and reopens Home if it was in front). The app in front is the service's own /api/foreground answer the watchdog already asks for, so all-well costs no extra luna call, and neither check runs in the watchdog's first 90 s, while the boot script brings Home up and checks it itself. Not taken: the black box (top, meminfo and loadavg every 30 s written to the TV's flash: a timer and a history on the TV against D-20261029-7, and the load average is meaningless on the Realtek TVs), and the Node 8 SIGABRT retry in exec.js and the 5 s delay of the app watch in apps.js (a Node 8.12 fault; the fork's floor is Node 12.21). The webOS 25 living-room TV uses the mount way: only stage-home.sh changes there."
+impact: medium
+affected_modules: ["scripts/10-cleanyourtv-home", "scripts/stage-home.sh", "scripts/home-standin.sh", "scripts/watchdog.sh", "docs/development/internals.md", "docs/tv-changes.md"]
+related_tests: ["tools/test/scripts.test.js (the fast start's order and conditions, its find run against a folder, stage-home.sh against a folder, the stand-in after an app manager restart, the watchdog's empty screen, grace, fallback, Home without its stand-in, and no calls while an app is in front)"]
+commit_ref: "feature/upstream-fixes-2026-11 (the commit that adds this entry, cherry picked from abf8682)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-12T13:00:00Z"
+```

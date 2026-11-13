@@ -558,13 +558,13 @@ run(async () => {
     ok(
       at('sh $L/devtools-close.sh restart </dev/null >/dev/null 2>&1 &') > 0 &&
         at('sh $L/devtools-close.sh restart') < at('[ -e $L/DISABLE ] && exit 0') &&
-        /if \[ -z "\$1" \]; then\n {2}sh \$L\/devtools-close\.sh restart/.test(h) &&
+        /if \[ -z "\$1" \] && \[ -z "\$FAST" \]; then\n {2}sh \$L\/devtools-close\.sh restart/.test(h) &&
         /else\n {2}sh \$L\/devtools-close\.sh <\/dev\/null/.test(h) &&
         /\[ -z "\$1" \] && \[ -e \$INITD\/15-cleanyourtv-debloat \] && sh \$L\/15-cleanyourtv-debloat early/.test(h) &&
         at('sh $L/15-cleanyourtv-debloat early') > at('[ -e $L/DISABLE ] && exit 0') &&
         at('sh $L/15-cleanyourtv-debloat early') < at('sh $L/stage-home.sh') &&
         at('wait $DT') > at('sh $L/stage-home.sh') &&
-        at('wait $DT') < at('mount --bind $L/home-standin.sh') &&
+        at('wait $DT') < at('mount --bind $L/home-standin.sh "$EXE" ||') &&
         at('wait $DT') < at('mount --bind $L/home-overlay $H') &&
         at('wait $DT') < at('systemctl restart sam') &&
         /10-cleanyourtv-home setup <\/dev\/null/.test(bootText),
@@ -1093,6 +1093,231 @@ run(async () => {
       'the crash log keeps the first run (its last 100 lines) and the latest ones within 400 lines: ' + c.length + ' ' + (r.stderr || '')
     );
   }
+  // the fast start on the native Home (upstream issue 125): at boot the stand-in is mounted before the service starts and before any
+  // Node.js step, only from what an earlier boot worked out, and that is written again whenever the slow way runs; no WebAppMgr
+  // restart after it (it would close the launcher the stand-in opened)
+  {
+    const bootSh = fs.readFileSync(path.join(root, 'scripts', '10-cleanyourtv-home'), 'utf8');
+    const fastMount = bootSh.indexOf('FAST=1');
+    const cond = bootSh.slice(bootSh.indexOf('FAST=""'), fastMount);
+    ok(
+      fastMount > 0 &&
+        fastMount < bootSh.indexOf('nohup node $L/helper.js') &&
+        fastMount < bootSh.indexOf('sh $L/stage-home.sh') &&
+        fastMount < bootSh.indexOf('sh $L/devtools-close.sh') &&
+        bootSh.slice(0, fastMount).indexOf('node ') < 0 &&
+        /^if \[ -z "\$1" \] && \[ ! -e \$L\/DISABLE \]/m.test(cond) &&
+        /\$TAKEOVER -nt \$L\/backup\/home-appinfo\.orig\.json/.test(cond) &&
+        /\$TAKEOVER -nt \$L\/tvprofile\.js/.test(cond) &&
+        /find \$L\/app -type f ! -name cytv-token\.js -newer \$L\/home-overlay\.staged/.test(cond) &&
+        /echo "\$method \$EXE" > \$TAKEOVER/.test(bootSh) &&
+        /rm -f \$TAKEOVER; exit 1/.test(bootSh) &&
+        /if \[ -z "\$FAST" \] && replaced; then/.test(bootSh),
+      'the boot script mounts the stand-in first when an earlier boot found the way, before the service and any Node.js step, ' +
+        'only at boot, and not after an update of the launcher (then the slow way stages it first)'
+    );
+  }
+  // the condition of the fast start, run against a folder: a launcher staged as it is passes (also when the service rewrote
+  // cytv-token.js since), a launcher file newer than the staging does not
+  {
+    const F = path.join(tmp, 'fast');
+    fs.mkdirSync(path.join(F, 'app'), { recursive: true });
+    fs.writeFileSync(path.join(F, 'app', 'index.html'), 'x');
+    const past = new Date(Date.now() - 60000);
+    fs.utimesSync(path.join(F, 'app', 'index.html'), past, past);
+    fs.writeFileSync(path.join(F, 'home-overlay.staged'), '');
+    const bootSh = fs.readFileSync(path.join(root, 'scripts', '10-cleanyourtv-home'), 'utf8');
+    const find = bootSh.match(/\$\(find \$L\/app [^)]*\)/)[0];
+    const fresh = () => cp.spawnSync('sh', ['-c', 'L=' + F + '; [ -z "' + find + '" ]']).status === 0;
+    const a = fresh();
+    fs.writeFileSync(path.join(F, 'app', 'cytv-token.js'), "var CYTV_TOKEN = '';\n");
+    const b = fresh();
+    fs.writeFileSync(path.join(F, 'app', 'index.html'), 'y');
+    const c = fresh();
+    ok(a && b && !c, 'the fast start takes a staged launcher (cytv-token.js and the folder itself do not count), not a newer one');
+  }
+  // stage-home.sh copies only what changed, removes what is gone from app/ (not appinfo.json) and notes when it staged
+  {
+    const G = path.join(tmp, 'stage');
+    fs.mkdirSync(path.join(G, 'app'), { recursive: true });
+    fs.mkdirSync(path.join(G, 'home-overlay'));
+    fs.mkdirSync(path.join(G, 'app', 'src'));
+    fs.writeFileSync(path.join(G, 'app', 'index.html'), 'new');
+    fs.writeFileSync(path.join(G, 'app', 'same.webp'), 'same');
+    fs.writeFileSync(path.join(G, 'home-overlay', 'same.webp'), 'same');
+    const old = new Date(Date.now() - 3600000);
+    fs.utimesSync(path.join(G, 'app', 'same.webp'), old, old);
+    fs.writeFileSync(path.join(G, 'home-overlay', 'gone.js'), 'old');
+    fs.writeFileSync(path.join(G, 'home-overlay', 'appinfo.json'), '{}');
+    const before = fs.statSync(path.join(G, 'home-overlay', 'same.webp')).mtimeMs;
+    const st = fs
+      .readFileSync(path.join(root, 'scripts', 'stage-home.sh'), 'utf8')
+      .replace('L=/media/developer/cleanyourtv', 'L=' + G)
+      .replace(/^node .*$/gm, ':');
+    const r = cp.spawnSync('sh', ['-c', st], { encoding: 'utf8' });
+    const o = n => path.join(G, 'home-overlay', n);
+    ok(
+      r.status === 0 &&
+        fs.readFileSync(o('index.html'), 'utf8') === 'new' &&
+        fs.statSync(o('same.webp')).mtimeMs === before &&
+        !fs.existsSync(o('gone.js')) &&
+        !fs.existsSync(o('src')) &&
+        fs.existsSync(o('appinfo.json')) &&
+        fs.existsSync(path.join(G, 'home-overlay.staged')),
+      'stage-home.sh copies only changed files, removes what is gone (not appinfo.json) and notes the staging: ' + r.stderr
+    );
+  }
+  // the app manager restarts when the TV goes to standby: the stand-in sees its registration end with "is not running", waits until
+  // the app manager answers again, has webapp-mgr close the launcher and ends, so the new app manager starts Home afresh (a launcher
+  // left open as com.webos.app.home was taken for Home, and nothing came to the front: a black screen with only the pointer)
+  {
+    const D = path.join(tmp, 'standin-sam');
+    fs.mkdirSync(path.join(D, 'bin'), { recursive: true });
+    fs.writeFileSync(
+      path.join(D, 'bin', 'luna-send'),
+      '#!/bin/sh\nD=' +
+        JSON.stringify(D) +
+        '\nfor a; do case "$a" in luna://*) m=$a ;; esac; done\necho "$m" >> $D/calls\n' +
+        'case "$m" in\n*registerApp) echo \'{"registered":true,"event":"registered"}\'; sleep 1;' +
+        ' echo \'{"serviceName":"com.webos.applicationManager","returnValue":false,"errorCode":-1,"errorText":"com.webos.applicationManager is not running."}\'; while :; do sleep 1; done ;;\n' +
+        '*/running) n=$(cat $D/asked 2>/dev/null || echo 0); echo $((n+1)) > $D/asked; [ $n -ge 1 ] && echo \'{"returnValue":true,"running":[]}\' ;;\n' +
+        '*) echo \'{"returnValue":true}\' ;;\nesac\n'
+    );
+    fs.chmodSync(path.join(D, 'bin', 'luna-send'), 0o755);
+    const t0 = Date.now();
+    const r = cp.spawnSync('sh', [path.join(root, 'scripts', 'home-standin.sh'), '{"reason":"preload"}'], {
+      env: Object.assign({}, process.env, { PATH: path.join(D, 'bin') + ':' + process.env.PATH, CYTV_BOOT_LOG: path.join(D, 'boot.log') }),
+      timeout: 20000,
+      encoding: 'utf8',
+    });
+    cp.spawnSync('pkill', ['-f', D]); // nothing of the stand-in luna-send is left
+    const log = fs.readFileSync(path.join(D, 'boot.log'), 'utf8'),
+      calls = fs.readFileSync(path.join(D, 'calls'), 'utf8');
+    ok(
+      (r.status === 0 || r.signal === 'SIGTERM') &&
+        Date.now() - t0 < 15000 &&
+        /registered with the app manager/.test(log) &&
+        /the app manager restarted \(the TV went to standby\); the launcher is closed/.test(log) &&
+        calls.indexOf('/running') >= 0 &&
+        calls.lastIndexOf('/running') < calls.indexOf('killApp'),
+      'after the app manager restarts, the stand-in waits for it, closes the launcher and ends (' + (Date.now() - t0) + ' ms)'
+    );
+  }
+
+  // nothing on screen (the stand-in way, upstream issue 162): with the TV on and no app in front for two checks, the watchdog closes
+  // the stand-in and the launcher and has the app manager open Home; when that does not help twice, LG's Home comes back. The app in
+  // front comes from the service's answer (a stand-in service that reads the file fg); a stand-in luna-send answers the power state,
+  // the running list and the launch of Home ("fixes": it brings Home to the front).
+  const blankCase = async (name, fixes, o) => {
+    o = o || {};
+    const D = path.join(tmp, name);
+    fs.mkdirSync(D);
+    fs.writeFileSync(path.join(D, 'helper.js'), 'setInterval(function () {}, 1000);\n');
+    fs.writeFileSync(path.join(D, 'fg'), o.fg || '');
+    if (o.running)
+      fs.writeFileSync(path.join(D, 'running'), '{"returnValue":true,"running":[{"id":"com.webos.app.home","processid":"1"}]}');
+    if (fixes) fs.writeFileSync(path.join(D, 'fixes'), '');
+    const exe = path.join(D, 'com.webos.app.home');
+    fs.writeFileSync(exe, 'sleep 60\n');
+    fs.writeFileSync(path.join(D, 'standin'), exe + '\n');
+    fs.writeFileSync(path.join(D, 'mounts'), '/dev/x ' + exe + ' ext4 rw 0 0\n');
+    fs.writeFileSync(path.join(D, 'undo-home.sh'), 'echo "undo $1" >> "$(dirname "$0")/calls"\n');
+    const luna = path.join(D, 'luna-send');
+    fs.writeFileSync(
+      luna,
+      '#!/bin/sh\nD=$(dirname "$0")\nfor a; do case "$a" in luna://*) m=$a ;; esac; done\necho "$m" >> $D/calls\n' +
+        'case "$m" in\n' +
+        '*getPowerState) echo \'{"returnValue":true,"state":"Active"}\' ;;\n' +
+        '*/launch) [ -f $D/fixes ] && echo com.webos.app.home > $D/fg; echo \'{"returnValue":true}\' ;;\n' +
+        '*/killApp) rm -f $D/running; echo \'{"returnValue":true}\' ;;\n' +
+        '*/running) cat $D/running 2>/dev/null || echo \'{"returnValue":true,"running":[]}\' ;;\n' +
+        '*) echo \'{"returnValue":true}\' ;;\nesac\n'
+    );
+    fs.chmodSync(luna, 0o755);
+    const standin = o.running ? { kill: () => {}, on: () => {} } : cp.spawn('/bin/sh', [exe], { stdio: 'ignore' });
+    standin.gone = !!o.running;
+    standin.on('exit', () => (standin.gone = true));
+    const srv = require('http').createServer((q, r) =>
+      r.end(JSON.stringify({ returnValue: true, appId: fs.readFileSync(path.join(D, 'fg'), 'utf8').trim() }))
+    );
+    await new Promise(res => srv.listen(0, '127.0.0.1', res));
+    const w = cp.spawn('sh', [path.join(root, 'scripts', 'watchdog.sh')], {
+      env: Object.assign({}, process.env, {
+        CYTV_DIR: D,
+        CYTV_BOOT_LOG: path.join(D, 'boot.log'),
+        CYTV_SERVICE_LOG: path.join(D, 'helper.log'),
+        CYTV_SERVICE_URL: 'http://127.0.0.1:' + srv.address().port + '/api/foreground',
+        CYTV_WATCH_SECS: '1',
+        CYTV_WATCH_GRACE: String(o.grace || 0),
+        CYTV_STANDIN: path.join(D, 'standin'),
+        CYTV_MOUNTS: path.join(D, 'mounts'),
+        CYTV_LUNA: luna,
+      }),
+      stdio: 'ignore',
+    });
+    w.gone = false;
+    w.on('exit', () => (w.gone = true));
+    const log = () => text(path.join(D, 'boot.log')),
+      calls = () => text(path.join(D, 'calls'));
+    const t0 = Date.now();
+    const done = await waitFor(
+      () => (o.until ? o.until(calls()) : fixes ? /launch/.test(calls()) : /undo temp/.test(calls())),
+      o.wait || 25000
+    );
+    const took = Date.now() - t0;
+    await sleep(fixes || o.running ? 4000 : 2000); // nothing more happens after that
+    const res = { done, took, log: log(), calls: calls(), standinGone: standin.gone };
+    fs.unlinkSync(path.join(D, 'helper.js'));
+    await waitFor(() => w.gone, 10000);
+    if (!w.gone) w.kill();
+    if (!standin.gone) standin.kill();
+    srv.close();
+    return res;
+  };
+  let bc = await blankCase('wd-blank', true);
+  ok(
+    bc.done &&
+      bc.standinGone &&
+      (bc.log.match(/nothing on screen; Home is set up again \(try 1\)/g) || []).length === 1 &&
+      !/try 2/.test(bc.log) &&
+      bc.calls.indexOf('killApp') >= 0 &&
+      bc.calls.indexOf('killApp') < bc.calls.indexOf('/launch') &&
+      !/undo/.test(bc.calls),
+    'with the TV on and nothing on screen the watchdog closes the stand-in and the launcher and opens Home again, once'
+  );
+  bc = await blankCase('wd-blank-grace', true, { grace: 4 });
+  ok(bc.done && bc.took >= 4000, 'the screen checks wait for the grace checks at the start (' + bc.took + ' ms)');
+  bc = await blankCase('wd-blank-stays', false);
+  ok(
+    bc.done &&
+      /try 1/.test(bc.log) &&
+      /try 2/.test(bc.log) &&
+      /still nothing on screen; LG's Home until the next reboot/.test(bc.log) &&
+      (bc.calls.match(/undo temp/g) || []).length === 1,
+    "when the screen stays empty after two tries, LG's Home comes back until the next reboot (once)"
+  );
+  // Home listed as running by the app manager while no stand-in runs (a restart of the app manager can end it too): the Home key does
+  // nothing. With another app in front the launcher is only closed; with Home in front it is opened again.
+  bc = await blankCase('wd-orphan', false, { running: true, fg: 'youtube.leanback.v4', until: c => /killApp/.test(c) });
+  ok(
+    bc.done &&
+      /Home runs without its stand-in \(the app manager restarted\); the launcher is closed/.test(bc.log) &&
+      (bc.calls.match(/killApp/g) || []).length === 1 &&
+      !/\/launch/.test(bc.calls) &&
+      !/undo/.test(bc.calls),
+    'Home running without its stand-in and another app in front: the launcher is closed once, nothing is opened over the app'
+  );
+  bc = await blankCase('wd-orphan-front', true, { running: true, fg: 'com.webos.app.home' });
+  ok(
+    bc.done &&
+      /Home runs without its stand-in \(the app manager restarted\); Home is set up again/.test(bc.log) &&
+      bc.calls.indexOf('killApp') < bc.calls.indexOf('/launch') &&
+      !/undo/.test(bc.calls),
+    'Home running without its stand-in and in front: the launcher is closed and Home opened again'
+  );
+  // an app in front, the TV on, the stand-in running: no call to luna at all (the service's answer is enough)
+  bc = await blankCase('wd-quiet', false, { fg: 'netflix', until: () => false, wait: 5000 });
+  ok(!bc.calls && !/watchdog/.test(bc.log), 'with an app in front the screen checks call nothing and do nothing: ' + bc.calls);
   // the boot script starts the watchdog before every way out (LG's Home selected, Home already replaced after an update), and an
   // update or a setup stops the running one first, so the one from the new files runs
   {
@@ -1103,7 +1328,7 @@ run(async () => {
     ok(
       at > 0 &&
         at < home.indexOf('[ -e $L/DISABLE ] && exit 0') &&
-        at < home.indexOf('if replaced; then') &&
+        at < home.indexOf('if [ -z "$FAST" ] && replaced; then') &&
         home.indexOf('(sh $L/watchdog.sh', at + 1) < 0 &&
         (fn('restart_for_update').match(/pkill -f "\[c\]leanyourtv\/watchdog\.sh"/g) || []).length === 2 &&
         /pkill -f "\[c\]leanyourtv\/watchdog\.sh"/.test(fn('start_install')),
