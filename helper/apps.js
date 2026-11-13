@@ -336,6 +336,7 @@ function create(ctx) {
     delete c.photoFeed; // holds the photo feed's token; the launcher gets only whether there are photos
     delete c.watchAccounts; // Plex's and Stremio's keys (plex.js, stremio.js); the launcher gets the cards only
     delete c.sonos; // the soundbar followed, its address among it (sonos.js); the launcher reads none of it
+    delete c.remote; // the hub's link key and the paired phones' key hashes and names (remote.js); the launcher reads none of it
     const theme = ctx.feature('theme'),
       wp = ctx.feature('wallpapers'),
       feed = ctx.feature('photofeed');

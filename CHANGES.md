@@ -2284,3 +2284,16 @@ commit_ref: "feature/integrations-dormant (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-12T22:30:00Z"
 ```
+
+```yaml
+id: CU-20261113-01
+type: security
+title: "/api/apps no longer gives the launcher the phone remote's settings (the hub's link key, the paired phones' key hashes and names)"
+description: "launcherConfig() in helper/apps.js passed config.remote to every page that reads /api/apps: the hub's link key, and each paired phone's name and the SHA-256 of its key. No launcher, picker, notification or manager page reads it (grep for config.remote and .remote in app/, picker/, notify/ and manager/src). It is now left out the same way as the Sonos, voice, wallpaper, photo feed and account settings."
+impact: low
+affected_modules: ["helper/apps.js"]
+related_tests: ["tools/test/apps.test.js (new: the phone remote's settings, a paired phone's name among them, are not in /api/apps; fails without the fix)"]
+commit_ref: "feature/integrations-dormant (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-13T00:00:00Z"
+```

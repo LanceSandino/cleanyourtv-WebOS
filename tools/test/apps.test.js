@@ -37,6 +37,7 @@ run(async () => {
       stremio: { authKey: 'secret-stremio-key' },
     },
     sonos: { on: true, speaker: { id: 'RINCON_X', host: '192.0.2.44', port: 1400, name: 'Living Room' } },
+    remote: { on: true, via: 'hub', linkKey: 'secret-link-key', devices: [{ id: 'p1', name: 'Kitchen phone', hash: 'secret-phone-hash' }] },
   });
   const wpStub = { stamp: () => '3:abcd' };
   const apps = req('apps').create({ config, luna, version: '1.6.0', feature: n => (n === 'wallpapers' ? wpStub : null) });
@@ -49,6 +50,10 @@ run(async () => {
   ok(
     !r.j.config.sonos && r.out.indexOf('192.0.2.44') < 0 && r.out.indexOf('RINCON') < 0,
     "the launcher never gets the Sonos settings (the speaker's address): it reads none of them"
+  );
+  ok(
+    !r.j.config.remote && r.out.indexOf('Kitchen phone') < 0,
+    "the launcher never gets the phone remote's settings (the hub's link key, the phones' key hashes and names): it reads none of them"
   );
   ok(
     asked === 1 && r.j.apps.length === 1 && r.j.apps[0].title === 'One' && r.j.config.dock[0] === 'a.one',
