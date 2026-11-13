@@ -109,6 +109,7 @@ run(async () => {
   fs.copyFileSync(path.join(root, 'scripts', 'bootstrap.sh'), path.join(S, 'bootstrap.sh'));
   write(path.join(S, 'inputhook', 'ezinject'), '', 0o755);
   write(path.join(S, 'inputhook', 'libinputhookpp.so'), '');
+  write(path.join(S, 'native', 'cytv-cec'), 'LISTENER 1', 0o755);
   fs.copyFileSync(path.join(root, 'compat.json'), path.join(S, 'compat.json'));
   fs.copyFileSync(path.join(root, 'config.example.json'), path.join(S, 'config.example.json'));
   write(path.join(S, 'payload', 'app', 'index.html'), '<!doctype html>');
@@ -270,6 +271,23 @@ run(async () => {
       !/^inputhook\//m.test(listed) &&
       /^helper\.js$/m.test(listed),
     'an update never writes over the loaded input hook: unchanged it stays, changed it is renamed in, the open copy keeps its bytes, the rollback leaves it out'
+  );
+  // the service's own programs (native/): the HDMI listener may be running, and a running program cannot be written over (ETXTBSY):
+  // a changed one is renamed in, executable, and an open copy keeps its bytes
+  const lis = path.join(D, 'native', 'cytv-cec'),
+    lisHeld = fs.openSync(lis, 'r');
+  write(path.join(S, 'native', 'cytv-cec'), 'LISTENER 2', 0o644);
+  b = boot(['update', '1.6.0', '--no-start']);
+  const lisKept = Buffer.alloc(10);
+  fs.readSync(lisHeld, lisKept, 0, 10, 0);
+  fs.closeSync(lisHeld);
+  ok(
+    b.status === 0 &&
+      lisKept.toString() === 'LISTENER 1' &&
+      fs.readFileSync(lis, 'utf8') === 'LISTENER 2' &&
+      (fs.statSync(lis).mode & 0o111) !== 0 &&
+      !fs.existsSync(lis + '.new'),
+    'an update renames a changed native program in (executable), never writes over the one that may be running'
   );
   fs.writeFileSync(
     path.join(R, 'usr/palm/applications/com.webos.app.home/appinfo.json'),

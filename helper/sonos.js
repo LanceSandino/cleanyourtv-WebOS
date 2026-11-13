@@ -9,10 +9,12 @@
 // API (loopback only): GET /api/sonos/status, POST /api/sonos/find (search the network), POST /api/sonos/set {enabled, speaker, position,
 // hideLg}, GET /api/sonos/wait?since=<seq> (the open notify app waits there for the next change: answered at once by a change)
 const http = require('http'),
+  fs = require('fs'),
   dgram = require('dgram'),
   os = require('os'),
   crypto = require('crypto');
-const web = require('./web');
+const web = require('./web'),
+  P = require('./paths');
 
 // speaker null: found automatically; hideLg: LG's volume bar is hidden while this is on and the sound goes to the soundbar
 const DEFAULTS = { enabled: false, speaker: null, position: 'top-left', hideLg: true };
@@ -125,6 +127,23 @@ function parseEvent(body) {
   return 'volume' in r || 'muted' in r ? r : null;
 }
 
+// a Sonos player's id holds its network card's (MAC) address: RINCON_, then 12 hex digits, then the port
+function macOf(id) {
+  const m = /^RINCON_([0-9A-F]{12})/i.exec(String(id || ''));
+  return m ? m[1].toLowerCase().replace(/(..)(?!$)/g, '$1:') : '';
+}
+// the address the TV's neighbour table (ARP) has for a network card, or ''
+function arpFor(file, mac) {
+  if (!mac) return '';
+  try {
+    for (const l of fs.readFileSync(file, 'utf8').split('\n').slice(1)) {
+      const w = l.trim().split(/\s+/);
+      if (w.length >= 4 && w[3].toLowerCase() === mac && w[2] !== '0x0' && /^\d+\.\d+\.\d+\.\d+$/.test(w[0])) return w[0];
+    }
+  } catch (_) {}
+  return '';
+}
+
 function create(ctx, opts) {
   const o = Object.assign(
     {
@@ -142,6 +161,10 @@ function create(ctx, opts) {
       lgOldDir: '',
       ssdp: { address: '239.255.255.250', port: 1900 },
       selfOk: false, // the tests' stand-in speaker runs on this computer
+      arp: P.PROC + '/net/arp', // the TV's neighbour table: where the followed soundbar's network card is now
+      speakerPort: 1400, // a Sonos player's port, for an address from the neighbour table (tests: a stand-in's)
+      hdmi: {}, // hdmivolume.js: {bin} (tests)
+      hdmiWinsMs: 3000, // after the soundbar reported its volume over HDMI, the network's readings wait this long (see apply)
     },
     opts
   );
@@ -167,6 +190,10 @@ function create(ctx, opts) {
     searching = null;
   const found = new Map(); // id -> the speaker as last found, for set({speaker})
   const st = { state: 'off', mode: '', volume: null, muted: null, error: '' };
+  // the soundbar's own reports over HDMI-CEC (hdmivolume.js): its real volume about 0.1 s after each press of the remote's volume keys,
+  // without the network. They run while the option is on, beside the speaker on the network (which tells about the Sonos app too).
+  const hdmi = ctx.hdmivolume || require('./hdmivolume').create(o.hdmi);
+  let hdmiAt = 0; // when it last reported
 
   const later = (ms, fn) => {
     const t = setTimeout(fn, ms);
@@ -455,16 +482,20 @@ function create(ctx, opts) {
     if (res.on) res.on('close', drop);
     waiters.push(w);
   }
-  // a new reading: the first after (re)connecting only sets what is current; a change shows the bar
+  // a new reading: the first after (re)connecting only sets what is current, unless it is the soundbar's answer to a press over HDMI;
+  // a change shows the bar. For a few seconds after a report over HDMI the network's readings are left out: the speaker's events come
+  // later and may still carry a value from before the last press, which would move the bar back.
   function apply(r, how) {
+    if (how === 'hdmi') hdmiAt = Date.now();
+    else if (Date.now() - hdmiAt < o.hdmiWinsMs) return;
     const vol = st.volume,
       mut = st.muted;
     if (typeof r.volume === 'number') st.volume = r.volume;
     if (typeof r.muted === 'boolean') st.muted = r.muted;
-    if (vol === null || (st.volume === vol && st.muted === mut)) return;
+    if ((vol === null && !r.press) || (st.volume === vol && st.muted === mut)) return;
     const t = { how: how || 'event', at: Date.now() };
     screenOk().then(ok => {
-      if (!ok || st.state !== 'listening') return;
+      if (!ok || (st.state !== 'listening' && how !== 'hdmi')) return; // over HDMI it needs no speaker on the network
       luna('luna://com.webos.applicationManager/getForegroundAppInfo', {}).then(
         f => overlay((f && f.appId) || '', t),
         () => overlay('', t)
@@ -562,20 +593,31 @@ function create(ctx, opts) {
       else if (cfg().speaker && cfg().speaker.id === d.id) save(Object.assign(cfg(), { speaker: d })); // its new address
       return d || null;
     }
+    // the soundbar followed before: where it was last, else the search, else where the TV's neighbour table has its network card now
+    // (its id holds that card's address), so a missed search or a new address does not lose it
+    const seen = c.seenBar && c.seenAt && c.seenAt.host ? await describe(c.seenAt.host, c.seenAt.port || 1400) : null;
+    if (seen && seen.id === c.seenBar) return seen;
     const list = await find(),
       bars = list.filter(x => x.theater);
+    const keep = d => {
+      const n = cfg();
+      if (n.seenBar !== d.id || !n.seenAt || n.seenAt.host !== d.host || n.seenAt.port !== d.port)
+        save(Object.assign(n, { seenBar: d.id, seenAt: { host: d.host, port: d.port } }));
+      return d;
+    };
     if (c.seenBar) {
       const d = list.filter(x => x.id === c.seenBar)[0];
-      if (d) return d;
+      if (d) return keep(d);
+      const ip = arpFor(o.arp, macOf(c.seenBar));
+      const at = c.seenAt || {},
+        a = ip && !(ip === at.host && o.speakerPort === at.port) ? await describe(ip, o.speakerPort) : null;
+      if (a && a.id === c.seenBar) return keep(a);
       if (!bars.length) {
         st.error = 'the soundbar did not answer the search';
         return null;
       }
     }
-    if (bars.length === 1) {
-      if (cfg().seenBar !== bars[0].id) save(Object.assign(cfg(), { seenBar: bars[0].id }));
-      return bars[0];
-    }
+    if (bars.length === 1) return keep(bars[0]);
     if (list.length === 1 && !c.seenBar) return list[0];
     st.error = list.length ? 'several speakers: choose one' : '';
     return null;
@@ -699,6 +741,8 @@ function create(ctx, opts) {
     unsubscribe();
     wait = 0;
     lgPlan();
+    if (c.enabled) hdmi.start(r => cfg().enabled && apply(r, 'hdmi'));
+    else hdmi.stop();
     if (!c.enabled) {
       endWaits({ stop: true });
       for (const k of Array.from(traces.keys())) report(k, 0);
@@ -725,6 +769,7 @@ function create(ctx, opts) {
       mode: st.mode,
       volume: st.volume,
       muted: st.muted,
+      hdmi: hdmi.state(), // the soundbar's reports over HDMI: off, starting, listening, unsupported (no CEC line), stopped
       error: st.error,
     };
   }
@@ -775,4 +820,4 @@ function create(ctx, opts) {
   };
 }
 
-module.exports = { create, parseEvent, parseDescription, READ_ONLY, POSITIONS };
+module.exports = { create, parseEvent, parseDescription, macOf, arpFor, READ_ONLY, POSITIONS };

@@ -182,7 +182,7 @@ run(async () => {
   );
 
   // ---- stand-ins: a soundbar and a second speaker, and the SSDP answers for them
-  const bar = await player({ id: 'RINCON_TESTBAR01400', model: 'Sonos Beam', room: 'Den' });
+  const bar = await player({ id: 'RINCON_00112233445501400', model: 'Sonos Beam', room: 'Den' });
   const one = await player({ id: 'RINCON_TESTONE01400', model: 'Sonos One', room: 'Kitchen', events: false });
   let searches = 0,
     barSilent = false; // the soundbar misses the search (asleep, a lost datagram)
@@ -213,6 +213,7 @@ run(async () => {
     fg = 'netflix',
     lunaCalls = 0;
   const shows = [];
+  /** @type {any} */ let hdmiFeed = null;
   const conf = memoryConfig({});
   const ctx = {
     config: conf,
@@ -224,6 +225,8 @@ run(async () => {
       return { returnValue: true };
     },
     notify: { show: async (p, internal) => shows.push(Object.assign({ internal }, p)) },
+    // the soundbar's reports over HDMI (hdmivolume.js, tested in hdmivolume.test.js): fed by hand here
+    hdmivolume: { start: fn => (hdmiFeed = fn), stop: () => (hdmiFeed = null), state: () => (hdmiFeed ? 'listening' : 'off') },
   };
   const opts = {
     findMs: 250,
@@ -233,6 +236,7 @@ run(async () => {
     screenMs: 20,
     holdMs: 250,
     ackMs: 150,
+    hdmiWinsMs: 300,
     ssdp: { address: '127.0.0.1', port: ssdp.address().port },
     selfOk: true,
   };
@@ -298,9 +302,60 @@ run(async () => {
   await sleep(80);
   ok(son.status().volume === 12 && shows.length === 2, 'none of them changed the volume shown');
 
-  // ---- a soundbar that misses a search is looked for again, never swapped for the only other speaker that answered (2026-11-13)
+  ok(
+    JSON.stringify(conf.get().sonos.seenAt) === JSON.stringify({ host: '127.0.0.1', port: bar.port }),
+    'and where it answered: ' + JSON.stringify(conf.get().sonos.seenAt)
+  );
+
+  // ---- a soundbar that misses a search is asked at its last address first, without a search
   barSilent = true;
+  let searched = searches;
   await call(son, '/api/sonos/set', 'POST', { enabled: false });
+  await call(son, '/api/sonos/set', 'POST', { enabled: true });
+  ok(
+    (await until(() => son.status().mode === 'events')) && son.status().using.id === bar.id && searches === searched,
+    'the soundbar is found again at its last address, without a search: ' + JSON.stringify(son.status())
+  );
+
+  // ---- gone from its last address and silent: found where the TV's neighbour table has its network card (its id holds the address)
+  ok(
+    S.macOf(bar.id) === '00:11:22:33:44:55' && S.macOf('RINCON_A1B2C3D4E5F601400') === 'a1:b2:c3:d4:e5:f6' && S.macOf('uuid:x') === '',
+    "a player's id gives its network card's address"
+  );
+  const arp = path.join(tmp, 'arp');
+  const arpHead = 'IP address       HW type     Flags       HW address            Mask     Device\n';
+  fs.writeFileSync(
+    arp,
+    arpHead +
+      '192.168.9.7      0x1         0x0         00:11:22:33:44:55     *        wlan0\n' + // incomplete: not an answer
+      '127.0.0.1        0x1         0x2         00:11:22:33:44:55     *        wlan0\n'
+  );
+  ok(
+    S.arpFor(arp, '00:11:22:33:44:55') === '127.0.0.1' && S.arpFor(arp, 'aa:bb:cc:dd:ee:ff') === '',
+    'the neighbour table gives its address'
+  );
+  const nowhere = { host: '127.0.0.1', port: 9 }; // nothing answers there
+  const son3 = S.create(ctx, Object.assign({}, opts, { arp, speakerPort: bar.port, hdmi: { bin: path.join(tmp, 'none') } }));
+  await conf.update('test', c => {
+    c.sonos.seenAt = nowhere;
+  });
+  son3.start();
+  ok(
+    (await until(() => son3.status().mode === 'events')) && son3.status().using.id === bar.id,
+    'the soundbar is followed at the address from the neighbour table: ' + JSON.stringify(son3.status())
+  );
+  ok(conf.get().sonos.seenAt.port === bar.port, 'and that address is kept');
+  son3.stop();
+  await until(() => son3.status().state === 'off');
+  await conf.update('test', c => {
+    c.sonos.enabled = true;
+  });
+
+  // ---- a soundbar that misses a search is looked for again, never swapped for the only other speaker that answered (2026-11-13)
+  await call(son, '/api/sonos/set', 'POST', { enabled: false });
+  await conf.update('test', c => {
+    c.sonos.seenAt = nowhere;
+  });
   await call(son, '/api/sonos/set', 'POST', { enabled: true });
   ok(
     (await until(() => /soundbar did not answer/.test(son.status().error || ''))) &&
@@ -339,6 +394,27 @@ run(async () => {
   );
   fg = 'netflix';
   ok(lunaCalls > 0, 'the power state and the sound output come from the TV');
+
+  // ---- the soundbar's own report over HDMI: shown at once; the network's later (and maybe older) readings do not move the bar back
+  ok(typeof hdmiFeed === 'function' && son.status().hdmi === 'listening', 'while on, the HDMI listener runs');
+  const h0 = shows.length;
+  hdmiFeed({ volume: 19, muted: false, press: true });
+  ok((await until(() => shows.length === h0 + 1)) && shows[h0].volume === 19, 'a report over HDMI shows the bar with its volume');
+  await bar.change(18, false); // the speaker's event, late, from before the last press
+  await bar.change(19, false);
+  await sleep(120);
+  ok(shows.length === h0 + 1 && son.status().volume === 19, 'the network events right after it change nothing');
+  await sleep(250);
+  await bar.change(21, false); // later: a change in the Sonos app
+  ok((await until(() => shows.length === h0 + 2)) && shows[h0 + 1].volume === 21, 'a change on the network later shows again');
+  hdmiFeed({ volume: 21, muted: true, press: true });
+  ok((await until(() => shows.length === h0 + 3)) && shows[h0 + 2].muted === true, 'mute over HDMI shows the bar muted');
+  hdmiFeed({ volume: 21, muted: true, press: false }); // LG asking again: the same answer
+  await sleep(100);
+  ok(shows.length === h0 + 3, 'the same report again shows nothing');
+  hdmiFeed({ volume: 21, muted: false, press: true });
+  await until(() => shows.length === h0 + 4);
+  await sleep(350);
 
   // ---- a burst of changes: one launch at a time, and the last value always arrives
   const slow = [];
@@ -551,6 +627,7 @@ run(async () => {
   await sleep(40);
   r = await call(son, '/api/sonos/set', 'POST', { enabled: false });
   ok(r.j.enabled === false && r.j.state === 'off', 'switched off');
+  ok(hdmiFeed === null && r.j.hdmi === 'off', 'and the HDMI listener stops');
   ok((await until(() => held)) && held.j.stop === true, 'a waiting page is told to stop');
   const offWait = await waitAt(0);
   ok(offWait.j && offWait.j.stop === true, 'and while it is off a wait is told to stop at once');

@@ -725,6 +725,7 @@
     "body": {
       "enabled": false,
       "error": "",
+      "hdmi": "off",
       "hideLg": true,
       "lgBar": "unsupported",
       "mode": "",

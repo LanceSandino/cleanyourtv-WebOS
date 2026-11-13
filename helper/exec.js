@@ -25,6 +25,11 @@ function detached(script) {
   c.unref();
   return c;
 }
+// a program that keeps running beside the service and streams its output (hdmivolume.js); the caller ends it with kill()
+function spawn(cmd, args) {
+  diag.note('exec', 'spawn ' + cmd);
+  return cp.spawn(cmd, args || [], { env: P.ENV, stdio: ['ignore', 'pipe', 'pipe'] });
+}
 // for the standalone tools (sharelog.js) that collect a report step by step; spawnSync keeps its own time limit safely
 function shSync(script, ms) {
   const r = cp.spawnSync('/bin/sh', ['-c', script], {
@@ -37,4 +42,4 @@ function shSync(script, ms) {
   return (r.stdout || '') + (r.status === 0 ? '' : r.stderr || '');
 }
 
-module.exports = { run, sh, execFile, detached, shSync };
+module.exports = { run, sh, execFile, detached, spawn, shSync };

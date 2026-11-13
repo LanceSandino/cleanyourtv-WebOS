@@ -12,13 +12,13 @@ speaker.
 
 In the manager app: **More** > **Sonos volume on screen** > **Show the Sonos volume**.
 
-| Row | What it does |
-|---|---|
-| **Show the Sonos volume** | On or off. |
-| **Speaker** | **Automatic** (the default) follows the only Sonos soundbar on the network (Playbar, Playbase, Beam, Arc, Ray or Amp), or the only Sonos player when there is just one. Once a soundbar has been followed it is remembered, and only that soundbar is followed from then on: when it misses a search (asleep, just after the TV wakes), it is looked for again rather than swapped for another speaker that answered. Choosing the row searches the network and lists every player with its room and model, so you can choose one; that is needed when there are several soundbars. |
-| **Place on screen** | Top left (the default), top right, bottom left or bottom right. Picture notifications keep their own place; the volume shows beside them. |
-| **Hide LG's volume bar** | On by default: while **Show the Sonos volume** is on and the TV's sound goes to the soundbar (HDMI ARC/eARC or optical), LG's own volume bar stays away, so only this bar shows. Off: both show. On a TV where this was not tried it says *not available on this TV*. |
-| **Now** | What it reads now: the volume and whether it is muted, or why it cannot follow the speaker. |
+| Row                       | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Show the Sonos volume** | On or off.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Speaker**               | **Automatic** (the default) follows the only Sonos soundbar on the network (Playbar, Playbase, Beam, Arc, Ray or Amp), or the only Sonos player when there is just one. Once a soundbar has been followed it is remembered, and only that soundbar is followed from then on: when it misses a search (asleep, just after the TV wakes), it is asked first at the address where it last answered, then searched for, then looked up by its network card's address in the TV's own neighbour table (a Sonos player's id contains that address), and never swapped for another speaker that answered. Choosing the row searches the network and lists every player with its room and model, so you can choose one; that is needed when there are several soundbars. |
+| **Place on screen**       | Top left (the default), top right, bottom left or bottom right. Picture notifications keep their own place; the volume shows beside them.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Hide LG's volume bar**  | On by default: while **Show the Sonos volume** is on and the TV's sound goes to the soundbar (HDMI ARC/eARC or optical), LG's own volume bar stays away, so only this bar shows. Off: both show. On a TV where this was not tried it says _not available on this TV_.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **Now**                   | What it reads now: the volume and whether it is muted, or why it cannot follow the speaker.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 The bar appears for three seconds after the last change, only while the TV's screen is on and its sound goes out to an external
 device. With the TV's own speakers LG shows its own volume, so the bar stays away. Muting shows the bar with a crossed-out speaker.
@@ -31,7 +31,7 @@ configuration service (configd), is not `false`, and it follows that setting whi
 `false`, and only while it applies:
 
 - The service writes one small file, `com.webos.surfacemanager.json` holding `{"volumeOSD":false}`, into each country folder of
-  configd's layer *TV Region Manager Options*, `/var/run/tvconfig/rmm/<country>/`, which is in RAM and outranks LG's built-in
+  configd's layer _TV Region Manager Options_, `/var/run/tvconfig/rmm/<country>/`, which is in RAM and outranks LG's built-in
   settings. Then it asks configd to read its settings again (`luna://com.webos.service.config/reconfigure`), as LG itself does at
   every start. No file of LG's is changed, nothing is mounted, and it never replaces or removes a file it did not write (it keeps a
   record in `/tmp/cleanyourtv-lgconfig.json`). Version 1.6.19 used `/var/run/tvconfig/remote/`, which configd turned out to read only
@@ -53,15 +53,21 @@ rm /var/run/tvconfig/rmm/*/com.webos.surfacemanager.json && \
 
 ## How it works
 
-1. **Finding the speaker.** The service asks the local network which Sonos players there are (SSDP, the way the Sonos app finds them)
+1. **The remote's volume keys, over HDMI.** With the sound on HDMI ARC/eARC, the soundbar reports its new volume to the TV by
+   itself about a tenth of a second after each press of the remote's volume or mute key (HDMI-CEC's _Report Audio Status_). A small
+   program of the service, `cytv-cec`, listens for those reports in the kernel's monitor mode, which can send nothing on the HDMI line
+   and leaves LG's own HDMI control as it was; it runs while the option is on. That is the soundbar's real number, without the
+   network, and it works for any soundbar that reports its volume, Sonos or not (_Now_ adds _over HDMI_). For a few seconds after such
+   a report the network's readings are left out, so a late event from the speaker cannot move the bar back.
+2. **Finding the speaker.** The service asks the local network which Sonos players there are (SSDP, the way the Sonos app finds them)
    and reads each one's description: its id, room and model. The chosen speaker is saved by its id, so it is found again when its
    address changes.
-2. **Following the volume.** The service reads the current volume and mute (UPnP `GetVolume` and `GetMute` on port 1400 of the
+3. **Following the volume (the Sonos app, the bar's buttons).** The service reads the current volume and mute (UPnP `GetVolume` and `GetMute` on port 1400 of the
    speaker) and subscribes to the speaker's volume events. From then on the speaker tells the TV about each change, at once. The
    subscription is renewed every 15 minutes and dropped when the option is switched off.
-3. **When the events do not arrive.** If no event reaches the TV within eight seconds (a firewall between the two, for example), the
+4. **When the events do not arrive.** If no event reaches the TV within eight seconds (a firewall between the two, for example), the
    service reads the volume once a second instead, and only while the screen is on.
-4. **Showing it.** A change starts the hidden notify app (the one that shows [picture notifications](notifications.md)) with the
+5. **Showing it.** A change starts the hidden notify app (the one that shows [picture notifications](notifications.md)) with the
    new volume. It does not take the remote, and the remote's volume and mute keys do not close it. Starting that app takes 1 to 2
    seconds on webOS 25, so after the bar fades its window stays open, empty and transparent, for ten minutes. While it is open, the
    page waits on the service for the next change (a request on the TV's own loopback address, with the same token as the other
@@ -76,12 +82,14 @@ No Sonos account, no internet and no Sonos app are involved: everything stays on
 
 ## When it does not show
 
-- **Now** says *No Sonos speaker found*: the TV and the speaker must be on the same network (the same Wi-Fi or LAN, no guest network
+- **Now** says _No Sonos speaker found_: the TV and the speaker must be on the same network (the same Wi-Fi or LAN, no guest network
   in between). **Speaker** > **Search again**.
-- **Now** says *several speakers: choose one*: there are several soundbars; choose yours under **Speaker**.
+- **Now** says _several speakers: choose one_: there are several soundbars; choose yours under **Speaker**.
 - **Now** shows the volume, but nothing appears on screen: check that the TV's sound output is the soundbar (LG's **Sound Out**
   setting), and that the volume really changes on the speaker.
-- **Now** says *read every second*: the speaker's events do not reach the TV. It still works, a little later than with events.
+- **Now** says _No Sonos speaker found · the remote's volume is read over HDMI_: the remote's keys still show the bar (over HDMI);
+  only changes made in the Sonos app need the speaker on the network.
+- **Now** says _read every second_: the speaker's events do not reach the TV. It still works, a little later than with events.
 
 The service log (`/tmp/cleanyourtv-helper.log` on the TV) has a line for each step, starting with `sonos:`. Each change that is
 shown adds one line with where its time went, in milliseconds since the change reached the TV:
@@ -99,15 +107,16 @@ are written only while the option is on, to the log in RAM, nothing to the TV's 
 
 ## For developers
 
-`helper/sonos.js` holds the search, the subscription and the event port; `notify/app` draws the bar (`kind: "volume"`, launched only
+`helper/hdmivolume.js` runs `native/cec/cytv-cec` (C source beside it; `sh native/build.sh` rebuilds it static for the TV's 32-bit
+ARM in a Debian container and writes `native/SHA256SUMS`, which the tests check) and turns its lines into readings. `helper/sonos.js` holds the search, the subscription and the event port; `notify/app` draws the bar (`kind: "volume"`, launched only
 by the service itself); `helper/lgvolume.js` hides and shows LG's bar, on the TVs `helper/tvprofile.js` allows (`lgVolumeBar`). Service API, on `127.0.0.1:8765`:
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /api/sonos/status` | On or off, the chosen speaker (`null`: automatic), the speaker followed, the place, `hideLg` and `lgBar` (LG's own bar: `shown`, `hidden` or `unsupported`), the state (`off`, `searching`, `listening`, `not found`, `error`), `events` or `polling`, the volume and mute |
-| `POST /api/sonos/find` | Searches the network (about three seconds); answers `{speakers: [{id, name, model, theater}]}` |
-| `POST /api/sonos/set` `{enabled, speaker, position, hideLg}` | Changes the settings; `speaker` is an id from the last search, or `""` for automatic |
-| `GET /api/sonos/wait?since=<n>` | For the open notify app: answered as soon as there is a change newer than `n` (the volume bar's launch parameters with its `seq`), `{idle: true}` after 30 s without one, `{stop: true}` while the option is off or after a wait with the screen off |
+| Endpoint                                                     | Purpose                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/sonos/status`                                      | On or off, the chosen speaker (`null`: automatic), the speaker followed, the place, `hideLg` and `lgBar` (LG's own bar: `shown`, `hidden` or `unsupported`), the state (`off`, `searching`, `listening`, `not found`, `error`), `events` or `polling`, the volume and mute, `hdmi` (the soundbar's reports over HDMI: `off`, `starting`, `listening`, `stopped`, or `unsupported` on a TV without a CEC line) |
+| `POST /api/sonos/find`                                       | Searches the network (about three seconds); answers `{speakers: [{id, name, model, theater}]}`                                                                                                                                                                                                                                                                                                                |
+| `POST /api/sonos/set` `{enabled, speaker, position, hideLg}` | Changes the settings; `speaker` is an id from the last search, or `""` for automatic                                                                                                                                                                                                                                                                                                                          |
+| `GET /api/sonos/wait?since=<n>`                              | For the open notify app: answered as soon as there is a change newer than `n` (the volume bar's launch parameters with its `seq`), `{idle: true}` after 30 s without one, `{stop: true}` while the option is off or after a wait with the screen off                                                                                                                                                          |
 
 The tests (`tools/test/sonos.test.js`) run against stand-in players on the computer, and check that every request a player receives
 is a search, a description, `GetVolume`, `GetMute` or a subscription.

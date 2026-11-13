@@ -25,6 +25,7 @@ module.exports = {
   VOICE: D + '/voice',
   WEATHER: D + '/weather.json', // the weather card's last answers (weather.js)
   HOOK: D + '/inputhook',
+  NATIVE: env.CYTV_NATIVE || D + '/native', // the service's own programs for the TV (native/: cytv-cec, the soundbar's volume over HDMI)
   APP: D + '/app',
   HOME_OVERLAY: D + '/home-overlay', // what stage-home.sh mounts over LG's Home: a copy of app/ with LG's appinfo.json
   COMPAT: [D + '/compat.json', SERVICE_DIR + '/compat.json'],

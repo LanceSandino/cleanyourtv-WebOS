@@ -148,6 +148,15 @@ copy_files() {
     cmp -s "$f" "$n" || { cp "$f" "$n.new" && mv -f "$n.new" "$n"; }
   done
   chmod 755 $D/inputhook/ezinject
+  # the service's own programs (native/): one may be running (the HDMI listener), and a running program cannot be written over; a new
+  # one is written beside it and renamed over it, and the running one ends with the service
+  if [ -d $S/native ]; then
+    mkdir -p $D/native
+    for f in $S/native/*; do
+      n=$D/native/$(basename "$f")
+      cmp -s "$f" "$n" || { cp "$f" "$n.new" && chmod 755 "$n.new" && mv -f "$n.new" "$n"; }
+    done
+  fi
   [ -d $S/licenses ] && { mkdir -p $D/licenses; cp $S/licenses/* $D/licenses/; }
   chmod +x $D/*.sh $D/10-cleanyourtv-home $D/15-cleanyourtv-debloat
   # root runs these files at boot and from the Input-key hook: nobody else may write them (the dev partition is world-writable)

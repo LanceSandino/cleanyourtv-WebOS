@@ -3678,9 +3678,12 @@ var SONOS_PLACES = [
 function sonosState(s) {
   if (!s || !s.enabled) return 'Off';
   if (s.state === 'searching') return 'Looking for the speaker…';
+  const hdmi = s.hdmi === 'listening' ? ' · over HDMI' : '';
   if (s.state === 'listening')
-    return (s.muted ? 'Muted · ' : '') + 'Volume ' + s.volume + (s.mode === 'polling' ? ' · read every second' : '');
-  return s.error || 'No Sonos speaker found';
+    return (s.muted ? 'Muted · ' : '') + 'Volume ' + s.volume + (s.mode === 'polling' ? ' · read every second' : '') + hdmi;
+  /* no speaker on the network, but the soundbar reports its volume over HDMI: the bar still shows for the remote's keys */
+  if (hdmi && s.volume !== null) return (s.muted ? 'Muted · ' : '') + 'Volume ' + s.volume + hdmi;
+  return (s.error || 'No Sonos speaker found') + (hdmi ? " · the remote's volume is read over HDMI" : '');
 }
 /* for the On or Off of its row on the More screen */
 function sonosLoad() {
