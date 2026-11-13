@@ -2206,3 +2206,16 @@ commit_ref: "feature/upstream-fixes-2026-11 (the commit that adds this entry, ch
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-12T14:00:00Z"
 ```
+
+```yaml
+id: CU-20261112-05
+type: fix
+title: "Home: app icons that failed before the service answered are asked again"
+description: "Upstream 8710e0d (TylerBuza), ported by hand (D-20261028-1). The launcher can draw its saved layout before the service answers at a start; an icon asked for then failed, its tile showed the app's name, and an unchanged app list did not rebuild the tile, so the name stayed. After every answer of the app list (also an unchanged one, before the early return) a tile whose icon failed asks for it again with ?retry=n (the service strips the query), at most twice per tile; the name stays until the picture loads and a second failure does not add a second name. Live TV's built-in icon is never asked for."
+impact: low
+affected_modules: ["app/src/js/tiles.js", "app/src/js/layout.js", "app/index.html", "docs/troubleshooting.md"]
+related_tests: ["tools/test/tile-retry.test.js (new: the name kept until the retry loads, no duplicate retry, at most two, one name, Live TV left alone, the retry before the unchanged-layout return)"]
+commit_ref: "feature/upstream-fixes-2026-11 (the commit that adds this entry, cherry picked from 8710e0d)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-12T14:30:00Z"
+```

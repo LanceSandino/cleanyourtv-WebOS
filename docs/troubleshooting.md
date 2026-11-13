@@ -16,6 +16,9 @@
 - **Apps do not open, an HDMI input has no picture or the remote no longer controls HDMI-CEC devices (webOS 5 to 23).** These
   followed the restart of the app manager on TVs with LG's native Home (issues 14, 23 and 24). From service 1.6.6 such a TV takes
   over Home without that restart. **Share log** shows the steps under *Boot steps*; open an issue with it if the problem stays.
+- **App names instead of icons after a start.** Home can draw its saved layout before the service answers, and the icons asked for
+  then fail. After each answer of the app list a failed icon is asked again, at most twice per tile, and the name stays until the
+  picture loads. If names stay, the service is not answering: see the report.
 - **An app is missing from the grid.** Check **Hidden apps** in Customize. Apps without a launch icon are not listed.
 - **After a firmware update removed root.** Re-root, then run the [install command](install.md#1-install-the-manager-app) and the setup again.
 - **The Input key opens LG's picker.** Check the Input key switch in the manager app and run **Learn the Input key**.
