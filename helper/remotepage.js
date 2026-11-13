@@ -594,25 +594,43 @@ function feedbackSheet() {
 $('fbset').onclick = feedbackSheet;
 colourLabels();
 switches();
-/* the power key: the TV off, or for a black picture (only the sound or the subtitles) the media services restarted, or the TV
-   restarted; LG's logs are kept first by both (picturediag.js) */
+/* the power key: the TV off, the screen off (the sound and the network stay on) or on again, or for a black picture (only the sound
+   or the subtitles) the media services restarted, or the TV restarted; LG's logs are kept first by both (picturediag.js). The TV is
+   asked whether its screen is off when the sheet opens: Screen on then comes first */
 function powerSheet() {
-  var list = $('sheetlist');
+  var list = $('sheetlist'), opened = Date.now();
   $('sheettitle').textContent = t('Power');
-  $('sheetp').textContent = '';
-  list.textContent = '';
-  [
-    [t('Turn the TV off'), function () { send('/power'); }],
-    [t('Fix a black picture (only sound or subtitles)'), fixPicture],
-    [t('Restart the TV'), restartTv],
-  ].forEach(function (o) {
-    var b = document.createElement('button');
-    b.className = 'key opt';
-    b.textContent = o[0];
-    b.onclick = function () { buzz(); $('sheet').className = 'hide'; o[1](); };
-    list.appendChild(b);
-  });
+  function draw(dark) {
+    $('sheetp').textContent = dark ? t('The screen is off. Any key on the TV\'s remote, or Power > Screen on here, brings it back.') : '';
+    list.textContent = '';
+    [
+      dark ? [t('Screen on'), screenOn] : null,
+      [t('Turn the TV off'), function () { send('/power'); }],
+      dark ? null : [t('Screen off (the sound stays on)'), screenOff],
+      [t('Fix a black picture (only sound or subtitles)'), fixPicture],
+      [t('Restart the TV'), restartTv],
+    ].forEach(function (o) {
+      if (!o) return;
+      var b = document.createElement('button');
+      b.className = 'key opt';
+      b.textContent = o[0];
+      b.onclick = function () { buzz(); $('sheet').className = 'hide'; o[1](); };
+      list.appendChild(b);
+    });
+  }
+  draw(false);
   $('sheet').className = '';
+  call('/picture/state').then(function (r) {
+    if (r && r.state === 'Screen Off' && $('sheet').className !== 'hide' && Date.now() - opened < 5000) draw(true);
+  }, function () {});
+}
+function screenOff() {
+  send('/picture/off').then(function (r) {
+    if (r && r.ok) note(t('The screen is off. Any key on the TV\'s remote, or Power > Screen on here, brings it back.'));
+  });
+}
+function screenOn() {
+  send('/picture/on');
 }
 function fixPicture() {
   note(t('Fixing the picture\u2026'));

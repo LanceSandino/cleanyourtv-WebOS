@@ -25,7 +25,7 @@
 //                                   to clear) that stays on when the TV sleeps: the QR code and the address shown then point there, so
 //                                   phones pair through it and it can wake the TV
 // On the LAN server: GET / (the phone page), POST /pair {code, name} -> {key, id}; with the key: POST /press {key}, /move {dx, dy},
-// /click, /scroll {dy}, /hold {key}, /text {text}, /backspace, /enter, /launch {id}, /power, /screen {sizes}, GET /apps, GET /inputs, /input {id} (an HDMI
+// /click, /scroll {dy}, /hold {key}, /text {text}, /backspace, /enter, /launch {id}, /power, /picture/off, /picture/on, /picture/state, /screen {sizes}, GET /apps, GET /inputs, /input {id} (an HDMI
 // input, or 'live' for Live TV, as the TV's Inputs picker offers them), GET /icon/<id>, GET /ping, and the
 // TV tab's read-only GET /status-data, /status-exposure, /status-services (statusdata.js: TV health and a summary, nothing secret).
 const http = require('http'),
@@ -76,6 +76,7 @@ const LONG = ['ENTER', 'BACK', 'HOME', 'MENU']; // held on the phone: LG's long 
 const SCREEN_KEYS = ['w', 'h', 'iw', 'ih', 'cw', 'ch', 'ow', 'oh', 'sw', 'sh', 'vw', 'vh', 'vs', 'dpr'];
 const AUDIO = 'luna://com.webos.service.audio/master/';
 const NET = 'luna://com.webos.service.networkinput/';
+const TVPOWER = 'luna://com.webos.service.tvpower/power/';
 
 // an address of the home network: 10/8, 172.16/12, 192.168/16, link-local, loopback, IPv6 unique local and link-local
 function homeAddress(a) {
@@ -307,6 +308,18 @@ function create(ctx, opts) {
       if (!d) return { error: 'not on this version', code: 404 };
       if (b.media) return d.fix({ media: true, why: 'Fix the picture (phone remote)' });
       return d.fix({ restart: true, why: 'Restart the TV (phone remote)' });
+    }
+    // Screen off: the picture dark, the sound and the network on (music), as LG's own Screen off; any key of the TV's remote, or
+    // Screen on here, brings it back. standbyMode active keeps it able to come back (passive needs the plug pulled). Never the full
+    // shut down: a TV switched off that way answers nothing on the network
+    if (u === '/picture/off' || u === '/picture/on') {
+      const r = await luna(TVPOWER + (u === '/picture/off' ? 'turnOffScreen' : 'turnOnScreen'), { standbyMode: 'active' });
+      return r && r.returnValue === false ? { error: String(r.errorText || 'the TV refused'), code: 502 } : { ok: true };
+    }
+    // what the TV says of itself (Active, Screen Off, Screen Saver, Active Standby...): the power key's sheet asks when it opens
+    if (u === '/picture/state') {
+      const r = await luna(TVPOWER + 'getPowerState', {}).catch(() => null);
+      return { ok: true, state: r && typeof r.state === 'string' ? r.state.slice(0, 40) : '' };
     }
     if (statusdata.PATHS.indexOf(u) >= 0) return tvStatus.get(u);
     if (u === '/press') {

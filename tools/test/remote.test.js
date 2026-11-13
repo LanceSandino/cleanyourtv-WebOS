@@ -71,6 +71,8 @@ run(async () => {
     },
   };
   let soundOut = 'external_arc'; // where the TV's sound goes, for the sound set up again
+  let powerState = 'Active', // what tvpower says (the power key's sheet asks it)
+    screenRefuses = false;
   const fixes = []; // Fix the picture from the phone (picturediag.js: LG's logs kept, then the TV restarted)
   const picStub = { fix: async b => (fixes.push(b), { saved: 'picture-x', restarting: true }) };
   let oldNet = false; // network input as on webOS 22: no sendKeyCodes, no long press
@@ -94,7 +96,11 @@ run(async () => {
           ? { returnValue: true, volumeStatus: { muteStatus: false } }
           : /getSoundOutput/.test(uri)
             ? { returnValue: true, soundOutput: soundOut }
-            : { returnValue: true }
+            : /getPowerState$/.test(uri)
+              ? { returnValue: true, state: powerState }
+              : /turnOnScreen$/.test(uri) && screenRefuses
+                ? { returnValue: false, errorText: 'screen is already on' }
+                : { returnValue: true }
     ),
     feature: n => (n === 'apps' ? apps : n === 'watch' ? watchStub : n === 'sonos' ? sonosStub : n === 'picturediag' ? picStub : null),
   });
@@ -546,6 +552,110 @@ run(async () => {
     ok(
       pm.code === 200 && fixes.length === 2 && fixes[1].media === true && !fixes[1].restart && /phone/.test(fixes[1].why),
       'Fix a black picture from the phone: the media services, not the TV: ' + JSON.stringify(fixes)
+    );
+    // Screen off from the power key: LG's own screen off (the sound and the network stay on), able to come back (standbyMode active),
+    // Screen on again, and the TV's power state for the sheet; never a full shut down
+    calls.length = 0;
+    const soff = await lan('POST', '/picture/off', {}, key);
+    const offCall = calls.filter(c => /tvpower/.test(c[0]))[0];
+    powerState = 'Screen Off';
+    const sst = JSON.parse((await lan('POST', '/picture/state', {}, key)).text);
+    calls.length = 0;
+    const son = await lan('POST', '/picture/on', {}, key);
+    const onCall = calls.filter(c => /tvpower/.test(c[0]))[0];
+    screenRefuses = true;
+    const sbad = await lan('POST', '/picture/on', {}, key);
+    screenRefuses = false;
+    powerState = 'Active';
+    const remoteSrc = fs.readFileSync(path.join(__dirname, '..', '..', 'helper', 'remote.js'), 'utf8');
+    ok(
+      soff.code === 200 &&
+        JSON.parse(soff.text).ok === true &&
+        offCall[0] === 'luna://com.webos.service.tvpower/power/turnOffScreen' &&
+        offCall[1].standbyMode === 'active' &&
+        sst.state === 'Screen Off' &&
+        son.code === 200 &&
+        onCall[0] === 'luna://com.webos.service.tvpower/power/turnOnScreen' &&
+        onCall[1].standbyMode === 'active' &&
+        sbad.code === 502 &&
+        /already on/.test(JSON.parse(sbad.text).error) &&
+        !/shutDown|power\/powerOff/.test(remoteSrc),
+      "Screen off and on from the phone: LG's turnOffScreen and turnOnScreen (standbyMode active), the power state for the sheet, a refusal said; no shut down: " +
+        JSON.stringify([offCall, sst, onCall, sbad.text])
+    );
+    ok(
+      /\[t\('Screen off \(the sound stays on\)'\), screenOff\]/.test(pageR.text) &&
+        /dark \? \[t\('Screen on'\), screenOn\]/.test(pageR.text) &&
+        /call\('\/picture\/state'\)/.test(pageR.text) &&
+        /r\.state === 'Screen Off'/.test(pageR.text) &&
+        /send\('\/picture\/off'\)/.test(pageR.text) &&
+        /send\('\/picture\/on'\)/.test(pageR.text) &&
+        /Any key on the TV\\'s remote, or Power > Screen on here, brings it back/.test(pageR.text),
+      "the power key's sheet offers Screen off, and Screen on first while the TV says its screen is off, with how to bring the picture back"
+    );
+    // the sheet itself, run with a stand-in for the page's elements: the rows as drawn before and after the TV's answer
+    const fnSrc = name => {
+      const at = pageR.text.indexOf('function ' + name + '(');
+      let i = pageR.text.indexOf('{', at),
+        depth = 0;
+      for (; i < pageR.text.length; i++) {
+        if (pageR.text[i] === '{') depth++;
+        else if (pageR.text[i] === '}' && --depth === 0) return pageR.text.slice(at, i + 1);
+      }
+      return '';
+    };
+    const sheetRows = async state => {
+      const els = {},
+        el = id => (els[id] = els[id] || { id, textContent: '', className: 'hide', kids: [], appendChild: c => el(id).kids.push(c) }),
+        doc = { createElement: () => ({ className: '', textContent: '' }) };
+      const sent = [];
+      const sheet = new Function(
+        '$',
+        'document',
+        't',
+        'call',
+        'send',
+        'buzz',
+        'note',
+        'fixPicture',
+        'restartTv',
+        fnSrc('powerSheet') + fnSrc('screenOff') + fnSrc('screenOn') + 'return powerSheet;'
+      )(
+        el,
+        doc,
+        x => x,
+        () => Promise.resolve({ ok: true, state }),
+        p => (sent.push(p), Promise.resolve({ ok: true })),
+        () => {},
+        () => {},
+        () => {},
+        () => {}
+      );
+      sheet();
+      const n = el('sheetlist').kids.length,
+        before = el('sheetlist').kids.map(b => b.textContent);
+      await sleep(5);
+      // drawn again after the TV's answer (textContent = '' empties the list on a page; here the new rows come after the first ones)
+      const shown = el('sheetlist').kids.length > n ? el('sheetlist').kids.slice(n) : el('sheetlist').kids,
+        rows = shown.map(b => b.textContent);
+      const on = shown.filter(b => b.textContent === 'Screen on')[0];
+      if (on) on.onclick();
+      const off = shown.filter(b => /^Screen off/.test(b.textContent))[0];
+      if (off) off.onclick();
+      return { before, rows, sent, p: el('sheetp').textContent };
+    };
+    const lit = await sheetRows('Active'),
+      dark = await sheetRows('Screen Off');
+    ok(
+      lit.rows.join('|') ===
+        'Turn the TV off|Screen off (the sound stays on)|Fix a black picture (only sound or subtitles)|Restart the TV' &&
+        lit.sent.join() === '/picture/off' &&
+        dark.before.indexOf('Screen off (the sound stays on)') === 1 &&
+        dark.rows.join('|') === 'Screen on|Turn the TV off|Fix a black picture (only sound or subtitles)|Restart the TV' &&
+        dark.sent.join() === '/picture/on' &&
+        /Screen on here/.test(dark.p),
+      'the power sheet: Screen off beside Turn the TV off; with the screen off, Screen on first and how to get the picture back: ' +
+        JSON.stringify([lit.rows, dark.rows, dark.p])
     );
     tm.server.close();
     delete process.env.CYTV_TELEMACHUS;

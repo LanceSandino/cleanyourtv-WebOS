@@ -17,11 +17,23 @@ forgetting them.
 
 | Tab | What it does |
 |---|---|
-| Remote | Power: **Turn the TV off**, **Fix a black picture** (only the sound or subtitles: LG's media services restarted, the TV stays on) or **Restart the TV** (asks first); **Input** (the key beside the gear): the TV's inputs as its own Inputs picker lists them (what is plugged in by the name the TV gives it, then the port; an empty input dimmed) and Live TV, the one on the screen outlined, and a tap switches the TV to it; the volume rocker (hold to repeat) and Mute, the channel rocker, Home, the arrows round OK (hold one to repeat), Settings, Info, Back and Exit, rewind, play, pause and fast forward, and the red, green, yellow and blue keys. **123** opens a number pad (1 to 9, 0, the dash and OK). Hold OK, Back, Home or Settings for LG's long press, as on the remote (on Home, holding OK opens an app's menu). Hold a colour key to give it an app: a tap then opens that app; **LG's own key** puts it back (Live TV and HbbTV use the colour keys). The choice stays on that phone. |
+| Remote | Power: **Turn the TV off**, **Screen off** (see below), **Fix a black picture** (only the sound or subtitles: LG's media services restarted, the TV stays on) or **Restart the TV** (asks first); **Input** (the key beside the gear): the TV's inputs as its own Inputs picker lists them (what is plugged in by the name the TV gives it, then the port; an empty input dimmed) and Live TV, the one on the screen outlined, and a tap switches the TV to it; the volume rocker (hold to repeat) and Mute, the channel rocker, Home, the arrows round OK (hold one to repeat), Settings, Info, Back and Exit, rewind, play, pause and fast forward, and the red, green, yellow and blue keys. **123** opens a number pad (1 to 9, 0, the dash and OK). Hold OK, Back, Home or Settings for LG's long press, as on the remote (on Home, holding OK opens an app's menu). Hold a colour key to give it an app: a tap then opens that app; **LG's own key** puts it back (Live TV and HbbTV use the colour keys). The choice stays on that phone. |
 | Touchpad | Drag to move the pointer (a quick drag goes further, a slow one is precise), tap to click where the pointer is, two fingers to scroll, as with the Magic Remote; Back, OK and Home under it. |
 | Type | Text for a search box on the TV: open the box first, the text goes where its cursor is; Delete and Enter. |
 | Apps | The apps in the order of your dock, then the others; a tap opens one. |
 | TV | The TV's health, read only: the processor per core, temperature, memory and swap, storage and the flash's wear, Wi-Fi, how long it has been up and this service's own use; a summary of the settings (versions, update channel, CleanYourTV as Home, the debloat groups and whether they work, the phone remote, Plex, Stremio and Disney+ linked or not, telnet, LG's web inspector, the API token); and, on a tap, the open ports with how each is guarded and the services. See below. |
+
+**Screen off.** The power key's **Screen off (the sound stays on)** turns only the picture off: the sound, the apps and the network
+stay on, which suits music. It is LG's own screen off (`com.webos.service.tvpower/power/turnOffScreen` with `standbyMode` `active`,
+the mode that can come back; the same call on webOS 22 and 25). Any key on the TV's own remote brings the picture back, as with LG's
+own Screen off. From the phone, open the power key again: while the TV says its screen is off (its power state `Screen Off`, asked
+when the sheet opens) **Screen on** comes first (`turnOnScreen`). **Turn the TV off** is standby as before. There is no full shut
+down here on purpose: a TV switched off that way answers nothing on the network, so neither the phone nor the hub could turn it on.
+
+!!! note "Checked without a TV"
+    Screen off and Screen on are checked by the tests against a stand-in for LG's power service, not yet on a TV. Upstream's phone
+    remote makes the same `turnOffScreen` call (seen working on webOS 25); whether a key sent from the phone (rather than the TV's
+    own remote) also brings the picture back is not known yet, so the phone uses **Screen on**.
 
 **Wider screens.** The page fits the screen it is on, and changes when the phone turns or folds. A portrait screen wider than a
 phone's (a folding phone open, a tablet) keeps the remote and shows the apps beside it, a tap opening one. A landscape screen with

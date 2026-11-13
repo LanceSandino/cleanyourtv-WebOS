@@ -2271,3 +2271,16 @@ commit_ref: "feature/integrations-dormant (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-12T22:00:00Z"
 ```
+
+```yaml
+id: CU-20261112-10
+type: feature
+title: "Phone remote: Screen off (the sound stays on) and Screen on in the power key's sheet"
+description: "The phone remote's power key offers Screen off beside Turn the TV off, Fix a black picture and Restart the TV: the picture goes dark while the sound, the apps and the network stay on (for music). It is LG's own screen off, the call upstream's phone remote makes (addons/catalog/phoneremote/service.js, POWER.off: tvpower/power/turnOffScreen), written for the fork's remote rather than ported (the fork's remote has its own service and page), with standbyMode active so the screen can come back (passive cannot without pulling the plug, per the Home Assistant LG library's notes). New LAN paths with the paired key: POST /picture/off, /picture/on (turnOnScreen, standbyMode active) and /picture/state (tvpower getPowerState). The sheet asks the power state when it opens; while the TV says Screen Off, Screen on comes first and the sheet says that any key on the TV's remote or Screen on brings the picture back. A refusal from the TV is shown. No full shut down (shutDown) is offered: the TV then answers nothing on the network. The same tvpower calls are used on webOS 22 and 25 (the older com.webos.service.tv.power name is webOS 4); not yet tried on either TV. The picker's pre-warm and the Sonos bar already treat a non-Active screen as off, and the watchdog's screen check needs Active, so a dark screen does not set them off."
+impact: medium
+affected_modules: ["helper/remote.js", "helper/remotepage.js", "docs/remote.md"]
+related_tests: ["tools/test/remote.test.js (new: turnOffScreen and turnOnScreen with standbyMode active, the power state, a refusal said, no shutDown in the code; the sheet's rows with the screen on and off, run against a stand-in page)"]
+commit_ref: "feature/integrations-dormant (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-12T22:30:00Z"
+```
