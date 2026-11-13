@@ -137,6 +137,7 @@ function report() {
   sec('Settings changes (config: ...)', changes.length ? changes.slice(-20).join('\n') : '(none since the service started)');
   sec('Boot steps (/tmp/cleanyourtv-boot.log)', read('/tmp/cleanyourtv-boot.log', 40));
   sec('Service log (last 80 lines)', read(P.SERVICE_LOG, 80));
+  sec('Service log of runs that ended (restarted by the watchdog)', read('/tmp/cleanyourtv-helper.crash.log', 60));
   sec('Input hook (last 10 lines)', read(P.HOOK_LOG, 10));
   return redact(o.join('\n') + '\n').slice(0, 300000);
 }

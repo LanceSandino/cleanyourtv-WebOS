@@ -2154,3 +2154,16 @@ commit_ref: "feature/black-picture (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-09T02:30:00Z"
 ```
+
+```yaml
+id: CU-20261112-01
+type: fix
+title: "Watchdog: started on every boot path and after an update, keeps the crash logs of a boot, starts a failing service less often"
+description: "Upstream e2be3e4 (issue 65), ported by hand (D-20261028-1). The boot script started the watchdog only at its end, so with LG's Home selected (DISABLE) and after an update (Home already replaced) no watchdog ran; it now starts right after the service, and bootstrap.sh stops the running one before an update, its rollback and a setup, so the one from the new files runs. watchdog.sh is one block that ends in exit (an update copying a new file over the running one does not confuse it), only a shell running bootstrap.sh holds it back (not any command line naming it), and a service that stops again at once is started after 10, 20 ... 120 s. The fork's limit stays (5 starts in 10 minutes, then one note until the next boot). The crash log no longer keeps only the first run: each run that ended adds its last 100 lines, and past 400 lines the first run of the boot and the latest ones are kept (upstream kept only the latest 400, which a loop of quick crashes fills with the same lines). Share log now includes it."
+impact: medium
+affected_modules: ["scripts/watchdog.sh", "scripts/10-cleanyourtv-home", "scripts/bootstrap.sh", "helper/sharelog.js", "docs/development/internals.md"]
+related_tests: ["tools/test/scripts.test.js (the watchdog: replaced file, bootstrap.sh hold, backoff, the limit with the first crash first, the trimmed crash log, the start before every way out of the boot script and the stop in bootstrap.sh)"]
+commit_ref: "feature/upstream-fixes-2026-11 (the commit that adds this entry, cherry picked from e2be3e4)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-12T12:00:00Z"
+```

@@ -16,6 +16,10 @@ LOG=/tmp/cleanyourtv-boot.log
 up() { cut -d' ' -f1 /proc/uptime; }
 replaced() { grep -q " $H " /proc/mounts || { [ -f $STANDIN ] && grep -q " $(cat $STANDIN) " /proc/mounts; }; }
 pgrep -f cleanyourtv/helper.js >/dev/null || (nohup node $L/helper.js >/tmp/cleanyourtv-helper.log 2>&1 </dev/null &)
+# The watchdog (watchdog.sh, one per boot) starts the service again when it has stopped, also while LG's Home is selected (DISABLE) and
+# after an update (the replaced-Home case below leaves this script early), and if our Home stays unreachable for 60 s it falls back to
+# stock Home until the next reboot.
+pgrep -f "[c]leanyourtv/watchdog.sh" >/dev/null || (sh $L/watchdog.sh </dev/null >/dev/null 2>&1 &)
 # LG's web inspector (WebAppMgr's DevTools on port 9998, open to the network): closed unless switched off in the manager. At boot
 # WebAppMgr is started again once without it, in the background while Home is staged, and before sam is restarted below; the setup
 # and an update only mount the copy of LG's script (it then closes at the next start)
@@ -92,6 +96,3 @@ else
     esac
   ) </dev/null >/dev/null 2>&1 &
 fi
-# Watchdog (watchdog.sh): starts the service again when it has stopped, and if it stays unreachable for 60 s, falls back to stock
-# Home until next reboot.
-pgrep -f "[c]leanyourtv/watchdog.sh" >/dev/null || (sh $L/watchdog.sh </dev/null >/dev/null 2>&1 &)
