@@ -6535,9 +6535,10 @@ var SEARCH = (function () {
    in config.js), hold OK has its options (watchCardMenu). The row closes when the focus moves on along that row or above it. Read when
    Home is shown and every minute while it is; Customize > Continue watching switches it off. ---------- */
 /* where a card comes from, named on it (a card of Telemachus's channel says it plays next), and the apps that show it */
-var SOURCE_NAMES = { telemachus: 'Telemachus', plex: 'Plex', stremio: 'Stremio', disney: 'Disney+' },
+var TELEMACHUS_APP = 'com.telemachus.screen',
+  SOURCE_NAMES = { telemachus: 'Telemachus', plex: 'Plex', stremio: 'Stremio', disney: 'Disney+' },
   SOURCE_APPS = {
-    telemachus: ['com.telemachus.screen'],
+    telemachus: [TELEMACHUS_APP],
     plex: ['cdp-30', 'com.beb.plxnative'],
     stremio: ['io.strem.tv'],
     disney: ['com.disney.disneyplus-prod'],
@@ -6830,6 +6831,11 @@ function byOrder(a, b) {
 function title(id) {
   for (var i = 0; i < apps.length; i++) if (apps[i].id === id) return apps[i].title;
   return id;
+}
+/* an app installed on this TV (in the service's app list) */
+function hasApp(id) {
+  for (var i = 0; i < apps.length; i++) if (apps[i].id === id) return true;
+  return false;
 }
 
 /* ---------- actions ---------- */
@@ -8045,14 +8051,6 @@ function watchMenu() {
             },
           },
           {
-            label: t('Telemachus'),
-            sub: WATCH.tmOn() ? t('On') : t('Off'),
-            stay: true,
-            fn: function () {
-              WATCH.setTm(!WATCH.tmOn());
-            },
-          },
-          {
             label: t('Rows from LG for other apps'),
             sub: WATCH.lgOn() ? t('On') : t('Off'),
             stay: true,
@@ -8061,6 +8059,16 @@ function watchMenu() {
             },
           },
         ];
+      /* Telemachus's switch only where Telemachus is installed (its cards open in its app; the service asks it only while it answers) */
+      if (hasApp(TELEMACHUS_APP))
+        items.splice(1, 0, {
+          label: t('Telemachus'),
+          sub: WATCH.tmOn() ? t('On') : t('Off'),
+          stay: true,
+          fn: function () {
+            WATCH.setTm(!WATCH.tmOn());
+          },
+        });
       /* LG's picks (what LG's servers chose for YouTube, Disney+, Apple TV, LG Channels); off keeps the rows the apps wrote themselves
          (Netflix, Prime Video). Then each app's row on its own: YouTube's, for one, is LG's pick of videos */
       if (WATCH.lgOn())

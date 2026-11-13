@@ -166,4 +166,29 @@ run(async () => {
     D.dockIds().join() === 'a,b,c,d,e',
     'four saved dock apps in a five-app dock: the most used other app fills the fifth (not hidden, an input or Live TV)'
   );
+  // ---- Customize > Continue watching (menus.js watchMenu): Telemachus's switch only where Telemachus is installed ----
+  const watchLabels = list =>
+    new Function(
+      "var TELEMACHUS_APP = 'com.telemachus.screen', stack = [], built = null, t = function (s) { return s; };" +
+        'var apps = ' +
+        JSON.stringify(list) +
+        ';' +
+        'var WATCH = { on: function () { return true; }, tmOn: function () { return true; }, lgOn: function () { return false; },' +
+        ' removed: function () { return []; }, refresh: function () {} };' +
+        'function api() { return new Promise(function () {}); }' +
+        'function openBuilt(title, build) { built = build; }' +
+        source('config.js', 'hasApp') +
+        '\n' +
+        source('menus.js', 'watchMenu') +
+        '\nwatchMenu(); return built().map(function (i) { return i.label || i.head || ""; });'
+    )();
+  const withTm = watchLabels([
+      { id: 'netflix', title: 'Netflix' },
+      { id: 'com.telemachus.screen', title: 'Telemachus' },
+    ]),
+    withoutTm = watchLabels([{ id: 'netflix', title: 'Netflix' }]);
+  ok(
+    withTm[1] === 'Telemachus' && withoutTm.indexOf('Telemachus') < 0 && withoutTm[1] === 'Rows from LG for other apps',
+    'Continue watching: the Telemachus switch shows only where Telemachus is installed (' + withoutTm.slice(0, 3).join(' | ') + ')'
+  );
 });

@@ -107,7 +107,7 @@ next episode does not come back), **Hide the row of** that app, and the settings
 **Customize** > **Continue watching**:
 
 - **Show on Home** switches the rows off (nothing is then read).
-- **Telemachus** switches Telemachus's cards off (it is not read then).
+- **Telemachus** (only where the Telemachus app is installed) switches Telemachus's cards off (it is not read then).
 - **Rows from LG for other apps** switches LG's rows off, keeping Telemachus, Plex, Stremio and Disney+. Under it:
   - **LG's picks** switches off the rows LG's servers chose for an app (YouTube, Disney+, Apple TV, LG Channels: not what you
     watched). The rows the apps write themselves stay (Netflix and Prime Video, their Continue watching
@@ -128,7 +128,9 @@ next episode does not come back), **Hide the row of** that app, and the settings
 
 No password is typed on the TV. The service reads Telemachus on the TV itself (`127.0.0.1:8770`, which answers programs on the TV and
 refuses web pages) and the linked services; it fetches the pictures and serves them from memory, so the Home page
-contacts no other site. Nothing is shown from Telemachus when it is not installed.
+contacts no other site. Nothing is shown from Telemachus when it is not installed, and a Telemachus that does not answer is not
+asked on every read of the rows: the service leaves it alone for 30 seconds, then twice as long after each unanswered try, at most
+10 minutes, so one started after the TV (or installed later) is still found. Switching **Telemachus** on asks it again at once.
 
 ## Search
 

@@ -6,6 +6,7 @@
 // Read here, by the root service:
 // Telemachus answers programs on the TV but refuses web pages, and the pictures are fetched here and served from memory, so the Home
 // page never contacts another site.
+// A TV without Telemachus is not asked on every read: one that does not answer is left alone for a while (TM_AWAY_*).
 //   GET /api/watch/rows        {items: [{key, group, title, sub, img, progress, next, launch: {id, params}, source, pick}]}
 //                              (pick: on LG's rows, true for what LG's servers chose, false for a row the app wrote itself)
 //                              (group: what Remove on Home takes away, a whole show or a film; the launcher keeps that list)
@@ -22,6 +23,10 @@ const TELEMACHUS = process.env.CYTV_TELEMACHUS || 'http://127.0.0.1:8770', // an
   TELEMACHUS_APP = 'com.telemachus.screen',
   ROWS_MS = 20 * 1000,
   SHOWS_MS = 10 * 60 * 1000,
+  // Telemachus not answering (a TV without it): asked again after 30 s, then twice as long each time, at most every 10 minutes, and at
+  // once when its switch is turned on again, so one installed or started later (after the service at boot) is still found
+  TM_AWAY_MIN_MS = 30 * 1000,
+  TM_AWAY_MAX_MS = 10 * 60 * 1000,
   IMG_MAX = 200, // pictures named (an address each)
   IMG_BYTES = 1024 * 1024, // one picture at most
   IMG_TOTAL = 12 * 1024 * 1024, // the pictures kept in memory at most (the oldest are dropped, fetched again when shown)
@@ -124,17 +129,35 @@ function create(ctx) {
       .read(TELEMACHUS + path, { totalMs: 4000, idleMs: 3000, maxBytes: 2 * 1024 * 1024, redirects: 0 })
       .then(r => JSON.parse(r.body.toString('utf8')));
   let shows = {},
-    showsAt = 0;
+    showsAt = 0,
+    tmAwayAt = 0, // when Telemachus last did not answer (0: it answered, or was not asked yet)
+    tmAwayMs = 0, // how long it is left alone after that
+    tmWasOff = false; // its switch was off at the last read
+  // Telemachus is asked only while it may be there: after it did not answer, not again until its wait is over (no request on each
+  // read of Home's rows on a TV without it)
+  const tmResting = () => tmAwayAt > 0 && Date.now() - tmAwayAt < tmAwayMs;
   async function telemachus() {
+    if (tmResting()) return [];
     let cont = null,
-      brief = null;
+      brief = null,
+      none = false;
     try {
       cont = await tm('/api/continue');
-    } catch (_) {}
-    try {
-      brief = await tm('/api/brief');
-    } catch (_) {}
-    if (!cont && !brief) return []; // not installed, or not running
+    } catch (e) {
+      none = !e || e.code !== 'status'; // no answer at all (nothing listens): /api/brief is not asked either
+    }
+    if (!none)
+      try {
+        brief = await tm('/api/brief');
+      } catch (_) {}
+    if (!cont && !brief) {
+      // not installed, or not running
+      tmAwayMs = tmAwayAt ? Math.min(TM_AWAY_MAX_MS, tmAwayMs * 2) : TM_AWAY_MIN_MS;
+      tmAwayAt = Date.now();
+      return [];
+    }
+    tmAwayAt = 0;
+    tmAwayMs = 0;
     const st = (brief && brief.state) || {},
       np = st.now_playing,
       out = [];
@@ -220,6 +243,9 @@ function create(ctx) {
     if (cache && Date.now() - cacheAt < ROWS_MS) return cache;
     const wc = ctx.config.get().watch || {},
       lgOn = wc.lg !== false;
+    // Telemachus's switch turned on again: it is asked at once, not after the wait of a Telemachus that did not answer
+    if (wc.tm !== false && tmWasOff) tmAwayAt = 0;
+    tmWasOff = wc.tm === false;
     const [t, px, st, dn, l] = await Promise.all([
       wc.tm === false ? [] : telemachus(),
       plex.items(plexPic).catch(() => []),

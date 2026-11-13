@@ -60,7 +60,9 @@ run(async () => {
       { show: 'A Film', kind: 'movie', tmdb_id: 'tmdb:42', poster: 'http://evil.example/x.jpg', resume: { percent: 50 }, next: null },
     ],
   };
+  let tmAsked = 0;
   const tm = http.createServer((q, r) => {
+    tmAsked++;
     if (!up) return q.socket.destroy();
     const send = o => (r.writeHead(200, { 'content-type': 'application/json' }), r.end(JSON.stringify(o)));
     if (q.headers.origin) return r.writeHead(403), r.end();
@@ -129,6 +131,64 @@ run(async () => {
   });
   up = false;
   ok((await call(make(), '/api/watch/rows')).j.items.length === 0, 'without Telemachus (and nothing linked) the row is empty');
+
+  // a TV without Telemachus: after one unanswered question it is left alone (30 s, then twice as long each time, at most 10 minutes),
+  // not asked twice on every read of Home's rows; one that starts later is still found, and switching it on asks at once
+  const realNow = Date.now;
+  let clock = realNow();
+  Date.now = () => clock;
+  try {
+    const w2 = make(),
+      rowsAt = async s => {
+        clock += s * 1000;
+        return (await call(w2, '/api/watch/rows')).j.items;
+      };
+    tmAsked = 0;
+    await rowsAt(0);
+    const first = tmAsked;
+    await rowsAt(21); // past the 20 s cache, within the 30 s wait
+    const resting = tmAsked;
+    await rowsAt(21); // 42 s after (and past the cache again): asked again, then left alone for 60 s
+    const again = tmAsked;
+    // two hours of Home open: a read every minute, as the launcher does
+    for (let i = 0; i < 120; i++) await rowsAt(60);
+    const twoHours = tmAsked - again;
+    tmAsked = 0;
+    for (let i = 0; i < 60; i++) await rowsAt(60);
+    const lastHour = tmAsked;
+    ok(
+      first === 1 && resting === 1 && again === 2 && twoHours <= 16 && lastHour <= 6 && lastHour >= 5,
+      'without Telemachus: one question (not /api/brief too), then none until its wait is over, at most every 10 minutes (' +
+        [first, resting, again, twoHours, lastHour].join(',') +
+        ' instead of two per read)'
+    );
+    // Telemachus started later: still found, within 10 minutes
+    up = true;
+    let found = false;
+    for (let i = 0; i < 11 && !found; i++) found = (await rowsAt(60)).some(x => x.source === 'telemachus');
+    ok(found, 'a Telemachus that starts later is found again within 10 minutes');
+    // gone again, then switched off and on (Customize > Continue watching > Telemachus): asked at once
+    up = false;
+    await rowsAt(60);
+    up = true;
+    config.update('test', cf => {
+      cf.watch = { on: true, tm: false };
+    });
+    tmAsked = 0;
+    await rowsAt(21);
+    const whileOff = tmAsked;
+    config.update('test', cf => {
+      cf.watch = { on: true };
+    });
+    const back = await rowsAt(21);
+    ok(
+      whileOff === 0 && tmAsked > 0 && back.some(x => x.source === 'telemachus'),
+      'switched off it is not asked; switched on again it is asked at once, not after its wait'
+    );
+  } finally {
+    Date.now = realNow;
+  }
+  up = false;
 
   // LG's rows of the other apps (lgrows.js): read from LG's content miner as that service, without the row's title entry or anything
   // promoted, opened the way LG's Home does (contentTarget), pictures by id: the app's own over HTTPS, else LG's copy

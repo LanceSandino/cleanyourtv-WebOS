@@ -74,6 +74,11 @@ function title(id) {
   for (var i = 0; i < apps.length; i++) if (apps[i].id === id) return apps[i].title;
   return id;
 }
+/* an app installed on this TV (in the service's app list) */
+function hasApp(id) {
+  for (var i = 0; i < apps.length; i++) if (apps[i].id === id) return true;
+  return false;
+}
 
 /* ---------- actions ---------- */
 function act(e) {

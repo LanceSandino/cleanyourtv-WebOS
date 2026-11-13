@@ -4,9 +4,10 @@
    in config.js), hold OK has its options (watchCardMenu). The row closes when the focus moves on along that row or above it. Read when
    Home is shown and every minute while it is; Customize > Continue watching switches it off. ---------- */
 /* where a card comes from, named on it (a card of Telemachus's channel says it plays next), and the apps that show it */
-var SOURCE_NAMES = { telemachus: 'Telemachus', plex: 'Plex', stremio: 'Stremio', disney: 'Disney+' },
+var TELEMACHUS_APP = 'com.telemachus.screen',
+  SOURCE_NAMES = { telemachus: 'Telemachus', plex: 'Plex', stremio: 'Stremio', disney: 'Disney+' },
   SOURCE_APPS = {
-    telemachus: ['com.telemachus.screen'],
+    telemachus: [TELEMACHUS_APP],
     plex: ['cdp-30', 'com.beb.plxnative'],
     stremio: ['io.strem.tv'],
     disney: ['com.disney.disneyplus-prod'],

@@ -2232,3 +2232,16 @@ commit_ref: "feature/upstream-fixes-2026-11 (the commit that adds this entry, ch
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-12T15:00:00Z"
 ```
+
+```yaml
+id: CU-20261112-07
+type: fix
+title: "Continue watching: a TV without Telemachus is not asked for it on every read of Home's rows"
+description: "Every read of Home's rows (at load, every minute while Home shows, on a relaunch; the service keeps a read 20 s) asked 127.0.0.1:8770 twice (/api/continue, then /api/brief) unless the Telemachus switch was off, also on a TV with nothing there. Now a Telemachus that does not answer is left alone: 30 s, then twice as long after each unanswered try, at most 10 minutes (a doubling wait rather than a flat 10 minutes, so a Telemachus that starts after the service at boot shows within a minute or two); /api/brief is not asked when /api/continue got no answer at all (an older Telemachus that answers 404 still is); switching Telemachus on again asks it at once. A Telemachus that answers is asked on every read as before. On Home, Customize > Continue watching shows the Telemachus switch only where the Telemachus app is installed; its cards, search's Look in and the TV health line were already shown only then. API paths and settings keys unchanged."
+impact: low
+affected_modules: ["helper/watch.js", "app/src/js/menus.js", "app/src/js/config.js", "app/src/js/watch.js", "app/index.html", "docs/launcher.md"]
+related_tests: ["tools/test/watch.test.js (new: one question then none until the wait is over, at most every 10 minutes over two hours; found again when it starts later; asked at once when switched on)", "tools/test/launcher.test.js (new: the switch only with the app installed)"]
+commit_ref: "feature/integrations-dormant (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-12T21:30:00Z"
+```

@@ -1190,14 +1190,6 @@ function watchMenu() {
             },
           },
           {
-            label: t('Telemachus'),
-            sub: WATCH.tmOn() ? t('On') : t('Off'),
-            stay: true,
-            fn: function () {
-              WATCH.setTm(!WATCH.tmOn());
-            },
-          },
-          {
             label: t('Rows from LG for other apps'),
             sub: WATCH.lgOn() ? t('On') : t('Off'),
             stay: true,
@@ -1206,6 +1198,16 @@ function watchMenu() {
             },
           },
         ];
+      /* Telemachus's switch only where Telemachus is installed (its cards open in its app; the service asks it only while it answers) */
+      if (hasApp(TELEMACHUS_APP))
+        items.splice(1, 0, {
+          label: t('Telemachus'),
+          sub: WATCH.tmOn() ? t('On') : t('Off'),
+          stay: true,
+          fn: function () {
+            WATCH.setTm(!WATCH.tmOn());
+          },
+        });
       /* LG's picks (what LG's servers chose for YouTube, Disney+, Apple TV, LG Channels); off keeps the rows the apps wrote themselves
          (Netflix, Prime Video). Then each app's row on its own: YouTube's, for one, is LG's pick of videos */
       if (WATCH.lgOn())
