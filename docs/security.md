@@ -273,8 +273,8 @@ the package and launcher names the updater already expects.
   keeps the playlist and settings files owner-only, but the parent folder remains writable.
 - The service API refuses requests from web pages (any `http(s)` origin) and requests addressed to any name but `127.0.0.1` or
   `localhost` (DNS rebinding). A web page can hide its origin (a sandboxed frame sends `null`, as our own apps do), so our apps also
-  send an **API token**: a random value the service keeps for root only and writes as `cytv-token.js` into the launcher, the manager
-  and the picker, where a web page cannot read it. Once every app has it and one has sent it back, a request with origin `null` and
+  send an **API token**: a random value the service keeps for root only and writes as `cytv-token.js` into the launcher, the manager,
+  the picker and the notify app (its Sonos volume bar waits on the service for the next change), where a web page cannot read it. Once every app has it and one has sent it back, a request with origin `null` and
   no token is refused; until then (or when an app could not get it) the service accepts it as before, so a TV keeps working.
   Programs on the TV (scripts, `curl`) send no origin and need no token.
 - A notification picture is downloaded only from an address that is not the TV itself, checked again after the name is looked up.

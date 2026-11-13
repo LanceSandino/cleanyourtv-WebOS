@@ -62,10 +62,15 @@ rm /var/run/tvconfig/rmm/*/com.webos.surfacemanager.json && \
 3. **When the events do not arrive.** If no event reaches the TV within eight seconds (a firewall between the two, for example), the
    service reads the volume once a second instead, and only while the screen is on.
 4. **Showing it.** A change starts the hidden notify app (the one that shows [picture notifications](notifications.md)) with the
-   new volume. It does not take the remote. Starting that app takes 1 to 2 seconds on webOS 25, so after the bar fades its window
-   stays open, empty and transparent, for ten minutes: a change in that time shows at once. The first change after a pause of more
+   new volume. It does not take the remote, and the remote's volume and mute keys do not close it. Starting that app takes 1 to 2
+   seconds on webOS 25, so after the bar fades its window stays open, empty and transparent, for ten minutes. While it is open, the
+   page waits on the service for the next change (a request on the TV's own loopback address, with the same token as the other
+   apps), and the service answers it as soon as the volume changes: the bar moves at once, without starting the app again. Only one
+   start of the app runs at a time; changes that come meanwhile show as the latest value. The first change after a pause of more
    than ten minutes (or after a restart) still waits for the app to start. Over an HDMI input (a console, a set-top box) the window
-   closes as soon as the bar fades: an open window over the picture may make the TV lower its HDR brightness.
+   closes as soon as the bar fades: an open window over the picture may make the TV lower its HDR brightness (`HDMI_STAY_SECONDS`
+   in `helper/sonos.js`, until that is measured). While the option is off nothing waits, and a waiting page is told to stop when the
+   option is switched off or the screen is off.
 
 No Sonos account, no internet and no Sonos app are involved: everything stays on your local network.
 
@@ -90,6 +95,7 @@ by the service itself); `helper/lgvolume.js` hides and shows LG's bar, on the TV
 | `GET /api/sonos/status` | On or off, the chosen speaker (`null`: automatic), the speaker followed, the place, `hideLg` and `lgBar` (LG's own bar: `shown`, `hidden` or `unsupported`), the state (`off`, `searching`, `listening`, `not found`, `error`), `events` or `polling`, the volume and mute |
 | `POST /api/sonos/find` | Searches the network (about three seconds); answers `{speakers: [{id, name, model, theater}]}` |
 | `POST /api/sonos/set` `{enabled, speaker, position, hideLg}` | Changes the settings; `speaker` is an id from the last search, or `""` for automatic |
+| `GET /api/sonos/wait?since=<n>` | For the open notify app: answered as soon as there is a change newer than `n` (the volume bar's launch parameters with its `seq`), `{idle: true}` after 30 s without one, `{stop: true}` while the option is off or after a wait with the screen off |
 
 The tests (`tools/test/sonos.test.js`) run against stand-in players on the computer, and check that every request a player receives
 is a search, a description, `GetVolume`, `GetMute` or a subscription.

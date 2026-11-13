@@ -1,7 +1,7 @@
-// Runs the launcher, the manager and the Inputs picker in the browser engines of the TVs this fork supports: Chromium 87 (webOS 22,
-// the oldest: DECISIONS.md D-20261101-1) and Chromium 120 (webOS 25), headless, against a stand-in for the TV's service on
-// 127.0.0.1:8765. It fails when a page throws a script error or does not draw what it should (tiles, rows, inputs). A current Chrome
-// hides such problems: these versions lack features it has.
+// Runs the launcher, the manager, the Inputs picker and the notify app's volume bar in the browser engines of the TVs this fork
+// supports: Chromium 87 (webOS 22, the oldest: DECISIONS.md D-20261101-1) and Chromium 120 (webOS 25), headless, against a stand-in for
+// the TV's service on 127.0.0.1:8765. It fails when a page throws a script error or does not draw what it should (tiles, rows, inputs).
+// A current Chrome hides such problems: these versions lack features it has.
 //   node tools/oldchrome.js                 every engine in ENGINES
 //   node tools/oldchrome.js --shots <dir>   also saves a screenshot of each page per engine
 //   node tools/oldchrome.js --engine 87     one engine only (the one whose name has that text)
@@ -573,6 +573,19 @@ const SEARCH_KEYS =
   'var ok=label==="Search"&&opened&&stay&&heads==="In your apps|Search in"&&texts&&first&&second&&last&&back&&held&&opens&&again&&toRes&&closed;' +
   'out(ok?"ok":"bad label="+label+" opened="+opened+" stay="+stay+" heads="+heads+" rows="+rows.join("|")+" first="+first+" second="+second+" last="+last+' +
   '" back="+back+" held="+held+" opens="+opens+" again="+again+" toRes="+toRes+" closed="+closed+" launched="+JSON.stringify(launched))},500)},500)},"the results")},"the tiles")})()</script>';
+// The Sonos volume bar (notify/app, kind volume, launched by sonos.js): a launch shows the bar in the same task, without waiting for an
+// animation frame; the page then waits on the service for the next change (/api/sonos/wait, with the API token), and the stand-in's
+// answer (42) shows at once; the remote's volume and mute keys leave the bar up and the window open. Then the page stops waiting
+// (stopWait), so no request is left open for the browser. The outcome lands in data-vol.
+const VOLUME_BAR =
+  '<script>(function(){var closes=0;window.close=function(){closes++};function out(v){document.body.setAttribute("data-vol",v)}' +
+  'function key(c){var e=document.createEvent("Event");e.initEvent("keydown",true,true);Object.defineProperty(e,"keyCode",{value:c});document.dispatchEvent(e)}' +
+  'webOSSystem.launchParams=JSON.stringify({kind:"volume",volume:12,muted:false,seconds:3,position:"top-left",stay:600,seq:1});' +
+  'var e=document.createEvent("Event");e.initEvent("webOSRelaunch",true,true);document.dispatchEvent(e);' +
+  'var vol=document.getElementById("vol"),num=document.getElementById("vnum"),now=vol.classList.contains("on")&&num.textContent==="12";' +
+  'var n=0,w=setInterval(function(){if(num.textContent==="42"){clearInterval(w);[447,448,449,175,174,173].forEach(key);setTimeout(function(){' +
+  'var up=vol.classList.contains("on")&&!closes;stopWait();out(now&&up?"ok":"bad now="+now+" up="+up+" closes="+closes)},500)}' +
+  'else if(++n>60){clearInterval(w);stopWait();out("bad no change from the service: "+num.textContent+" now="+now)}},100)})()</script>';
 // [name, file, what it draws, how many at least, milliseconds of page time to wait, a script to run in it, a theme id]; a name is its
 // address too (spaces as dashes), so letters, digits and spaces only: Chromium 120 sends an apostrophe as %27
 const PAGES = [
@@ -616,6 +629,7 @@ const PAGES = [
   ['search', 'app/index.html', /data-search="ok"/g, 1, 15000, SEARCH_KEYS],
   ['where to watch', 'app/index.html', /data-where="ok"/g, 1, 20000, WHERE_KEYS],
   ['where to watch fits', 'app/index.html', /data-fit="ok"/g, 1, 20000, FIT_KEYS],
+  ['volume bar', 'notify/app/index.html', /data-vol="ok"/g, 1, 8000, VOLUME_BAR],
 ];
 let aupStep = 0; // the stand-in app update: 0 none, 1 started, then counts the progress reads
 let famN = 0,
@@ -663,7 +677,7 @@ function serve() {
     if (u === '/cytv-token.js')
       return r.writeHead(200, { 'content-type': 'text/javascript' }), r.end("var CYTV_TOKEN = '" + TOKEN + "';\n");
     if (
-      /^\/api\/(apps|inputs|manager\/status|photofeed\/next|watch\/(rows|accounts|link)|search|search\/where|log)$/.test(u) &&
+      /^\/api\/(apps|inputs|manager\/status|photofeed\/next|watch\/(rows|accounts|link)|search|search\/where|log|sonos\/wait)$/.test(u) &&
       q.headers['x-cytv-token'] !== TOKEN
     ) {
       noToken.push(u);
@@ -742,6 +756,12 @@ function serve() {
         ],
       });
     if (u === '/api/manager/status') return json(golden['manager status'].body);
+    // the Sonos volume bar's wait for the next change: the change after the launch's (seq 1) at once, then none (after 300 ms)
+    if (u === '/api/sonos/wait') {
+      const since = +(/[?&]since=(\d+)/.exec(q.url) || [])[1] || 0;
+      if (since < 2) return json({ kind: 'volume', volume: 42, muted: false, seconds: 3, position: 'top-left', stay: 600, seq: 2 });
+      return void setTimeout(() => json({ idle: true }), 300);
+    }
     // Check for updates: the same status, with a release that came out on a known day
     if (u === '/api/manager/check')
       return json(Object.assign({}, golden['manager status'].body, { release: { version: '9.9.9', date: '2026-10-28' }, checking: false }));

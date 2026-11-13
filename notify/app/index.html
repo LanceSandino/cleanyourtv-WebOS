@@ -47,6 +47,7 @@ html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:transpa
 <div id="mute"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z"/><path class="ln" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></div>
 <div id="vol"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z"/><path id="vwv" class="ln" d="M15.5 9a3.5 3.5 0 010 6M18.5 6a8 8 0 010 12"/><path id="vmu" class="ln" d="M16 9.5l5 5M21 9.5l-5 5"/></svg><div id="vtrack"><div id="vfill"></div></div><div id="vnum"></div></div>
 <div id="card"><div id="bars"><i></i><i></i><i></i><i></i><i></i></div><div id="dots"><i></i><i></i><i></i></div><img id="img" alt=""><div id="title"></div><div id="q"></div><div id="text"></div></div>
+<script src="cytv-token.js"></script>
 <script>
 var card=document.getElementById('card'),img=document.getElementById('img'),timer=0;
 var vol=document.getElementById('vol'),vfill=document.getElementById('vfill'),vnum=document.getElementById('vnum'),vtimer=0,mu=document.getElementById('mute');
@@ -57,12 +58,35 @@ setBoth('setInputRegion',[{x:0,y:0,width:0,height:0}]);
 setBoth('setKeyMask',[]);
 /* safety net: if the region was not honoured and a key reaches this window anyway, close the card at once instead of holding the remote for the whole duration.
    Not for the volume and mute keys (447/175 up, 448/174 down, 449/173 mute): where keys reach this window they come with every change, and the bar is for them */
-document.addEventListener('keydown',function(e){var k=e&&(e.keyCode||e.which);if(k===447||k===448||k===449||k===175||k===174||k===173)return;clearTimeout(timer);clearTimeout(vtimer);card.classList.remove('on');vol.classList.remove('on');setTimeout(function(){try{window.close()}catch(e){}},300)},true);
+document.addEventListener('keydown',function(e){var k=e&&(e.keyCode||e.which);if(k===447||k===448||k===449||k===175||k===174||k===173)return;clearTimeout(timer);clearTimeout(vtimer);stopWait();card.classList.remove('on');vol.classList.remove('on');setTimeout(function(){try{window.close()}catch(e){}},300)},true);
 /* the window closes once neither the card nor the volume shows */
 /* the volume bar may keep the window open, empty, for a while after it fades (launch param stay, in seconds): starting this app takes
    1 to 2 s on webOS 25, while a change that finds it open only wakes it (under 0.1 s), so the bar follows the remote at once */
 var kept=false,keepT=0;
-function closeIdle(){if(!kept&&!card.classList.contains('on')&&!vol.classList.contains('on')&&!mu.classList.contains('on')){try{window.close()}catch(e){}}}
+function volUp(){return kept||vol.classList.contains('on')||mu.classList.contains('on')}
+function closeIdle(){if(!volUp())stopWait();if(!kept&&!card.classList.contains('on')&&!vol.classList.contains('on')&&!mu.classList.contains('on')){try{window.close()}catch(e){}}}
+/* while the bar shows or the window is kept for it, the page waits on the service for the next change (GET /api/sonos/wait, a long
+   poll on the loopback with the API token our other apps send): a change then shows here at once, and the service launches nothing.
+   since: the change this page has; shown: the one it has just shown (the service's log times it). It stops when the window closes,
+   when the service says stop (the option off, the screen off) and after a few failed tries; the service then launches this app as
+   before. */
+var vseq=0,vshown=0,vx=null,vfails=0,vretry=0;
+function stopWait(){clearTimeout(vretry);vretry=0;if(vx){var x=vx;vx=null;try{x.abort()}catch(e){}}}
+function waitNext(){
+  if(vx||vretry||!vseq||!volUp()||typeof XMLHttpRequest==='undefined')return;
+  var x=new XMLHttpRequest();vx=x;
+  var again=function(){if(vx!==x)return;vx=null;if(++vfails<=3)vretry=setTimeout(function(){vretry=0;waitNext()},1000)};
+  x.open('GET','http://127.0.0.1:8765/api/sonos/wait?since='+vseq+(vshown?'&shown='+vshown:''),true);vshown=0;
+  if(typeof CYTV_TOKEN==='string')x.setRequestHeader('x-cytv-token',CYTV_TOKEN);
+  x.timeout=45000;
+  x.onload=function(){
+    if(vx!==x)return;var j=null;try{j=JSON.parse(x.responseText)}catch(e){}
+    if(x.status!==200||!j)return again();
+    vx=null;vfails=0;
+    if(j.stop){clearTimeout(keepT);clearTimeout(vtimer);kept=false;vol.classList.remove('on');mu.classList.remove('on');setTimeout(closeIdle,400);return}
+    if(j.kind==='volume'&&+j.seq>vseq)showVolume(j);else waitNext()};
+  x.onerror=x.ontimeout=again;
+  x.send(null)}
 function place(pos,wide){
   var m=64,s=card.style,w=wide?900:640;s.left=s.right=s.top=s.bottom='auto';
   if(/left/.test(pos))s.left=m+'px';else if(/center/.test(pos))s.left=(1920-w)/2+'px';else s.right=m+'px';
@@ -86,7 +110,9 @@ function showVolume(p){
   if(p.muted)mu.classList.add('on');else mu.classList.remove('on');
   clearTimeout(vtimer);
   vtimer=setTimeout(function(){vol.classList.remove('on');setTimeout(closeIdle,400)},Math.max(2,Math.min(10,+p.seconds||3))*1000);
-  if(!on)vol.classList.add('on')}
+  if(!on)vol.classList.add('on');
+  if(+p.seq>vseq){vseq=+p.seq;vshown=vseq;vfails=0}
+  waitNext()}
 function show(p){
   var inplace=!!p.kind&&card.classList.contains('on')&&card.className.indexOf('k-')>=0;   // a voice card that is already showing is updated without fading out
   if(!inplace)card.classList.remove('on');

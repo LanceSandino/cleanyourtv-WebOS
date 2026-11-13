@@ -109,7 +109,7 @@ require('./server')
         fs.chmodSync(f, mode);
       } catch (_) {}
     }
-    if (apiToken) apiToken.writeAll(); // into the launcher, the manager and the picker
+    if (apiToken) apiToken.writeAll(); // into the launcher, the manager, the picker and the notify app
     for (const f of loaded) {
       try {
         if (f.start) f.start();

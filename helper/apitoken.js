@@ -1,7 +1,7 @@
 // The API token: what tells our own apps apart from a web page on the TV. Our apps' requests carry the origin "null" (a local file;
 // "file://<app id>-webos" on webOS 6, which server.js treats the same), and so does a sandboxed frame of any web page, so the origin
 // alone cannot refuse a page. The service keeps a random token (D/api-token, root only) and writes it as cytv-token.js
-// (var CYTV_TOKEN = '...') into the launcher (D/app) and the manager and picker apps, which load it and send it in the header
+// (var CYTV_TOKEN = '...') into the launcher (D/app) and the manager, picker and notify apps, which load it and send it in the header
 // x-cytv-token; a web page cannot read those files. Programs on the TV (curl, scripts) send no origin and need no token.
 // It is enforced only once it is known to work on this TV, so a TV where the token cannot be handed out keeps working: after every
 // app got the file (written at each start and into a new launcher before it is swapped in) and a request with the right token came
@@ -15,10 +15,16 @@ const FILE = 'cytv-token.js',
   HEADER = 'x-cytv-token';
 const TOKEN = P.D + '/api-token',
   ON = P.D + '/api-token-on';
-// the folders of our apps that call the service: the launcher (D/app), the manager, the picker. The launcher runs from the copy
-// stage-home.sh mounts over LG's Home (D/home-overlay), made when Home is taken over: it gets the token too, where it exists (a TV
-// that keeps LG's Home has none), or the launcher could never send it.
-const appDirs = () => [P.APP, path.join(P.APPS, 'com.cleanyourtv.manager'), path.join(P.APPS, 'com.cleanyourtv.picker')];
+// the folders of our apps that call the service: the launcher (D/app), the manager, the picker and the notify app (its volume bar
+// waits for the next change, sonos.js). The launcher runs from the copy stage-home.sh mounts over LG's Home (D/home-overlay), made
+// when Home is taken over: it gets the token too, where it exists (a TV that keeps LG's Home has none), or the launcher could never
+// send it.
+const appDirs = () => [
+  P.APP,
+  path.join(P.APPS, 'com.cleanyourtv.manager'),
+  path.join(P.APPS, 'com.cleanyourtv.picker'),
+  path.join(P.APPS, 'com.cleanyourtv.notify'),
+];
 const optionalDirs = () => [P.HOME_OVERLAY];
 
 function create() {

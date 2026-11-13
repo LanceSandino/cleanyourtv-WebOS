@@ -9,7 +9,13 @@ const P = require(path.join(__dirname, '..', '..', 'helper', 'paths.js'));
 const nc = require(path.join(__dirname, '..', '..', 'helper', 'netcompat.js'));
 
 run(async () => {
-  const dirs = [P.APP, path.join(P.APPS, 'com.cleanyourtv.manager'), path.join(P.APPS, 'com.cleanyourtv.picker')];
+  // the notify app too: its Sonos volume bar asks the service for the next change (sonos.js /api/sonos/wait)
+  const dirs = [
+    P.APP,
+    path.join(P.APPS, 'com.cleanyourtv.manager'),
+    path.join(P.APPS, 'com.cleanyourtv.picker'),
+    path.join(P.APPS, 'com.cleanyourtv.notify'),
+  ];
   const tokenFile = path.join(process.env.CYTV_DIR, 'api-token');
   const page = tok => ({ headers: tok === undefined ? {} : { 'x-cytv-token': tok } });
 
@@ -20,7 +26,10 @@ run(async () => {
   ok(!a.writeAll(), 'the apps are not there: nothing is required');
 
   for (const d of dirs) nc.mkdirp(d);
-  ok(a.writeAll(), "written into the launcher, the manager and the picker (a TV that keeps LG's Home has no overlay to write)");
+  ok(
+    a.writeAll(),
+    "written into the launcher, the manager, the picker and the notify app (a TV that keeps LG's Home has no overlay to write)"
+  );
   const overlay = path.join(process.env.CYTV_DIR, 'home-overlay');
   fs.mkdirSync(overlay);
   ok(

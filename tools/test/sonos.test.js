@@ -6,7 +6,7 @@ const fs = require('fs'),
   path = require('path'),
   http = require('http'),
   dgram = require('dgram');
-const { ok, root, tmp, call, sleep, req, memoryConfig, run } = require('./lib');
+const { ok, root, tmp, call, serve, sleep, req, memoryConfig, run } = require('./lib');
 
 // luna-send for notify.js: logs what it was asked
 const BIN = path.join(tmp, 'bin'),
@@ -230,6 +230,8 @@ run(async () => {
     pollMs: 80,
     retryMs: 150,
     screenMs: 20,
+    holdMs: 250,
+    ackMs: 150,
     ssdp: { address: '127.0.0.1', port: ssdp.address().port },
     selfOk: true,
   };
@@ -337,6 +339,104 @@ run(async () => {
   );
   ctx.notify = { show: async (p, internal) => shows.push(Object.assign({ internal }, p)) };
 
+  // ---- the open bar's page waits on GET /api/sonos/wait (over HTTP, as the page asks): a change answers it at once, no launch
+  const api = await serve((q, s2) => son.handle(q, s2, q.url.split('?')[0], async () => ({})));
+  const waitAt = since =>
+    new Promise(done =>
+      http.get(api.url + '/api/sonos/wait?since=' + since, r => {
+        let b = '';
+        r.on('data', c => (b += c));
+        r.on('end', () => {
+          let j = null;
+          try {
+            j = JSON.parse(b);
+          } catch (_) {}
+          done({ code: r.statusCode, j });
+        });
+      })
+    );
+  await bar.change(23, false);
+  await until(() => shows.length && shows[shows.length - 1].volume === 23);
+  const s23 = shows[shows.length - 1],
+    n6 = shows.length;
+  ok(s23.seq > 0, 'each launch carries the number of its change: ' + s23.seq);
+  let answered = null;
+  waitAt(s23.seq).then(x => (answered = x));
+  await sleep(60);
+  ok(!answered, 'the page that has the latest change is held');
+  await bar.change(24, false);
+  ok(
+    (await until(() => answered)) &&
+      answered.code === 200 &&
+      answered.j.volume === 24 &&
+      answered.j.seq > s23.seq &&
+      answered.j.stay === 600,
+    'a change answers the waiting page at once: ' + JSON.stringify(answered && answered.j)
+  );
+  // the page asks again as soon as it has shown it (notify/app does), and keeps asking during a burst: no launch, the changes in
+  // order, the last one last
+  const got = [24];
+  let since = answered.j.seq,
+    pageOpen = true;
+  const pageLoop = (async () => {
+    while (pageOpen) {
+      const x = await waitAt(since);
+      if (!x.j || x.j.stop) break;
+      if (x.j.seq) {
+        got.push(x.j.volume);
+        since = x.j.seq;
+      }
+      await sleep(25); // the page shows it, then asks again
+    }
+  })();
+  for (const v of [25, 26, 27, 28, 29]) await bar.change(v, false);
+  ok(await until(() => got[got.length - 1] === 29), 'a burst reaches the open page, ending at the last value: ' + got.join());
+  ok(
+    shows.length === n6 && got.every((v, i) => !i || v > got[i - 1]),
+    'without a launch, each value once and in order (none piled up): ' + got.join() + ', launches ' + (shows.length - n6)
+  );
+  // the page closed after it was handed a change (it does not ask again): the latest value is launched
+  pageOpen = false;
+  await pageLoop;
+  let last = null;
+  waitAt(since).then(x => (last = x)); // its last request
+  await sleep(30);
+  await bar.change(30, false);
+  ok((await until(() => last)) && last.j.volume === 30, 'the page is handed the next change');
+  await sleep(60);
+  ok(shows.length === n6, 'nothing launched while it may still ask again');
+  ok(
+    (await until(() => shows.length === n6 + 1, 1500)) && shows[n6].volume === 30,
+    'it did not ask again (its window closed): the latest value is launched'
+  );
+  // a launch at a time: a page that asks while its own launch is still under way gets the latest value, and nothing else is launched
+  const launched = [];
+  ctx.notify = {
+    show: p => {
+      launched.push(p);
+      return sleep(250);
+    },
+  };
+  await sleep(200);
+  await bar.change(31, false);
+  await until(() => launched.length === 1);
+  await bar.change(32, false);
+  await sleep(40);
+  const coldPage = await waitAt(launched[0].seq); // the page from the launch asks with the change it was given (31)
+  ok(coldPage.j && coldPage.j.volume === 32, 'the page from a launch that is still under way gets the latest value at once');
+  await waitAt(coldPage.j.seq); // and asks again (answered after holdMs)
+  ok(launched.map(x => x.volume).join() === '31', 'and no second launch follows: ' + launched.map(x => x.volume).join());
+  ctx.notify = { show: async (p, internal) => shows.push(Object.assign({ internal }, p)) };
+  // a wait with no change ends after a while and is asked again; while the screen is off it says stop (the window then closes)
+  const idle = await waitAt(Date.now() + 1e6);
+  ok(idle.j && idle.j.idle === true, 'a wait without a change ends after holdMs: ' + JSON.stringify(idle.j));
+  power = 'Active Standby';
+  await sleep(40);
+  const dark = await waitAt(Date.now() + 1e6);
+  ok(dark.j && dark.j.stop === true, 'with the screen off it says stop');
+  power = 'Active';
+  await sleep(40);
+
   // ---- the chosen speaker; one that was not found is refused
   r = await call(son, '/api/sonos/set', 'POST', { speaker: 'RINCON_NOPE01400' });
   ok(r.code === 400 && /search again/.test(r.j.error), 'an unknown speaker is refused');
@@ -402,8 +502,15 @@ run(async () => {
   await until(() => son.status().mode === 'events');
   const lastCb = moved.lastCallback,
     lastSid = moved.lastSid;
+  let held = null;
+  waitAt(Date.now() + 1e6).then(x => (held = x));
+  await sleep(40);
   r = await call(son, '/api/sonos/set', 'POST', { enabled: false });
   ok(r.j.enabled === false && r.j.state === 'off', 'switched off');
+  ok((await until(() => held)) && held.j.stop === true, 'a waiting page is told to stop');
+  const offWait = await waitAt(0);
+  ok(offWait.j && offWait.j.stop === true, 'and while it is off a wait is told to stop at once');
+  api.server.close();
   ok(await until(() => moved.subs.size === 0), 'the speaker is unsubscribed');
   const closed = await notifyTo(lastCb, lastSid, 40, false);
   ok(closed === 'ECONNREFUSED', 'the event port is closed: ' + closed);
@@ -561,76 +668,95 @@ run(async () => {
   // ---- the notify page: the bar beside the card, the window closed only when both are gone
   const html = fs.readFileSync(path.join(root, 'notify', 'app', 'index.html'), 'utf8');
   const script = /<script>([\s\S]*?)<\/script>/.exec(html)[1];
-  const els = {},
-    listeners = {},
-    timers = [];
-  let now = 0,
-    closes = 0;
-  const el = id => {
-    if (els[id]) return els[id];
-    const cls = [];
-    const e = {
-      style: {},
-      textContent: '',
-      classList: {
-        add: c => cls.indexOf(c) < 0 && cls.push(c),
-        remove: c => cls.indexOf(c) >= 0 && cls.splice(cls.indexOf(c), 1),
-        contains: c => cls.indexOf(c) >= 0,
-      },
-      removeAttribute() {},
+  // the page with stand-ins for the DOM, webOSSystem, its timers (virtual time: advance) and, when given, XMLHttpRequest and the
+  // API token
+  function notifyPage(first, XHR, token) {
+    const els = {},
+      listeners = {},
+      timers = [];
+    let now = 0,
+      closes = 0;
+    const el = id => {
+      if (els[id]) return els[id];
+      const cls = [];
+      const e = {
+        style: {},
+        textContent: '',
+        classList: {
+          add: c => cls.indexOf(c) < 0 && cls.push(c),
+          remove: c => cls.indexOf(c) >= 0 && cls.splice(cls.indexOf(c), 1),
+          contains: c => cls.indexOf(c) >= 0,
+        },
+        removeAttribute() {},
+      };
+      Object.defineProperty(e, 'className', {
+        get: () => cls.join(' '),
+        set: v => {
+          cls.length = 0;
+          String(v)
+            .split(/\s+/)
+            .filter(Boolean)
+            .forEach(c => cls.push(c));
+        },
+      });
+      return (els[id] = e);
     };
-    Object.defineProperty(e, 'className', {
-      get: () => cls.join(' '),
-      set: v => {
-        cls.length = 0;
-        String(v)
-          .split(/\s+/)
-          .filter(Boolean)
-          .forEach(c => cls.push(c));
+    const sys = { launchParams: JSON.stringify(first), setInputRegion() {}, setKeyMask() {} };
+    const later2 = (fn, ms) => timers.push({ fn, at: now + ms, id: timers.length + 1 }) && timers.length;
+    // animation frames run only when time passes (advance): an overlay window gets them late or not at all
+    let frames = [];
+    const raf = fn => frames.push(fn);
+    const advance = ms => {
+      while (frames.length) {
+        const f = frames;
+        frames = [];
+        f.forEach(fn => fn());
+      }
+      const end = now + ms;
+      for (;;) {
+        const due = timers.filter(t => t.fn && t.at <= end).sort((a, b) => a.at - b.at)[0];
+        if (!due) break;
+        now = due.at;
+        const fn = due.fn;
+        due.fn = null;
+        fn();
+      }
+      now = end;
+    };
+    const launch = params => {
+      sys.launchParams = JSON.stringify(params);
+      (listeners.webOSRelaunch || []).forEach(fn => fn());
+    };
+    const press = k => (listeners.keydown || []).forEach(fn => fn({ keyCode: k }));
+    new Function(
+      'document',
+      'webOSSystem',
+      'window',
+      'requestAnimationFrame',
+      'setTimeout',
+      'clearTimeout',
+      'Image',
+      'XMLHttpRequest',
+      'CYTV_TOKEN',
+      script
+    )(
+      { getElementById: el, addEventListener: (t, fn) => (listeners[t] = (listeners[t] || []).concat(fn)) },
+      sys,
+      { close: () => closes++ },
+      raf,
+      later2,
+      id => {
+        const t = timers[id - 1];
+        if (t) t.fn = null;
       },
-    });
-    return (els[id] = e);
-  };
-  const sys = { launchParams: '{}', setInputRegion() {}, setKeyMask() {} };
-  const page = new Function('document', 'webOSSystem', 'window', 'requestAnimationFrame', 'setTimeout', 'clearTimeout', 'Image', script);
-  const later2 = (fn, ms) => timers.push({ fn, at: now + ms, id: timers.length + 1 }) && timers.length;
-  // animation frames run only when time passes (advance): an overlay window gets them late or not at all
-  let frames = [];
-  const raf = fn => frames.push(fn);
-  const advance = ms => {
-    while (frames.length) {
-      const f = frames;
-      frames = [];
-      f.forEach(fn => fn());
-    }
-    const end = now + ms;
-    for (;;) {
-      const due = timers.filter(t => t.fn && t.at <= end).sort((a, b) => a.at - b.at)[0];
-      if (!due) break;
-      now = due.at;
-      const fn = due.fn;
-      due.fn = null;
-      fn();
-    }
-    now = end;
-  };
-  const launch = params => {
-    sys.launchParams = JSON.stringify(params);
-    (listeners.webOSRelaunch || []).forEach(fn => fn());
-  };
-  sys.launchParams = JSON.stringify({ kind: 'volume', volume: 12, muted: false, seconds: 3, position: 'top-right' });
-  page(
-    { getElementById: el, addEventListener: (t, fn) => (listeners[t] = (listeners[t] || []).concat(fn)) },
-    sys,
-    { close: () => closes++ },
-    raf,
-    later2,
-    id => {
-      const t = timers[id - 1];
-      if (t) t.fn = null;
-    },
-    function () {}
-  );
+      function () {},
+      XHR,
+      token
+    );
+    return { els, launch, advance, press, closes: () => closes };
+  }
+  const pg = notifyPage({ kind: 'volume', volume: 12, muted: false, seconds: 3, position: 'top-right' });
+  const { els, launch, advance, press } = pg;
   const vol = els.vol,
     card = els.card;
   ok(
@@ -649,45 +775,112 @@ run(async () => {
     'a change while it shows updates it in place, muted, with the mute badge at once'
   );
   // the remote's volume and mute keys may reach this window (where the empty input region is not honoured): they must not dismiss it
-  const press = k => (listeners.keydown || []).forEach(fn => fn({ keyCode: k }));
   [447, 448, 449, 175, 174, 173].forEach(press);
-  ok(vol.classList.contains('on') && els.mute.classList.contains('on') && !closes, 'the volume and mute keys do not dismiss the bar');
+  ok(vol.classList.contains('on') && els.mute.classList.contains('on') && !pg.closes(), 'the volume and mute keys do not dismiss the bar');
   advance(2500);
-  ok(vol.classList.contains('on') && !closes, 'each change keeps it up for its seconds again');
+  ok(vol.classList.contains('on') && !pg.closes(), 'each change keeps it up for its seconds again');
   launch({ title: 'Front door', text: 'Someone is there', seconds: 8 });
   advance(0); // the card still waits for its first full layout
   ok(card.classList.contains('on') && vol.classList.contains('on'), 'a notification card while the bar shows: both');
   advance(1000);
   ok(!vol.classList.contains('on') && card.classList.contains('on'), 'the bar goes after its time');
   advance(1000);
-  ok(!closes, 'the window stays while the card still shows');
+  ok(!pg.closes(), 'the window stays while the card still shows');
   advance(8000);
   ok(
-    !card.classList.contains('on') && els.mute.classList.contains('on') && els.mute.style.left === '64px' && !closes,
+    !card.classList.contains('on') && els.mute.classList.contains('on') && els.mute.style.left === '64px' && !pg.closes(),
     'muted: a mute badge stays, in the top corner the bar does not use, and keeps the window open'
   );
   launch({ kind: 'volume', volume: 13, muted: false, seconds: 3, position: 'top-right' });
   ok(!els.mute.classList.contains('on'), 'the sound back: the badge goes');
   advance(4000);
-  ok(!card.classList.contains('on') && closes === 1, 'and closes once nothing shows');
+  ok(!card.classList.contains('on') && pg.closes() === 1, 'and closes once nothing shows');
   // the service's volume bar keeps the window open, empty, so the next change shows at once
   launch({ kind: 'volume', volume: 20, muted: false, seconds: 3, position: 'top-left', stay: 600 });
   advance(4000);
-  ok(!vol.classList.contains('on') && closes === 1, 'with a stay, the window stays open after the bar fades');
+  ok(!vol.classList.contains('on') && pg.closes() === 1, 'with a stay, the window stays open after the bar fades');
   launch({ title: 'Door', text: 'Someone is there', seconds: 2 });
   advance(5000);
-  ok(!card.classList.contains('on') && closes === 1, 'also after a card shown meanwhile');
+  ok(!card.classList.contains('on') && pg.closes() === 1, 'also after a card shown meanwhile');
   launch({ kind: 'volume', volume: 21, muted: false, seconds: 3, position: 'top-left', stay: 600 });
   ok(vol.classList.contains('on') && els.vnum.textContent === '21', 'the next change shows in the open window');
   advance(599000);
-  ok(closes === 1, 'each change keeps it open for the whole stay again');
+  ok(pg.closes() === 1, 'each change keeps it open for the whole stay again');
   advance(2000);
-  ok(closes === 2, 'and it closes once the stay has passed');
+  ok(pg.closes() === 2, 'and it closes once the stay has passed');
   // any other key that reaches the window still clears it at once, as before
   launch({ title: 'Door', text: 'Someone is there', seconds: 8 });
   launch({ kind: 'volume', volume: 22, muted: false, seconds: 3, position: 'top-left' });
   advance(0);
   press(13);
   advance(400);
-  ok(!card.classList.contains('on') && !vol.classList.contains('on') && closes === 3, 'another key clears the card and the bar and closes');
+  ok(
+    !card.classList.contains('on') && !vol.classList.contains('on') && pg.closes() === 3,
+    'another key clears the card and the bar and closes'
+  );
+  // ---- the open page waits on the service for the next change (sonos.js /api/sonos/wait), with the API token
+  const xhrs = [];
+  function FakeXHR() {
+    this.headers = {};
+    this.aborted = false;
+    xhrs.push(this);
+  }
+  FakeXHR.prototype.open = function (m, u) {
+    this.method = m;
+    this.url = u;
+  };
+  FakeXHR.prototype.setRequestHeader = function (k, v) {
+    this.headers[k] = v;
+  };
+  FakeXHR.prototype.send = function () {
+    this.sent = true;
+  };
+  FakeXHR.prototype.abort = function () {
+    this.aborted = true;
+  };
+  FakeXHR.prototype.answer = function (code, o) {
+    this.status = code;
+    this.responseText = JSON.stringify(o);
+    this.onload();
+  };
+  const vp = { kind: 'volume', muted: false, seconds: 3, position: 'top-left', stay: 600 };
+  const w = notifyPage(Object.assign({ volume: 30, seq: 100 }, vp), FakeXHR, 'T0K');
+  const lastX = () => xhrs[xhrs.length - 1];
+  ok(
+    xhrs.length === 1 &&
+      lastX().method === 'GET' &&
+      lastX().url === 'http://127.0.0.1:8765/api/sonos/wait?since=100&shown=100' &&
+      lastX().headers['x-cytv-token'] === 'T0K' &&
+      lastX().sent,
+    'a volume launch shows the bar and waits for the next change, with the API token: ' + (lastX() || {}).url
+  );
+  lastX().answer(200, Object.assign({ volume: 31, seq: 101 }, vp));
+  ok(
+    w.els.vnum.textContent === '31' && w.els.vol.classList.contains('on') && !w.closes(),
+    'a change from the service shows in the open page at once, without a launch'
+  );
+  ok(xhrs.length === 2 && /since=101&shown=101$/.test(lastX().url), 'and it asks for the next one, saying which it showed');
+  lastX().answer(200, { idle: true });
+  ok(xhrs.length === 3 && /since=101$/.test(lastX().url), 'a wait that ended without a change is asked again');
+  lastX().answer(200, Object.assign({ volume: 31, seq: 101 }, vp));
+  ok(xhrs.length === 4 && w.els.vnum.textContent === '31', 'a change it already has is not shown again');
+  w.launch(Object.assign({ volume: 32, seq: 102 }, vp));
+  ok(xhrs.length === 4 && w.els.vnum.textContent === '32', 'a launch meanwhile shows; still one request at a time');
+  lastX().answer(500, {});
+  w.advance(1000);
+  ok(xhrs.length === 5 && /since=102&shown=102$/.test(lastX().url), 'a failed request is tried again after a second');
+  w.advance(4000);
+  ok(!w.els.vol.classList.contains('on') && xhrs.length === 5 && !w.closes(), 'the bar fades; the kept window still waits');
+  lastX().answer(200, { stop: true });
+  w.advance(500);
+  ok(xhrs.length === 5 && w.closes() === 1, 'the service says stop (the option or the screen off): no more requests, the window closes');
+  // over an HDMI input (stay 0) the window closes when the bar fades, and its request goes with it
+  const h = notifyPage(Object.assign({ volume: 40, seq: 200 }, vp, { stay: 0 }), FakeXHR, 'T0K');
+  const hx = lastX();
+  h.advance(3500);
+  ok(h.closes() === 1 && hx.aborted, 'without a stay the window closes when the bar fades, and its request is ended first');
+  // the card alone (a notification) never waits
+  const x0 = xhrs.length;
+  notifyPage({ title: 'Door', text: 'Someone is there', seconds: 2 }, FakeXHR, 'T0K');
+  ok(xhrs.length === x0, 'a notification card alone does not wait on the service');
 });

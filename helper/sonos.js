@@ -7,7 +7,7 @@
 // arrive there it reads the volume once a second instead. Nothing here can change the volume, mute or any setting of the speaker.
 // While it is on, LG's own volume bar (which shows no number for a soundbar) can be hidden too: lgvolume.js, option hideLg.
 // API (loopback only): GET /api/sonos/status, POST /api/sonos/find (search the network), POST /api/sonos/set {enabled, speaker, position,
-// hideLg}
+// hideLg}, GET /api/sonos/wait?since=<seq> (the open notify app waits there for the next change: answered at once by a change)
 const http = require('http'),
   dgram = require('dgram'),
   os = require('os'),
@@ -29,10 +29,11 @@ const THEATER = /\b(Playbar|Playbase|Beam|Arc|Ray|Amp)\b/i;
 const MAX_BYTES = 256 * 1024,
   SECONDS_SHOWN = 3,
   // the notify app stays open, empty, this long after the bar fades: the next change then shows at once instead of after the app's
-  // 1 to 2 s start (seen on webOS 25 in LG's log: launch to visible 0.9-1.9 s cold, 0.07 s when it was still open). Not over an HDMI
-  // input (a console, a set-top box): an open window over the picture may make the TV lower its HDR brightness, so there it closes
-  // as soon as the bar has faded.
+  // 1 to 2 s start (seen on webOS 25 in LG's log: launch to visible 0.9-1.9 s cold, 0.07 s when it was still open)
   STAY_SECONDS = 600,
+  // the same over an HDMI input (a console, a set-top box): 0, the window closes as soon as the bar has faded, because an open window
+  // over the picture may make the TV lower its HDR brightness. Not measured on a TV yet; this is the one place to change it.
+  HDMI_STAY_SECONDS = 0,
   HDMI = /^com\.webos\.app\.hdmi\d+$/;
 
 // one request to a speaker; resolves {status, headers, body, local} (local: this TV's address on that connection) or {error}, never
@@ -134,6 +135,8 @@ function create(ctx, opts) {
       screenMs: 3000, // how long the TV's power state and sound output are trusted
       subSeconds: 1800, // how long a subscription is asked for; renewed at half
       outputMs: 20000, // how often the TV's sound output is looked at while LG's bar may be hidden
+      holdMs: 30000, // how long the open notify app's request waits for a change before it is answered and asked again
+      ackMs: 1000, // a page that was handed a change asks again within this; one that does not has closed, so the next change launches
       lgDir: '', // lgvolume.js / lgconfig.js: the configd layer, the record of what was written, the old 1.6.19 folder (tests)
       lgRecord: '',
       lgOldDir: '',
@@ -301,30 +304,104 @@ function create(ctx, opts) {
     return q;
   }
 
-  // the bar over the running app: one launch of the notify app at a time, then the latest value
-  let showing = false,
-    queued = null;
+  // the bar over the running app. While the notify app is open for the bar, its page waits on GET /api/sonos/wait (a long poll on the
+  // loopback, with the API token like our other apps): a change answers it at once and nothing is launched. Otherwise the app is
+  // launched: one launch at a time, then the latest value. A page that was handed a change asks again within ackMs (it does so as soon
+  // as it has shown it); one that does not has closed, and the latest value is launched. Each change has a number (seq) from the clock,
+  // so a page that outlived a restart of the service still takes the next one; the page tells which one it has (since).
+  let vseq = 0,
+    /** @type {any} */ cur = null, // the latest change to show, as the notify app's launch parameters with its seq
+    sent = 0, // the latest seq handed to the page or to a launch
+    seen = 0, // the latest seq the page said it has
+    launching = false,
+    /** @type {any} */ ackT = null;
+  /** @type {{res: any, t: any}[]} */ const waiters = [];
+  const reply = (res, x) => {
+    try {
+      if (!res.finished) web.json(res, x);
+    } catch (_) {}
+  };
   function overlay(fg) {
-    queued = {
+    vseq = Math.max(vseq + 1, Date.now());
+    cur = {
       kind: 'volume',
       volume: st.volume,
       muted: !!st.muted,
       seconds: SECONDS_SHOWN,
       position: cfg().position,
-      stay: HDMI.test(fg || '') ? 0 : STAY_SECONDS,
+      stay: HDMI.test(fg || '') ? HDMI_STAY_SECONDS : STAY_SECONDS,
+      seq: vseq,
     };
-    if (showing) return;
-    showing = true;
-    const next = () => {
-      const p = queued;
-      queued = null;
-      if (!p) return void (showing = false);
-      const n = notify();
-      Promise.resolve(n ? n.show(p, true) : null)
-        .catch(() => {})
-        .then(next);
+    deliver();
+  }
+  function deliver() {
+    if (!cur || cur.seq <= sent) return;
+    if (waiters.length) return hand(waiters.splice(0));
+    if (launching || ackT) return; // after the launch, or when the page that was just handed one asks again: the latest value
+    const p = cur,
+      n = notify();
+    sent = p.seq;
+    launching = true;
+    Promise.resolve(n ? n.show(p, true) : null)
+      .catch(() => {})
+      .then(() => {
+        launching = false;
+        deliver();
+      });
+  }
+  // the latest change to the page's waiting requests (one, normally); it should ask again within ackMs
+  function hand(list) {
+    const p = cur;
+    if (p.seq > sent) sent = p.seq;
+    list.forEach(w => {
+      clearTimeout(w.t);
+      reply(w.res, p);
+    });
+    clearTimeout(ackT);
+    ackT = setTimeout(() => {
+      ackT = null;
+      if (cur && cur.seq > seen) {
+        sent = seen; // the page closed before it showed it: launch the latest
+        deliver();
+      }
+    }, o.ackMs);
+  }
+  function endWaits(x) {
+    waiters.splice(0).forEach(w => {
+      clearTimeout(w.t);
+      reply(w.res, x);
+    });
+    clearTimeout(ackT);
+    ackT = null;
+  }
+  // GET /api/sonos/wait?since=<seq>: answered at once with a newer change, else held until one comes or holdMs passed. {stop: true}
+  // while the option is off, and after a wait while the screen is off (or the sound is on the TV's speakers): the page then stops
+  // asking and its window closes.
+  function waitHere(req, res) {
+    const since = +(/[?&]since=(\d{1,16})(&|$)/.exec(req.url) || [])[1] || 0;
+    if (!cfg().enabled) return reply(res, { stop: true });
+    if (since > seen) seen = since;
+    clearTimeout(ackT);
+    ackT = null;
+    if (cur && cur.seq > since) return hand([{ res, t: null }]);
+    while (waiters.length >= 2) {
+      const old = waiters.shift(); // one page, one request: an older one is let go
+      clearTimeout(old.t);
+      reply(old.res, { idle: true });
+    }
+    const w = { res, t: null };
+    const drop = () => {
+      clearTimeout(w.t);
+      const i = waiters.indexOf(w);
+      if (i >= 0) waiters.splice(i, 1);
     };
-    next();
+    w.t = setTimeout(() => {
+      drop();
+      if (!cfg().enabled) return reply(res, { stop: true });
+      screenOk().then(ok => reply(res, ok ? { idle: true } : { stop: true }));
+    }, o.holdMs);
+    if (res.on) res.on('close', drop);
+    waiters.push(w);
   }
   // a new reading: the first after (re)connecting only sets what is current; a change shows the bar
   function apply(r) {
@@ -556,6 +633,9 @@ function create(ctx, opts) {
     wait = 0;
     lgPlan();
     if (!c.enabled) {
+      endWaits({ stop: true });
+      cur = null;
+      sent = seen = 0;
       closePort();
       speaker = null;
       Object.assign(st, { state: 'off', mode: '', volume: null, muted: null, error: '' });
@@ -601,6 +681,7 @@ function create(ctx, opts) {
 
   async function handle(req, res, u, body) {
     if (u === '/api/sonos/status') return web.json(res, status());
+    if (u === '/api/sonos/wait' && req.method === 'GET') return waitHere(req, res);
     if (req.method !== 'POST') return web.json(res, { error: 'POST expected' }, 405);
     const b = await body(req);
     if (u === '/api/sonos/find') return web.json(res, { speakers: (await find()).map(pub) });

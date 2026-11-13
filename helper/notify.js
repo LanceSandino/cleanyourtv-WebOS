@@ -37,6 +37,7 @@ async function show(b, internal) {
       seconds: Math.max(2, Math.min(10, +b.seconds || 3)),
       position: /^(top|bottom)-(left|right)$/.test(b.position) ? b.position : 'top-left',
       stay: Math.max(0, Math.min(1800, Math.round(+b.stay) || 0)), // seconds the empty window stays open afterwards
+      seq: Math.max(0, Math.floor(+b.seq) || 0), // which change this is: the page then asks sonos.js for the next (/api/sonos/wait)
     });
   const p = {
     title: String(b.title || '').slice(0, 120),
