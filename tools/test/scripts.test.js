@@ -1084,13 +1084,20 @@ run(async () => {
     await sleep(6000);
     const n = countStarts(B);
     ok(n >= 2 && n <= 5, 'a service that keeps stopping is started less and less often (' + n + ' starts in about 7 seconds)');
-    ok(
-      (text(path.join(B, 'helper.crash.log')).match(/=== the service log of a run that ended/g) || []).length === n - 1,
-      'every start leaves the log of the run before it in the crash log'
-    );
+    // the watchdog stopped first, so no start runs between the two counts
     fs.unlinkSync(path.join(B, 'helper.js'));
     await waitFor(() => wb.gone, 10000);
     if (!wb.gone) wb.kill();
+    await sleep(1000);
+    // (a start the watchdog began just as helper.js went keeps the log of the run before it as well, so the last run may be in it too)
+    const all = countStarts(B),
+      entries = text(path.join(B, 'helper.crash.log'))
+        .split(/^=== the service log of a run that ended[^\n]*\n/m)
+        .slice(1);
+    ok(
+      (entries.length === all - 1 || entries.length === all) && entries.every(e => e === 'crash\n'),
+      'every start leaves the log of the run before it in the crash log (' + entries.length + ' of ' + all + ')'
+    );
   }
 
   // 3. ... and after CYTV_WATCH_MAX starts in ten minutes it is left alone with one note; the crash log of the first stop stays first
@@ -1100,7 +1107,7 @@ run(async () => {
     fs.writeFileSync(path.join(W2, 'helper.js'), "require('fs').appendFileSync(process.env.WD_MARK, 'start\\n'); console.log('crash');\n");
     fs.writeFileSync(path.join(W2, 'helper.log'), 'the first crash\n');
     const wd2 = watch(W2, path.join(root, 'scripts', 'watchdog.sh'), { CYTV_WATCH_MAX: '2' });
-    await waitFor(() => /not starting it again/.test(text(path.join(W2, 'boot.log'))));
+    await waitFor(() => /not starting it again/.test(text(path.join(W2, 'boot.log'))), 30000); // the backoff waits too
     await sleep(1500);
     const log2 = text(path.join(W2, 'boot.log'));
     wd2.kill();
@@ -1110,7 +1117,7 @@ run(async () => {
         (log2.match(/not starting it again/g) || []).length === 1 &&
         /^=== the service log of a run that ended[^\n]*\nthe first crash\n/.test(text(path.join(W2, 'helper.crash.log'))),
       'a service that keeps stopping is started at most the limit, then left with one note; the first crash log comes first: ' +
-        countStarts(W2)
+        JSON.stringify([countStarts(W2), log2, text(path.join(W2, 'helper.crash.log')).slice(0, 200)])
     );
   }
 
