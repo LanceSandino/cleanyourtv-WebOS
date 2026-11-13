@@ -2297,3 +2297,16 @@ commit_ref: "feature/integrations-dormant (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-13T00:00:00Z"
 ```
+
+```yaml
+id: CU-20261113-02
+type: fix
+title: "Sonos volume bar: the volume keys no longer dismiss it, and it shows without waiting for an animation frame"
+description: "Ported by hand from upstream 793bbb7 (mateusz) to the fork's notify page, which is not upstream's. The page's safety net, a keydown listener that clears the card and the bar and closes the window when a key reaches it, now ignores the volume up, down and mute keys (keyCodes 447/175, 448/174, 449/173): where a key reaches the overlay window it comes with every change of the volume, so the bar went away as it was meant to show. The volume bar and the mute badge are shown in the same task as the change (classList.add) instead of after two requestAnimationFrame callbacks, which an overlay window gets late or not at all. The notification card keeps its own two-frame reveal and every other key still clears everything."
+impact: medium
+affected_modules: ["notify/app/index.html"]
+related_tests: ["tools/test/sonos.test.js (the notify page: animation frames now run only when time passes; new: the bar and the mute badge show with no frame, the six volume and mute keys leave them up and the window open, another key still clears and closes; fails without the fix)"]
+commit_ref: "feature/volume-overlay (the commit that adds this entry)"
+author: "mateusz (upstream 793bbb7), ported by Lance Sandino (with Claude Code)"
+timestamp: "2026-11-13T12:59:27Z"
+```

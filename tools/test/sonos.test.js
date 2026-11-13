@@ -594,7 +594,15 @@ run(async () => {
   const sys = { launchParams: '{}', setInputRegion() {}, setKeyMask() {} };
   const page = new Function('document', 'webOSSystem', 'window', 'requestAnimationFrame', 'setTimeout', 'clearTimeout', 'Image', script);
   const later2 = (fn, ms) => timers.push({ fn, at: now + ms, id: timers.length + 1 }) && timers.length;
+  // animation frames run only when time passes (advance): an overlay window gets them late or not at all
+  let frames = [];
+  const raf = fn => frames.push(fn);
   const advance = ms => {
+    while (frames.length) {
+      const f = frames;
+      frames = [];
+      f.forEach(fn => fn());
+    }
     const end = now + ms;
     for (;;) {
       const due = timers.filter(t => t.fn && t.at <= end).sort((a, b) => a.at - b.at)[0];
@@ -615,7 +623,7 @@ run(async () => {
     { getElementById: el, addEventListener: (t, fn) => (listeners[t] = (listeners[t] || []).concat(fn)) },
     sys,
     { close: () => closes++ },
-    fn => fn(),
+    raf,
     later2,
     id => {
       const t = timers[id - 1];
@@ -625,7 +633,10 @@ run(async () => {
   );
   const vol = els.vol,
     card = els.card;
-  ok(vol.classList.contains('on') && !card.classList.contains('on'), 'a volume launch shows the bar, not the card');
+  ok(
+    vol.classList.contains('on') && !card.classList.contains('on'),
+    'a volume launch shows the bar at once (no animation frame), not the card'
+  );
   ok(
     els.vnum.textContent === '12' && els.vfill.style.transform === 'translateX(-88%)',
     'with the number and the fill (moved, not resized)'
@@ -634,12 +645,17 @@ run(async () => {
   advance(1500);
   launch({ kind: 'volume', volume: 13, muted: true, seconds: 3, position: 'top-right' });
   ok(
-    els.vnum.textContent === '13' && vol.classList.contains('muted') && vol.classList.contains('on'),
-    'a change while it shows updates it in place, muted'
+    els.vnum.textContent === '13' && vol.classList.contains('muted') && vol.classList.contains('on') && els.mute.classList.contains('on'),
+    'a change while it shows updates it in place, muted, with the mute badge at once'
   );
+  // the remote's volume and mute keys may reach this window (where the empty input region is not honoured): they must not dismiss it
+  const press = k => (listeners.keydown || []).forEach(fn => fn({ keyCode: k }));
+  [447, 448, 449, 175, 174, 173].forEach(press);
+  ok(vol.classList.contains('on') && els.mute.classList.contains('on') && !closes, 'the volume and mute keys do not dismiss the bar');
   advance(2500);
   ok(vol.classList.contains('on') && !closes, 'each change keeps it up for its seconds again');
   launch({ title: 'Front door', text: 'Someone is there', seconds: 8 });
+  advance(0); // the card still waits for its first full layout
   ok(card.classList.contains('on') && vol.classList.contains('on'), 'a notification card while the bar shows: both');
   advance(1000);
   ok(!vol.classList.contains('on') && card.classList.contains('on'), 'the bar goes after its time');
@@ -667,4 +683,11 @@ run(async () => {
   ok(closes === 1, 'each change keeps it open for the whole stay again');
   advance(2000);
   ok(closes === 2, 'and it closes once the stay has passed');
+  // any other key that reaches the window still clears it at once, as before
+  launch({ title: 'Door', text: 'Someone is there', seconds: 8 });
+  launch({ kind: 'volume', volume: 22, muted: false, seconds: 3, position: 'top-left' });
+  advance(0);
+  press(13);
+  advance(400);
+  ok(!card.classList.contains('on') && !vol.classList.contains('on') && closes === 3, 'another key clears the card and the bar and closes');
 });
