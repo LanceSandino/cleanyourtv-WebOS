@@ -25,7 +25,9 @@ tracking services start, the debloat:
 
 A program is prevented from starting by mounting a do-nothing stub over it (in RAM; the real files are not changed). Where
 `/etc/hosts` is on the read-only system partition, a copy with the ad lines is kept in RAM (`/tmp/cleanyourtv-hosts`) and mounted
-over it until the next restart. Each group can be switched on or off on its own; the ones that are off are listed in
+over it until the next restart. That copy is unmounted again only while it is what `/etc/hosts` shows: a table another tool mounts
+over it later (Glasshouse's ad blocking, the Homebrew Channel's update block) stays mounted, and the debloat adds or removes its
+marked lines in the file that is shown. Each group can be switched on or off on its own; the ones that are off are listed in
 `options.debloatOff` in `config.json`.
 
 Nothing is uninstalled. It applies only while the launcher is Home, because LG's own Home needs some of those services to start;
@@ -131,6 +133,11 @@ and, for **Ads**, removes the marked hosts lines. Switching the last group off s
 ## What it does not do
 
 It does not block updates: firmware update blocking (for example with the Homebrew Channel's tools) is separate and is not touched.
+
+**With Glasshouse.** If you also run [Glasshouse](https://github.com/rorygallagher2024/glasshouse) with its ad blocking on, both
+tools put ad servers in `/etc/hosts` and both stop LG's ad services, so the **Ads** group is mostly redundant. To let one tool own
+that file, switch the **Ads** group off in the manager. If you leave it on, the two work side by side: the debloat writes its marked
+lines into the file that is mounted at the time, and removes only its own mount.
 It does not claim to remove all tracking. It stops the services listed above and nothing else.
 
 **What a block on the TV cannot do.** An app or service that asks a DNS server of its own over an encrypted connection (DNS over

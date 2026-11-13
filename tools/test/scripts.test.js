@@ -323,13 +323,61 @@ run(async () => {
     undo = fs.readFileSync(path.join(root, 'scripts', 'debloat-undo.sh'), 'utf8'),
     hostsSh = fs.readFileSync(path.join(root, 'scripts', 'debloat-hosts.sh'), 'utf8');
   ok(
-    /mount --bind \/tmp\/cleanyourtv-hosts "\$HOSTS"/.test(hostsSh) &&
+    /mount --bind "\$COPY" "\$HOSTS"/.test(hostsSh) &&
+      /COPY=\$\{CYTV_HOSTS_COPY:-\/tmp\/cleanyourtv-hosts\}/.test(hostsSh) &&
       /umount "\$HOSTS"/.test(hostsSh) &&
       /HOSTS=\$\{CYTV_HOSTS:-\/etc\/hosts\}/.test(hostsSh) &&
       /sh \$L\/debloat-hosts\.sh \$keep$/m.test(stop) &&
       /sh \$L\/debloat-hosts\.sh \$keep$/m.test(undo),
     'where /etc/hosts is read-only (issue 11) the servers go into a copy in RAM, unmounted when no line is left (debloat-hosts.sh)'
   );
+  // the copy in RAM is unmounted only while it is what /etc/hosts shows (test -ef): a table another tool mounted over it later
+  // (Glasshouse, the Homebrew Channel's update block, upstream issue 87) stays, and the lines go into the file it shows. Run for real
+  // with a stand-in umount and mount that only note their call
+  {
+    const d = fs.mkdtempSync(path.join(require('os').tmpdir(), 'cytv-hoststop-'));
+    const bin = path.join(d, 'bin');
+    fs.mkdirSync(bin);
+    fs.writeFileSync(path.join(bin, 'umount'), '#!/bin/sh\necho "umount $*" >> "$CALLS"\n', { mode: 0o755 });
+    fs.writeFileSync(path.join(bin, 'mount'), '#!/bin/sh\necho "mount $*" >> "$CALLS"\n', { mode: 0o755 });
+    fs.writeFileSync(path.join(bin, 'luna-send'), '#!/bin/sh\necho "{}"\n', { mode: 0o755 });
+    const hosts = path.join(d, 'hosts'),
+      copy = path.join(d, 'copy'),
+      calls = path.join(d, 'calls');
+    const script = path.join(d, 'debloat-hosts.sh');
+    fs.writeFileSync(script, hostsSh.replace(/^L=.*$/m, 'L=' + d));
+    const env = Object.assign({}, process.env, {
+      CYTV_HOSTS: hosts,
+      CYTV_HOSTS_COPY: copy,
+      CALLS: calls,
+      CYTV_TEST_BIN: bin,
+    });
+    const runHosts = () => {
+      fs.writeFileSync(calls, '');
+      cp.spawnSync('sh', [script], { env });
+      return fs.readFileSync(calls, 'utf8');
+    };
+    const ad = '127.0.0.1 eic.ads.lgtvcommon.com # cleanyourtv-debloat\n';
+    // ours on top: the same file (a hard link stands in for the bind mount)
+    fs.writeFileSync(copy, '127.0.0.1 localhost\n' + ad);
+    fs.linkSync(copy, hosts);
+    fs.writeFileSync(copy + '.mounted', '');
+    const a = runHosts();
+    const aGone = !fs.existsSync(copy) && !fs.existsSync(copy + '.mounted');
+    // another table mounted over ours (a different file shows): nothing is unmounted, our lines leave the file it shows
+    for (const f of [hosts, copy]) if (fs.existsSync(f)) fs.unlinkSync(f);
+    fs.writeFileSync(copy, '127.0.0.1 localhost\n' + ad);
+    fs.writeFileSync(copy + '.mounted', '');
+    fs.writeFileSync(hosts, '0.0.0.0 update.lge.com\n' + ad);
+    const b = runHosts();
+    const bHosts = fs.readFileSync(hosts, 'utf8');
+    cp.spawnSync('rm', ['-rf', d]);
+    ok(
+      a === 'umount ' + hosts + '\n' && aGone && b === '' && bHosts === '0.0.0.0 update.lge.com\n',
+      "the hosts copy in RAM is unmounted only while it is on top; another tool's table over it stays mounted: " +
+        JSON.stringify([a, aGone, b, bHosts])
+    );
+  }
   // the groups debloat-stop.sh and debloat-undo.sh act on: only the part that picks the programs is run here (it stops and mounts
   // nothing); admanager has its own group (adapps), on by default, and only while ads is on too, and only on webOS 25 and newer (the
   // TV's version from its os-release, webOS 25 unless a check says otherwise)

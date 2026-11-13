@@ -12,10 +12,13 @@
 #              lgservers-hosts, for a start at which sdx does not answer yet.
 # Every line ends in "# cleanyourtv-debloat" (debloat-undo.sh and older releases remove them by that). Where /etc/hosts is on the
 # read-only system partition (issue 11) a copy in RAM (/tmp/cleanyourtv-hosts) is mounted over it until the next restart, and
-# unmounted again when no line is left.
-export PATH=/usr/bin:/usr/sbin:/bin:/sbin:$PATH
+# unmounted again when no line is left; only while that copy is what /etc/hosts shows (test -ef): a table another tool mounted over
+# it later (Glasshouse's, the Homebrew Channel's update block, upstream issue 87) is never unmounted, and the lines are written into
+# the file it shows.
+export PATH=${CYTV_TEST_BIN:+$CYTV_TEST_BIN:}/usr/bin:/usr/sbin:/bin:/sbin:$PATH
 L=/media/developer/cleanyourtv
 HOSTS=${CYTV_HOSTS:-/etc/hosts}
+COPY=${CYTV_HOSTS_COPY:-/tmp/cleanyourtv-hosts} # the tests point both elsewhere
 M="# cleanyourtv-debloat"
 G=" $* "
 on() { case "$G" in *" $1 "*) return 0 ;; esac; return 1; }
@@ -50,16 +53,16 @@ if on lgservers; then
 fi
 want=$(printf '%s' "$lines")
 [ "$(grep -F "$M" "$HOSTS")" = "$want" ] && exit 0
-# the file without our lines: the TV's own under the copy in RAM, when that is mounted
-if [ -e /tmp/cleanyourtv-hosts.mounted ]; then
-  umount "$HOSTS" 2>/dev/null && rm -f /tmp/cleanyourtv-hosts /tmp/cleanyourtv-hosts.mounted
+# the file without our lines: the TV's own under the copy in RAM, when that is mounted and still on top
+if [ -e "$COPY.mounted" ] && [ "$HOSTS" -ef "$COPY" ]; then
+  umount "$HOSTS" 2>/dev/null && rm -f "$COPY" "$COPY.mounted"
 fi
 grep -vF "$M" "$HOSTS" > /tmp/hosts.new
 [ -n "$want" ] && printf '%s\n' "$want" >> /tmp/hosts.new
 if cat /tmp/hosts.new > "$HOSTS" 2>/dev/null; then
   rm -f /tmp/hosts.new
 elif [ -n "$want" ]; then
-  mv /tmp/hosts.new /tmp/cleanyourtv-hosts && mount --bind /tmp/cleanyourtv-hosts "$HOSTS" && touch /tmp/cleanyourtv-hosts.mounted \
+  mv /tmp/hosts.new "$COPY" && mount --bind "$COPY" "$HOSTS" && touch "$COPY.mounted" \
     || echo "hosts: /etc/hosts cannot be changed on this TV; the servers are not blocked"
 else
   rm -f /tmp/hosts.new

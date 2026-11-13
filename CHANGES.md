@@ -2180,3 +2180,16 @@ commit_ref: "feature/upstream-fixes-2026-11 (the commit that adds this entry, ch
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-12T13:00:00Z"
 ```
+
+```yaml
+id: CU-20261112-03
+type: fix
+title: "Debloat: the hosts copy in RAM is unmounted only while it is on top, so another tool's /etc/hosts mount (update blocking) stays"
+description: "Upstream 8a2bed5 (issue 87), ported by hand (D-20261028-1). In the fork the unmount lives in debloat-hosts.sh, which both debloat-stop.sh and debloat-undo.sh call, not in debloat-undo.sh as upstream: it unmounted /etc/hosts whenever its marker /tmp/cleanyourtv-hosts.mounted existed, so with Glasshouse's table or the Homebrew Channel's update block mounted over our copy later, a debloat change or undo took their mount off instead (on the playroom TV the update block keeps root). It now unmounts only when /etc/hosts is our copy (test -ef); otherwise the mounts stay and the marked lines are written into the file that is shown. The copy's path (CYTV_HOSTS_COPY) and a test bin folder (CYTV_TEST_BIN) can be pointed elsewhere for the tests; on the TV neither is set. docs/debloat.md says how it works with Glasshouse."
+impact: medium
+affected_modules: ["scripts/debloat-hosts.sh", "docs/debloat.md"]
+related_tests: ["tools/test/scripts.test.js (debloat-hosts.sh run with a stand-in umount and mount: our copy on top is unmounted and removed; another table on top is left mounted and only our lines leave it)"]
+commit_ref: "feature/upstream-fixes-2026-11 (the commit that adds this entry, cherry picked from 8a2bed5)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-12T13:30:00Z"
+```
