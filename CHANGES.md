@@ -2323,3 +2323,16 @@ commit_ref: "feature/volume-overlay (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-13T13:15:31Z"
 ```
+
+```yaml
+id: CU-20261113-04
+type: feature
+title: "Sonos volume bar: one line per change in the service log with where its time went"
+description: "To find on the TV why the bar sometimes lags or does not show, helper/sonos.js writes one line per change it shows to the service's log (stdout, /tmp/cleanyourtv-helper.log, in RAM; nothing is written to flash): how the change arrived (event or poll), then milliseconds since it arrived: the TV's checks done (power state, sound output, app in front), the hand to the open page (wake) or the launch of the notify app (and 'wake, no answer, launch' when the open page did not take it), and when the page said it showed it (the shown=<seq> its next wait carries; '-' when it never said). Changes merged into a later one are counted. A line is written when the page reports, when a newer change is reported, after 10 s or 8 pending, and when the option is switched off; nothing while the option is off, and nothing for changes not shown (screen off, the TV's speakers)."
+impact: low
+affected_modules: ["helper/sonos.js", "docs/sonos.md"]
+related_tests: ["tools/test/sonos.test.js (new: the lines of a launched change, of changes handed to the open page with the page's shown time, of a woken page that did not answer and was launched, of a change handed to a page whose launch was under way; none while off; fails without the change)"]
+commit_ref: "feature/volume-overlay (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-13T13:18:53Z"
+```

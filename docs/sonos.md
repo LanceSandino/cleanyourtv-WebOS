@@ -83,7 +83,19 @@ No Sonos account, no internet and no Sonos app are involved: everything stays on
   setting), and that the volume really changes on the speaker.
 - **Now** says *read every second*: the speaker's events do not reach the TV. It still works, a little later than with events.
 
-The service log (`/tmp/cleanyourtv-helper.log` on the TV) has a line for each step, starting with `sonos:`.
+The service log (`/tmp/cleanyourtv-helper.log` on the TV) has a line for each step, starting with `sonos:`. Each change that is
+shown adds one line with where its time went, in milliseconds since the change reached the TV:
+
+```text
+sonos: bar 24 (event): checks 35 ms, wake 36 ms, shown 52 ms
+sonos: bar 31 (poll, 2 more merged): checks 140 ms, launch 141 ms, shown 1630 ms
+```
+
+`event` or `poll` says how it arrived (a poll reads once a second, so the change itself may be up to a second older); `checks` is when
+the TV's screen, sound output and app in front had been read; `wake` means it was handed to the open bar, `launch` that the notify app
+was started for it (`wake, no answer, launch`: the open bar did not take it, so it was started); `shown` is when the bar said it showed
+it (`-`: it never said, for example because its window closed); `merged` counts the changes that came before it went out. These lines
+are written only while the option is on, to the log in RAM, nothing to the TV's flash.
 
 ## For developers
 

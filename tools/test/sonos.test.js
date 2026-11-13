@@ -341,9 +341,9 @@ run(async () => {
 
   // ---- the open bar's page waits on GET /api/sonos/wait (over HTTP, as the page asks): a change answers it at once, no launch
   const api = await serve((q, s2) => son.handle(q, s2, q.url.split('?')[0], async () => ({})));
-  const waitAt = since =>
+  const waitAt = (since, shown) =>
     new Promise(done =>
-      http.get(api.url + '/api/sonos/wait?since=' + since, r => {
+      http.get(api.url + '/api/sonos/wait?since=' + since + (shown ? '&shown=' + shown : ''), r => {
         let b = '';
         r.on('data', c => (b += c));
         r.on('end', () => {
@@ -355,6 +355,13 @@ run(async () => {
         });
       })
     );
+  // the service's log, for its timing lines
+  const logged = [],
+    log0 = console.log;
+  console.log = function () {
+    logged.push(Array.prototype.join.call(arguments, ' '));
+    log0.apply(console, arguments);
+  };
   await bar.change(23, false);
   await until(() => shows.length && shows[shows.length - 1].volume === 23);
   const s23 = shows[shows.length - 1],
@@ -380,7 +387,7 @@ run(async () => {
     pageOpen = true;
   const pageLoop = (async () => {
     while (pageOpen) {
-      const x = await waitAt(since);
+      const x = await waitAt(since, since); // the change it has, which it has just shown
       if (!x.j || x.j.stop) break;
       if (x.j.seq) {
         got.push(x.j.volume);
@@ -394,6 +401,16 @@ run(async () => {
   ok(
     shows.length === n6 && got.every((v, i) => !i || v > got[i - 1]),
     'without a launch, each value once and in order (none piled up): ' + got.join() + ', launches ' + (shows.length - n6)
+  );
+  ok(
+    logged.some(l => /^sonos: bar 23 \(event\): checks \d+ ms, launch \d+ ms, shown -$/.test(l)),
+    'the log times a change that was launched (this page did not say it showed it): ' + logged.filter(l => / 23 /.test(l)).join(' | ')
+  );
+  ok(
+    logged.some(l => /^sonos: bar 24 \(event\): checks \d+ ms, wake \d+ ms, shown \d+ ms$/.test(l)) &&
+      logged.some(l => /^sonos: bar 25 \(event\): checks \d+ ms, wake \d+ ms, shown \d+ ms$/.test(l)),
+    'and each change handed to the open page: when it arrived, the checks, the wake and when the page showed it: ' +
+      logged.filter(l => /: bar 2[4-8]/.test(l)).join(' | ')
   );
   // the page closed after it was handed a change (it does not ask again): the latest value is launched
   pageOpen = false;
@@ -409,6 +426,11 @@ run(async () => {
     (await until(() => shows.length === n6 + 1, 1500)) && shows[n6].volume === 30,
     'it did not ask again (its window closed): the latest value is launched'
   );
+  await waitAt(shows[n6].seq, shows[n6].seq).then(() => {}); // the launched page shows it and asks (answered idle)
+  ok(
+    logged.some(l => /^sonos: bar 30 \(event\): checks \d+ ms, wake, no answer, launch \d+ ms, shown \d+ ms$/.test(l)),
+    'the log says so: ' + logged.filter(l => /: bar 30/.test(l)).join(' | ')
+  );
   // a launch at a time: a page that asks while its own launch is still under way gets the latest value, and nothing else is launched
   const launched = [];
   ctx.notify = {
@@ -422,10 +444,15 @@ run(async () => {
   await until(() => launched.length === 1);
   await bar.change(32, false);
   await sleep(40);
-  const coldPage = await waitAt(launched[0].seq); // the page from the launch asks with the change it was given (31)
+  const coldPage = await waitAt(launched[0].seq, launched[0].seq); // the page from the launch has shown 31 and asks
   ok(coldPage.j && coldPage.j.volume === 32, 'the page from a launch that is still under way gets the latest value at once');
-  await waitAt(coldPage.j.seq); // and asks again (answered after holdMs)
+  await waitAt(coldPage.j.seq, coldPage.j.seq); // shows 32 and asks again (answered after holdMs)
   ok(launched.map(x => x.volume).join() === '31', 'and no second launch follows: ' + launched.map(x => x.volume).join());
+  ok(
+    logged.some(l => /^sonos: bar 31 \(event\): checks \d+ ms, launch \d+ ms, shown \d+ ms$/.test(l)) &&
+      logged.some(l => /^sonos: bar 32 \(event\): checks \d+ ms, wake \d+ ms, shown \d+ ms$/.test(l)),
+    'a change that came during a launch is timed as handed to the page that asked: ' + logged.filter(l => /: bar 3[12]/.test(l)).join(' | ')
+  );
   ctx.notify = { show: async (p, internal) => shows.push(Object.assign({ internal }, p)) };
   // a wait with no change ends after a while and is asked again; while the screen is off it says stop (the window then closes)
   const idle = await waitAt(Date.now() + 1e6);
@@ -510,6 +537,13 @@ run(async () => {
   ok((await until(() => held)) && held.j.stop === true, 'a waiting page is told to stop');
   const offWait = await waitAt(0);
   ok(offWait.j && offWait.j.stop === true, 'and while it is off a wait is told to stop at once');
+  const nLog = logged.length;
+  await sleep(100);
+  ok(
+    logged.slice(nLog).every(l => !/^sonos: bar /.test(l)),
+    'nothing is timed while it is off'
+  );
+  console.log = log0;
   api.server.close();
   ok(await until(() => moved.subs.size === 0), 'the speaker is unsubscribed');
   const closed = await notifyTo(lastCb, lastSid, 40, false);

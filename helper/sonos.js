@@ -316,12 +316,50 @@ function create(ctx, opts) {
     launching = false,
     /** @type {any} */ ackT = null;
   /** @type {{res: any, t: any}[]} */ const waiters = [];
+  // where the time goes, one line per change shown, in the service's log (RAM, /tmp): how it arrived (a speaker's event or the poll),
+  // then milliseconds since it arrived: the TV's checks done (screen, sound output, app in front), the launch or the hand to the
+  // open page (wake), and when the page said it showed it. Changes that came before the last one was sent count as merged.
+  const traces = new Map(); // seq -> {how, at, ready, by, sent, merged}
+  function traced(seq, t) {
+    // the ones the page never said it showed (it closed, or the change came while the screen went off): logged without it
+    for (const k of Array.from(traces.keys())) if (traces.size >= 8 || t.at - traces.get(k).at > 10000) report(k, 0);
+    traces.set(seq, t);
+  }
+  function marked(seq, by) {
+    const t = traces.get(seq);
+    if (!t) return;
+    t.by = t.by ? t.by + ', no answer, ' + by : by;
+    t.sent = Date.now();
+  }
+  function report(seq, at) {
+    const t = traces.get(seq);
+    if (!t) return;
+    traces.delete(seq);
+    const ms = x => (x ? x - t.at + ' ms' : '-');
+    console.log(
+      'sonos: bar ' +
+        t.vol +
+        ' (' +
+        t.how +
+        (t.merged ? ', ' + t.merged + ' more merged' : '') +
+        '): checks ' +
+        ms(t.ready) +
+        ', ' +
+        (t.by || 'not sent') +
+        ' ' +
+        ms(t.sent) +
+        ', shown ' +
+        ms(at)
+    );
+  }
   const reply = (res, x) => {
     try {
       if (!res.finished) web.json(res, x);
     } catch (_) {}
   };
-  function overlay(fg) {
+  function overlay(fg, t) {
+    const prev = cur && cur.seq > sent ? traces.get(cur.seq) : null; // the change before this one, not sent yet: merged into it
+    if (prev) traces.delete(cur.seq);
     vseq = Math.max(vseq + 1, Date.now());
     cur = {
       kind: 'volume',
@@ -332,6 +370,11 @@ function create(ctx, opts) {
       stay: HDMI.test(fg || '') ? HDMI_STAY_SECONDS : STAY_SECONDS,
       seq: vseq,
     };
+    if (t)
+      traced(
+        vseq,
+        Object.assign(t, { ready: Date.now(), vol: st.volume + (st.muted ? ' muted' : ''), merged: prev ? (prev.merged || 0) + 1 : 0 })
+      );
     deliver();
   }
   function deliver() {
@@ -342,6 +385,7 @@ function create(ctx, opts) {
       n = notify();
     sent = p.seq;
     launching = true;
+    marked(p.seq, 'launch');
     Promise.resolve(n ? n.show(p, true) : null)
       .catch(() => {})
       .then(() => {
@@ -352,7 +396,10 @@ function create(ctx, opts) {
   // the latest change to the page's waiting requests (one, normally); it should ask again within ackMs
   function hand(list) {
     const p = cur;
-    if (p.seq > sent) sent = p.seq;
+    if (p.seq > sent) {
+      sent = p.seq;
+      marked(p.seq, 'wake');
+    }
     list.forEach(w => {
       clearTimeout(w.t);
       reply(w.res, p);
@@ -378,7 +425,12 @@ function create(ctx, opts) {
   // while the option is off, and after a wait while the screen is off (or the sound is on the TV's speakers): the page then stops
   // asking and its window closes.
   function waitHere(req, res) {
-    const since = +(/[?&]since=(\d{1,16})(&|$)/.exec(req.url) || [])[1] || 0;
+    const since = +(/[?&]since=(\d{1,16})(&|$)/.exec(req.url) || [])[1] || 0,
+      shown = +(/[?&]shown=(\d{1,16})(&|$)/.exec(req.url) || [])[1] || 0;
+    if (shown) {
+      for (const k of Array.from(traces.keys())) if (k < shown) report(k, 0); // older ones it never said it showed
+      report(shown, Date.now());
+    }
     if (!cfg().enabled) return reply(res, { stop: true });
     if (since > seen) seen = since;
     clearTimeout(ackT);
@@ -404,17 +456,18 @@ function create(ctx, opts) {
     waiters.push(w);
   }
   // a new reading: the first after (re)connecting only sets what is current; a change shows the bar
-  function apply(r) {
+  function apply(r, how) {
     const vol = st.volume,
       mut = st.muted;
     if (typeof r.volume === 'number') st.volume = r.volume;
     if (typeof r.muted === 'boolean') st.muted = r.muted;
     if (vol === null || (st.volume === vol && st.muted === mut)) return;
+    const t = { how: how || 'event', at: Date.now() };
     screenOk().then(ok => {
       if (!ok || st.state !== 'listening') return;
       luna('luna://com.webos.applicationManager/getForegroundAppInfo', {}).then(
-        f => overlay((f && f.appId) || ''),
-        () => overlay('')
+        f => overlay((f && f.appId) || '', t),
+        () => overlay('', t)
       );
     });
   }
@@ -448,7 +501,7 @@ function create(ctx, opts) {
         console.log('sonos: volume events arrive from the ' + speaker.model);
       }
       const r = parseEvent(Buffer.concat(parts).toString('utf8'));
-      if (r) apply(r);
+      if (r) apply(r, 'event');
     });
   }
   function listen() {
@@ -578,7 +631,7 @@ function create(ctx, opts) {
         if (g === gen) {
           if (!r.error) {
             misses = 0;
-            apply(r);
+            apply(r, 'poll');
           } else if (++misses >= 5) {
             busy = false;
             return fail(g, 'error', r.error);
@@ -634,6 +687,7 @@ function create(ctx, opts) {
     lgPlan();
     if (!c.enabled) {
       endWaits({ stop: true });
+      for (const k of Array.from(traces.keys())) report(k, 0);
       cur = null;
       sent = seen = 0;
       closePort();
