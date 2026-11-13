@@ -335,6 +335,7 @@ function create(ctx) {
     delete c.wallpapers; // holds the Immich key; the launcher gets only a stamp that changes with the set of photos
     delete c.photoFeed; // holds the photo feed's token; the launcher gets only whether there are photos
     delete c.watchAccounts; // Plex's and Stremio's keys (plex.js, stremio.js); the launcher gets the cards only
+    delete c.sonos; // the soundbar followed, its address among it (sonos.js); the launcher reads none of it
     const theme = ctx.feature('theme'),
       wp = ctx.feature('wallpapers'),
       feed = ctx.feature('photofeed');

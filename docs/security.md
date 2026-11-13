@@ -116,7 +116,7 @@ Optional and off by default. It only reads, and only on the local network: no ac
 - **Search answers:** an answer is used only when it points at its sender's own Sonos description (`/xml/device_description.xml`
   on the address it came from), never at another address or the TV itself.
 - The speaker's address, id and room are kept in `config.json` (readable by root only); the service's replies give the room and
-  model, not the address.
+  model, not the address, and the launcher's settings (`/api/apps`) carry none of the Sonos settings.
 - **Hide LG's volume bar** (on by default while the option is on) changes one of LG's settings in RAM only: it writes
   `{"volumeOSD":false}` as `com.webos.surfacemanager.json` into the country folders of configd's layer `/var/run/tvconfig/rmm/` and
   asks LG's configuration service to read its settings again, only while the sound goes to HDMI ARC/eARC or optical, and removes the

@@ -36,6 +36,7 @@ run(async () => {
       plex: { token: 'secret-plex-token', server: { token: 'secret-server-token' } },
       stremio: { authKey: 'secret-stremio-key' },
     },
+    sonos: { on: true, speaker: { id: 'RINCON_X', host: '192.0.2.44', port: 1400, name: 'Living Room' } },
   });
   const wpStub = { stamp: () => '3:abcd' };
   const apps = req('apps').create({ config, luna, version: '1.6.0', feature: n => (n === 'wallpapers' ? wpStub : null) });
@@ -45,6 +46,10 @@ run(async () => {
     'the launcher gets a stamp of the Wallpapers photos, never the Immich key'
   );
   ok(r.out.indexOf('secret-') < 0 && !r.j.config.watchAccounts, "the launcher never gets Plex's or Stremio's keys");
+  ok(
+    !r.j.config.sonos && r.out.indexOf('192.0.2.44') < 0 && r.out.indexOf('RINCON') < 0,
+    "the launcher never gets the Sonos settings (the speaker's address): it reads none of them"
+  );
   ok(
     asked === 1 && r.j.apps.length === 1 && r.j.apps[0].title === 'One' && r.j.config.dock[0] === 'a.one',
     "the first list is asked from the app manager, without LG Home or the placeholder and promotion apps LG pushes (stub, Rakuten TV's ui30)"

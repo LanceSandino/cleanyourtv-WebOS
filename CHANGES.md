@@ -2245,3 +2245,16 @@ commit_ref: "feature/integrations-dormant (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-12T21:30:00Z"
 ```
+
+```yaml
+id: CU-20261112-08
+type: fix
+title: "/api/apps no longer gives the launcher the Sonos settings (the speaker's address among them)"
+description: "launcherConfig() in helper/apps.js passed config.sonos (the followed speaker's id, address, port and room) to every page that reads /api/apps, although no launcher, picker or notification code reads it (grep for sonos in app/, picker/ and notify/: only the device-name pattern for a soundbar's input). It is now left out the same way as the voice, notification, wallpaper, photo feed and account settings. security.md already said the service's replies never give the address. The recorded API replies do not contain Sonos settings, so the golden file is unchanged."
+impact: low
+affected_modules: ["helper/apps.js", "docs/security.md"]
+related_tests: ["tools/test/apps.test.js (new: a configured speaker's address and id are not in /api/apps)", "tools/test/api.test.js (unchanged, passes)"]
+commit_ref: "feature/integrations-dormant (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-12T21:45:00Z"
+```
