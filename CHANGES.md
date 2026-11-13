@@ -2258,3 +2258,16 @@ commit_ref: "feature/integrations-dormant (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-12T21:45:00Z"
 ```
+
+```yaml
+id: CU-20261112-09
+type: fix
+title: "Photo feed: the hourly timer runs only while a feed is set up"
+description: "helper/photofeed.js started its hourly interval at every start of the service, also on a TV with no feed (it then woke every hour to do nothing). It is now started only while a feed is configured: at start when one is, by setup(), and stopped by disconnect(); a feed removed some other way (config.json edited) stops the timer at its next turn. Reading the ids before a photo when the last read is over an hour old (next()) is unchanged, and the photo feed's rows in Customize and on the wallpapers page stay."
+impact: low
+affected_modules: ["helper/photofeed.js", "docs/screensaver.md"]
+related_tests: ["tools/test/photofeed.test.js (new: no hourly timer without a feed, one after setup or a second setup, none after disconnect or removal)"]
+commit_ref: "feature/integrations-dormant (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-12T22:00:00Z"
+```

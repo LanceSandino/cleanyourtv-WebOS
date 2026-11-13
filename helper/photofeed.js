@@ -499,6 +499,7 @@ function create(ctx) {
     last = '';
     restored = true;
     save();
+    timer();
     return status();
   }
   function disconnect() {
@@ -512,6 +513,7 @@ function create(ctx) {
     queue = [];
     last = '';
     restored = false;
+    timer();
     return status();
   }
 
@@ -538,9 +540,20 @@ function create(ctx) {
     return web.notFound(res);
   }
 
+  // the hourly read of the ids runs only while a feed is set up: started by start() and setup(), stopped by disconnect() (and by the
+  // timer itself when the feed was removed some other way)
+  let hourly = /** @type {any} */ (null);
+  function timer() {
+    if (feedCfg() && !hourly) {
+      hourly = setInterval(() => (feedCfg() ? refresh() : timer()), LIST_MS);
+      if (hourly.unref) hourly.unref();
+    } else if (!feedCfg() && hourly) {
+      clearInterval(hourly);
+      hourly = null;
+    }
+  }
   function start() {
-    const t = setInterval(() => feedCfg() && refresh(), LIST_MS);
-    if (t.unref) t.unref();
+    timer();
     if (feedCfg() && Date.now() - (state().tried || 0) > LIST_MS) {
       const t2 = setTimeout(refresh, 20000);
       if (t2.unref) t2.unref();

@@ -64,7 +64,7 @@ log is gone after the reboot such a fault causes.
 A photo feed's photos are Wallpapers photos as well: Customize > Wallpapers counts them, shows them behind Home and lets you choose
 one of them as your wallpaper.
 
-The TV never holds a whole photo library. It reads the feed's list of photo ids every hour and fetches a photo, at 1920 pixels,
+The TV never holds a whole photo library. It reads the feed's list of photo ids every hour (that timer runs only while a feed is set up) and fetches a photo, at 1920 pixels,
 only when it is about to be shown (and the one after it). Photos are shown from memory (the last 8); only a small offline set goes
 to the TV's storage: the first 5 at once, then at most one new photo every half hour, at most 20 photos (24 MB), and nothing while
 the storage has less than 300 MB free. A screensaver that changes photos all evening therefore hardly writes to the TV's flash

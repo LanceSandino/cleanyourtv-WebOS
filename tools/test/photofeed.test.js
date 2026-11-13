@@ -323,6 +323,53 @@ run(async () => {
     kept.indexOf('w2.jpg') >= 0 && kept.length <= fam.DISK_FILES + 1,
     'the chosen wallpaper stays on the storage, and the offline set keeps to ' + fam.DISK_FILES + ' photos (' + kept.length + ')'
   );
+  // the hourly read of the ids: only while a feed is set up (no timer on a TV without one), stopped when the feed is removed
+  {
+    const realSet = setInterval,
+      realClear = clearInterval,
+      live = new Set(),
+      cbs = new Map();
+    global.setInterval = (fn, ms) => {
+      const t = realSet(fn, ms);
+      if (ms === 3600 * 1000) live.add(t), cbs.set(t, fn);
+      return t;
+    };
+    global.clearInterval = t => (live.delete(t), realClear(t));
+    try {
+      const cfgT = memoryConfig({});
+      const bare = fam.create({ config: cfgT, feature: () => null });
+      bare.start();
+      const idle = live.size;
+      await bare.setup(code({ u: url, t: TOKEN, ca: k.ca }));
+      const set = live.size;
+      await bare.setup(code({ u: url, t: TOKEN, ca: k.ca })); // set up again: still one timer
+      const again = live.size;
+      bare.disconnect();
+      const gone = live.size;
+      // a service started with a feed set up, which is then removed some other way: the timer stops itself at its next turn
+      await bare.setup(code({ u: url, t: TOKEN, ca: k.ca }));
+      const cfgT2 = memoryConfig({ photoFeed: cfgT.get().photoFeed });
+      bare.disconnect();
+      const kept = fam.create({ config: cfgT2, feature: () => null });
+      kept.start();
+      const started = live.size;
+      const t = Array.from(live)[0];
+      cfgT2.update('test', c => {
+        delete c.photoFeed;
+      });
+      cbs.get(t)();
+      ok(
+        idle === 0 && set === 1 && again === 1 && gone === 0 && started === 1 && live.size === 0,
+        'the hourly read runs only while a feed is set up: none without one, one after setup, none after disconnect or removal (' +
+          [idle, set, again, gone, started, live.size].join(',') +
+          ')'
+      );
+    } finally {
+      global.setInterval = realSet;
+      global.clearInterval = realClear;
+      live.forEach(t => realClear(t));
+    }
+  }
   srv.close();
   // a day the photos were added that many share is the day they were brought in together (a server that sends only createdAt, a
   // Frameo import: 290 photos said the same day on the owner's TV): not shown; a day taken always is, and an added day few share
