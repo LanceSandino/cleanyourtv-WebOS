@@ -2193,3 +2193,16 @@ commit_ref: "feature/upstream-fixes-2026-11 (the commit that adds this entry, ch
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-12T13:30:00Z"
 ```
+
+```yaml
+id: CU-20261112-04
+type: fix
+title: "Wallpapers: with an interval set, opening Home changes the photo only once the interval has passed"
+description: "Upstream 29589be (issues 234 and 225), ported by hand (D-20261028-1; the fork's wall.js has the chosen photo and the fitted layout, upstream's has credits and add-ons). With an interval (10 s to 60 min) Home still showed a new photo every time it opened, so the interval did not mean what it said and every opening decoded a new full-size photo while the page refreshed. Now a new photo on opening only when that many seconds have passed since the last change (or the clock was set back); 'Each time Home opens' (0) is unchanged, and the interval timer runs again on each opening."
+impact: low
+affected_modules: ["app/src/js/wall.js", "app/index.html", "docs/wallpapers.md"]
+related_tests: ["tools/test/wall.test.js (new: the interval kept on opening, a new photo after it, 0 every time, a clock set back, off)"]
+commit_ref: "feature/upstream-fixes-2026-11 (the commit that adds this entry, cherry picked from 29589be)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-12T14:00:00Z"
+```
