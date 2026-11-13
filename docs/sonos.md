@@ -15,7 +15,7 @@ In the manager app: **More** > **Sonos volume on screen** > **Show the Sonos vol
 | Row | What it does |
 |---|---|
 | **Show the Sonos volume** | On or off. |
-| **Speaker** | **Automatic** (the default) follows the only Sonos soundbar on the network (Playbar, Playbase, Beam, Arc, Ray or Amp), or the only Sonos player when there is just one. Choosing the row searches the network and lists every player with its room and model, so you can choose one; that is needed when there are several soundbars. |
+| **Speaker** | **Automatic** (the default) follows the only Sonos soundbar on the network (Playbar, Playbase, Beam, Arc, Ray or Amp), or the only Sonos player when there is just one. Once a soundbar has been followed it is remembered, and only that soundbar is followed from then on: when it misses a search (asleep, just after the TV wakes), it is looked for again rather than swapped for another speaker that answered. Choosing the row searches the network and lists every player with its room and model, so you can choose one; that is needed when there are several soundbars. |
 | **Place on screen** | Top left (the default), top right, bottom left or bottom right. Picture notifications keep their own place; the volume shows beside them. |
 | **Hide LG's volume bar** | On by default: while **Show the Sonos volume** is on and the TV's sound goes to the soundbar (HDMI ARC/eARC or optical), LG's own volume bar stays away, so only this bar shows. Off: both show. On a TV where this was not tried it says *not available on this TV*. |
 | **Now** | What it reads now: the volume and whether it is muted, or why it cannot follow the speaker. |

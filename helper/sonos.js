@@ -545,7 +545,10 @@ function create(ctx, opts) {
     console.log('sonos: ' + error + '; trying again in ' + Math.round(wait / 1000) + ' s');
     later(wait, () => g === gen && connect(g));
   }
-  // the speaker to follow: the chosen one (found again by its id when its address changed), else the only soundbar on the network
+  // the speaker to follow: the chosen one (found again by its id when its address changed), else the soundbar followed before (seenBar,
+  // kept by its id), else the only soundbar on the network, else the only speaker. A soundbar once followed is never swapped for
+  // another speaker because it missed one search: after the TV woke, a Beam that had not answered yet left only a kitchen Play:1,
+  // which was followed from then on, and the TV's volume never showed (2026-11-13).
   async function locate() {
     const c = cfg();
     if (c.speaker && c.speaker.id) {
@@ -561,8 +564,19 @@ function create(ctx, opts) {
     }
     const list = await find(),
       bars = list.filter(x => x.theater);
-    if (bars.length === 1) return bars[0];
-    if (list.length === 1) return list[0];
+    if (c.seenBar) {
+      const d = list.filter(x => x.id === c.seenBar)[0];
+      if (d) return d;
+      if (!bars.length) {
+        st.error = 'the soundbar did not answer the search';
+        return null;
+      }
+    }
+    if (bars.length === 1) {
+      if (cfg().seenBar !== bars[0].id) save(Object.assign(cfg(), { seenBar: bars[0].id }));
+      return bars[0];
+    }
+    if (list.length === 1 && !c.seenBar) return list[0];
     st.error = list.length ? 'several speakers: choose one' : '';
     return null;
   }

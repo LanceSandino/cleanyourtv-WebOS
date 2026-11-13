@@ -184,7 +184,8 @@ run(async () => {
   // ---- stand-ins: a soundbar and a second speaker, and the SSDP answers for them
   const bar = await player({ id: 'RINCON_TESTBAR01400', model: 'Sonos Beam', room: 'Den' });
   const one = await player({ id: 'RINCON_TESTONE01400', model: 'Sonos One', room: 'Kitchen', events: false });
-  let searches = 0;
+  let searches = 0,
+    barSilent = false; // the soundbar misses the search (asleep, a lost datagram)
   const ssdp = dgram.createSocket('udp4');
   ssdp.on('message', (m, from) => {
     const t = m.toString();
@@ -200,7 +201,7 @@ run(async () => {
       );
       ssdp.send(b, 0, b.length, from.port, from.address);
     };
-    reply('http://127.0.0.1:' + bar.port + '/xml/device_description.xml', bar.id);
+    if (!barSilent) reply('http://127.0.0.1:' + bar.port + '/xml/device_description.xml', bar.id);
     reply('http://127.0.0.1:' + one.port + '/xml/device_description.xml', one.id);
     reply('http://10.9.9.9:1400/xml/device_description.xml', 'RINCON_ELSEWHERE01400'); // points at another address
     reply('http://127.0.0.1:8765/api/manager/status', 'RINCON_WRONGPATH01400'); // not a description
@@ -271,6 +272,7 @@ run(async () => {
   await sleep(100);
   ok(!shows.length, 'no bar for the volume it starts at (the first event repeats it)');
   ok(conf.get().sonos.enabled === true && conf.get().sonos.speaker === null, 'the setting is saved, still automatic');
+  ok(conf.get().sonos.seenBar === bar.id, 'the soundbar found is remembered by its id');
 
   // ---- changes show the bar
   await bar.change(12, false);
@@ -295,6 +297,21 @@ run(async () => {
   ok((await notifyTo(cb, sid, 50, false, { method: 'POST' })) === 403, 'anything but NOTIFY is refused');
   await sleep(80);
   ok(son.status().volume === 12 && shows.length === 2, 'none of them changed the volume shown');
+
+  // ---- a soundbar that misses a search is looked for again, never swapped for the only other speaker that answered (2026-11-13)
+  barSilent = true;
+  await call(son, '/api/sonos/set', 'POST', { enabled: false });
+  await call(son, '/api/sonos/set', 'POST', { enabled: true });
+  ok(
+    (await until(() => /soundbar did not answer/.test(son.status().error || ''))) &&
+      !(son.status().using && son.status().using.id === one.id),
+    'with the soundbar silent it follows no other speaker: ' + JSON.stringify(son.status())
+  );
+  barSilent = false;
+  ok(
+    await until(() => son.status().mode === 'events' && son.status().using && son.status().using.id === bar.id, 4000),
+    'the soundbar is followed again once it answers: ' + JSON.stringify(son.status())
+  );
 
   // ---- only while the screen is on and the sound goes out of the TV
   power = 'Active Standby';

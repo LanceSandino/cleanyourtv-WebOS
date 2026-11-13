@@ -2336,3 +2336,16 @@ commit_ref: "feature/volume-overlay (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-13T13:18:53Z"
 ```
+
+```yaml
+id: CU-20261113-05
+type: fix
+title: "Sonos volume bar: the soundbar once followed is never swapped for another speaker that answered a search"
+description: "With the speaker on Automatic, locate() in helper/sonos.js followed the only soundbar a search found, else the only speaker. After the living-room TV woke, its Beam had not answered the search yet and a kitchen Play:1 had, so the Play:1 was followed from then on and the TV's volume changes never showed a bar. The soundbar followed is now remembered by its id (sonos.seenBar); later searches follow it by that id, and when it does not answer, the search is tried again (with the usual growing wait) instead of following another speaker. A TV with only one non-soundbar speaker, and none ever seen, is unchanged."
+impact: medium
+affected_modules: ["helper/sonos.js", "docs/sonos.md"]
+related_tests: ["tools/test/sonos.test.js (new: the soundbar found is remembered; with it silent no other speaker is followed; it is followed again once it answers; fail without the fix)"]
+commit_ref: "fix/sonos-keep-soundbar (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-13T14:10:00Z"
+```
