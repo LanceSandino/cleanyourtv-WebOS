@@ -1964,7 +1964,7 @@ timestamp: "2026-11-01T19:40:00Z"
 id: CU-20261101-13
 type: fix
 title: "Hub: a TV in standby counts as off at once (the phone's presses waited 8 s for 'the TV did not answer in time')"
-description: "The owner: the remote seemed broken, {\"error\":\"the TV did not answer in time\"}. The living-room TV was in standby from 18:58:43 to 19:10:27 (tvpowerd); a TV in standby keeps its link to the hub open but answers nothing, so the hub kept it as linked and on, and every press went down the link and waited 8 s for a 504 instead of the off answer that gives the phone its Turn the TV on button. hub/server.js: every beat (20 s) the hub also asks each linked TV its small /tv-info question and drops the link when no answer comes within 6 s (the TV then counts as off; it links again when it wakes, remote.js noticing the gap); a press that times out asks the same question at once; the time limits are options (beatMs, aliveMs, answerMs). Deployed to the hub on Sandino-Ubuntu: both TVs stay linked across the beats."
+description: "The owner: the remote seemed broken, {\"error\":\"the TV did not answer in time\"}. The living-room TV was in standby from 18:58:43 to 19:10:27 (tvpowerd); a TV in standby keeps its link to the hub open but answers nothing, so the hub kept it as linked and on, and every press went down the link and waited 8 s for a 504 instead of the off answer that gives the phone its Turn the TV on button. hub/server.js: every beat (20 s) the hub also asks each linked TV its small /tv-info question and drops the link when no answer comes within 6 s (the TV then counts as off; it links again when it wakes, remote.js noticing the gap); a press that times out asks the same question at once; the time limits are options (beatMs, aliveMs, answerMs). Deployed to the hub on the home server: both TVs stay linked across the beats."
 impact: medium
 affected_modules: ["hub/server.js"]
 related_tests: ["tools/test/hub.test.js (a TV in standby with its link still open: dropped after its unanswered question, listed off, a press answered off at once)"]
@@ -2361,4 +2361,17 @@ related_tests: ["tools/test/hdmivolume.test.js (new: the shipped binary matches 
 commit_ref: "feature/hdmi-volume (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-13T20:55:00Z"
+```
+
+```yaml
+id: CU-20261120-01
+type: chore
+title: "Privacy wording: no home server name in the docs, no real-looking coordinates in a page check"
+description: "A read-only privacy scan of the public fork found no tokens, keys, MACs or account ids, but the home server's host name in CHANGES.md (CU entry of the hub's link beats) and DECISIONS.md (D-20261029-6, wording only, the decision is unchanged), and a weather card fixture in tools/oldchrome.js at coordinates that may be near the owner's home. Those now say 'the home server' and use the Utrecht point the cards test already uses (52.09, 5.12). Older commits and tags still carry two private LAN addresses and the host name; they are not reachable from outside the home network, so the history is left as it is."
+impact: none
+affected_modules: ["CHANGES.md", "DECISIONS.md", "tools/oldchrome.js"]
+related_tests: []
+commit_ref: "fix/privacy-wording (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-20T18:00:00Z"
 ```

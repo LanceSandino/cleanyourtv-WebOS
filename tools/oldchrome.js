@@ -347,7 +347,7 @@ const WP_CLOCK =
 // the place and the sky beside the temperature, and all of it above the time. The outcome lands in data-slim.
 const SLIM_WX =
   '<script>(function(){var A=window.api;window.api=function(p,b){return p==="/api/cards/weather"?Promise.resolve({now:{temp:18,code:0,day:true},days:[],at:Date.now()}):A(p,b)};' +
-  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);cfg.cards={greeting:{type:"weather",place:"Lake",lat:40.1,lon:-75.2}};drawCards();' +
+  'var go=setInterval(function(){if(!document.querySelector(".tile"))return;clearInterval(go);cfg.cards={greeting:{type:"weather",place:"Lake",lat:52.09,lon:5.12}};drawCards();' +
   'setTimeout(function(){tickCards();setTimeout(function(){var c=document.querySelector("#cards .card-weather"),svg=c&&c.querySelector(".wx-i svg"),p=c&&c.querySelector(".wx-p"),' +
   'tm=document.getElementById("time").getBoundingClientRect(),cr=c&&c.getBoundingClientRect(),sr=svg&&svg.getBoundingClientRect();' +
   'var slim=!!c&&/\\bslim\\b/.test(c.className)&&cr.height<=31&&!!sr&&sr.height<=31&&sr.bottom<=cr.bottom+1&&c.scrollHeight<=32;' +
