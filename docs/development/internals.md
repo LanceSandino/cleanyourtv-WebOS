@@ -61,9 +61,10 @@ card are small and stay single files.
       waits until `getAppInfo` reports Home with the type of the mounted `appinfo.json`. The language to put back is written to
       `locale-ui.restore` first; each boot runs `rescan-home.sh restore`. The boot script then stops LG's Home that still runs (its
       own program, or one `sam` preloads around the rescan) and launches Home if Home or nothing is in front; an HDMI input stays
-      on screen. Where the rescan does not change what `sam` reports (or `home-rescan-off` exists), it restarts `sam` as before and
-      launches Home again; on webOS before 7 and with a native Home, `after-sam.sh` then restarts the services that keep talking to
-      the old app manager (`afterSam`).
+      on screen, and `after-sam.sh` is not run. Where the rescan does not change what `sam` reports (or `home-rescan-off` exists),
+      it restarts `sam` as before and launches Home again; `after-sam.sh` then restarts the services this TV needs after that
+      restart (`afterSam`: on webOS before 7 and with a native Home those that keep talking to the old app manager, on webOS 25
+      `videooutputd` and `umediaserver`, on webOS 26 `arccontroller` and `umediaserver`; `after-sam-services` replaces the list).
     - `standin` (native Home, webOS 5 to 23): `jtool.js exe` finds LG's Home program in the stock `appinfo.json` and the script
       bind-mounts `home-standin.sh` over it, then stops LG's running Home once. `sam` is not restarted and keeps LG's Home manifest,
       so it starts the stand-in for Home. The stand-in sends `wam-launch.json` (written by `stage-home.sh` with `jtool.js wamlaunch`) to

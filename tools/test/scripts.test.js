@@ -1411,10 +1411,7 @@ run(async () => {
   // the stand-in way checks that the new Home opened; a setup run from the manager app has it in front, so Home is opened then too
   {
     const home = fs.readFileSync(path.join(root, 'scripts', '10-cleanyourtv-home'), 'utf8');
-    const standin = home.slice(
-      home.indexOf('if [ "$method" = standin ]'),
-      home.indexOf('else\n  echo "$(up) home: mounting the launcher over')
-    );
+    const standin = home.slice(home.indexOf('if [ "$method" = standin ]'), home.indexOf('else\n  mount --bind $L/home-overlay $H'));
     ok(
       /com\.cleanyourtv\.manager\*\|""\) luna-send[^\n]*applicationManager\/launch[^\n]*com\.webos\.app\.home/.test(standin),
       'the stand-in way opens Home when nothing, Home or the manager app (a setup from it) is in front, before it checks the new Home'

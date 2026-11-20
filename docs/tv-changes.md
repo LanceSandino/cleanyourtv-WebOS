@@ -50,9 +50,9 @@ uninstall. Optional features contact other services only when you switch them on
       watchdog also checks that the TV, when on, has something in front: if not, it sets Home up again, and after two tries brings
       LG's Home back until the next reboot. It also closes the launcher when the app manager has Home running without the stand-in.
 
-   Whenever the app manager is restarted on a TV with LG's native Home or on webOS before 7 (the first way, or the setup registering
-   our extra apps), the services that talk to it (`eim`, `webapp-mgr`, `preload-manager`, `memorymanager`, those the TV has) are
-   restarted after it (`after-sam.sh`). Without that, apps stopped opening, an HDMI input lost its picture and HDMI-CEC control
+   Whenever the app manager is restarted on a TV with LG's native Home or on webOS before 7 (the first way when its rescan does not
+   take, or the setup registering our extra apps), the services that talk to it (`eim`, `webapp-mgr`, `preload-manager`,
+   `memorymanager`, those the TV has) are restarted after it (`after-sam.sh`). Without that, apps stopped opening, an HDMI input lost its picture and HDMI-CEC control
    stopped (issues 14, 23 and 24). Each step is written to `/tmp/cleanyourtv-boot.log`, which **Share log** includes.
    On webOS 26 (SDK 11) with the flutter or web Home, the same hook restarts `arccontroller` and `umediaserver` after the app manager,
    if they run. On an OLED65C35LA HDMI ARC to the soundbar stayed silent although the right output was chosen and the controller was
@@ -62,6 +62,7 @@ uninstall. Optional features contact other services only when you switch them on
    played with a black picture after the takeover, because the media services had no foreground app; restarting those two brought picture
    and sound back). The ARC controller is left alone there; eARC keeps working. Other webOS 25 TVs were fine without it, so a file
    `after-sam-services` in `/media/developer/cleanyourtv/` replaces the list on one TV (an empty file switches it off; updates leave it).
+   When the rescan of the first way works, the app manager is not restarted and none of these services are restarted at boot.
 3. The debloat, if it is on, runs as soon as the boot scripts start (about 45 seconds after the TV starts, on a webOS 25 TV), before
    LG's activity manager starts its ad and tracking services, and once more when LG's boot is done (LG's `/tmp/boot-done`, about
    85 seconds). See [Debloat](debloat.md).
