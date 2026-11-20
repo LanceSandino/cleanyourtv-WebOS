@@ -2375,3 +2375,16 @@ commit_ref: "fix/privacy-wording (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-20T18:00:00Z"
 ```
+
+```yaml
+id: CU-20261120-03
+type: fix
+title: "Hub: wake a TV that has slept for hours (packets to its own address too, three rounds), and keep how each wake went"
+description: "The owner's phone wake stopped working once the TV had been off for a while. The hub sent one UDP broadcast per port (9, 7); a TV asleep on Wi-Fi can stop reading broadcasts (the router changes their group key while it sleeps) and stops answering ARP. POST /wake now sends three rounds within a second, to the broadcast address and to the TV's own address (wakeDirect), and hub/neigh.sh (with cleanyourtv-hub-neigh.service/.timer, at boot and every 30 minutes) keeps a permanent neighbour entry for each TV on the hub's host, so those packets leave by the TV's MAC. Each wake is kept (when, minutes asleep, tries, whether the TV linked again within WAKE_OK_MS, 2 minutes, and how fast) in data/wakes.json, the log and GET /hub/status (wakes), to show after how long a wake stops working. Not yet proven on the TVs: they were off; the next long standby tells."
+impact: medium
+affected_modules: ["hub/server.js", "hub/neigh.sh", "hub/cleanyourtv-hub-neigh.service", "hub/cleanyourtv-hub-neigh.timer", "hub/compose.yml", "docs/remote.md"]
+related_tests: ["tools/test/hub.test.js (three rounds to the TV's own address, the wake kept as not working with the minutes asleep, kept as working when the TV links again)", "tools/test/hub-neigh.test.js (permanent neighbours from .env and the learned MACs, TV_MAC, skips without MAC or route, no MAC printed)"]
+commit_ref: "feature/hub-wake (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-20T19:30:00Z"
+```

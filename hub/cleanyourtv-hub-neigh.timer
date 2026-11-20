@@ -1,0 +1,10 @@
+# Runs cleanyourtv-hub-neigh.service a minute after boot and every 30 minutes (a link going down and up drops the entries).
+[Unit]
+Description=CleanYourTV hub: keep the TVs reachable by their MAC (every 30 minutes)
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=30min
+
+[Install]
+WantedBy=timers.target

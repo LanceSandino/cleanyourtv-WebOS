@@ -81,8 +81,10 @@ run(async () => {
     tvPort,
     data,
     arp,
-    wakeAddr: '127.0.0.1',
+    wakeAddr: '127.0.0.3', // a broadcast stand-in nothing listens on: the packets caught here are the ones sent to the TV itself
     wakePorts: [udp.address().port],
+    wakeRounds: [0, 40, 80],
+    wakeOkMs: 600,
     timeoutMs: 500,
     wakeEveryMs: 1500,
   });
@@ -136,24 +138,50 @@ run(async () => {
   ok(
     r.code === 200 &&
       r.j.sent === true &&
-      packets.length === 1 &&
+      packets.length === 3 &&
+      packets.every(x => x.equals(pk)) &&
       pk.length === 102 &&
       pk.slice(0, 6).equals(Buffer.alloc(6, 0xff)) &&
       pk.slice(6, 12).equals(m) &&
       pk.slice(96).equals(m),
-    'POST /wake sends a magic packet: six 0xff, then the MAC sixteen times'
+    "POST /wake sends a magic packet (six 0xff, then the MAC sixteen times) in three rounds, to the TV's own address as well"
   );
   r = await ask(port, 'POST', '/wake', {}, { origin: 'http://hub.test:' + port });
   const other = await ask(port, 'POST', '/wake', {}, { origin: 'http://evil.example' });
   await sleep(200);
   ok(
-    r.j.sent === false && r.j.waiting && other.code === 403 && packets.length === 1,
+    r.j.sent === false && r.j.waiting && other.code === 403 && packets.length === 3,
     'at most one wake every few seconds, and only from its own page'
   );
   await sleep(1500);
   r = await ask(port, 'POST', '/wake');
   await sleep(200);
-  ok(r.j.sent === true && packets.length === 2, 'later it wakes again');
+  ok(r.j.sent === true && packets.length === 6, 'later it wakes again');
+  // the first wake was not answered within wakeOkMs: kept as one that did not work, how long the TV had slept (it was seen going to
+  // sleep), and in the log; the second waits for the TV
+  const logged = [],
+    log0 = console.log;
+  console.log = (...a) => (/^hub: a wake/.test(String(a[0])) ? logged.push(a.join(' ')) : log0(...a));
+  await sleep(700);
+  console.log = log0;
+  r = await ask(port, 'GET', '/hub/status');
+  const w0 = r.j.wakes[0];
+  ok(
+    w0.id === '127.0.0.1' &&
+      typeof w0.asleepSince === 'string' &&
+      w0.last.length === 2 &&
+      w0.last[0].ok === false &&
+      w0.last[0].asleepMin === 0 &&
+      w0.last[0].tries === 1 &&
+      w0.last[1].ok === false &&
+      logged.length === 1 &&
+      /a wake did not wake the TV \(127\.0\.0\.1, asleep 0 min, 1 tries\)/.test(logged[0]) &&
+      JSON.parse(fs.readFileSync(path.join(data, 'wakes.json'), 'utf8'))['127.0.0.1'].length === 2,
+    'a wake the TV does not answer is kept as not working, with how long the TV had slept: ' + JSON.stringify([w0, logged])
+  );
+  // a wake the TV answers by linking again counts as working (checked once the link below opens)
+  await sleep(900);
+  const wake3 = await ask(port, 'POST', '/wake', {}, { origin: 'http://hub.test:' + port });
 
   // the TV's own link (the TV listening on nothing): requests go down it, answers come back by POST /link/reply
   const K1 = 'a'.repeat(43),
@@ -178,6 +206,16 @@ run(async () => {
     }
   });
   await sleep(100);
+  const st = (await ask(port, 'GET', '/hub/status')).j.wakes[0];
+  ok(
+    wake3.j.sent === true &&
+      st.asleepSince === null &&
+      st.last.length === 3 &&
+      st.last[2].ok === true &&
+      st.last[2].tries === 1 &&
+      typeof st.last[2].secs === 'number',
+    'a wake the TV answers by linking again within the time is kept as working: ' + JSON.stringify(st)
+  );
   const pinned = fs.readFileSync(path.join(data, 'link-key'), 'utf8').trim();
   const asked = ask(port, 'POST', '/press', { key: 'OK' }, { 'x-remote-key': 'k'.repeat(43), origin: 'http://hub.test:' + port });
   await sleep(150);
@@ -300,6 +338,7 @@ run(async () => {
       data: data2,
       arp,
       wakeAddr: '127.0.0.1',
+      wakeDirect: false,
       wakePorts: [udp.address().port],
       timeoutMs: 300,
       wakeEveryMs: 1,

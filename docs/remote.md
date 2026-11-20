@@ -99,16 +99,27 @@ Wi-Fi** must be on). The hub (`hub/server.js`) is a small server for a computer 
   key, the home network, the page's origin) work as before, and phones pair at the hub's address. It keeps one connection open to
   the TV, so the touchpad stays quick.
 - It keeps the last copy of the phone page (no key is in it). While the TV sleeps the page still opens, says the TV is off, and its
-  power key or **Turn the TV on** sends Wake-on-LAN magic packets (UDP broadcast, ports 9 and 7), at most one every ten seconds; the
+  power key or **Turn the TV on** sends Wake-on-LAN magic packets (ports 9 and 7, three rounds within a second, to the network's
+  broadcast address and to the TV's own address), at most one press every ten seconds; the
   page then waits for the TV (up to three minutes: a TV that was switched off completely starts from cold, and its service links
   again about a minute and a half in) and carries on; after that it checks every 15 seconds as usual.
 - It learns the TV's MAC from the computer's ARP table while the TV is on and keeps it in its data folder, never in a log or an answer.
+- A TV asleep on Wi-Fi for a while can stop reading broadcasts (the router changes the key for them while the TV sleeps) and stops
+  answering ARP, so a wake sent only as a broadcast stops working after some hours. The packets sent to the TV's own address reach
+  it by its MAC as long as the TV is still on the Wi-Fi: `hub/neigh.sh` keeps a permanent neighbour entry for each TV on the
+  computer (installed as a systemd timer, below).
+- Each wake is kept: how long the TV had slept and whether it linked again within two minutes (`WAKE_OK_MS`), in the hub's log
+  (`hub: a wake worked ...` / `hub: a wake did not wake the TV ...`) and in `GET /hub/status` (`wakes`, the last 20 per TV). After a
+  few days that shows after how long a wake stops working, if it still does.
 - It answers only addresses of the home network and forwards only to the TV: it is no proxy to anything else.
 
 Set up (Docker): copy `hub/server.js` and `hub/compose.yml` to a folder such as `/opt/cleanyourtv-hub`, write `.env` beside them
 with `TV_HOST=<the TV's address>` and `WAKE_ADDR=<the network's broadcast address>` (for 192.168.1.0/24: 192.168.1.255), make a
 `data` folder owned by user 65534, and run `docker compose up -d`. It runs as nobody, with no capabilities, on a read-only root, in
-96 MB at most. Then on the TV (a shell, or the API): `curl -X POST localhost:8765/api/remote/helper -d '{"url":"http://<hub>:8794"}'`;
+96 MB at most. For waking after a long sleep, also copy `hub/neigh.sh` to that folder and install the timer as root:
+`cp hub/cleanyourtv-hub-neigh.service hub/cleanyourtv-hub-neigh.timer /etc/systemd/system/ && systemctl daemon-reload && systemctl
+enable --now cleanyourtv-hub-neigh.timer` (the service file names `/opt/cleanyourtv-hub`; change it for another folder). It runs a
+minute after boot and every 30 minutes, and needs the TV's MAC, so switch the TV on once while the hub runs first. Then on the TV (a shell, or the API): `curl -X POST localhost:8765/api/remote/helper -d '{"url":"http://<hub>:8794"}'`;
 from then on the QR code and the address on the TV's Phone remote screen point at the hub. Pair each phone again through it (a
 phone keeps its key per address).
 

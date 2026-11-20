@@ -1,0 +1,10 @@
+# The hub's TVs kept reachable by their MAC while they sleep (neigh.sh). Install: copy this file and cleanyourtv-hub-neigh.timer to
+# /etc/systemd/system/, then `systemctl daemon-reload && systemctl enable --now cleanyourtv-hub-neigh.timer`. The path is the hub's folder.
+[Unit]
+Description=CleanYourTV hub: keep the TVs reachable by their MAC while they sleep
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /opt/cleanyourtv-hub/neigh.sh /opt/cleanyourtv-hub

@@ -2,8 +2,12 @@
 // can turn the TV on. Everything for the phone remote passes through it to the TV's own LAN server (remote.js, port 8794) unchanged,
 // the Host header too, so the TV's checks (paired key, home network, Origin = Host) work as before and the phones pair at the hub's
 // address. It keeps the last copy of the phone page (no key or secret is in it), so the page still opens while the TV sleeps; then
-// /ping answers {off: true} and the page offers "Turn the TV on": POST /wake sends Wake-on-LAN magic packets (UDP broadcast, ports 9
-// and 7) to the TV's MAC, which it learns from this host's ARP table while the TV is on and keeps in its data folder (never logged).
+// /ping answers {off: true} and the page offers "Turn the TV on": POST /wake sends Wake-on-LAN magic packets (ports 9 and 7, three
+// rounds within a second) to the TV's MAC, which it learns from this host's ARP table while the TV is on and keeps in its data folder
+// (never logged): to the LAN's broadcast address and to the TV's own address. A TV asleep on Wi-Fi for a while may no longer read
+// broadcasts (the router changes its group key while the TV sleeps) or answer ARP, but still gets frames sent to its MAC: neigh.sh
+// beside this file keeps a permanent neighbour entry for each TV on the host. Each wake is kept (how long the TV had slept, whether it
+// linked again within WAKE_OK_MS), in the log and in /hub/status, so the time after which a wake stops working shows.
 // It answers only addresses of the home network, forwards only to the TV, and keeps one connection open to the TV for the touchpad.
 //   TV_HOST (required) the TV's address, or TV_HOSTS: several, comma-separated (the first is the one a phone gets when it names none;
 //   a phone names one with the header x-tv; GET /hub/tvs lists them) · TV_PORT (8794) · HUB_PORT (8794) · HUB_DATA (/data) · WAKE_ADDR (255.255.255.255; a LAN's
@@ -15,8 +19,8 @@
 // While linked it also keeps the TV's health over time (history.js: a sample every 25 s, alerts), shown at GET /hub/dashboard; its
 // data (GET /hub/history?hours=) needs a phone's paired key, which the TV vouches for once over the link, then the hub keeps only its
 // SHA-256 for a week (data/keys.json), so the history opens while the TV sleeps. ALERT_WEBHOOK: where alerts are posted (optional).
-//   GET /hub/status -> {tv: 'on' | 'off', link: bool, mac: known?, page: cached?, tvs}    GET /hub/tvs -> {tvs: [{id, name, on, link,
-//   mac}]}    POST /wake (x-tv: which) -> {sent: true} | {error}
+//   GET /hub/status -> {tv: 'on' | 'off', link: bool, mac: known?, page: cached?, tvs, wakes: [{id, asleepSince, last: [{at, asleepMin,
+//   tries, ok, secs}]}]}    GET /hub/tvs -> {tvs: [{id, name, on, link, mac}]}    POST /wake (x-tv: which) -> {sent: true} | {error}
 'use strict';
 const http = require('http'),
   crypto = require('crypto'),
@@ -61,6 +65,9 @@ function create(opts) {
       data: process.env.HUB_DATA || '/data',
       wakeAddr: process.env.WAKE_ADDR || '255.255.255.255',
       wakePorts: (process.env.WAKE_PORTS || '9,7').split(',').map(Number),
+      wakeRounds: [0, 400, 1000], // when each round of packets goes, in ms after the press
+      wakeDirect: true, // also to the TV's own address (the tests turn it off for a TV address that is not on loopback)
+      wakeOkMs: +process.env.WAKE_OK_MS || 120000, // a TV that links again within this after a wake counts as woken by it
       mac: (process.env.TV_MAC || '').toLowerCase(),
       arp: process.env.ARP_FILE || '/proc/net/arp',
       timeoutMs: 4000,
@@ -85,7 +92,8 @@ function create(opts) {
   if (!ips.length) throw new Error('TV_HOST (or TV_HOSTS) is not set');
   const agent = new http.Agent({ keepAlive: true, maxSockets: 16 }); // the touchpad's moves reuse one connection
   const pageFile = path.join(o.data, 'page.html'),
-    namesFile = path.join(o.data, 'tvs.json');
+    namesFile = path.join(o.data, 'tvs.json'),
+    wakesFile = path.join(o.data, 'wakes.json');
   const read = f => {
     try {
       return fs.readFileSync(f, 'utf8');
@@ -100,9 +108,13 @@ function create(opts) {
     } catch (_) {}
   };
   const peerOf = req => String((o.peer ? o.peer(req) : req.socket.remoteAddress) || '').replace(/^::ffff:/, '');
-  let names = {};
+  let names = {},
+    wakes = {};
   try {
     names = JSON.parse(read(namesFile) || '{}') || {};
+  } catch (_) {}
+  try {
+    wakes = JSON.parse(read(wakesFile) || '{}') || {};
   } catch (_) {}
   // one entry per TV; the first keeps the file names it had when the hub knew one TV (link-key, tv-mac)
   const tvs = ips.map((ip, i) => {
@@ -115,6 +127,9 @@ function create(opts) {
       beat: null,
       on: false,
       lastWake: 0,
+      offSince: 0, // when it was last seen going to sleep (0: unknown, or awake)
+      waking: null, // the wake not yet settled: {at, asleepMin, tries, timer}
+      wakes: Array.isArray(wakes[ip]) ? wakes[ip].slice(-20) : [],
       name: typeof names[ip] === 'string' ? names[ip].slice(0, 60) : '',
     };
     t.mac = i === 0 && MAC.test(o.mac) ? o.mac : read(t.macFile).trim();
@@ -211,6 +226,39 @@ function create(opts) {
       })
       .catch(() => {});
   }
+  // a TV seen awake (linked, or its own server answered) or going to sleep; a wake it answers within wakeOkMs counts as working
+  function awake(t) {
+    t.offSince = 0;
+    const w = t.waking;
+    if (!w) return;
+    clearTimeout(w.timer);
+    t.waking = null;
+    settle(t, w, true);
+  }
+  function asleep(t) {
+    if (t.on || t.link) t.offSince = Date.now();
+  }
+  function settle(t, w, ok) {
+    const rec = { at: new Date(w.at).toISOString(), asleepMin: w.asleepMin, tries: w.tries, ok };
+    if (ok) rec.secs = Math.round((Date.now() - w.at) / 1000);
+    t.wakes = t.wakes.concat(rec).slice(-20);
+    wakes[t.ip] = t.wakes;
+    write(wakesFile, JSON.stringify(wakes));
+    const slept = w.asleepMin === null ? 'an unknown time' : w.asleepMin + ' min';
+    console.log(
+      'hub: ' +
+        (ok ? 'a wake worked' : 'a wake did not wake the TV') +
+        ' (' +
+        (t.name || t.ip) +
+        ', asleep ' +
+        slept +
+        ', ' +
+        w.tries +
+        ' tries' +
+        (ok ? ', ' + rec.secs + ' s' : '') +
+        ')'
+    );
+  }
   function openLink(req, res) {
     const t = linkTv(req);
     if (!t) return json(res, 403, { error: 'not a TV of this hub' });
@@ -218,6 +266,7 @@ function create(opts) {
     res.writeHead(200, { 'content-type': 'application/x-ndjson', 'cache-control': 'no-store' });
     res.write('\n');
     t.link = res;
+    awake(t);
     t.on = true;
     if (!t.mac) learn();
     clearInterval(t.beat);
@@ -230,6 +279,7 @@ function create(opts) {
     setTimeout(() => askName(t), 300);
     res.on('close', () => {
       if (t.link !== res) return;
+      asleep(t);
       t.link = null;
       t.on = false;
       clearInterval(t.beat);
@@ -357,23 +407,45 @@ function create(opts) {
     if (!t.mac) return json(res, 503, { error: "the TV's address is not known yet: switch it on once while the hub runs" });
     if (Date.now() - t.lastWake < o.wakeEveryMs) return json(res, 200, { sent: false, waiting: true });
     t.lastWake = Date.now();
+    // the broadcast, and the TV's own address (sent to its MAC: neigh.sh keeps it on the host while the TV no longer answers ARP)
     const s = dgram.createSocket('udp4'),
-      pkt = magic(t.mac);
-    s.on('error', () => s.close());
+      pkt = magic(t.mac),
+      to = !o.wakeDirect || t.ip === o.wakeAddr ? [o.wakeAddr] : [o.wakeAddr, t.ip];
+    let open = true;
+    s.on('error', () => {}); // a TV address that cannot be reached is only one of the ways
     s.bind(() => {
       s.setBroadcast(true);
-      let left = o.wakePorts.length;
-      for (const p of o.wakePorts)
-        s.send(pkt, p, o.wakeAddr, () => {
-          if (--left === 0) s.close();
-        });
+      o.wakeRounds.forEach((ms, i) =>
+        setTimeout(() => {
+          if (!open) return;
+          for (const a of to) for (const p of o.wakePorts) s.send(pkt, p, a, () => {});
+          if (i === o.wakeRounds.length - 1)
+            setTimeout(() => {
+              open = false;
+              s.close();
+            }, 300);
+        }, ms)
+      );
     });
+    // kept once it settles: the TV links again within wakeOkMs, or not
+    if (t.waking) t.waking.tries++;
+    else {
+      const w = { at: Date.now(), asleepMin: t.offSince ? Math.round((Date.now() - t.offSince) / 60000) : null, tries: 1 };
+      w.timer = setTimeout(() => {
+        if (t.waking !== w) return;
+        t.waking = null;
+        settle(t, w, false);
+      }, o.wakeOkMs);
+      t.waking = w;
+    }
     console.log('hub: Wake-on-LAN sent (' + (t.name || t.ip) + ')');
     json(res, 200, { sent: true });
   }
   // a TV does not answer: the kept page (the phone page asks /ping next and offers to turn the TV on), else a short answer
   function off(req, res, t) {
-    (t || pick(req)).on = false;
+    const tt = t || pick(req);
+    asleep(tt);
+    tt.on = false;
     const u = req.url.split('?')[0];
     if (req.method === 'GET' && u === '/' && page) {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-hub': 'kept' });
@@ -390,6 +462,7 @@ function create(opts) {
       { host: t.ip, port: o.tvPort, method: req.method, path: req.url, headers: req.headers, agent, timeout: o.timeoutMs },
       r => {
         if (!t.on || !t.mac) learn();
+        if (!t.on) awake(t);
         t.on = true;
         const u = req.url.split('?')[0],
           keep = req.method === 'GET' && r.statusCode === 200 && (u === '/' || u === '/manifest.json');
@@ -426,7 +499,14 @@ function create(opts) {
     if (u === '/wake' && req.method === 'POST') return wake(req, res);
     if (u === '/hub/status') {
       const t = tvs[0];
-      return json(res, 200, { tv: t.on || t.link ? 'on' : 'off', link: !!t.link, mac: !!t.mac, page: !!page, tvs: list() });
+      return json(res, 200, {
+        tv: t.on || t.link ? 'on' : 'off',
+        link: !!t.link,
+        mac: !!t.mac,
+        page: !!page,
+        tvs: list(),
+        wakes: tvs.map(x => ({ id: x.ip, asleepSince: x.offSince ? new Date(x.offSince).toISOString() : null, last: x.wakes })),
+      });
     }
     if (u === '/hub/tvs' && req.method === 'GET') {
       // the names asked again, at most every 20 s (a TV renamed from the phone shows in the next list)
