@@ -33,6 +33,11 @@ stays open until WebAppMgr starts again by itself (the manager and the Share log
 next start of the TV; switched on in the manager, it closes at the next start (WebAppMgr is not restarted while you use the TV). By
 hand: `sh /media/developer/cleanyourtv/devtools-undo.sh` removes the mount.
 
+This does not close it everywhere: on a webOS 25 TV with developer apps installed, WebAppMgr opened the inspector anyway, without
+LG's port, on one the system picked (found 2026-11-23 with `/json/version` from another device). The manager then says **Not closed**,
+TV health shows the port in red and the Share log names it. Keep the TV on a network you trust (a separate one for such devices, or
+your router's device isolation) until that is closed as well.
+
 **Where updates come from.** Updates and themes come from this project's repository and are checked against the checksums of the
 release. A file on the TV (`/media/developer/cleanyourtv/source`, root only) can name another repository for testing; the manager
 and the Share log then show that repository with a warning, since its releases are someone else's.
@@ -76,6 +81,7 @@ only is green whatever it is. Nothing in the view names an address, a MAC, a tok
 | 1900/udp | SSDP discovery (UPnP) | green | Discovery only |
 | 1902/udp | LG's SDDP discovery | green | Discovery only |
 | 5353/udp | mDNS discovery | green | Discovery only |
+| Any, held by `WebAppMgr` | WebAppMgr's web inspector (DevTools) on a port the system picked | **red** | As 9998: without that port WebAppMgr opens its inspector on another one as soon as it runs an app of the developer folder (our manager, or any Homebrew app) |
 | Any, held by `upnpd` | LG's UPnP media renderer (DLNA) | amber | Devices on the network can play media on the TV |
 
 UDP sockets from port 32768 up that are not in the table are the reply ports of discovery clients and are counted, not listed.

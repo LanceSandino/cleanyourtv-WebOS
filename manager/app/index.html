@@ -1861,7 +1861,9 @@ function build() {
       label: 'LG\u2019s web inspector (port 9998)',
       sub: sec.devtools.closed
         ? sec.devtools.listening
-          ? 'Closed from the next start of the TV (open until then)'
+          ? sec.devtools.port && sec.devtools.port !== 9998
+            ? 'Not closed: the TV opened it on another port'
+            : 'Closed from the next start of the TV (open until then)'
           : 'Closed: nothing on the network reaches it'
         : 'Open: anyone on the network can run code in the TV\u2019s web apps. OK closes it at the next start',
       fn: function () {

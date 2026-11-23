@@ -633,7 +633,7 @@ run(async () => {
         at('wait $DT') < at('mount --bind $L/home-standin.sh "$EXE" ||') &&
         at('wait $DT') < at('mount --bind $L/home-overlay $H') &&
         at('wait $DT') < at('systemctl restart sam') &&
-        /10-cleanyourtv-home setup <\/dev\/null/.test(bootText),
+        /clean_sh \$D\/10-cleanyourtv-home setup\n/.test(bootText),
       "10-cleanyourtv-home: at boot WebAppMgr's restart (before sam's) and the early debloat; setup and update only mount the copy"
     );
   }

@@ -1,12 +1,19 @@
 // Diagnostics for a service that dies without a trace. Node 8 on some TVs aborts with "uv_close: Assertion !uv__is_closing(handle)
 // failed", which JavaScript cannot catch. So the service keeps the last operations (child processes, network requests) in a small file in
 // /tmp; a later start that finds the file of a process that is gone logs those operations, and the Share log report includes them.
+// onStop() is for what a part still has to say when the service is asked to end (an update's SIGTERM): it is told, and the process ends
+// a moment later, so the message leaves; a subscription on LG's bus that is cancelled and the process gone in the same moment stays
+// known to LG (tried on the owner's TV on 2026-11-23: still listed without the moment, gone with it).
 // execFile() is a child-process helper that handles the timeout itself instead of Node's `timeout` option: the child is killed once and
 // the callback runs once, so no handle is closed twice.
 const fs = require('fs'),
   cp = require('child_process');
 const FILE = require('./paths').RUNFILE,
-  KEEP = 25;
+  KEEP = 25,
+  LAST_MS = 250; // from being asked to end to the end; an update waits a second (bootstrap.sh)
+const stops = [];
+let ending = false;
+const onStop = f => void stops.push(f);
 let ops = [],
   timer = null,
   started = 0;
@@ -61,14 +68,18 @@ function start() {
     } catch (_) {}
   };
   process.on('exit', bye);
-  process.on('SIGTERM', () => {
+  const end = () => {
+    if (ending) return;
+    ending = true;
     bye();
-    process.exit(0);
-  });
-  process.on('SIGINT', () => {
-    bye();
-    process.exit(0);
-  });
+    for (const f of stops)
+      try {
+        f();
+      } catch (_) {}
+    setTimeout(() => process.exit(0), stops.length ? LAST_MS : 0);
+  };
+  process.on('SIGTERM', end);
+  process.on('SIGINT', end);
 }
 // cp.execFile without the `timeout` option; the callback gets (error, stdout, stderr)
 function execFile(cmd, args, opts, cb) {
@@ -122,4 +133,4 @@ function execFile(cmd, args, opts, cb) {
     }, ms);
   return child;
 }
-module.exports = { start, note, execFile, ops: () => ops.slice() };
+module.exports = { onStop, start, note, execFile, ops: () => ops.slice() };

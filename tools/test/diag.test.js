@@ -1,7 +1,9 @@
 // Running programs (exec.js, diag.js): the time limit is kept without Node's own (which can abort Node 8), output limits, and the last
 // operations survive a process that died.
-const fs = require('fs');
-const { ok, req, run } = require('./lib');
+const fs = require('fs'),
+  path = require('path'),
+  cp = require('child_process');
+const { ok, tmp, root, req, run } = require('./lib');
 const diag = req('diag'),
   exec = req('exec');
 
@@ -53,4 +55,89 @@ run(async () => {
     'a start that finds the file of a dead process logs its last operations'
   );
   ok(JSON.parse(fs.readFileSync(process.env.CYTV_RUNFILE, 'utf8')).pid === process.pid, 'the file now belongs to the running process');
+
+  // asked to end (an update's pkill): what the parts still have to say (the subscription on LG's bus cancelled) goes out before the
+  // process ends, so LG does not keep a client that is gone; the parts are told once, also when it is asked twice
+  {
+    const out = path.join(tmp, 'ended'),
+      js = path.join(tmp, 'ending.js');
+    fs.writeFileSync(
+      js,
+      'const fs=require("fs"),d=require(' +
+        JSON.stringify(path.join(root, 'helper', 'diag.js')) +
+        ');d.start();d.onStop(()=>{throw new Error("one that fails")});' +
+        'd.onStop(()=>{fs.appendFileSync(' +
+        JSON.stringify(out) +
+        ',"told ");setTimeout(()=>fs.appendFileSync(' +
+        JSON.stringify(out) +
+        ',"sent "),100)});setInterval(()=>{},1000);console.log("up");'
+    );
+    const c = cp.spawn(process.execPath, [js], {
+      env: Object.assign({}, process.env, { CYTV_RUNFILE: path.join(tmp, 'ending.run') }),
+      stdio: ['ignore', 'pipe', 'inherit'],
+    });
+    await new Promise(res => c.stdout.once('data', res));
+    const at = Date.now();
+    c.kill('SIGTERM');
+    c.kill('SIGTERM');
+    const code = await new Promise(res => c.on('close', res));
+    const said = fs.existsSync(out) ? fs.readFileSync(out, 'utf8') : '';
+    ok(
+      code === 0 && said === 'told sent ' && Date.now() - at < 900 && !fs.existsSync(path.join(tmp, 'ending.run')),
+      'asked to end: the parts are told once, have a moment to send, and it ends cleanly well under the second an update waits: ' + said
+    );
+  }
+  // a program started by the service gets none of its descriptors: LG's bus module does not mark its sockets close-on-exec, and an
+  // update (bootstrap.sh, started by the service it replaces) handed them to the new service and its watchdog, so LG's hub kept the
+  // dead service as a client (seen on the owner's TV on 2026-11-23)
+  {
+    const spawned = [];
+    const real = cp.spawn;
+    cp.spawn = function (cmd, args) {
+      spawned.push([cmd].concat(args || []));
+      return real.apply(cp, arguments);
+    };
+    const c1 = exec.detached('exit 0'),
+      c2 = exec.spawn('/bin/echo', ['a b', '$HOME']);
+    cp.spawn = real;
+    let said = '';
+    c2.stdout.on('data', b => (said += b));
+    const pid = c2.pid;
+    await Promise.all([c1, c2].map(c => new Promise(res => c.on('close', res))));
+    ok(
+      spawned.length === 2 && spawned.every(a => a[0] === '/bin/sh' && a[1] === '-c' && a[2].indexOf(exec.CLEAN) === 0) && pid > 0,
+      'a program that can outlive the service starts through the closing of inherited descriptors'
+    );
+    ok(said === 'a b $HOME\n', 'its arguments reach it as they are: ' + JSON.stringify(said));
+    const alive = cp.spawnSync('/bin/sh', ['-c', exec.CLEAN + 'echo alive'], { encoding: 'utf8' });
+    ok(alive.stdout === 'alive\n' && alive.stderr === '', 'the closing itself says nothing and goes on in any shell' + alive.stderr);
+    const shells = ['busybox sh', 'bash'].filter(sh => cp.spawnSync('/bin/sh', ['-c', 'command -v ' + sh.split(' ')[0]]).status === 0);
+    if (!fs.existsSync('/proc/self/fd')) console.log('     skipped: no /proc here; the TV and CI have it');
+    else
+      for (const sh of shells) {
+        const r2 = cp.spawnSync(
+          '/bin/sh',
+          ['-c', sh + ' -c "$1" x', 'x', 'exec 8</dev/null 25</dev/null; ' + exec.CLEAN + 'ls /proc/$$/fd | tr "\\n" " "'],
+          {
+            encoding: 'utf8',
+          }
+        );
+        const left = r2.stdout
+          .trim()
+          .split(' ')
+          .map(Number)
+          .filter(n => n > 2);
+        ok(
+          r2.status === 0 && left.every(n => n !== 8 && n !== 25),
+          sh + ': descriptors 8 and 25 are closed: ' + r2.stdout.trim() + r2.stderr
+        );
+      }
+    const boot = fs.readFileSync(path.join(root, 'scripts', 'bootstrap.sh'), 'utf8');
+    ok(
+      boot.indexOf(exec.CLEAN.trim().replace(/;$/, '')) > 0 &&
+        (boot.match(/10-cleanyourtv-home (keep|setup)/g) || []).length === 3 &&
+        (boot.match(/clean_sh \$D\/10-cleanyourtv-home (keep|setup)/g) || []).length === 3,
+      'bootstrap.sh starts the service and the watchdog with the same closing (an update from an older service hands it those descriptors)'
+    );
+  }
 });

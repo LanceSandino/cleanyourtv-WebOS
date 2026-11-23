@@ -209,12 +209,19 @@ ensure_apps() {
   luna-send -n 1 -w 10000 -f luna://com.webos.applicationManager/launch '{"id":"com.webos.app.home"}' </dev/null >/dev/null
 }
 
+# a script without the descriptors this one inherited. An update is started by the service it replaces, whose sockets on LG's bus are not
+# close-on-exec: handed on to the new service and its watchdog they kept the old one known to LG as a client that cannot answer (the
+# same line as CLEAN in helper/exec.js). In "sh -c": a script's own descriptor must not be closed under it.
+clean_sh() {
+  sh -c 'for f in /proc/$$/fd/*; do n=${f##*/}; [ "$n" -gt 2 ] 2>/dev/null && (eval "exec $n>&-") 2>/dev/null && eval "exec $n>&-"; done; exec sh "$0" "$@"' "$@" </dev/null
+}
+
 # ---- an update: restart the service on the new files; go back to the previous files if it does not answer ----
 restart_for_update() {
   say "restarting the service"
   pkill -f "[c]leanyourtv/watchdog.sh"   # the boot script below starts the watchdog of the new files
   pkill -f "[c]leanyourtv/helper.js"; sleep 1
-  sh $D/10-cleanyourtv-home keep </dev/null
+  clean_sh $D/10-cleanyourtv-home keep
   ok=0
   for i in $(seq 1 15); do
     sleep 3
@@ -227,7 +234,7 @@ restart_for_update() {
     pkill -f "[c]leanyourtv/helper.js"; sleep 1
     [ -f $D/backup/service-prev.tgz ] && (cd $D && tar xzf backup/service-prev.tgz)
     echo "update to $WANT failed at $(date)" > $D/last-error.txt
-    sh $D/10-cleanyourtv-home keep </dev/null
+    clean_sh $D/10-cleanyourtv-home keep
     exit 1
   fi
   say "service $WANT is running"
@@ -243,7 +250,7 @@ restart_for_update() {
 start_install() {
   say "starting (the screen blinks once while the system app manager restarts)"
   pkill -f "[c]leanyourtv/watchdog.sh"; pkill -f "[c]leanyourtv/helper.js"; pkill -f "[l]una-send -i -f"; sleep 1
-  sh $D/10-cleanyourtv-home setup </dev/null
+  clean_sh $D/10-cleanyourtv-home setup
   [ "$(opt debloat)" = 1 ] && sh $D/debloat-stop.sh </dev/null
 }
 

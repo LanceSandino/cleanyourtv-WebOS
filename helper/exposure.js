@@ -161,6 +161,13 @@ const PORTS = [
   { proto: 'udp', port: 5353, what: 'mDNS discovery (Bonjour)', how: 'discovery only', tone: 'g' },
   {
     proto: 'tcp',
+    program: /^WebAppMgr$/,
+    what: 'WebAppMgr’s web inspector (DevTools)',
+    how: 'no authentication: anyone on the network can run code inside the TV’s web apps, Home included. Without port 9998 WebAppMgr opens it on another port as soon as it runs an app of the developer folder',
+    tone: 'r',
+  },
+  {
+    proto: 'tcp',
     program: /^upnpd$/,
     what: 'LG’s UPnP media renderer (DLNA)',
     how: 'devices on the network can play media on the TV',
@@ -273,9 +280,10 @@ function classify(s, info) {
     });
   return Object.assign(out, { what: e.what, how: e.how, tone: e.tone });
 }
-// the inspector closed by the security option and nothing on 9998: one row that says so (bind "closed")
+// the inspector closed by the security option and WebAppMgr on no port at all: one row that says so (bind "closed")
 function devtoolsRow(ports, closed) {
-  if (!closed || ports.some(p => p.proto === 'tcp' && p.port === DEVTOOLS)) return ports;
+  if (!closed || ports.some(p => p.proto === 'tcp' && (p.port === DEVTOOLS || (p.program === 'WebAppMgr' && p.bind !== 'loopback'))))
+    return ports;
   return ports
     .concat([
       {

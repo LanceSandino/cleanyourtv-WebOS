@@ -13,6 +13,7 @@ const PROC = process.env.CYTV_PROC,
   BIN = path.join(tmp, 'bin');
 process.env.CYTV_SYS = SYS;
 process.env.CYTV_SHADOW = path.join(tmp, 'no-shadow'); // never this computer's own
+process.env.CYTV_PASSWD = path.join(tmp, 'passwd'); // nor this one (written below)
 process.env.CYTV_INITD = INITD;
 process.env.CYTV_DISKS = [tmp, path.join(tmp, 'missing')].join(':');
 process.env.CYTV_SYSTEMCTL = path.join(BIN, 'systemctl');
@@ -387,6 +388,54 @@ run(async () => {
     E.devtoolsRow([amber22], false).length === 1 && E.devtoolsRow([Object.assign({}, wam, { bind: 'LAN', tone: 'r' })], true).length === 1,
     'no "closed" row while the option is off, nor while WebAppMgr still listens'
   );
+  // without LG's port WebAppMgr opens its inspector on a port the system picks, as soon as it runs an app of the developer folder (seen
+  // on the owner's TV on 2026-11-23: /json/version answered the network): red, and no "closed" row beside it
+  const moved = E.classify({ proto: 'tcp', port: 36139, bind: 'all', program: 'WebAppMgr' }, { devtoolsClosed: true });
+  ok(
+    moved.tone === 'r' && /inspector/.test(moved.what) && /no authentication/.test(moved.how) && /another port/.test(moved.how),
+    'WebAppMgr listening on another port is its inspector: red: ' + JSON.stringify(moved)
+  );
+  ok(
+    E.devtoolsRow([amber22, moved], true).length === 2 &&
+      E.classify({ proto: 'tcp', port: 36139, bind: 'loopback', program: 'WebAppMgr' }, { devtoolsClosed: true }).tone === 'g' &&
+      E.classify({ proto: 'tcp', port: 36139, bind: 'all', program: 'other' }, { devtoolsClosed: true }).what !== moved.what,
+    'and the inspector is not called closed; on the loopback address, or of another program, it is not that'
+  );
+  // the same in the security summary (security.js): a port of the wam user, in LISTEN on the network
+  {
+    const sec = req('security'),
+      keep = fs.readFileSync(PROC + '/net/tcp', 'utf8');
+    const row = (addr, p, st, uid) =>
+      '   0: ' + addr + ':' + hex(p) + ' 00000000:0000 ' + st + ' 00000000:00000000 00:00000000 00000000 ' + uid + ' 0 1\n';
+    const got = (rows, passwd) => {
+      fs.writeFileSync(PROC + '/net/tcp', H + rows);
+      fs.writeFileSync(
+        path.join(tmp, 'passwd'),
+        passwd === undefined ? 'root:x:0:0::/:/bin/sh\nwam:x:505:505::/var/lib/wam:/bin/false\n' : passwd
+      );
+      return sec.inspectorPort();
+    };
+    const keep6 = fs.readFileSync(PROC + '/net/tcp6', 'utf8');
+    fs.writeFileSync(PROC + '/net/tcp6', H6);
+    const ports = [
+      got(row('00000000', 36139, '0A', 505)),
+      got(row('00000000', 9998, '0A', 0)),
+      got(row('00000000', 36139, '01', 505) + row('0100007F', 36140, '0A', 505) + row('00000000', 7000, '0A', 0)),
+      got(row('00000000', 36139, '0A', 505), ''),
+    ];
+    const st = (got(row('00000000', 36139, '0A', 505)), sec.state().devtools),
+      text = sec.text();
+    fs.writeFileSync(PROC + '/net/tcp', keep);
+    fs.writeFileSync(PROC + '/net/tcp6', keep6);
+    ok(
+      ports.join() === '36139,9998,0,0' &&
+        st.listening === true &&
+        st.port === 36139 &&
+        /36139/.test(text) &&
+        !/closed from the next start/.test(text),
+      'the security summary finds the inspector on any port of WebAppMgr: ' + ports.join()
+    );
+  }
   ok(port(8765).tone === 'g' && port(8765).bind === 'loopback' && /API token/.test(port(8765).how), 'our service: loopback only, green');
   ok(
     port(8794).tone === 'g' &&

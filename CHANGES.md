@@ -2437,3 +2437,29 @@ commit_ref: "feature/saver-music (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-23T17:30:00Z"
 ```
+
+```yaml
+id: CU-20261123-04
+type: fix
+title: "An update no longer leaves the old service known to LG's bus"
+description: "LG's bus module (palmbus) does not mark its sockets close-on-exec. The service starts bootstrap.sh for an update, which starts the new service and the watchdog, so they inherited the old service's connection and LG's hub kept the dead service registered for the screensaver question, where it can never answer (an unanswered question is what made LG reboot the TV at standby, D-20261029-9). Found on the owner's living-room TV after 1.6.73 (two clients named cleanyourtv). Programs that can outlive the service (exec.detached, exec.spawn) and bootstrap.sh's start of the service now close inherited descriptors first; and a service asked to end cancels its subscription and waits 250 ms so that it leaves (an update waits a second). Both tried on the TV with a harmless subscription: still listed as before, gone with either."
+impact: medium
+affected_modules: ["helper/exec.js", "helper/diag.js", "helper/lgscreensaver.js", "scripts/bootstrap.sh"]
+related_tests: ["tools/test/diag.test.js (told once, time to send, clean end under a second; started through the closing, arguments as they are, any shell goes on, descriptors 8 and 25 closed under busybox and bash, bootstrap.sh has the same line at its three starts)", "tools/test/lgscreensaver.test.js (asked to end: cancelled, not asked again)"]
+commit_ref: "feature/update-fds (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-23T19:40:00Z"
+```
+
+```yaml
+id: CU-20261123-05
+type: fix
+title: "LG's web inspector is no longer called closed while WebAppMgr has it open on another port"
+description: "Without LG's --remote-debugging-port WebAppMgr still opens its inspector when it runs an app of the developer folder, on a port the system picks (the owner's webOS 25 TV: /json/version answered another device on 36139, 9998 closed). security.js now finds any port in LISTEN on the network of WebAppMgr's own user (wam), the manager says Not closed, TV health shows it red instead of unknown with a green closed row, the phone's TV tab and the Share log say it. Reporting only: closing it needs a change to how WebAppMgr starts and a test on the TV."
+impact: low
+affected_modules: ["helper/security.js", "helper/exposure.js", "helper/statusdata.js", "helper/paths.js", "manager/src/js/menu.js", "docs/security.md"]
+related_tests: ["tools/test/metrics.test.js (another port of WebAppMgr is red and no closed row, loopback and other programs are not; the security summary finds it by user, not a connection, not loopback)"]
+commit_ref: "feature/update-fds (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-23T19:40:00Z"
+```

@@ -63,7 +63,7 @@ function summary(ctx, debloatCheck) {
       ? {
           telnetOff: !!s.security.telnet.off,
           apiToken: !!s.security.token.enforced,
-          devtoolsClosed: !!(s.security.devtools && s.security.devtools.closed),
+          devtoolsClosed: !!(s.security.devtools && s.security.devtools.closed && !s.security.devtools.listening),
         }
       : {
           telnetOff: fs.existsSync(P.TELNET_OFF),

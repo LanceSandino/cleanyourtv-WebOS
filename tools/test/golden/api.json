@@ -457,7 +457,8 @@
       "security": {
         "devtools": {
           "closed": true,
-          "listening": true
+          "listening": true,
+          "port": 9998
         },
         "source": {
           "ours": true,
@@ -557,7 +558,8 @@
       "security": {
         "devtools": {
           "closed": true,
-          "listening": true
+          "listening": true,
+          "port": 9998
         },
         "source": {
           "ours": true,
@@ -675,7 +677,8 @@
       "security": {
         "devtools": {
           "closed": true,
-          "listening": true
+          "listening": true,
+          "port": 9998
         },
         "source": {
           "ours": true,

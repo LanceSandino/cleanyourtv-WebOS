@@ -284,6 +284,28 @@ run(async () => {
   sw.start();
   sw.stop();
   ok(killed.join() === '4242', 'a luna-send subscription left by an earlier version is ended at start, nothing else: ' + killed.join());
+  // the service is asked to end (an update): its subscription is cancelled while there is time to send that, or LG's hub may keep it
+  {
+    const diag = req('diag'),
+      told = [];
+    const real = diag.onStop;
+    diag.onStop = f => told.push(f);
+    const bus = fakeBus();
+    const part = S.create(
+      { config: memoryConfig(on), profile: webOS25, feature: featureOf(3), luna: async () => ({ returnValue: true }) },
+      { bus: () => bus, minWaitMs: 30, maxWaitMs: 60, proc: path.join(tmp, 'no-proc') }
+    );
+    part.start();
+    diag.onStop = real;
+    await sleep(20);
+    const before = bus.subs[0].cancelled;
+    told.forEach(f => f());
+    await sleep(80);
+    ok(
+      told.length === 1 && before === false && bus.subs[0].cancelled === true && bus.subs.length === 1 && !part.status().listening,
+      'the service ends: the subscription is cancelled, and not asked again (' + told.length + ', ' + bus.subs.length + ')'
+    );
+  }
   // the subscription ends (the power service restarted): it is asked again, on the same connection, and stop cancels it
   {
     const bus = fakeBus();

@@ -23,7 +23,8 @@
 const fs = require('fs'),
   os = require('os'),
   path = require('path');
-const P = require('./paths');
+const P = require('./paths'),
+  diag = require('./diag');
 
 const URI = 'luna://com.webos.service.tvpower/power/',
   HOME = 'com.webos.app.home';
@@ -241,7 +242,8 @@ function create(ctx, opts) {
     stopped = false;
     sweep();
     listen();
-    process.once('exit', stop); // ours ends with the service
+    process.once('exit', stop); // ours ends with the service; asked to end, it is cancelled while that can still be sent
+    diag.onStop(stop);
   }
   function stop() {
     stopped = true;
