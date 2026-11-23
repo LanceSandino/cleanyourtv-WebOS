@@ -3,7 +3,8 @@
 // options.debloatOn). They are LG's own switches (com.webos.settingsservice, the ones LG's Settings menus change), kept by the TV:
 // so the value each had is saved first (D/lgsettings-saved.json) and put back when its group is switched off, and a key this firmware
 // does not have is left alone. The keys are the ones own-your-glass found on webOS 25 (home promotions, screensaver ads, the ad
-// cookie, Smart Tips, sports alerts, limit ad tracking, content recommendations, Live TV promotions, LivePlus, the promotion video).
+// cookie, Smart Tips, sports alerts, limit ad tracking, content recommendations, Live TV promotions, LivePlus, the promotion video),
+// and two that were on on the owner's 86UR8000 (webOS 25): LG's collection of what was watched and the upload of its debug logs.
 // Looked at shortly after the service starts, every ten minutes (LG or someone may switch them back), when the TV wakes, and when the
 // manager switches a group. Not while LG's Home is chosen (DISABLE), like the rest of the debloat.
 const fs = require('fs');
@@ -22,6 +23,8 @@ const GROUPS = {
     ['option', 'livePromotion', 'off'],
     ['option', 'livePlus', 'off'],
     ['option', 'webOSPromotionVideo', 'off'],
+    ['option', 'watchedListCollection', 'off'],
+    ['option', 'dbgLogUpload', 'off'],
   ],
   hbbtv: [
     ['option', 'hbbTV', 'off'],

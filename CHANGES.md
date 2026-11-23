@@ -2411,3 +2411,29 @@ commit_ref: "feature/saver-music (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-23T17:15:00Z"
 ```
+
+```yaml
+id: CU-20261123-02
+type: fix
+title: "LG's pre-loaded apps are closed again after a short standby"
+description: "An app the pre-load part had closed once was left running for the rest of the run when it came back, so that nothing is closed every two minutes. After a standby of 6 seconds (owner's living-room TV, 2026-11-23; shorter than the clock jump that counts as waking) LG had its pre-loading switched on again and pre-loaded Netflix, LG Channels and more; Netflix and LG Channels, closed earlier, were then left running with connections open. Now an app seen switched off whose pre-loading LG has switched on again is forgotten, so its new copy is closed once. A preload manager that never follows changes nothing."
+impact: low
+affected_modules: ["helper/lgpreload.js", "docs/debloat.md"]
+related_tests: ["tools/test/lgpreload.test.js (closed again after LG switched its pre-loading on again, left running when back without that, a preload manager that does not follow: not closed at every look)"]
+commit_ref: "feature/saver-music (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-23T17:30:00Z"
+```
+
+```yaml
+id: CU-20261123-03
+type: feature
+title: "LG's collection of what was watched and its debug log upload are switched off with LG's ad and promotion settings"
+description: "The group lgads also switches option.watchedListCollection and option.dbgLogUpload off; both were on on the owner's living-room TV (webOS 25) and nothing managed them. As the group's other keys: the TV's own value is saved first and put back when the group is switched off, and a key the firmware lacks is left alone. The keys' meaning is taken from their names; LG's log uploader (uploadd) was already kept from running."
+impact: low
+affected_modules: ["helper/lgsettings.js", "docs/debloat.md"]
+related_tests: ["tools/test/lgsettings.test.js (both switched, text and true/false, seen by the check, put back)"]
+commit_ref: "feature/saver-music (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-23T17:30:00Z"
+```

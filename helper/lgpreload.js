@@ -14,7 +14,8 @@
 // Closing must never take the screen from what is on it. LG's AirPlay app answers being closed (paused) by launching the last input
 // app, which is Home: Home came to the front over the app in use (Stremio, seen on the owner's TV) and Home took it for the Home key
 // (Search and the menus closed), every two minutes, because something other than the preload manager starts AirPlay again at once. So
-// AirPlay is left alone (KEEP), and an app this closed that is back at the next look is left running for the rest of this run.
+// AirPlay is left alone (KEEP), and an app this closed that is back at the next look is left running, until LG switches its pre-loading
+// on again (the TV woke; a standby of a few seconds does not show in the clock): then it is LG's copy again, and is closed once more.
 const fs = require('fs');
 const P = require('./paths');
 
@@ -62,7 +63,8 @@ function create(ctx, opts) {
   let busy = false,
     again = false,
     last = '';
-  const closedOnce = new Set(); // closed in this run: back again means something else starts it, so it is left running
+  const closedOnce = new Set(), // closed since LG last switched its pre-loading on: back again means something else starts it
+    seenOff = new Set(); // seen switched off here: switched on again later means that LG pre-loads again
   const note = m => {
     last = m;
     console.log('lgpreload: ' + m);
@@ -99,6 +101,9 @@ function create(ctx, opts) {
     const apps = await policy();
     if (!apps) return; // the preload manager does not answer (yet)
     const ids = toStop(apps);
+    const noteOff = list => list.forEach(a => a && a.isEnabled === false && seenOff.add(a.id));
+    noteOff(apps);
+    ids.forEach(id => seenOff.delete(id) && closedOnce.delete(id));
     if (!ids.length) return closeLoaded(readRec());
     const rec = readRec();
     for (const id of ids) {
@@ -107,7 +112,9 @@ function create(ctx, opts) {
     }
     writeRec(rec);
     await closeLoaded(rec);
-    const left = toStop((await policy()) || []).filter(id => ids.indexOf(id) >= 0);
+    const after = (await policy()) || [];
+    noteOff(after);
+    const left = toStop(after).filter(id => ids.indexOf(id) >= 0);
     note(
       left.length
         ? 'the preload manager kept pre-loading ' + left.join(', ')

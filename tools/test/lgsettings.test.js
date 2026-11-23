@@ -10,7 +10,7 @@ run(async () => {
   const tv = {
     general: { homePromotion: 'on', screenSaverAd: 'on', aiNudge: true, lmt: 'off', sportsAlarm: 'off' },
     other: { contentRecommendation: 'on' },
-    option: { livePlus: 'on', hbbTV: 'on', hbbTvDnt: 'off' },
+    option: { livePlus: 'on', watchedListCollection: 'on', dbgLogUpload: true, hbbTV: 'on', hbbTvDnt: 'off' },
   };
   const sets = [];
   const luna = async (uri, p) => {
@@ -34,7 +34,7 @@ run(async () => {
   await S.sync();
   ok(
     sets.join() ===
-      'general.homePromotion=off,general.screenSaverAd=off,general.aiNudge=false,general.lmt=on,other.contentRecommendation=off,option.livePlus=off',
+      'general.homePromotion=off,general.screenSaverAd=off,general.aiNudge=false,general.lmt=on,other.contentRecommendation=off,option.livePlus=off,option.watchedListCollection=off,option.dbgLogUpload=false',
     'with the debloat on: the ad and promotion settings this TV has are switched (true/false where the TV keeps it so), HbbTV left as it is: ' +
       sets.join()
   );
@@ -50,7 +50,7 @@ run(async () => {
   await S.sync();
   const checks = await S.check();
   ok(
-    sets.length === 0 && checks.length === 7 && checks.every(c => c.ok),
+    sets.length === 0 && checks.length === 9 && checks.every(c => c.ok),
     'nothing more while they stay so, and the check sees each one right'
   );
   conf.update('test', c => {
@@ -70,6 +70,8 @@ run(async () => {
     tv.general.homePromotion === 'on' &&
       tv.general.aiNudge === true &&
       tv.general.lmt === 'off' &&
+      tv.option.watchedListCollection === 'on' &&
+      tv.option.dbgLogUpload === true &&
       tv.option.hbbTV === 'on' &&
       tv.option.hbbTvDnt === 'off' &&
       !fs.existsSync(process.env.CYTV_LGSETTINGS_SAVED),

@@ -169,6 +169,26 @@ run(async () => {
     cc.length = 0;
     await pre2.sync();
     ok(cc.length === 0 && /left running/.test(pre2.status().last), 'a copy back after being closed is left running: ' + cc.join());
+    // a short standby (seen on the owner's TV on 2026-11-23: 6 s, too short for the clock to show it): LG has its pre-loading switched on
+    // again and pre-loaded again, so those copies are LG's and are closed again, once
+    pmRestart();
+    await pre2.sync();
+    ok(
+      cc.join() === 'close netflix,close com.webos.app.lgchannels,kill com.webos.app.lgchannels',
+      'pre-loaded again after LG switched its pre-loading on again: closed again: ' + cc.join()
+    );
+    cc.length = 0;
+    await pre2.sync();
+    ok(cc.length === 0, 'and back once more without that: left running: ' + cc.join());
+    // a preload manager that never switches them off is no reason to close them at every look
+    pmRestart();
+    pm.deaf = true;
+    await pre2.sync();
+    cc.length = 0;
+    await pre2.sync();
+    await pre2.sync();
+    pm.deaf = false;
+    ok(cc.length === 0, 'a preload manager that does not follow: not closed again every two minutes: ' + cc.join());
     try {
       fs.unlinkSync(rec2);
     } catch (_) {}
