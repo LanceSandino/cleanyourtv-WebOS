@@ -25,18 +25,18 @@ local network on request, and an optional notification endpoint and the Sonos vo
 YouTube and the rest), always switches on its web inspector (Chromium's DevTools) on port 9998, on every address of the TV and with
 no password: anyone on your network can open it and run code inside any web app, Home included. This TV's kernel has no firewall
 table to close the port. **LG's web inspector (port 9998)** in the manager is on by default: at every start the boot script mounts a
-copy of LG's script without that switch over LG's (`/tmp/cleanyourtv-webapp-mgr.sh` over
+copy of LG's script with that port set to 1 over LG's (`/tmp/cleanyourtv-webapp-mgr.sh` over
 `/etc/systemd/system/scripts/webapp-mgr.sh`, in RAM; LG's file is not changed) and starts WebAppMgr again once, early, before Home is
 taken over, so it costs nothing later. That restart was tried on webOS 25: on webOS 22 to 24 only the copy is mounted, and the port
-stays open until WebAppMgr starts again by itself (the manager and the Share log say it still listens). The switch is removed rather than narrowed to `127.0.0.1`: WebAppMgr's engine has no
+stays open until WebAppMgr starts again by itself (the manager and the Share log say it still listens). It is not narrowed to `127.0.0.1`: WebAppMgr's engine has no
 `--remote-debugging-address`. Switched off (for a developer's `ares-inspect`), the copy is unmounted and the port opens again at the
 next start of the TV; switched on in the manager, it closes at the next start (WebAppMgr is not restarted while you use the TV). By
 hand: `sh /media/developer/cleanyourtv/devtools-undo.sh` removes the mount.
 
-This does not close it everywhere: on a webOS 25 TV with developer apps installed, WebAppMgr opened the inspector anyway, without
-LG's port, on one the system picked (found 2026-11-23 with `/json/version` from another device). The manager then says **Not closed**,
-TV health shows the port in red and the Share log names it. Keep the TV on a network you trust (a separate one for such devices, or
-your router's device isolation) until that is closed as well.
+The copy sets the port to 1 instead of removing the switch: without the switch WebAppMgr opened the inspector on a port the system
+picked as soon as it ran an app of the developer folder (webOS 25, found 2026-11-23 and tried with port 1 on 2026-11-24). Port 1 may
+only be opened by root, and WebAppMgr runs as its own user without that right. Should WebAppMgr listen on any port all the same, the
+manager says **Not closed**, TV health shows the port in red and the Share log names it.
 
 **Where updates come from.** Updates and themes come from this project's repository and are checked against the checksums of the
 release. A file on the TV (`/media/developer/cleanyourtv/source`, root only) can name another repository for testing; the manager

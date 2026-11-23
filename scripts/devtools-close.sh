@@ -2,9 +2,10 @@
 # LG's web inspector closed to the network, in RAM. LG's start script for WebAppMgr (/etc/systemd/system/scripts/webapp-mgr.sh, on
 # the read-only system partition) always passes --remote-debugging-port=9998, and WebAppMgr's DevTools then listen on every address
 # of the TV with no authentication: anyone on the network can run code inside the TV's web apps, Home included. This writes a copy
-# of LG's script without that switch (/tmp/cleanyourtv-webapp-mgr.sh) and mounts it over LG's script until the next start; LG's file
-# is never changed. The switch is removed, not narrowed to 127.0.0.1: WebAppMgr's engine (libcbe.so) has no
-# --remote-debugging-address.
+# of LG's script with the port set to 1 (/tmp/cleanyourtv-webapp-mgr.sh) and mounts it over LG's script until the next start; LG's file
+# is never changed. Not 127.0.0.1: WebAppMgr's engine (libcbe.so) has no --remote-debugging-address. Not removed either: without the
+# switch WebAppMgr opens the inspector on a port the system picks as soon as it runs an app of the developer folder (the owner's TV,
+# 2026-11-23). Port 1 is one only root may open, and WebAppMgr runs as its own user (wam) without capabilities, so it cannot.
 #   sh devtools-close.sh           the copy mounted, once per start; WebAppMgr keeps the port until it starts again
 #   sh devtools-close.sh restart   and WebAppMgr started again once, when the one running has the port (10-cleanyourtv-home at
 #                                  boot, before Home is taken over and sam restarted, so that it costs nothing later). Only where
@@ -27,23 +28,23 @@ say() { echo "$(up) devtools: $*" >> "$LOG"; }
 [ -e "$L/devtools-open" ] && exit 0
 [ -f "$S" ] || exit 0
 mounted() { grep -q " $S " "$MOUNTS"; }
-# the running WebAppMgr was started with the port
+# the running WebAppMgr was started with a port it can open
 withPort() {
   pid=$(systemctl show -p MainPID --value $UNIT 2>/dev/null)
-  [ -n "$pid" ] && [ "$pid" != 0 ] && tr '\0' ' ' < "$PROC/$pid/cmdline" 2>/dev/null | grep -q -- '--remote-debugging-port'
+  [ -n "$pid" ] && [ "$pid" != 0 ] && tr '\0' ' ' < "$PROC/$pid/cmdline" 2>/dev/null | grep -o -- '--remote-debugging-port=[0-9]*' | grep -qv '=1$'
 }
 if ! mounted; then
-  # LG's script without the switch: only when it had it, and only a copy that is still a valid script. Written beside it and renamed
+  # LG's script with port 1: only when it had the switch, and only a copy that is still a valid script. Written beside it and renamed
   # into place, never over a file in use (D-20261029-2)
-  sed 's/[[:space:]]*--remote-debugging-port=[0-9]*//g' "$S" > "$C.new"
-  if cmp -s "$S" "$C.new" || grep -q -- '--remote-debugging-port' "$C.new" || ! sh -n "$C.new" 2>/dev/null; then
+  sed 's/--remote-debugging-port=[0-9][0-9]*/--remote-debugging-port=1/g' "$S" > "$C.new"
+  if cmp -s "$S" "$C.new" || grep -o -- '--remote-debugging-port=[0-9]*' "$C.new" | grep -qv '=1$' || ! sh -n "$C.new" 2>/dev/null; then
     rm -f "$C.new"
-    say "LG's WebAppMgr script has no --remote-debugging-port=<port> to remove here; left as it is"
+    say "LG's WebAppMgr script has no --remote-debugging-port=<port> to change here; left as it is"
     exit 0
   fi
   chmod 755 "$C.new" && mv -f "$C.new" "$C" || { say "the copy of LG's WebAppMgr script could not be written"; exit 1; }
   mount --bind "$C" "$S" || { say "the mount over LG's WebAppMgr script failed; port 9998 stays open"; exit 1; }
-  say "LG's WebAppMgr script is replaced in RAM by a copy without its web inspector (port 9998)"
+  say "LG's WebAppMgr script is replaced in RAM by a copy whose web inspector cannot open a port (port 1)"
 fi
 [ "$1" = restart ] || exit 0
 withPort || exit 0

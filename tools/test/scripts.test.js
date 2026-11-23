@@ -638,7 +638,7 @@ run(async () => {
     );
   }
   // devtools-close.sh and devtools-undo.sh run for real against a stand-in for LG's start script, /proc/mounts, /proc/<pid>/cmdline and
-  // mount, umount, systemctl and luna-send (the webOS version): the copy has no --remote-debugging-port, it is mounted once, WebAppMgr is
+  // mount, umount, systemctl and luna-send (the webOS version): the copy has --remote-debugging-port=1, it is mounted once, WebAppMgr is
   // restarted once (only when it runs with the port, and only on webOS 25 and newer: tvprofile.js devtoolsRestart), and the undo
   // removes the mount and the copy
   {
@@ -728,20 +728,19 @@ run(async () => {
     const after3 = { mounts: mounts(), copy: fs.existsSync(C) };
     ok(
       first === 0 &&
-        !/remote-debugging-port/.test(copy) &&
-        copy === LG.replace('    --remote-debugging-port=9998 \\', ' \\') &&
+        copy === LG.replace('--remote-debugging-port=9998', '--remote-debugging-port=1') &&
         copyParses &&
         after1.mounts === 1 &&
         after1.restarts === 1 &&
-        !/remote-debugging-port/.test(after1.running) &&
+        /--remote-debugging-port=1\0/.test(after1.running) &&
         second === 0 &&
         after2.mounts === 1 &&
         after2.restarts === 1 &&
         undone === 0 &&
         after3.mounts === 0 &&
         !after3.copy,
-      'devtools-close.sh: the copy has no --remote-debugging-port and parses, is mounted once, WebAppMgr restarted once and then ' +
-        'runs without the port; a second run changes nothing; devtools-undo.sh removes the mount and the copy: ' +
+      'devtools-close.sh: the copy has port 1, which WebAppMgr may not open, and parses, is mounted once, WebAppMgr restarted once and ' +
+        'then runs with it; a second run changes nothing; devtools-undo.sh removes the mount and the copy: ' +
         JSON.stringify([first, after1, second, after2, undone, after3])
     );
     // without "restart" (the setup, an update, the manager's switch): mounted, WebAppMgr left as it runs

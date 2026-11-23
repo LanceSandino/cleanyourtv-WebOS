@@ -2463,3 +2463,16 @@ commit_ref: "feature/update-fds (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-23T19:40:00Z"
 ```
+
+```yaml
+id: CU-20261124-01
+type: fix
+title: "LG's web inspector is closed: WebAppMgr is given a port it may not open"
+description: "The copy of LG's WebAppMgr script had --remote-debugging-port removed, and WebAppMgr then opened its inspector on a port the system picks (CU-20261123-05). The copy now sets it to 1: only root may open it, and WebAppMgr runs as wam with no capabilities. Tried on the owner's webOS 25 TV on 2026-11-24: WebAppMgr restarted once and kept its process for a minute, Home and the manager (a developer app, which had opened the port) came up, wam listens on nothing. Not tried on webOS 22 to 24."
+impact: high
+affected_modules: ["scripts/devtools-close.sh", "helper/exposure.js", "docs/security.md", "DECISIONS.md"]
+related_tests: ["tools/test/scripts.test.js (the copy has port 1 and parses, mounted once, one restart, then runs with it; undo; no restart on webOS 22)"]
+commit_ref: "feature/inspector-closed (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-25T02:10:00Z"
+```

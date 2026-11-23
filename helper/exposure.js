@@ -292,7 +292,7 @@ function devtoolsRow(ports, closed) {
         bind: 'closed',
         program: 'WebAppMgr',
         what: 'WebAppMgr’s web inspector (DevTools)',
-        how: 'closed: WebAppMgr starts without it (Security > LG’s web inspector, a copy of LG’s start script in RAM)',
+        how: 'closed: WebAppMgr is given a port it may not open (Security > LG’s web inspector, a copy of LG’s start script in RAM)',
         tone: 'g',
       },
     ])
