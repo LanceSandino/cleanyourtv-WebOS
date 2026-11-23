@@ -69,6 +69,7 @@ run(async () => {
       luna: async (uri, p) => {
         luna.push([uri.replace(/^luna:\/\//, ''), p]);
         if (/getForegroundAppInfo/.test(uri)) return { returnValue: true, appId: fg };
+        if (/getActivePipelines$/.test(uri) && o.pipelines) return o.pipelines;
         return { returnValue: true };
       },
     };
@@ -151,6 +152,46 @@ run(async () => {
       !r.luna.some(x => /applicationManager\/launch/.test(x[0])),
     'over an HDMI input: left to LG'
   );
+  // music in the app on screen: LG is told no and Home stays where it is (bringing it forward ends the app's media pipeline, so the
+  // music stops). The pipelines are as the owner's TV listed them while Spotify played (2026-11-23)
+  {
+    const idle = { id: '_37CRA28TeML4Nb', type: 'vtclient', sub_type: 'card', is_foreground: false, resource: [] };
+    const music = app => ({
+      id: '_vMWjQq8t2NTdkA',
+      type: 'media',
+      sub_type: 'card',
+      appStatus: 6,
+      currentAppId: app,
+      is_foreground: true,
+      resource: [{ index: 3, resource: 'PCMMC' }],
+    });
+    const av = { id: '_eiJFQq8yOib9kS', type: 'avconnector', currentAppId: 'spotify-beehive', is_foreground: true, resource: [] };
+    const opened = x => x.luna.some(l => /applicationManager\/launch/.test(l[0]));
+    const no = x => x.bus.calls.some(c => /responseScreenSaverRequest/.test(c.uri) && c.args.ack === false);
+    let m = await once(on, 'spotify-beehive', { pipelines: [idle, av, music('spotify-beehive')] });
+    ok(
+      no(m) && !opened(m) && /music/.test(m.part.status().last),
+      'music in the app on screen: LG told no, Home not opened: ' + m.part.status().last
+    );
+    m = await once(on, 'spotify-beehive', { pipelines: [idle] });
+    ok(no(m) && opened(m), 'the same app with nothing playing: the photos as before');
+    m = await once(on, 'spotify-beehive', { pipelines: [idle, music('netflix')] });
+    ok(opened(m), "another app's sound is not the app on screen's");
+    // a picture is decoded too: LG does not ask while a video plays, so this one is paused
+    const video = music('youtube.leanback.v4');
+    video.resource = [
+      { index: 0, resource: 'VDEC' },
+      { index: 0, resource: 'ADEC' },
+    ];
+    m = await once(on, 'youtube.leanback.v4', { pipelines: [video] });
+    ok(opened(m), 'a paused video: the photos as before');
+    m = await once(on, 'spotify-beehive', { pipelines: { returnValue: false, errorText: 'no' } });
+    ok(no(m) && opened(m), 'the media service does not answer: the photos as before');
+    m = await once(on, 'com.webos.app.home', { pipelines: [music('com.webos.app.home')] });
+    ok(opened(m), "Home in front: the page's own rules decide, as before");
+    m = await once({ saver: { on: false } }, 'spotify-beehive', { pipelines: [music('spotify-beehive')] });
+    ok(!m.luna.some(l => /getActivePipelines/.test(l[0])), 'switched off: nothing is asked');
+  }
   // without LG's bus module nothing is registered: a question no one can answer is worse than LG's own screensaver
   {
     const calls = [];

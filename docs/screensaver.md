@@ -44,7 +44,10 @@ late answer as a fault and then reboots the TV fully at its next standby, so a p
 one to answer); otherwise LG's screensaver starts as before. When
 another app is on the screen (and idle), Home comes forward with the photos, and a key or the pointer goes straight back to that
 app; the Home key ends them and stays on Home. Never over an HDMI input: a game console or a set-top box is in use even when the
-remote is not (LG does not count a game controller), so there the launcher answers yes and LG decides, as it did before. Whether a
+remote is not (LG does not count a game controller), so there the launcher answers yes and LG decides, as it did before. Not over
+music either: when the app on the screen plays sound without a picture (Spotify, say), the answer is no and nothing is shown, because
+Home coming forward ends that app's sound (LG stops an app's media when it leaves the screen). A video that is paused is not music:
+the photos come as usual. Whether a
 TV asks Home at all depends on the firmware: if LG's screensaver still appears, set **Starts after** shorter than LG's.
 The service answers on its own connection to LG's bus (LG's `palmbus` module, the one LG's JavaScript services use): LG takes an
 answer only from the connection that asked to be told, so an answer sent any other way is refused even though LG replies "ok". On a

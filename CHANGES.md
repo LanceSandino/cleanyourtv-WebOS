@@ -2398,3 +2398,16 @@ commit_ref: "feature/rescan-home (the commit that adds this entry, after the che
 author: "privatepenguinzero and lasharor (upstream a5e7aef, 63fcad1), ported by Lance Sandino (with Claude Code)"
 timestamp: "2026-11-20T08:00:00Z"
 ```
+
+```yaml
+id: CU-20261123-01
+type: fix
+title: "The photos no longer come over music: Spotify kept being stopped by our screensaver"
+description: "LG does not count sound as use and asks for its screensaver three minutes after the last key. The service answered no and opened Home with the photos, also over an app playing music; LG ends an app's media pipeline when it leaves the screen, so the music stopped (the owner's living-room TV, 2026-11-23: five times in 23 minutes over spotify-beehive in screensaver-answers.log, each with LG's NL_VSC hidden and NL_MEDIA_INFO lines in the same second). After answering no, the service now asks com.webos.media getActivePipelines; when the app on screen holds a media pipeline for sound without a video decoder, Home is not opened. A paused video (VDEC held) still gets the photos. No extra time before the answer."
+impact: medium
+affected_modules: ["helper/lgscreensaver.js", "docs/screensaver.md"]
+related_tests: ["tools/test/lgscreensaver.test.js (music in the app on screen: LG told no, Home not opened; nothing playing, another app's sound, a paused video, no answer, Home in front: as before; off: not asked)"]
+commit_ref: "feature/saver-music (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-23T17:15:00Z"
+```

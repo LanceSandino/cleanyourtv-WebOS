@@ -13,6 +13,10 @@
 // Ours (the photos, saver.js) when the screensaver is on and has photos and the TV is not on an HDMI input (a console or a set-top box
 // is in use even when the remote is not): LG is told no, and Home is opened with {saver: 'start', from: the app that was in front}, so
 // the launcher shows the photos and a key goes back to that app. Otherwise LG decides, as before this launcher.
+// Music in the app on screen (Spotify): LG does not count sound as use and asks three minutes after the last key. LG is told no, and
+// Home is not opened: bringing it forward makes LG end the app's media pipeline, so the music stopped (the owner's TV, 2026-11-23, five
+// times in 23 minutes). LG's media service names each pipeline's app and what it holds; sound without a picture decoder is music (a
+// pipeline with a video decoder is a paused video: LG does not ask while a video plays), and the photos come over that as before.
 // Every answer is kept in a short record on the TV's storage (screensaver-answers.log, the last 40), with how long it took and what LG
 // replied ("The response is too late", an invalid parameter): the service's own log is in /tmp and gone after the reboot such a fault
 // causes, so this is what says why LG counted an answer as missing.
@@ -21,7 +25,21 @@ const fs = require('fs'),
   path = require('path');
 const P = require('./paths');
 
-const URI = 'luna://com.webos.service.tvpower/power/';
+const URI = 'luna://com.webos.service.tvpower/power/',
+  HOME = 'com.webos.app.home';
+
+// does the app on screen hold a pipeline for sound alone? pipelines: the answer of com.webos.media getActivePipelines (an array; an
+// error object, or anything else, is no)
+function music(pipelines, app) {
+  return (
+    Array.isArray(pipelines) &&
+    pipelines.some(p => {
+      if (!p || p.type !== 'media' || p.is_foreground !== true || p.currentAppId !== app) return false;
+      const held = (Array.isArray(p.resource) ? p.resource : []).map(x => String((x && x.resource) || ''));
+      return held.length > 0 && !held.some(x => /^VDEC/.test(x));
+    })
+  );
+}
 
 function create(ctx, opts) {
   const o = Object.assign(
@@ -131,14 +149,12 @@ function create(ctx, opts) {
       await answer(ts, true, fg);
       return log('LG asked over ' + fg + ', left to LG (an HDMI input)');
     }
-    await answer(ts, false, fg);
-    await ctx
-      .luna('luna://com.webos.applicationManager/launch', {
-        id: 'com.webos.app.home',
-        params: { saver: 'start', from: fg && fg !== 'com.webos.app.home' ? fg : '' },
-      })
-      .catch(() => null);
-    log('LG asked' + (fg && fg !== 'com.webos.app.home' ? ' over ' + fg : '') + ', ours shown on Home');
+    await answer(ts, false, fg); // before anything else is looked at: LG waits for it
+    const over = fg && fg !== HOME ? fg : '';
+    if (over && music(await ctx.luna('luna://com.webos.media/getActivePipelines', {}).catch(() => null), over))
+      return log('LG asked over ' + over + ', music is playing: told no, nothing shown');
+    await ctx.luna('luna://com.webos.applicationManager/launch', { id: HOME, params: { saver: 'start', from: over } }).catch(() => null);
+    log('LG asked' + (over ? ' over ' + over : '') + ', ours shown on Home');
   }
   function again() {
     if (stopped) return;
@@ -253,4 +269,4 @@ function create(ctx, opts) {
   return { name: 'lgscreensaver', start, stop, status: () => ({ listening: !!sub, last, answers: answers() }) };
 }
 
-module.exports = { create };
+module.exports = { create, music };
