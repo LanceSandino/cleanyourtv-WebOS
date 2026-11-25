@@ -760,18 +760,26 @@ run(async () => {
     reset(LG, false);
     sh('devtools-close.sh', ['restart']);
     const alreadyClosed = { mounts: mounts(), restarts: restarts() };
-    // webOS 22 (and a version that cannot be read): the restart was not tried there, so the copy is mounted and WebAppMgr left running
-    const older = ['7.6.0', ''].map(sdk => {
+    // webOS 23 (and a version that cannot be read): the restart was not tried there, so the copy is mounted and WebAppMgr left running
+    const older = ['8.4.0', ''].map(sdk => {
       reset(LG, true, sdk);
       const st = sh('devtools-close.sh', ['restart']);
       const r = { sdk, status: st, mounts: mounts(), restarts: restarts(), log: fs.readFileSync(path.join(W, 'boot.log'), 'utf8') };
       sh('devtools-undo.sh');
       return r;
     });
+    // webOS 22: tried on the owner's 86UQ8000 (04.60.91, the stand-in way) on 2026-11-25: restarted like webOS 25
+    reset(LG, true, '7.6.0');
+    const w22 = { status: sh('devtools-close.sh', ['restart']), mounts: mounts(), restarts: restarts(), running: running() };
+    sh('devtools-undo.sh');
+    ok(
+      w22.status === 0 && w22.mounts === 1 && w22.restarts === 1 && /--remote-debugging-port=1\0/.test(w22.running),
+      'devtools-close.sh on webOS 22: the copy mounted and WebAppMgr restarted once with port 1: ' + JSON.stringify(w22)
+    );
     cp.spawnSync('rm', ['-rf', W]);
     ok(
       older.every(r => r.status === 0 && r.mounts === 1 && r.restarts === 0 && /WebAppMgr is not restarted on webOS SDK/.test(r.log)),
-      'devtools-close.sh on webOS 22 or an unknown version: the copy is mounted, WebAppMgr is not restarted, and the boot log says so: ' +
+      'devtools-close.sh on webOS 23 or an unknown version: the copy is mounted, WebAppMgr is not restarted, and the boot log says so: ' +
         JSON.stringify(older.map(r => [r.sdk, r.status, r.mounts, r.restarts]))
     );
     ok(

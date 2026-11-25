@@ -52,10 +52,10 @@
 //                  25 (SDK 10) on, where LG's sdx names a host per service (the region's tv.wiselg.com, ibsstat, rdx2, lgtviot). On
 //                  webOS 22 it names only US.lgtvsdp.com for every one of them, the host LG's app store and its updates use too, so
 //                  nothing can be blocked there; the group is shown as not available rather than as not in place.
-//   devtoolsRestart  whether the boot starts WebAppMgr again once without LG's web inspector (scripts/devtools-close.sh restart): from
-//                  webOS 25 (SDK 10) on, where it was tried. Before that the copy of LG's start script is only mounted, and the port
-//                  (9998) closes when WebAppMgr starts again by itself: the restart closes every web app at boot, and it was not
-//                  tried with LG's native Home and the stand-in (webOS 22 and 23), whose launcher WebAppMgr opens right after it.
+//   devtoolsRestart  whether the boot starts WebAppMgr again once with a port its inspector cannot open (scripts/devtools-close.sh
+//                  restart): webOS 22 (SDK 7; the owner's 86UQ8000 with the stand-in, 2026-11-25: there WebAppMgr opens 9998 as soon
+//                  as an app of the developer folder runs, ours included) and webOS 25 (SDK 10) on, where it was tried. On webOS 23
+//                  and 24 the copy of LG's start script is only mounted, and the port closes when WebAppMgr starts again by itself.
 //   homeKeyWatch   whether the service passes the Home key to the launcher while Home is in front (helper/homekey.js): from webOS 25
 //                  (SDK 10) on, where LG's window manager then does nothing (the owner's TV: "KEYFILTER_APPLAUNCH ... com.webos.app.home is
 //                  foreground app"), so a menu or Search stayed open; webOS 22 relaunches Home with launchType homeKey itself.
@@ -127,7 +127,7 @@ function decide(facts, compat) {
     lgScreensaver: major === 7 || major >= 10 ? 'bus' : '',
     adManager: major >= 10 ? 'stub' : major === 7 ? 'hide' : '',
     lgServerHosts: major >= 10,
-    devtoolsRestart: major >= 10,
+    devtoolsRestart: major === 7 || major >= 10,
     supported: major >= FLOOR.sdk && nodeMajor >= FLOOR.node,
     floor: FLOOR.name + ' (SDK ' + FLOOR.sdk + ')',
   };

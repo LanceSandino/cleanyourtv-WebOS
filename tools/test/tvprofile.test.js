@@ -57,7 +57,7 @@ run(async () => {
         lgPreload: '',
         lgScreensaver: 'bus',
         adManager: 'hide',
-        devtoolsRestart: false,
+        devtoolsRestart: true,
         legacyNode: false,
         supported: true,
       },
@@ -144,11 +144,11 @@ run(async () => {
     "LG's screensaver question: webOS 22 and webOS 25 and newer"
   );
   ok(
-    ['10.2.2', '11.2.0'].every(v => tv.decide({ sdk: v }).devtoolsRestart === true && tv.decide({ sdk: v }).adManager === 'stub') &&
-      ['7.6.0', '8.4.0', '9.2.4', ''].every(
-        v => tv.decide({ sdk: v }).devtoolsRestart === false && tv.decide({ sdk: v }).adManager !== 'stub'
-      ),
-    'the WebAppMgr restart and the admanager stub: webOS 25 and newer (webOS 22 hides admanager instead)'
+    ['10.2.2', '11.2.0'].every(v => tv.decide({ sdk: v }).adManager === 'stub') &&
+      ['7.6.0', '8.4.0', '9.2.4', ''].every(v => tv.decide({ sdk: v }).adManager !== 'stub') &&
+      ['7.6.0', '10.2.2', '11.2.0'].every(v => tv.decide({ sdk: v }).devtoolsRestart === true) &&
+      ['8.4.0', '9.2.4', ''].every(v => tv.decide({ sdk: v }).devtoolsRestart === false),
+    'the admanager stub: webOS 25 and newer (webOS 22 hides admanager instead); the WebAppMgr restart: webOS 22 and webOS 25 and newer'
   );
   // issue 122: webOS 25 with the flutter or web Home, black video after the restart of SAM
   const b2 = { model: 'OLED65B2RLA', sdk: '10.3.2', home: 'com.webos.app.home flutter' };
@@ -189,7 +189,8 @@ run(async () => {
   );
   ok(
     cli(['get', 'lgScreensaver', '--sdk', '7.6.0']) === 'bus' &&
-      cli(['get', 'devtoolsRestart', '--sdk', '7.6.0']) === '0' &&
+      cli(['get', 'devtoolsRestart', '--sdk', '7.6.0']) === '1' &&
+      cli(['get', 'devtoolsRestart', '--sdk', '8.4.0']) === '0' &&
       cli(['get', 'devtoolsRestart', '--sdk', '10.2.2']) === '1' &&
       cli(['get', 'adManager', '--sdk', '7.6.0']) === 'hide' &&
       cli(['get', 'adManager', '--sdk', '10.3.2']) === 'stub' &&

@@ -2476,3 +2476,16 @@ commit_ref: "feature/inspector-closed (the commit that adds this entry)"
 author: "Lance Sandino (with Claude Code)"
 timestamp: "2026-11-25T02:10:00Z"
 ```
+
+```yaml
+id: CU-20261125-01
+type: fix
+title: "webOS 22: LG's web inspector closed at boot as on webOS 25"
+description: "On webOS 22 the boot only mounted the copy of LG's start script and left WebAppMgr running with port 9998, which it opens as soon as an app of the developer folder runs (our manager, the picker, the notify app): on the owner's 86UQ8000 (04.60.91, the stand-in way) /json/version answered the network on 9998 after the manager opened. WebAppMgr is now restarted once at boot there too (tvprofile.js devtoolsRestart). Tried on that TV on 2026-11-25 by hand with port 1: WebAppMgr stayed up, Home and the manager opened, no listener; then at a full restart."
+impact: medium
+affected_modules: ["helper/tvprofile.js", "docs/security.md"]
+related_tests: ["tools/test/tvprofile.test.js (webOS 22 and 25 restart, 23 and 24 not)", "tools/test/scripts.test.js (devtools-close.sh on webOS 22 restarts once with port 1; webOS 23 or unknown only mounts)"]
+commit_ref: "feature/devtools-webos22 (the commit that adds this entry)"
+author: "Lance Sandino (with Claude Code)"
+timestamp: "2026-11-25T23:35:00Z"
+```
